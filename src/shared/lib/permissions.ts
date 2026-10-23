@@ -121,12 +121,12 @@ export function permissionLock(role: Role, meta: PermissionMeta): PermissionLock
 }
 
 const DEFAULT_ON: Record<Role, PermissionKey[]> = {
-  HEAD_TRAINER: ["viewHorses", "editHorses", "createPlan", "assignSchedule", "recordMetrics", "viewMedical"],
+  HEAD_TRAINER: ["viewHorses", "createPlan", "assignSchedule", "recordMetrics", "viewMedical"],
   VETERINARIAN: ["viewHorses", "viewMedical", "placeLock", "liftLock", "ackAlerts"],
   // Cấp quyền xem hồ sơ y tế (viewMedical) cho GROOM và HORSE_OWNER (phạm vi theo ngựa được giao chăm sóc hoặc sở hữu)
   GROOM: ["viewHorses", "viewMedical"],
   HORSE_OWNER: ["viewHorses", "viewMedical"],
-  CLUB_MANAGER: ["viewHorses", "editHorses", "deleteHorses", "viewMedical", "manageAccounts", "viewAudit", "ackAlerts"],
+  CLUB_MANAGER: ["viewHorses", "editHorses", "deleteHorses", "viewMedical", "manageAccounts", "viewAudit"],
 };
 
 export function defaultPermissions(role: Role): PermissionMap {

@@ -68,9 +68,11 @@ export default function AlertListPage() {
             {tr("Raised when the Head Trainer records abnormal signs after a workout. The Veterinarian reviews and responds.")}
           </p>
         </div>
-        <Link to="/training/calendar">
-          <Button tone="secondary">{tr("← Training schedule")}</Button>
-        </Link>
+        {(user.role === "HEAD_TRAINER" || user.role === "CLUB_MANAGER") && (
+          <Link to="/training/calendar">
+            <Button tone="secondary">{tr("← Training schedule")}</Button>
+          </Link>
+        )}
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>

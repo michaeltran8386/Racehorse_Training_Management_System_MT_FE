@@ -49,3 +49,83 @@ for (const { role, email, expectedText } of ROLES_MATRIX) {
     expect(pageErrors).toEqual([]);
   });
 }
+
+test('TASK-001: Head Trainer default permissions do not include horse create/edit authority', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('trainer@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/horses');
+  await expect(page).toHaveURL('/horses');
+  // Head Trainer cannot create or register horse master profiles
+  await expect(page.locator('a[href="/horses/new"]')).not.toBeVisible();
+  await expect(page.locator('a[href="/horses/deleted"]')).not.toBeVisible();
+});
+
+test('TASK-001: Club Manager retains horse master authority and account management', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('manager@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/horses');
+  await expect(page.locator('a[href="/horses/new"]')).toBeVisible();
+  await expect(page.locator('a[href="/horses/deleted"]')).toBeVisible();
+
+  await page.goto('/accounts');
+  await expect(page).toHaveURL('/accounts');
+});
+
+test('TASK-001: Self-profile supports contact details and role is read-only without direct permission edit', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('trainer@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/profile');
+  await expect(page.getByText('Personal details')).toBeVisible();
+
+  // Role field is read-only and disabled
+  const roleInput = page.locator('input[value="Head Trainer"]');
+  await expect(roleInput).toBeDisabled();
+
+  // Direct permission edit switches are not present on self-profile
+  await expect(page.locator('input[name="editHorses"]')).not.toBeVisible();
+  await expect(page.locator('input[name="manageAccounts"]')).not.toBeVisible();
+});
+
+test('TASK-001: Alert review authority belongs exclusively to Veterinarian and training calendar is hidden on /alerts', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('vet@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/alerts');
+  await expect(page).toHaveURL('/alerts');
+  // Training schedule button is hidden for Veterinarian
+  await expect(page.locator('a[href="/training/calendar"]')).not.toBeVisible();
+  // Review & respond button is available for Vet
+  await expect(page.locator('button:has-text("Review & respond")').or(page.locator('button:has-text("Xem & phản hồi")')).first()).toBeVisible();
+});
+
+test('TASK-001: Head Trainer cannot review or acknowledge abnormal-sign alerts', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('trainer@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/alerts');
+  await expect(page).toHaveURL('/alerts');
+  // Head Trainer sees training calendar link
+  await expect(page.locator('a[href="/training/calendar"]')).toBeVisible();
+  // Head Trainer CANNOT review & respond to abnormal sign alerts
+  await expect(page.locator('button:has-text("Review & respond")')).not.toBeVisible();
+  await expect(page.locator('button:has-text("Xem & phản hồi")')).not.toBeVisible();
+});
+

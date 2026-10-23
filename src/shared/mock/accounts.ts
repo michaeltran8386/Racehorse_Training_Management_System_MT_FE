@@ -7,7 +7,7 @@ import type { Account } from "@/shared/types/auth";
 // Tăng số này mỗi khi sửa danh sách bên dưới (thêm/xóa/đổi tài khoản).
 // db.ts so số này với bản lưu trong localStorage của trình duyệt: khác nhau
 // là coi như hỏng, xóa hết và gieo lại — người test không cần tự tay xóa localStorage.
-export const SEED_VERSION = 8;
+export const SEED_VERSION = 9;
 
 type Seed = Pick<Account, "id" | "fullName" | "email" | "role" | "status"> & Partial<Account>;
 
