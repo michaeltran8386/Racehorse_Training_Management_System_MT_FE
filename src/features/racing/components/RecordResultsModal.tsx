@@ -4,7 +4,7 @@ import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
-import { recordRaceResults, lockRaceResults, fetchTournamentDetail, type SingleResultInput } from "../api";
+import { recordRaceResults, fetchTournamentDetail, type SingleResultInput } from "../api";
 import type { Tournament } from "../types";
 
 interface RecordResultsModalProps {
@@ -47,7 +47,8 @@ export function RecordResultsModal({
       .then((full) => {
         setDetailTournament(full);
         if (full.registrations && full.registrations.length > 0) {
-          const initial = full.registrations.map((reg, index) => {
+          const activeRegs = full.registrations.filter((r) => r.status !== "SCRATCHED_MEDICAL");
+          const initial = activeRegs.map((reg, index) => {
             const existing = reg.result;
             const rank = existing?.finalRank ?? index + 1;
             const time = existing?.finishTimeSeconds ?? 70 + index * 1.5;
@@ -89,9 +90,13 @@ export function RecordResultsModal({
 
   const currentTourney = detailTournament ?? tournament;
   const isCompleted = currentTourney.status === "COMPLETED";
-
+  const isClosedReg = currentTourney.status === "CLOSED_REGISTRATION";
+  const isRaceFinished = new Date() >= new Date(currentTourney.raceDate);
+  const canRecord = isClubManager && isClosedReg && isRaceFinished && !isCompleted;
+  const isReadOnly = isCompleted || !isClubManager || !isClosedReg || !isRaceFinished;
 
   function handleFieldChange(index: number, field: string, val: any) {
+    if (isReadOnly) return;
     setRows((prev) => {
       const next = [...prev];
       const target = { ...next[index], [field]: val };
@@ -110,8 +115,18 @@ export function RecordResultsModal({
       return;
     }
 
-    if (lock && !isClubManager) {
-      setError(tr("Only the Club Manager has the authority to officially lock results."));
+    if (!isClubManager) {
+      setError(tr("Only the Club Manager has the authority to record or edit tournament results."));
+      return;
+    }
+
+    if (currentTourney.status !== "CLOSED_REGISTRATION") {
+      setError(tr("Results can only be drafted or locked when tournament status is CLOSED_REGISTRATION."));
+      return;
+    }
+
+    if (!isRaceFinished) {
+      setError(tr("Cannot draft or lock results before raceDate has arrived."));
       return;
     }
 
@@ -137,9 +152,6 @@ export function RecordResultsModal({
       }));
 
       await recordRaceResults(tournament.id, resultsPayload, lock);
-      if (lock) {
-        await lockRaceResults(tournament.id);
-      }
       onSuccess();
       onClose();
     } catch (err: any) {
@@ -160,16 +172,18 @@ export function RecordResultsModal({
           <div>
             {isCompleted ? (
               <Badge tone="ok">🏆 {tr("Official Results Locked")}</Badge>
-            ) : isClubManager ? (
-              <Badge tone="warn">{tr("Club Manager: Authorized to Lock")}</Badge>
+            ) : canRecord ? (
+              <Badge tone="warn">{tr("Club Manager: Authorized to Record & Lock")}</Badge>
+            ) : !isClosedReg ? (
+              <Badge tone="neutral">{tr("Registration Open (Draft Locked)")}</Badge>
+            ) : !isRaceFinished ? (
+              <Badge tone="neutral">{tr("Awaiting Race Date")}</Badge>
             ) : (
-              <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
-                {tr("Trainer Draft Entry · CM must lock results")}
-              </span>
+              <Badge tone="neutral">{tr("Read Only")}</Badge>
             )}
           </div>
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            {isCompleted ? (
+            {isReadOnly ? (
               <Button tone="primary" onClick={onClose}>
                 {tr("Close")}
               </Button>
@@ -178,14 +192,12 @@ export function RecordResultsModal({
                 <Button tone="secondary" onClick={onClose} disabled={loading}>
                   {tr("Cancel")}
                 </Button>
-                <Button tone="quiet" onClick={() => handleSave(false)} disabled={loading}>
+                <Button tone="quiet" onClick={() => handleSave(false)} disabled={loading || loadingDetail || rows.length === 0}>
                   {loading ? tr("Saving...") : tr("Save Draft")}
                 </Button>
-                {isClubManager && (
-                  <Button tone="primary" onClick={() => handleSave(true)} disabled={loading}>
-                    🔒 {loading ? tr("Locking...") : tr("Lock Official Results")}
-                  </Button>
-                )}
+                <Button tone="primary" onClick={() => handleSave(true)} disabled={loading || loadingDetail || rows.length === 0}>
+                  🔒 {loading ? tr("Locking...") : tr("Lock Official Results")}
+                </Button>
               </>
             )}
           </div>
@@ -205,6 +217,36 @@ export function RecordResultsModal({
             }}
           >
             {error}
+          </div>
+        )}
+
+        {!isCompleted && !isClosedReg && (
+          <div
+            style={{
+              padding: "0.75rem 1rem",
+              background: "var(--warn-bg, #fffbeb)",
+              color: "var(--warn-ink, #b45309)",
+              borderRadius: "var(--r-sm, 6px)",
+              fontSize: "var(--fs-sm, 0.875rem)",
+              border: "1px solid var(--warn-border, #fcd34d)",
+            }}
+          >
+            ⚠️ {tr("Chỉ có thể ghi nhận hoặc chốt kết quả sau khi giải đấu đã đóng đăng ký (CLOSED_REGISTRATION).")}
+          </div>
+        )}
+
+        {!isCompleted && isClosedReg && !isRaceFinished && (
+          <div
+            style={{
+              padding: "0.75rem 1rem",
+              background: "var(--warn-bg, #fffbeb)",
+              color: "var(--warn-ink, #b45309)",
+              borderRadius: "var(--r-sm, 6px)",
+              fontSize: "var(--fs-sm, 0.875rem)",
+              border: "1px solid var(--warn-border, #fcd34d)",
+            }}
+          >
+            ⏳ {tr("Cuộc đua chưa diễn ra. Kết quả chính thức chỉ có thể ghi nhận vào hoặc sau ngày thi đấu:")} {new Date(currentTourney.raceDate).toLocaleString()}
           </div>
         )}
 
@@ -244,7 +286,7 @@ export function RecordResultsModal({
                       {row.horseName}
                     </td>
                     <td style={{ padding: "0.5rem" }}>
-                      {isCompleted ? (
+                      {isReadOnly ? (
                         <strong style={{ color: row.finalRank === 1 ? "var(--brand)" : "inherit" }}>
                           #{row.finalRank}
                         </strong>
@@ -266,7 +308,7 @@ export function RecordResultsModal({
                       )}
                     </td>
                     <td style={{ padding: "0.5rem" }}>
-                      {isCompleted ? (
+                      {isReadOnly ? (
                         <span>{row.finishTimeSeconds}s</span>
                       ) : (
                         <input
@@ -292,7 +334,7 @@ export function RecordResultsModal({
                       {row.avgSpeedKmh}
                     </td>
                     <td style={{ padding: "0.5rem", wordBreak: "break-word" }}>
-                      {isCompleted ? (
+                      {isReadOnly ? (
                         <span style={{ fontWeight: 600, color: row.prizeMoneyWon > 0 ? "var(--brand)" : "var(--muted)", whiteSpace: "nowrap" }}>
                           {row.prizeMoneyWon.toLocaleString()} đ
                         </span>
@@ -318,7 +360,7 @@ export function RecordResultsModal({
                       )}
                     </td>
                     <td style={{ padding: "0.5rem", wordBreak: "break-word" }}>
-                      {isCompleted ? (
+                      {isReadOnly ? (
                         <span style={{ color: "var(--muted)", wordBreak: "break-word", whiteSpace: "normal", lineHeight: 1.4, fontSize: "var(--fs-xs)" }}>
                           {row.officialNotes || "—"}
                         </span>
