@@ -49,6 +49,7 @@ export const PERMISSIONS: PermissionMeta[] = [
   },
   {
     key: "editHorses", group: "HORSE PROFILES", name: "Create and edit a Horse Profile", note: "Name, breed, foaling date, stall",
+    ownerRoles: ["CLUB_MANAGER"], ownerReason: "Only the Club Manager can create or edit a Horse Profile.",
     revokeEffect: "Horse Profiles stay visible but can no longer be created or edited by this account.",
   },
   {
@@ -520,6 +521,12 @@ export function screenAccess(role: Role, permissions: PermissionMap, pathname: s
   // SC-1.05 Hồ sơ ngựa đã xóa: chỉ CM (BE cũng chặn bằng @Roles).
   if (pathname === "/horses/deleted") {
     return { allowed: role === "CLUB_MANAGER", group: "WORKSPACE", label: "Deleted horses", ownerRoles: ["CLUB_MANAGER"], inOwnRole: role === "CLUB_MANAGER" };
+  }
+
+  // Tạo hoặc chỉnh sửa hồ sơ gốc ngựa: chỉ duy nhất Club Manager có quyền editHorses
+  if (pathname === "/horses/new" || (pathname.startsWith("/horses/") && pathname.endsWith("/edit"))) {
+    const allowed = role === "CLUB_MANAGER" && !!permissions.editHorses;
+    return { allowed, group: "MASTER DATA", label: "Horse Profile", ownerRoles: ["CLUB_MANAGER"], inOwnRole: role === "CLUB_MANAGER" };
   }
 
   // Quyền truy cập hồ sơ bệnh án qua chiến mã (FR-3.01 / Flow 1 / Flow 3):

@@ -129,3 +129,40 @@ test('TASK-001: Head Trainer cannot review or acknowledge abnormal-sign alerts',
   await expect(page.locator('button:has-text("Xem & phản hồi")')).not.toBeVisible();
 });
 
+test('TASK-002: Head Trainer is forbidden from creating horses and accessing /horses/new', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('trainer@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  // Direct navigation to /horses/new must be forbidden (403)
+  await page.goto('/horses/new');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+
+  // On /horses, row actions menu must NOT show Edit profile
+  await page.goto('/horses');
+  await expect(page).toHaveURL('/horses');
+  await page.locator('button[aria-label^="Actions for"]').first().click();
+  await expect(page.getByRole('menuitem', { name: /Edit profile|Chỉnh sửa/i })).not.toBeVisible();
+});
+
+test('TASK-002: Club Manager has complete horse master authority for creation, edit, and deletion', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('manager@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  // Direct navigation to /horses/new succeeds and renders the form
+  await page.goto('/horses/new');
+  await expect(page).toHaveURL('/horses/new');
+  await expect(page.getByRole('heading', { name: /Register horse|Đăng ký ngựa/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Save Profile|Lưu hồ sơ/i }).first()).toBeVisible();
+
+  // On /horses, row actions menu shows Edit profile
+  await page.goto('/horses');
+  await page.locator('button[aria-label^="Actions for"]').first().click();
+  await expect(page.getByRole('menuitem', { name: /Edit profile|Chỉnh sửa/i })).toBeVisible();
+});
+
