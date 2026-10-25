@@ -316,3 +316,80 @@ test('TASK-004: Club Manager receives client-side 403 page on both plan authorin
   await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
 });
 
+test('TASK-007: Horse Owner sees only owned horses on /my-horses and foreign horse details return 404 without leakage', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('owner@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/my-horses');
+  await expect(page).toHaveURL('/my-horses');
+  await expect(page.getByRole('heading', { name: /My horses/i })).toBeVisible();
+
+  // Foreign horse from different owner is NOT visible
+  await expect(page.getByText('Ironclad Titan')).toHaveCount(0);
+
+  // Directly navigating to a foreign horse ID (Owner 2's horse 'Ironclad Titan') returns 404 without data leakage
+  await page.goto('/horses/d2b6aac3-c3f8-4ee7-83f7-d7c7d260347b');
+  await expect(
+    page.getByText(/Không tìm thấy hồ sơ ngựa|Horse profile not found|This horse profile could not be opened/i).first()
+  ).toBeVisible();
+});
+
+test('TASK-007: Horse Owner sees only owned financial reports and cannot generate invoices', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('owner@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/financial-reports');
+  await expect(page).toHaveURL('/financial-reports');
+
+  // Horse Owner sees financial summary
+  await expect(page.getByText(/Owner Financial Reports|Báo cáo tài chính/i).first()).toBeVisible();
+
+  // Horse Owner cannot generate monthly invoices (Club Manager only action)
+  await expect(page.getByRole('button', { name: /\+ Generate Monthly Invoices|\+ Tạo hóa đơn/i })).toHaveCount(0);
+});
+
+test('TASK-007: Horse Owner self-profile allows contact updates but prevents direct self-permission editing', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('owner@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/profile');
+  await expect(page).toHaveURL('/profile');
+  await expect(page.getByText('Personal details')).toBeVisible();
+
+  // Role and email are read-only
+  await expect(page.locator('input[value="Horse Owner"]')).toBeDisabled();
+  await expect(page.locator('input[value="owner@gmail.com"]')).toBeDisabled();
+
+  // Permissions count is display-only with no direct editing switches
+  await expect(page.getByText('Permissions', { exact: true })).toBeVisible();
+  await expect(page.locator('input[name="manageAccounts"]')).not.toBeVisible();
+  await expect(page.locator('input[name="editHorses"]')).not.toBeVisible();
+
+  // Update contact details (name and phone)
+  const nameInput = page.locator('input[autocomplete="name"]');
+  await nameInput.fill('Phan Duc Long');
+  const phoneInput = page.locator('input[placeholder="0901 234 567"]');
+  await phoneInput.fill('0901234571');
+  await page.getByRole('button', { name: /Save details|Lưu thông tin/i }).click();
+  await expect(page.getByText(/Details saved|Đã lưu thông tin/i).first()).toBeVisible();
+
+  // Direct navigation to accounts management is 403 Forbidden with request-only button
+  await page.goto('/accounts');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: /Request the permission|Request permission|Xin cấp quyền|Yêu cầu cấp quyền/i }).first()
+  ).toBeVisible();
+
+  // Direct navigation to permission matrix is 403 Forbidden
+  await page.goto('/accounts/seed-owner/permissions');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+});
