@@ -143,4 +143,42 @@ test.describe('P0 Medical & Training Lock Workflow (Flow 3)', () => {
     await expect(page).toHaveURL(/\/medical\/records\/new/);
     await expect(reasonInput).toHaveValue('Routine checkup after morning gallop session');
   });
+
+  // TASK-005: Ranh giới quyền tác vụ y tế (chỉ Bác sĩ thú y được lập/sửa bệnh án, non-Vet bị chặn 403)
+  const nonVetUsers = [
+    { email: 'nam.tran@gmail.com', pass: 'equiflow123' },
+    { email: 'viet.do@gmail.com', pass: 'equiflow123' },
+    { email: 'ha.ly@gmail.com', pass: 'equiflow123' },
+    { email: 'groom@gmail.com', pass: 'EquiFlow@2026' },
+  ];
+
+  for (const user of nonVetUsers) {
+    test(`${user.email} (non-Vet) cannot access medical record creation or edit form (client 403)`, async ({ page }) => {
+      await signIn(page, user.email, user.pass);
+      await page.goto('/medical/records/new');
+      await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+      await expect(page.getByText(/Medical Record Authoring/i).first()).toBeVisible();
+
+      await page.goto('/medical/records/rec-sample/edit');
+      await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+    });
+
+  }
+
+  for (const email of ['nam.tran@gmail.com', 'viet.do@gmail.com']) {
+    test(`${email} (non-Vet) sees medical records list but cannot see Create Medical Record button`, async ({ page }) => {
+      await signIn(page, email, 'equiflow123');
+      await page.goto('/records');
+      await expect(page.getByRole('heading', { name: /Electronic Medical Records|Medical Records/i })).toBeVisible();
+      await expect(page.getByRole('button', { name: /Create Medical Record/i })).toHaveCount(0);
+    });
+  }
+
+  test('veterinarian can access medical record creation form', async ({ page }) => {
+    await signIn(page, 'chau.le@gmail.com');
+    await page.goto('/medical/records/new');
+    await expect(page.getByRole('heading', { name: /New Electronic Medical Record/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Save.*Draft/i })).toBeVisible();
+  });
 });
+

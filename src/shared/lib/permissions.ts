@@ -540,6 +540,22 @@ export function screenAccess(role: Role, permissions: PermissionMap, pathname: s
     return { allowed, group: "MASTER DATA", label: "Horse Profile", ownerRoles: ["CLUB_MANAGER"], inOwnRole: role === "CLUB_MANAGER" };
   }
 
+  // Tạo hoặc chỉnh sửa bệnh án: chỉ duy nhất Bác sĩ thú y (VETERINARIAN) có thẩm quyền
+  const isMedicalRecordAuthoring =
+    pathname === "/medical/records/new" ||
+    /^\/medical\/records\/[^/]+\/edit$/.test(pathname);
+
+  if (isMedicalRecordAuthoring) {
+    const allowed = role === "VETERINARIAN";
+    return {
+      allowed,
+      group: "MEDICAL",
+      label: "Medical Record Authoring",
+      ownerRoles: ["VETERINARIAN"],
+      inOwnRole: role === "VETERINARIAN",
+    };
+  }
+
   // Quyền truy cập hồ sơ bệnh án qua chiến mã (FR-3.01 / Flow 1 / Flow 3):
   // Cho phép Vet, Club Manager, Head Trainer, Horse Owner (ngựa của họ) truy cập hồ sơ bệnh án và chấn thương.
   if (
