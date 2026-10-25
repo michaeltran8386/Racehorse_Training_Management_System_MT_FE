@@ -506,12 +506,23 @@ export function screenAccess(role: Role, permissions: PermissionMap, pathname: s
   if (pathname === "/my-training" || pathname === "/my/training") {
     return { allowed: role === "GROOM", group: "WORKSPACE", label: "My Training", ownerRoles: ["GROOM"], inOwnRole: role === "GROOM" };
   }
+  const isPlanAuthoring =
+    pathname === "/plans/new" ||
+    pathname === "/training/plans/new" ||
+    /^\/training\/plans\/[^/]+\/edit$/.test(pathname);
+
+  if (isPlanAuthoring) {
+    const allowed = role === "HEAD_TRAINER" && !!permissions.createPlan;
+    return {
+      allowed,
+      group: "TRAINING",
+      label: "Plan Authoring",
+      ownerRoles: ["HEAD_TRAINER"],
+      inOwnRole: role === "HEAD_TRAINER",
+    };
+  }
   if (pathname.startsWith("/training/")) {
     const seg2 = pathname.split("/")[2];
-    if (seg2 === "plans" && pathname.includes("/new")) {
-      const allowed = role === "HEAD_TRAINER" || (role === "CLUB_MANAGER" && !!permissions.createPlan);
-      return { allowed, group: "TRAINING", label: "New Plan", ownerRoles: ["HEAD_TRAINER", "CLUB_MANAGER"], inOwnRole: allowed };
-    }
     if (seg2 === "monitor") {
       return { allowed: role === "HEAD_TRAINER", group: "TRAINING", label: "Live Monitor", ownerRoles: ["HEAD_TRAINER"], inOwnRole: role === "HEAD_TRAINER" };
     }

@@ -2289,7 +2289,7 @@ const routes: Route[] = [
             ? {
                 id: horse.id,
                 name: horse.name,
-                microchipRfid: horse.microchipRfid || horse.rfid || horse.code,
+                microchipRfid: horse.microchipRfid || horse.code,
                 status: horse.statusText || "ACTIVE",
                 stallAllocations: [{ stall: { code: horse.stall, zone: horse.zone } }],
               }
@@ -2596,7 +2596,6 @@ const routes: Route[] = [
           horseCode: h.horseCode || (h.id.startsWith("horse-") ? `HR-${h.id.slice(-6)}` : `HR-000001`),
           name: h.name,
           microchip,
-          rfid: h.rfid || null,
           microchipRfid,
           breed: h.breed || "Thoroughbred",
           dob: h.dob || "2021-04-12",
@@ -2640,7 +2639,6 @@ const routes: Route[] = [
             h.name.toLowerCase().includes(search) ||
             (h.horseCode && h.horseCode.toLowerCase().includes(search)) ||
             (h.microchip && h.microchip.toLowerCase().includes(search)) ||
-            (h.rfid && h.rfid.toLowerCase().includes(search)) ||
             h.breed.toLowerCase().includes(search),
         );
       }
@@ -2730,7 +2728,6 @@ const routes: Route[] = [
         horseCode: h.horseCode || (h.id.startsWith("horse-") ? `HR-${h.id.slice(-6)}` : `HR-000001`),
         name: h.name,
         microchip,
-        rfid: h.rfid || null,
         microchipRfid,
         breed: h.breed || "Thoroughbred",
         dob: h.dob || "2021-04-12",
@@ -2926,7 +2923,6 @@ const routes: Route[] = [
 
       const name = String(body.name || "").trim();
       const microchip = String(body.microchip || "").trim();
-      const rfid = body.rfid ? String(body.rfid).trim().toUpperCase() : undefined;
 
       if (!name) throw new ApiError(400, "VALIDATION", "Horse name is required.");
       if (!microchip || !/^\d{15}$/.test(microchip)) {
@@ -2940,9 +2936,6 @@ const routes: Route[] = [
       if (stored.some((h) => (h as any).microchip === microchip || h.code === microchip)) {
         throw new ApiError(409, "DUPLICATE_MICROCHIP", "Microchip number is already registered to another horse.");
       }
-      if (rfid && stored.some((h) => (h as any).rfid === rfid)) {
-        throw new ApiError(409, "DUPLICATE_RFID", "RFID code is already registered to another horse.");
-      }
 
       const id = `horse-${Date.now()}`;
       const horseCode = `HR-${String(stored.length + 1).padStart(6, "0")}`;
@@ -2952,7 +2945,6 @@ const routes: Route[] = [
         name,
         code: microchip,
         microchip,
-        rfid: rfid || null,
         stall: body.stallCode || "STALL-A01",
         healthGroup: "FIT",
         status: "RESTING",
@@ -3004,13 +2996,6 @@ const routes: Route[] = [
         }
         (existing as any).microchip = chip;
         existing.code = chip;
-      }
-      if (body.rfid) {
-        const rfid = String(body.rfid).trim().toUpperCase();
-        if (stored.some((h) => h.id !== params[0] && (h as any).rfid === rfid)) {
-          throw new ApiError(409, "DUPLICATE_RFID", "RFID code is already registered to another horse.");
-        }
-        (existing as any).rfid = rfid;
       }
       if (body.breed) existing.breed = String(body.breed);
       if (body.dob) existing.dob = String(body.dob);

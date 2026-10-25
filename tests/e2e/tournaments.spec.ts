@@ -113,20 +113,16 @@ test.describe('Tournament lifecycle and controls (TASK-003)', () => {
     await expect(regModal).toBeVisible();
     await expect(regModal.getByText(/Register Horse for Tournament|Eligible Horses/i).first()).toBeVisible();
 
-    // Select first eligible horse if not already selected and confirm registration
+    // Select first eligible horse and confirm registration (must fail explicitly if unavailable)
     const radio = regModal.locator('input[type="radio"]:not([disabled])').first();
-    if (await radio.count() > 0) {
-      await radio.check();
-      const notesInput = regModal.locator('textarea');
-      if (await notesInput.count() > 0) {
-        await notesInput.fill('E2E registration test note');
-      }
-      await regModal.getByRole('button', { name: /Confirm Registration|Đăng ký ngay/i }).click();
-      await expect(regModal).toBeHidden();
-    } else {
-      await regModal.getByRole('button', { name: /Cancel|Hủy|Đóng|Close/i }).first().click();
-      await expect(regModal).toBeHidden();
+    await expect(radio, 'Expected at least one eligible horse available for tournament registration').toBeVisible();
+    await radio.check();
+    const notesInput = regModal.locator('textarea');
+    if (await notesInput.count() > 0) {
+      await notesInput.fill('E2E registration test note');
     }
+    await regModal.getByRole('button', { name: /Confirm Registration|Đăng ký ngay/i }).click();
+    await expect(regModal).toBeHidden();
 
     // 3. Test Scratch flow: Reopen modal on Grand Autumn Cup 2026 to scratch a registered horse with reason
     const activeCard = page.locator('section').filter({ hasText: 'Grand Autumn Cup 2026' }).first();

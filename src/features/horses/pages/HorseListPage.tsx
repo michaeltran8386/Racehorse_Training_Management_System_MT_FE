@@ -370,7 +370,7 @@ export default function HorseListPage() {
                 <Input
                   icon="search"
                   aria-label={tr("Search horses")}
-                  placeholder={tr("Name, HR code, microchip or RFID")}
+                  placeholder={tr("Name, HR code or microchip")}
                   value={searchInput}
                   onChange={(e) => handleSearchChange(e.target.value)}
                 />

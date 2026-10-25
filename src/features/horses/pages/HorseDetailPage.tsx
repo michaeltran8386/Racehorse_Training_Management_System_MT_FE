@@ -347,30 +347,6 @@ export default function HorseDetailPage() {
                   </button>
                 )}
               </div>
-
-              {horse.rfid && (
-                <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "var(--fs-body)" }}>
-                  <span style={{ color: "var(--ink-muted)", fontSize: "var(--fs-caption)", fontWeight: 700 }}>{tr("RFID:")}</span>
-                  <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, background: "var(--surface-subtle)", padding: "1px 6px", borderRadius: 4 }}>
-                    {horse.rfid}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(horse.rfid!, "RFID")}
-                    title={tr("Copy RFID")}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: "var(--ink-muted)",
-                      cursor: "pointer",
-                      padding: 2,
-                      display: "inline-flex",
-                    }}
-                  >
-                    <Icon name="clipboard" size={12} />
-                  </button>
-                </div>
-              )}
             </div>
           </div>
 
@@ -441,30 +417,6 @@ export default function HorseDetailPage() {
                     type="button"
                     onClick={() => copyToClipboard(horse.microchip!, "Microchip")}
                     title={tr("Copy Microchip")}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: "var(--ink-muted)",
-                      cursor: "pointer",
-                      padding: 2,
-                      display: "inline-flex",
-                    }}
-                  >
-                    <Icon name="clipboard" size={13} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <div style={{ color: "var(--ink-muted)", marginBottom: 4 }}>{tr("RFID Tag Code")}</div>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                <span style={{ fontWeight: 600, fontVariantNumeric: "tabular-nums" }}>{horse.rfid || "—"}</span>
-                {horse.rfid && (
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(horse.rfid!, "RFID")}
-                    title={tr("Copy RFID")}
                     style={{
                       background: "transparent",
                       border: "none",

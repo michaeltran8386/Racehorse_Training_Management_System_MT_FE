@@ -164,11 +164,11 @@ export function RaceRegistrationModal({
       width={720}
       onClose={onClose}
       foot={
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: "0.5rem" }}>
           <span style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>
             {tr("Deadline:")} {new Date(currentTournament.registrationDeadline).toLocaleDateString()}
           </span>
-          <div style={{ display: "flex", gap: "0.75rem" }}>
+          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
             {isClosed ? (
               <Button tone="primary" onClick={onClose}>
                 {tr("Close")}
@@ -236,7 +236,7 @@ export function RaceRegistrationModal({
               </Badge>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "220px", overflowY: "auto", paddingRight: "0.25rem" }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
               {registrations.map((reg) => {
                 const isScratched = reg.status === "SCRATCHED_MEDICAL";
                 const isScratchingThis = scratchingRegId === reg.id;
@@ -366,7 +366,7 @@ export function RaceRegistrationModal({
                   {tr("No horses currently meet the safe ACWR and medical requirements for this distance.")}
                 </p>
               ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "220px", overflowY: "auto", paddingRight: "0.25rem" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {data.eligible.map((h) => {
                     const isSelected = selectedHorseId === h.id;
                     return (
@@ -458,7 +458,7 @@ export function RaceRegistrationModal({
                   <Badge tone="neutral">{tr("Rule Enforced")}</Badge>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", maxHeight: "180px", overflowY: "auto" }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {data.ineligible.map((h) => (
                     <div
                       key={h.id}

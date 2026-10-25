@@ -166,3 +166,153 @@ test('TASK-002: Club Manager has complete horse master authority for creation, e
   await expect(page.getByRole('menuitem', { name: /Edit profile|Chỉnh sửa/i })).toBeVisible();
 });
 
+test('TASK-004: Head Trainer can plan, schedule, run trials, and view published race results', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('trainer@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  // 1. Training Plans
+  await page.goto('/training/plans');
+  await expect(page).toHaveURL('/training/plans');
+  await expect(page.getByRole('heading', { name: /Training Plans|Giáo án huấn luyện/i })).toBeVisible();
+  await expect(page.getByRole('button', { name: /\+ Create New Plan|\+ Tạo giáo án/i })).toBeVisible();
+
+  // 2. Training Calendar & Scheduling
+  await page.goto('/training/calendar');
+  await expect(page).toHaveURL('/training/calendar');
+  await expect(page.getByRole('button', { name: /\+ Schedule Workout|\+ Thêm buổi tập/i })).toBeVisible();
+
+  // 3. Trial Runs
+  await page.goto('/training/trials');
+  await expect(page).toHaveURL('/training/trials');
+  await expect(page.getByRole('heading', { name: /Trial Runs|Lượt chạy thử/i })).toBeVisible();
+
+  // 4. Racing & Tournaments (HT can view and register)
+  await page.goto('/racing');
+  await expect(page).toHaveURL('/racing');
+  await expect(page.getByRole('heading', { name: /Tournaments & Entries|Giải đấu/i })).toBeVisible();
+
+  // 5. Published Race Results (Read-only)
+  await page.goto('/races/results');
+  await expect(page).toHaveURL('/races/results');
+  await expect(page.getByRole('heading', { name: /Race Results|Kết quả giải đấu/i })).toBeVisible();
+});
+
+test('TASK-004: Head Trainer cannot mutate tournament definitions, change status, or record/lock results', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('trainer@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/racing');
+  await expect(page).toHaveURL('/racing');
+
+  // Head Trainer cannot create tournament
+  await expect(page.getByRole('button', { name: /\+ Create Tournament|\+ Tạo giải/i })).toHaveCount(0);
+
+  // Head Trainer cannot edit, cancel, close, or delete tournaments
+  await expect(page.getByRole('button', { name: /^Edit$|^Chỉnh sửa$/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Hủy giải đua|Cancel Event/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Đóng đăng ký|Close Registration/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Mở đăng ký|Open Registration/i })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Xóa/i })).toHaveCount(0);
+
+  // Head Trainer cannot record results
+  await expect(page.getByRole('button', { name: /Ghi kết quả|Record Results/i })).toHaveCount(0);
+
+  // Head Trainer sees registration actions
+  const registerBtn = page.getByRole('button', { name: /Đăng ký ngựa|Register Horse/i });
+  await expect(registerBtn.first()).toBeVisible();
+});
+
+test('TASK-004: Head Trainer is forbidden from accounts management, staff directory, and permission matrix', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('trainer@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  // Direct navigation to /accounts is 403 Forbidden
+  await page.goto('/accounts');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+
+  // Direct navigation to /staff is 403 Forbidden
+  await page.goto('/staff');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+
+  // Direct navigation to permission matrix is 403 Forbidden
+  await page.goto('/accounts/seed-trainer/permissions');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+});
+
+test('TASK-004: Head Trainer cannot access horse profile creation, edit, or deleted list', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('trainer@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  // /horses/new -> 403
+  await page.goto('/horses/new');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+
+  // /horses/deleted -> 403
+  await page.goto('/horses/deleted');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+
+  // /horses/:id/edit -> 403
+  await page.goto('/horses/h-1/edit');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+});
+
+test('TASK-004: Head Trainer can access plan authoring routes (/plans/new and /training/plans/:id/edit)', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('trainer@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/plans/new');
+  await expect(page).toHaveURL('/plans/new');
+  await expect(page.getByText('403', { exact: false })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Create Training Plan|Tạo giáo án/i })).toBeVisible();
+
+  await page.goto('/training/plans/plan-1/edit');
+  await expect(page).toHaveURL('/training/plans/plan-1/edit');
+  await expect(page.getByText('403', { exact: false })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Edit|Chỉnh sửa/i })).toBeVisible();
+});
+
+test('TASK-004: Unauthorized actor receives client-side 403 page on plan authoring routes', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('groom@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  await page.goto('/plans/new');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+
+  await page.goto('/training/plans/plan-1/edit');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+});
+
+test('TASK-004: Club Manager receives client-side 403 page on both plan authoring routes', async ({ page }) => {
+  await page.goto('/login');
+  await page.locator('input[type=email]').fill('manager@gmail.com');
+  await page.locator('input[type=password]').fill('EquiFlow@2026');
+  await page.locator('button[type=submit]').click();
+  await expect(page).toHaveURL('/dashboard');
+
+  // Club Manager is blocked from /plans/new
+  await page.goto('/plans/new');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+
+  // Club Manager is blocked from /training/plans/:id/edit
+  await page.goto('/training/plans/plan-1/edit');
+  await expect(page.getByText('403', { exact: false }).first()).toBeVisible();
+});
+

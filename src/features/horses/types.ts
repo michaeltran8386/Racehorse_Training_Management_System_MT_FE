@@ -15,7 +15,6 @@ export interface Horse {
   horseCode?: string;
   name: string;
   microchip?: string;
-  rfid?: string;
   microchipRfid: string;
   breed: string;
   dob: string;
@@ -79,7 +78,6 @@ export interface CreateHorsePayload {
   color: string;
   weightKg?: number | null;
   microchip: string;
-  rfid?: string;
   ownerId?: string;
   avatarUrl?: string;
   stallId?: string;
@@ -93,7 +91,6 @@ export interface UpdateHorsePayload {
   color?: string;
   weightKg?: number | null;
   microchip?: string;
-  rfid?: string;
   ownerId?: string;
   avatarUrl?: string;
 }
