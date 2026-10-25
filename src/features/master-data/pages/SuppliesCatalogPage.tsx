@@ -267,7 +267,7 @@ export default function SuppliesCatalogPage() {
       />
 
       {/* Dialog Thêm/Sửa */}
-      {editingItem !== undefined && (
+      {isManager && editingItem !== undefined && (
         <SupplyModal
           item={editingItem ?? undefined}
           onClose={() => setEditingItem(undefined)}
@@ -279,7 +279,7 @@ export default function SuppliesCatalogPage() {
       )}
 
       {/* Modal xác nhận Đổi trạng thái */}
-      {statusToggleItem && (
+      {isManager && statusToggleItem && (
         <ConfirmModal
           title={
             statusToggleItem.isActive
