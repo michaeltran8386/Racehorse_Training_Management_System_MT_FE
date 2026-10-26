@@ -45,7 +45,7 @@ Facts below are verified against the code. If code and this section disagree, tr
 | Repo | Contains | Never contains |
 |---|---|---|
 | `MichaelTran1226/Racehorse_Training_Management_System_MT_BE` | NestJS API, Prisma schema/seed, API tests, issues of both repos | `.tsx/.jsx`, `vite.config`, `index.html`, UI styling |
-| `MichaelTran1226/Racehorse_Training_Management_System_MT_FE` | React UI, mock API, Playwright tests | `prisma/`, migrations, `*.sqlite`, `*.controller.ts` |
+| `MichaelTran1226/Racehorse_Training_Management_System_MT_FE` | React UI, Playwright tests | `prisma/`, migrations, `*.sqlite`, `*.controller.ts` |
 
 Tasks and specs: issues live in the **BE repo**, tracked on [Project 2](https://github.com/users/MichaelTran1226/projects/2). Team = 2 pairs (1 FE + 1 BE each); scope and cross-pair API hand-offs are in `tasks/plan.md`.
 
@@ -64,7 +64,7 @@ Tasks and specs: issues live in the **BE repo**, tracked on [Project 2](https://
 
 ### FE conventions (`src/`)
 - `features/<feature>/{pages,components,api.ts,types.ts}`; routes only in `app/router.tsx`, role gating in `app/RoleGuard.tsx` + `shared/lib/permissions.ts`.
-- All HTTP goes through `shared/lib/api.ts` (adds `Authorization: Bearer`). `VITE_USE_MOCK=true` routes calls to `shared/mock/handlers.ts` (browser data, OTP `123456`), so every new API needs a matching mock handler.
+- All HTTP goes through `shared/lib/api.ts` (adds `Authorization: Bearer`) directly to the NestJS Backend (`VITE_API_URL`, default `http://localhost:3000/api`). Per approved CR-010 and CR-012, the application runtime operates strictly in real-only mode; mock mode and mock fallback are prohibited. Network and server errors must surface visibly as `ApiError`.
 
 ### Database protocol
 - `prisma/schema.prisma` is the **only** source of the DB structure. Never change tables by hand in pgAdmin.

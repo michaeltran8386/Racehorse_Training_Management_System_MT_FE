@@ -1,6 +1,5 @@
 // CỔNG DUY NHẤT gọi backend. Trang và component KHÔNG gọi fetch trực tiếp.
-//  - VITE_USE_MOCK=true         => chuyển sang src/shared/mock/ (dữ liệu giả)
-//  - ngược lại                  => fetch tới VITE_API_URL, gửi kèm "Authorization: Bearer <access token>"
+//  - fetch tới VITE_API_URL, gửi kèm "Authorization: Bearer <access token>"
 //  - backend bọc kết quả trong { success, data } => trả về phần data
 //  - 401 (UNAUTHENTICATED)      => thử làm mới token một lần; vẫn lỗi thì mở modal Session Expired
 //  - 403 (FORBIDDEN)            => chuyển tới trang 403
@@ -24,9 +23,7 @@ export class ApiError extends Error {
   }
 }
 
-// true = dữ liệu giả trong trình duyệt (không có backend).
-export const USE_MOCK = import.meta.env.VITE_USE_MOCK === "true";
-const API_URL = import.meta.env.VITE_API_URL ?? "";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 interface ApiHandlers {
   onUnauthorized?: () => void;
@@ -49,12 +46,6 @@ interface ApiOptions {
 
 export async function api<T>(method: HttpMethod, path: string, body?: unknown, options: ApiOptions = {}): Promise<T> {
   try {
-    if (USE_MOCK) {
-      // import() động: mã mock chỉ được nạp khi thật sự chạy chế độ mock.
-      const { handleMock } = await import("@/shared/mock/handlers");
-      return (await handleMock(method, path, body)) as T;
-    }
-
     try {
       return await request<T>(method, path, body, options.timeoutMs);
     } catch (err) {

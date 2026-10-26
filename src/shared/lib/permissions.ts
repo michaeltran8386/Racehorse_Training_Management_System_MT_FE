@@ -49,6 +49,7 @@ export const PERMISSIONS: PermissionMeta[] = [
   },
   {
     key: "editHorses", group: "HORSE PROFILES", name: "Create and edit a Horse Profile", note: "Name, breed, foaling date, stall",
+    ownerRoles: ["CLUB_MANAGER"], ownerReason: "Only the Club Manager can create or edit a Horse Profile.",
     revokeEffect: "Horse Profiles stay visible but can no longer be created or edited by this account.",
   },
   {
@@ -121,12 +122,12 @@ export function permissionLock(role: Role, meta: PermissionMeta): PermissionLock
 }
 
 const DEFAULT_ON: Record<Role, PermissionKey[]> = {
-  HEAD_TRAINER: ["viewHorses", "editHorses", "createPlan", "assignSchedule", "recordMetrics", "viewMedical"],
+  HEAD_TRAINER: ["viewHorses", "createPlan", "assignSchedule", "recordMetrics", "viewMedical"],
   VETERINARIAN: ["viewHorses", "viewMedical", "placeLock", "liftLock", "ackAlerts"],
   // Cấp quyền xem hồ sơ y tế (viewMedical) cho GROOM và HORSE_OWNER (phạm vi theo ngựa được giao chăm sóc hoặc sở hữu)
   GROOM: ["viewHorses", "viewMedical"],
   HORSE_OWNER: ["viewHorses", "viewMedical"],
-  CLUB_MANAGER: ["viewHorses", "editHorses", "deleteHorses", "viewMedical", "manageAccounts", "viewAudit", "ackAlerts"],
+  CLUB_MANAGER: ["viewHorses", "editHorses", "deleteHorses", "viewMedical", "manageAccounts", "viewAudit"],
 };
 
 export function defaultPermissions(role: Role): PermissionMap {
@@ -505,12 +506,23 @@ export function screenAccess(role: Role, permissions: PermissionMap, pathname: s
   if (pathname === "/my-training" || pathname === "/my/training") {
     return { allowed: role === "GROOM", group: "WORKSPACE", label: "My Training", ownerRoles: ["GROOM"], inOwnRole: role === "GROOM" };
   }
+  const isPlanAuthoring =
+    pathname === "/plans/new" ||
+    pathname === "/training/plans/new" ||
+    /^\/training\/plans\/[^/]+\/edit$/.test(pathname);
+
+  if (isPlanAuthoring) {
+    const allowed = role === "HEAD_TRAINER" && !!permissions.createPlan;
+    return {
+      allowed,
+      group: "TRAINING",
+      label: "Plan Authoring",
+      ownerRoles: ["HEAD_TRAINER"],
+      inOwnRole: role === "HEAD_TRAINER",
+    };
+  }
   if (pathname.startsWith("/training/")) {
     const seg2 = pathname.split("/")[2];
-    if (seg2 === "plans" && pathname.includes("/new")) {
-      const allowed = role === "HEAD_TRAINER" || (role === "CLUB_MANAGER" && !!permissions.createPlan);
-      return { allowed, group: "TRAINING", label: "New Plan", ownerRoles: ["HEAD_TRAINER", "CLUB_MANAGER"], inOwnRole: allowed };
-    }
     if (seg2 === "monitor") {
       return { allowed: role === "HEAD_TRAINER", group: "TRAINING", label: "Live Monitor", ownerRoles: ["HEAD_TRAINER"], inOwnRole: role === "HEAD_TRAINER" };
     }
@@ -520,6 +532,28 @@ export function screenAccess(role: Role, permissions: PermissionMap, pathname: s
   // SC-1.05 Hồ sơ ngựa đã xóa: chỉ CM (BE cũng chặn bằng @Roles).
   if (pathname === "/horses/deleted") {
     return { allowed: role === "CLUB_MANAGER", group: "WORKSPACE", label: "Deleted horses", ownerRoles: ["CLUB_MANAGER"], inOwnRole: role === "CLUB_MANAGER" };
+  }
+
+  // Tạo hoặc chỉnh sửa hồ sơ gốc ngựa: chỉ duy nhất Club Manager có quyền editHorses
+  if (pathname === "/horses/new" || (pathname.startsWith("/horses/") && pathname.endsWith("/edit"))) {
+    const allowed = role === "CLUB_MANAGER" && !!permissions.editHorses;
+    return { allowed, group: "MASTER DATA", label: "Horse Profile", ownerRoles: ["CLUB_MANAGER"], inOwnRole: role === "CLUB_MANAGER" };
+  }
+
+  // Tạo hoặc chỉnh sửa bệnh án: chỉ duy nhất Bác sĩ thú y (VETERINARIAN) có thẩm quyền
+  const isMedicalRecordAuthoring =
+    pathname === "/medical/records/new" ||
+    /^\/medical\/records\/[^/]+\/edit$/.test(pathname);
+
+  if (isMedicalRecordAuthoring) {
+    const allowed = role === "VETERINARIAN";
+    return {
+      allowed,
+      group: "MEDICAL",
+      label: "Medical Record Authoring",
+      ownerRoles: ["VETERINARIAN"],
+      inOwnRole: role === "VETERINARIAN",
+    };
   }
 
   // Quyền truy cập hồ sơ bệnh án qua chiến mã (FR-3.01 / Flow 1 / Flow 3):

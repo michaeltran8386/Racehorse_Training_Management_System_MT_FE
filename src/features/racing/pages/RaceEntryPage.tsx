@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Card } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
@@ -66,27 +66,37 @@ export default function RaceEntryPage() {
   // In-app Confirmation Modals (Replacing browser window.confirm alerts)
   const [deleteTarget, setDeleteTarget] = useState<Tournament | null>(null);
   const [cancelTarget, setCancelTarget] = useState<Tournament | null>(null);
-  const [reopenTarget, setReopenTarget] = useState<Tournament | null>(null);
+  const [closeTarget, setCloseTarget] = useState<Tournament | null>(null);
+  const [openRegTarget, setOpenRegTarget] = useState<Tournament | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await fetchTournaments({
-        status: statusFilter,
-        search: searchTerm,
-      });
-      setTournaments(res.items);
-    } catch (err) {
-      console.error("Failed to load tournaments", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, searchTerm]);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const reload = useCallback(() => setRefreshKey((k) => k + 1), []);
+  const loadData = reload;
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    let active = true;
+    setLoading(true);
+    fetchTournaments({
+      status: statusFilter,
+      search: searchTerm,
+    })
+      .then((res) => {
+        if (active) {
+          setTournaments(res.items);
+          setLoading(false);
+        }
+      })
+      .catch((err) => {
+        if (active) {
+          console.error("Failed to load tournaments", err);
+          setLoading(false);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [statusFilter, searchTerm, refreshKey]);
 
   // KPIs
   const totalTournaments = tournaments.length;
@@ -103,7 +113,7 @@ export default function RaceEntryPage() {
     } else {
       await createTournament(data);
     }
-    loadData();
+    await loadData();
   }
 
   async function handleConfirmDelete() {
@@ -111,8 +121,9 @@ export default function RaceEntryPage() {
     setActionBusy(true);
     try {
       await deleteTournament(deleteTarget.id);
+      const targetId = deleteTarget.id;
       setDeleteTarget(null);
-      loadData();
+      setTournaments((prev) => prev.filter((t) => t.id !== targetId));
     } catch (err) {
       console.error("Failed to delete tournament", err);
     } finally {
@@ -125,8 +136,13 @@ export default function RaceEntryPage() {
     setActionBusy(true);
     try {
       await changeTournamentStatus(cancelTarget.id, "CANCELLED");
+      const targetId = cancelTarget.id;
       setCancelTarget(null);
-      loadData();
+      setTournaments((prev) =>
+        prev
+          .map((t) => (t.id === targetId ? { ...t, status: "CANCELLED" as const } : t))
+          .filter((t) => statusFilter === "ALL" || t.status === statusFilter),
+      );
     } catch (err) {
       console.error("Failed to cancel tournament", err);
     } finally {
@@ -134,15 +150,39 @@ export default function RaceEntryPage() {
     }
   }
 
-  async function handleConfirmReopen() {
-    if (!reopenTarget) return;
+  async function handleConfirmClose() {
+    if (!closeTarget) return;
     setActionBusy(true);
     try {
-      await changeTournamentStatus(reopenTarget.id, "OPEN_REGISTRATION");
-      setReopenTarget(null);
-      loadData();
+      await changeTournamentStatus(closeTarget.id, "CLOSED_REGISTRATION");
+      const targetId = closeTarget.id;
+      setCloseTarget(null);
+      setTournaments((prev) =>
+        prev
+          .map((t) => (t.id === targetId ? { ...t, status: "CLOSED_REGISTRATION" as const } : t))
+          .filter((t) => statusFilter === "ALL" || t.status === statusFilter),
+      );
     } catch (err) {
-      console.error("Failed to reopen tournament", err);
+      console.error("Failed to close tournament registration", err);
+    } finally {
+      setActionBusy(false);
+    }
+  }
+
+  async function handleConfirmOpenReg() {
+    if (!openRegTarget) return;
+    setActionBusy(true);
+    try {
+      await changeTournamentStatus(openRegTarget.id, "OPEN_REGISTRATION");
+      const targetId = openRegTarget.id;
+      setOpenRegTarget(null);
+      setTournaments((prev) =>
+        prev
+          .map((t) => (t.id === targetId ? { ...t, status: "OPEN_REGISTRATION" as const } : t))
+          .filter((t) => statusFilter === "ALL" || t.status === statusFilter),
+      );
+    } catch (err) {
+      console.error("Failed to open tournament registration", err);
     } finally {
       setActionBusy(false);
     }
@@ -232,8 +272,8 @@ export default function RaceEntryPage() {
           <div>
             <strong style={{ color: "var(--danger, #ef4444)" }}>• {isVietnamese() ? "Đã hủy (Cancelled):" : "Cancelled:"}</strong>{" "}
             {isVietnamese()
-              ? "Giải tạm dừng tổ chức. Hồ sơ giải đấu và danh sách ngựa đăng ký được bảo lưu an toàn tại tab 'Đã hủy', có thể 'Mở lại giải' bất kỳ lúc nào."
-              : tr("Event cancelled. Safely archived under 'Cancelled' tab and can be reopened anytime.")}
+              ? "Giải bị hủy tổ chức. Hồ sơ giải đấu và danh sách ngựa đăng ký được lưu trữ an toàn tại tab 'Đã hủy' để phục vụ kiểm toán (trạng thái hủy là cuối cùng, không thể mở lại)."
+              : tr("Event cancelled. Safely archived under 'Cancelled' tab for audit history (cancellation is terminal and cannot be reopened).")}
           </div>
         </div>
       </div>
@@ -254,6 +294,7 @@ export default function RaceEntryPage() {
               { id: "ALL", label: tr("All Events") },
               { id: "OPEN_REGISTRATION", label: tr("Open for Registration") },
               { id: "UPCOMING", label: tr("Upcoming") },
+              { id: "CLOSED_REGISTRATION", label: isVietnamese() ? "Đã đóng đăng ký" : tr("Registration Closed") },
               { id: "COMPLETED", label: tr("Completed") },
               { id: "CANCELLED", label: tr("Cancelled") },
             ]}
@@ -313,6 +354,7 @@ export default function RaceEntryPage() {
             const isCompleted = tourney.status === "COMPLETED";
             const isOpenReg = tourney.status === "OPEN_REGISTRATION";
             const isUpcoming = tourney.status === "UPCOMING";
+            const isClosedReg = tourney.status === "CLOSED_REGISTRATION";
 
             return (
               <Card key={tourney.id} pad={20}>
@@ -336,6 +378,8 @@ export default function RaceEntryPage() {
                             ? "neutral"
                             : isUpcoming
                             ? "info"
+                            : tourney.status === "CLOSED_REGISTRATION"
+                            ? "warn"
                             : "danger"
                         }
                       >
@@ -438,8 +482,8 @@ export default function RaceEntryPage() {
                       flexWrap: "wrap",
                     }}
                   >
-                    <div style={{ display: "flex", gap: "0.5rem" }}>
-                      {canManage && (isOpenReg || isUpcoming) && (
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      {canManage && isOpenReg && (
                         <Button
                           tone="primary"
                           onClick={() => setRegisteringTournament(tourney)}
@@ -448,24 +492,57 @@ export default function RaceEntryPage() {
                         </Button>
                       )}
 
-                      {canManage && registeredCount > 0 && (
+                      {canManage && isClosedReg && registeredCount > 0 && (
                         <Button
-                          tone="quiet"
-                          onClick={() => setResultsTournament(tourney)}
+                          tone="secondary"
+                          onClick={() => setRegisteringTournament(tourney)}
                         >
-                          ⏱️ {isCompleted ? tr("View Results") : tr("Record Results")}
+                          🐎 {isVietnamese() ? "Quản lý danh sách / Rút ngựa" : tr("Manage Entries / Scratch")}
                         </Button>
                       )}
+
+                      {registeredCount > 0 &&
+                        (isCompleted ? (
+                          <Button
+                            tone="quiet"
+                            onClick={() => setResultsTournament(tourney)}
+                          >
+                            ⏱️ {tr("View Results")}
+                          </Button>
+                        ) : isClubManager && isClosedReg ? (
+                          <Button
+                            tone="quiet"
+                            onClick={() => setResultsTournament(tourney)}
+                          >
+                            ⏱️ {tr("Record Results")}
+                          </Button>
+                        ) : null)}
                     </div>
 
                     {isClubManager && (
                       <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
-                        {tourney.status !== "CANCELLED" && (
+                        {tourney.status !== "CANCELLED" && !isCompleted && (
                           <Button
                             tone="secondary"
                             onClick={() => setEditingTournament(tourney)}
                           >
                             {tr("Edit")}
+                          </Button>
+                        )}
+                        {tourney.status === "UPCOMING" && (
+                          <Button
+                            tone="primary"
+                            onClick={() => setOpenRegTarget(tourney)}
+                          >
+                            {isVietnamese() ? "Mở đăng ký" : tr("Open Registration")}
+                          </Button>
+                        )}
+                        {tourney.status === "OPEN_REGISTRATION" && (
+                          <Button
+                            tone="secondary"
+                            onClick={() => setCloseTarget(tourney)}
+                          >
+                            {isVietnamese() ? "Đóng đăng ký" : tr("Close Registration")}
                           </Button>
                         )}
                         {!isCompleted && tourney.status !== "CANCELLED" && (
@@ -476,20 +553,12 @@ export default function RaceEntryPage() {
                             {isVietnamese() ? "Hủy giải đua" : tr("Cancel Event")}
                           </Button>
                         )}
-                        {tourney.status === "CANCELLED" && (
-                          <Button
-                            tone="secondary"
-                            onClick={() => setReopenTarget(tourney)}
-                          >
-                            {isVietnamese() ? "Mở lại giải" : tr("Reopen Event")}
-                          </Button>
-                        )}
-                        {registeredCount === 0 && !isCompleted && (
+                        {registeredCount === 0 && (tourney.status === "UPCOMING" || tourney.status === "OPEN_REGISTRATION") && (
                           <Button
                             tone="danger"
                             onClick={() => setDeleteTarget(tourney)}
                           >
-                            {isVietnamese() ? "Xóa vĩnh viễn" : tr("Delete Permanently")}
+                            {isVietnamese() ? "Xóa giải chưa dùng" : tr("Delete Unused Event")}
                           </Button>
                         )}
                       </div>
@@ -540,22 +609,22 @@ export default function RaceEntryPage() {
         />
       )}
 
-      {/* Confirmation 1: Permanent Delete Modal (Exact Match to Image 1) */}
+      {/* Confirmation 1: Delete Unused Tournament Modal */}
       {deleteTarget && (
         <ConfirmModal
-          title={isVietnamese() ? "Xóa giải đua vĩnh viễn?" : tr("Delete tournament permanently?")}
+          title={isVietnamese() ? "Xóa giải đua chưa sử dụng?" : tr("Delete unused tournament?")}
           subtitle={
             isVietnamese()
-              ? `Bạn có chắc chắn muốn xóa giải đua "${deleteTarget.name}" khỏi hệ thống? Thao tác này không thể hoàn tác.`
-              : tr(`Are you sure you want to permanently delete tournament "${deleteTarget.name}"? This action cannot be undone.`)
+              ? `Bạn có chắc chắn muốn xóa bản ghi giải đua "${deleteTarget.name}"? Thao tác này chỉ áp dụng cho giải đấu mới tạo chưa phát sinh đăng ký hoặc lịch sử thi đấu.`
+              : tr(`Are you sure you want to delete unused tournament record "${deleteTarget.name}"? Only newly created tournaments without registrations or match history can be deleted.`)
           }
           callout={
             isVietnamese()
-              ? 'Nếu chỉ muốn ngừng tổ chức, hãy đổi trạng thái sang "Hủy giải" thay vì xóa.'
-              : tr('If you only want to cancel the event, change status to "Cancelled" instead of deleting.')
+              ? 'Đối với các giải đấu đang diễn ra hoặc đã có dữ liệu, hãy sử dụng "Đóng đăng ký" hoặc "Hủy giải" để lưu vết kiểm toán.'
+              : tr('For active tournaments or events with history, use "Close Registration" or "Cancel Event" to preserve audit history.')
           }
           tone="danger"
-          confirmLabel={isVietnamese() ? "Xóa vĩnh viễn" : tr("Delete permanently")}
+          confirmLabel={isVietnamese() ? "Xóa giải chưa dùng" : tr("Delete unused event")}
           cancelLabel={isVietnamese() ? "Giữ lại" : tr("Cancel")}
           busy={actionBusy}
           onConfirm={handleConfirmDelete}
@@ -563,7 +632,53 @@ export default function RaceEntryPage() {
         />
       )}
 
-      {/* Confirmation 2: Cancel Tournament Modal */}
+      {/* Confirmation 2: Close Registration Modal */}
+      {closeTarget && (
+        <ConfirmModal
+          title={isVietnamese() ? "Đóng cổng đăng ký thi đấu?" : tr("Close tournament registration?")}
+          subtitle={
+            isVietnamese()
+              ? `Chuyển trạng thái giải đua "${closeTarget.name}" sang "Đã đóng đăng ký" (CLOSED_REGISTRATION).`
+              : tr(`Change tournament "${closeTarget.name}" status to CLOSED_REGISTRATION.`)
+          }
+          callout={
+            isVietnamese()
+              ? "Cổng nộp hồ sơ sẽ đóng lại. Danh sách ngựa đã đăng ký được bảo lưu để chuẩn bị xuất phát."
+              : tr("Registration will be closed. Enrolled horses will be preserved to prepare for the race.")
+          }
+          tone="warn"
+          confirmLabel={isVietnamese() ? "Đóng đăng ký" : tr("Close registration")}
+          cancelLabel={isVietnamese() ? "Hủy" : tr("Cancel")}
+          busy={actionBusy}
+          onConfirm={handleConfirmClose}
+          onCancel={() => setCloseTarget(null)}
+        />
+      )}
+
+      {/* Confirmation 3: Open / Reopen Registration Modal */}
+      {openRegTarget && (
+        <ConfirmModal
+          title={isVietnamese() ? "Mở cổng đăng ký thi đấu?" : tr("Open tournament registration?")}
+          subtitle={
+            isVietnamese()
+              ? `Chuyển trạng thái giải đua "${openRegTarget.name}" sang "Đang mở đăng ký" (OPEN_REGISTRATION).`
+              : tr(`Change tournament "${openRegTarget.name}" status to OPEN_REGISTRATION.`)
+          }
+          callout={
+            isVietnamese()
+              ? "Cổng nộp hồ sơ sẽ bắt đầu tiếp nhận các lượt đăng ký chiến mã từ huấn luyện viên."
+              : tr("The tournament will begin accepting horse registrations from trainers.")
+          }
+          tone="info"
+          confirmLabel={isVietnamese() ? "Mở đăng ký" : tr("Open registration")}
+          cancelLabel={isVietnamese() ? "Hủy" : tr("Cancel")}
+          busy={actionBusy}
+          onConfirm={handleConfirmOpenReg}
+          onCancel={() => setOpenRegTarget(null)}
+        />
+      )}
+
+      {/* Confirmation 4: Cancel Tournament Modal */}
       {cancelTarget && (
         <ConfirmModal
           title={isVietnamese() ? "Hủy tổ chức giải đua?" : tr("Cancel Tournament?")}
@@ -574,8 +689,8 @@ export default function RaceEntryPage() {
           }
           callout={
             isVietnamese()
-              ? "Tất cả thông tin giải đấu và các lượt đăng ký hiện tại sẽ được bảo lưu hồ sơ và có thể mở lại bất cứ lúc nào."
-              : tr("All existing tournament entries will be safely preserved and the event can be reopened anytime.")
+              ? "Tất cả thông tin giải đấu và các lượt đăng ký hiện tại sẽ được bảo lưu hồ sơ để phục vụ kiểm toán (trạng thái hủy là cuối cùng, không thể mở lại)."
+              : tr("All existing tournament entries will be safely preserved for audit history (cancellation is terminal and cannot be reopened).")
           }
           tone="warn"
           confirmLabel={isVietnamese() ? "Hủy giải đua" : tr("Cancel tournament")}
@@ -586,28 +701,7 @@ export default function RaceEntryPage() {
         />
       )}
 
-      {/* Confirmation 3: Reopen Tournament Modal */}
-      {reopenTarget && (
-        <ConfirmModal
-          title={isVietnamese() ? "Mở lại tổ chức giải đua?" : tr("Reopen Tournament?")}
-          subtitle={
-            isVietnamese()
-              ? `Giải đua "${reopenTarget.name}" sẽ được chuyển lại trạng thái "Đang mở đăng ký" (OPEN_REGISTRATION).`
-              : tr(`Tournament "${reopenTarget.name}" will be reopened for active registrations.`)
-          }
-          callout={
-            isVietnamese()
-              ? "Giải đua sẽ tiếp tục tiếp nhận các lượt đăng ký ngựa thi đấu mới từ huấn luyện viên."
-              : tr("The tournament will resume accepting new horse entries.")
-          }
-          tone="warn"
-          confirmLabel={isVietnamese() ? "Mở lại giải" : tr("Reopen")}
-          cancelLabel={isVietnamese() ? "Đóng" : tr("Close")}
-          busy={actionBusy}
-          onConfirm={handleConfirmReopen}
-          onCancel={() => setReopenTarget(null)}
-        />
-      )}
+
     </div>
   );
 }

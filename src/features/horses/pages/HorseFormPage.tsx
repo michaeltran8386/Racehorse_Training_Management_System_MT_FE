@@ -40,13 +40,6 @@ function generateMicrochip15(): string {
   return `985${random12}`;
 }
 
-function generateRfidCode(): string {
-  const randStr = Math.random().toString(36).substring(2, 8).toUpperCase();
-  const numStr = Math.floor(1000 + Math.random() * 9000).toString();
-  return `RFID-${randStr}${numStr}`;
-}
-
-
 export default function HorseFormPage() {
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
@@ -59,7 +52,7 @@ export default function HorseFormPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [retiredError, setRetiredError] = useState(false);
 
-  // Form fields (tự sinh mã microchip và rfid nếu tạo mới)
+  // Form fields (tự sinh mã microchip nếu tạo mới)
   const [horseCode, setHorseCode] = useState("");
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
@@ -70,7 +63,6 @@ export default function HorseFormPage() {
   const [color, setColor] = useState("");
   const [weightKg, setWeightKg] = useState("");
   const [microchip, setMicrochip] = useState(() => (isEdit ? "" : generateMicrochip15()));
-  const [rfid, setRfid] = useState(() => (isEdit ? "" : generateRfidCode()));
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -100,7 +92,6 @@ export default function HorseFormPage() {
         setColor(horse.color || "");
         setWeightKg(horse.weightKg != null ? String(horse.weightKg) : "");
         setMicrochip(horse.microchip || horse.microchipRfid || "");
-        setRfid(horse.rfid || "");
       })
       .catch((err) => {
         if (!active) return;
@@ -191,10 +182,6 @@ export default function HorseFormPage() {
       errs.microchip = "Microchip number must consist of exactly 15 digits.";
     }
 
-    if (rfid.trim() && !/^[A-Z0-9-]{4,32}$/.test(rfid.trim().toUpperCase())) {
-      errs.rfid = "RFID tag must be 4-32 characters: letters, digits, or hyphens.";
-    }
-
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -204,9 +191,8 @@ export default function HorseFormPage() {
     setSubmitting(true);
     setGeneralError("");
 
-    // Chỉ tự sinh khi tạo mới. Khi sửa: gửi đúng giá trị đang có, RFID để trống = không đổi.
+    // Chỉ tự sinh khi tạo mới. Khi sửa: giữ nguyên số microchip.
     const finalMicrochip = isEdit ? microchip.trim() : microchip.trim() || generateMicrochip15();
-    const finalRfid = rfid.trim() ? rfid.trim().toUpperCase() : isEdit ? undefined : generateRfidCode();
 
     try {
       if (isEdit && id) {
@@ -218,7 +204,6 @@ export default function HorseFormPage() {
           color,
           weightKg: weightKg.trim() ? Number(weightKg) : undefined,
           microchip: finalMicrochip,
-          rfid: finalRfid,
         };
         const saved = await updateHorse(id, payload);
         toast.show(`Horse profile ${saved.name} updated successfully.`, "ok");
@@ -233,7 +218,6 @@ export default function HorseFormPage() {
           color,
           weightKg: weightKg.trim() ? Number(weightKg) : undefined,
           microchip: finalMicrochip,
-          rfid: finalRfid,
         };
         const saved = await createHorse(payload);
         toast.show(`Horse profile ${saved.name} created successfully.`, "ok");
@@ -243,7 +227,6 @@ export default function HorseFormPage() {
           setDob("");
           setWeightKg("");
           setMicrochip(generateMicrochip15());
-          setRfid(generateRfidCode());
           setErrors({});
           setIsDirty(false);
         } else {
@@ -257,8 +240,6 @@ export default function HorseFormPage() {
           setErrors((prev) => ({ ...prev, name: "Horse name already exists in the stable system." }));
         } else if (err.code === "DUPLICATE_MICROCHIP") {
           setErrors((prev) => ({ ...prev, microchip: "Microchip number is already registered to another horse." }));
-        } else if (err.code === "DUPLICATE_RFID") {
-          setErrors((prev) => ({ ...prev, rfid: "RFID tag code is already assigned to another horse." }));
         } else if (err.code === "INVALID_DOB") {
           setErrors((prev) => ({ ...prev, dob: err.message || "Invalid date of birth." }));
         } else {
@@ -408,40 +389,6 @@ export default function HorseFormPage() {
                       if (errors.microchip) setErrors((prev) => ({ ...prev, microchip: "" }));
                     }}
                     title={tr("Generate a new 15-digit number")}
-                  >
-                    {tr("Generate")}
-                  </Button>
-                )}
-              </div>
-            </Field>
-
-            <Field
-              label={tr("RFID Tag Code (optional)")}
-              error={errors.rfid}
-              hint={tr("4 to 32 letters, digits or hyphens")}
-            >
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <Input
-                  placeholder={tr("e.g. RFID-985141002341...")}
-                  value={rfid}
-                  invalid={Boolean(errors.rfid)}
-                  onChange={(e) => {
-                    const val = e.target.value.toUpperCase();
-                    setRfid(val);
-                    setIsDirty(true);
-                    if (errors.rfid) setErrors((prev) => ({ ...prev, rfid: "" }));
-                  }}
-                />
-                {!isEdit && (
-                  <Button
-                    type="button"
-                    tone="secondary"
-                    onClick={() => {
-                      setRfid(generateRfidCode());
-                      setIsDirty(true);
-                      if (errors.rfid) setErrors((prev) => ({ ...prev, rfid: "" }));
-                    }}
-                    title={tr("Generate a new RFID code")}
                   >
                     {tr("Generate")}
                   </Button>

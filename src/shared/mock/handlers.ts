@@ -69,6 +69,99 @@ import type { Tournament, TournamentRegistration } from "@/features/racing/types
 import { getStoredInvoices, saveStoredInvoices } from "@/shared/mock/financialData";
 import type { FinancialInvoice } from "@/features/financial/types";
 
+function getInitialTournaments(): Tournament[] {
+  const base: Tournament[] = JSON.parse(JSON.stringify(getStoredTournaments()));
+  return base.map((t) => {
+    if (t.id === "tourney-01") {
+      return {
+        ...t,
+        status: "OPEN_REGISTRATION" as const,
+        registrations: (t.registrations || []).map((r) => ({
+          ...r,
+          status: "REGISTERED" as const,
+        })),
+      };
+    }
+    if (t.id === "tourney-02") return { ...t, status: "COMPLETED" as const };
+    if (t.id === "tourney-03") return { ...t, status: "UPCOMING" as const };
+    if (t.id === "tourney-04") return { ...t, status: "CANCELLED" as const };
+    return { ...t };
+  });
+}
+
+function getTournamentsWithFixtures(): Tournament[] {
+  let list: Tournament[];
+  try {
+    const raw = typeof window !== "undefined" ? localStorage.getItem("equiflow_mock_tournaments") : null;
+    if (raw) {
+      list = JSON.parse(raw);
+    } else {
+      list = getInitialTournaments();
+    }
+  } catch {
+    list = getInitialTournaments();
+  }
+  if (!list.some((t) => t.id === "tourney-closed-01")) {
+    const closedFixture: Tournament = {
+      id: "tourney-closed-01",
+      name: "Mekong Autumn Stakes 2026",
+      raceDate: "2026-10-20T08:00:00Z",
+      location: "Can Tho Equestrian Center",
+      distanceMeters: 1400,
+      trackType: "TURF",
+      prizePool: 90000000,
+      registrationDeadline: "2026-10-15T23:59:59Z",
+      status: "CLOSED_REGISTRATION",
+      createdAt: "2026-09-01T09:00:00Z",
+      updatedAt: "2026-10-16T10:00:00Z",
+      registeredCount: 2,
+      registrations: [
+        {
+          id: "reg-closed-01",
+          tournamentId: "tourney-closed-01",
+          horseId: "h-01",
+          horse: {
+            id: "h-01",
+            name: "Thunder Bolt",
+            horseCode: "HRS-001",
+            breed: "Thoroughbred",
+            status: "ACTIVE",
+            isMedicalLocked: false,
+            owner: { id: "u-owner-01", fullName: "Ha Ly", email: "ha.ly@gmail.com" },
+          },
+          registeredByTrainerId: "u-trainer-01",
+          registeredByTrainer: { id: "u-trainer-01", fullName: "Nam Tran", email: "nam.tran@gmail.com" },
+          status: "REGISTERED",
+          registrationDate: "2026-10-10T10:00:00Z",
+          notes: "Sprint pacing",
+        },
+        {
+          id: "reg-closed-02",
+          tournamentId: "tourney-closed-01",
+          horseId: "h-02",
+          horse: {
+            id: "h-02",
+            name: "Golden Pegasus",
+            horseCode: "HRS-002",
+            breed: "Arabian",
+            status: "ACTIVE",
+            isMedicalLocked: false,
+            owner: { id: "u-owner-02", fullName: "Minh Vu", email: "minh.vu@gmail.com" },
+          },
+          registeredByTrainerId: "u-trainer-01",
+          registeredByTrainer: { id: "u-trainer-01", fullName: "Nam Tran", email: "nam.tran@gmail.com" },
+          status: "REGISTERED",
+          registrationDate: "2026-10-11T11:00:00Z",
+          notes: "Endurance pacing",
+        },
+      ],
+    };
+    list.push(closedFixture);
+    saveStoredTournaments(list);
+  }
+  return list;
+}
+
 const OTP_CODE = "123456";
 const OTP_TTL = 10 * 60 * 1000;
 const INVITE_TTL = 48 * 3600 * 1000; // mã mời nhân viên còn hạn 48 giờ
@@ -200,7 +293,7 @@ const routes: Route[] = [
       const page = Number(url.searchParams.get("page") ?? 1);
       const limit = Number(url.searchParams.get("limit") ?? 20);
 
-      let list = getStoredTournaments();
+      let list = getTournamentsWithFixtures();
       if (status && status !== "ALL") {
         list = list.filter((t) => t.status === status);
       }
@@ -221,7 +314,7 @@ const routes: Route[] = [
     pattern: /^\/tournaments\/([^/]+)\/eligibility$/,
     handler: ({ params }) => {
       const [id] = params;
-      const tourney = getStoredTournaments().find((t) => t.id === id);
+      const tourney = getTournamentsWithFixtures().find((t) => t.id === id);
       if (!tourney) throw new ApiError(404, "NOT_FOUND", "Tournament not found");
       const horses = getStoredHorses();
       const registeredIds = new Set((tourney.registrations ?? []).map((r) => r.horseId));
@@ -278,7 +371,7 @@ const routes: Route[] = [
     pattern: /^\/tournaments\/([^/]+)$/,
     handler: ({ params }) => {
       const [id] = params;
-      const tourney = getStoredTournaments().find((t) => t.id === id);
+      const tourney = getTournamentsWithFixtures().find((t) => t.id === id);
       if (!tourney) throw new ApiError(404, "NOT_FOUND", "Tournament not found");
       return tourney;
     },
@@ -289,7 +382,16 @@ const routes: Route[] = [
     handler: ({ body, db }) => {
       const actor = currentUser(db);
       if (actor.role !== "CLUB_MANAGER") throw new ApiError(403, "FORBIDDEN", "Only Club Manager can create tournaments");
-      const list = getStoredTournaments();
+      if (body.status === "COMPLETED") {
+        throw new ApiError(400, "INVALID_STATUS_TRANSITION", "Tournaments cannot be directly created as COMPLETED. Use lockResults after recording all race results.");
+      }
+      if (body.status === "CANCELLED" || body.status === "CLOSED_REGISTRATION") {
+        throw new ApiError(400, "INVALID_STATUS_TRANSITION", `Cannot create a tournament directly in ${body.status} status.`);
+      }
+      if (body.status === "OPEN_REGISTRATION" && body.registrationDeadline && new Date(String(body.registrationDeadline)) < new Date()) {
+        throw new ApiError(400, "INVALID_DEADLINE", "Cannot set Open for Registration when registration deadline is in the past");
+      }
+      const list = getTournamentsWithFixtures();
       const newTourney: Tournament = {
         id: `tourney-${Date.now()}`,
         name: String(body.name ?? "New Tournament"),
@@ -317,9 +419,30 @@ const routes: Route[] = [
       const [id] = params;
       const actor = currentUser(db);
       if (actor.role !== "CLUB_MANAGER") throw new ApiError(403, "FORBIDDEN", "Only Club Manager can change status");
-      const list = getStoredTournaments();
+      const list = getTournamentsWithFixtures();
       const tourney = list.find((t) => t.id === id);
       if (!tourney) throw new ApiError(404, "NOT_FOUND", "Tournament not found");
+      if (tourney.status === body.status) return tourney;
+      if (tourney.status === "COMPLETED") {
+        throw new ApiError(400, "CANNOT_CHANGE_COMPLETED", "Completed tournaments cannot have their status altered");
+      }
+      if (body.status === "COMPLETED") {
+        throw new ApiError(400, "INVALID_STATUS_TRANSITION", "Tournaments cannot be directly marked as COMPLETED. Use lockResults after recording all race results.");
+      }
+      const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+        UPCOMING: ["OPEN_REGISTRATION", "CANCELLED"],
+        OPEN_REGISTRATION: ["CLOSED_REGISTRATION", "CANCELLED"],
+        CLOSED_REGISTRATION: ["CANCELLED"],
+        CANCELLED: [],
+        COMPLETED: [],
+      };
+      const allowed = ALLOWED_TRANSITIONS[tourney.status] || [];
+      if (!allowed.includes(String(body.status))) {
+        throw new ApiError(400, "INVALID_STATUS_TRANSITION", `Cannot transition tournament status from ${tourney.status} to ${body.status}`);
+      }
+      if (body.status === "OPEN_REGISTRATION" && tourney.registrationDeadline && new Date(tourney.registrationDeadline) < new Date()) {
+        throw new ApiError(400, "INVALID_DEADLINE", "Cannot set Open for Registration when registration deadline is in the past");
+      }
       tourney.status = body.status as any;
       tourney.updatedAt = new Date().toISOString();
       saveStoredTournaments(list);
@@ -333,9 +456,34 @@ const routes: Route[] = [
       const [id] = params;
       const actor = currentUser(db);
       if (actor.role !== "CLUB_MANAGER") throw new ApiError(403, "FORBIDDEN", "Only Club Manager can edit tournament");
-      const list = getStoredTournaments();
+      const list = getTournamentsWithFixtures();
       const tourney = list.find((t) => t.id === id);
       if (!tourney) throw new ApiError(404, "NOT_FOUND", "Tournament not found");
+      if (tourney.status === "COMPLETED" || tourney.status === "CANCELLED") {
+        throw new ApiError(400, "TOURNAMENT_LOCKED", `Cannot edit tournament that is already ${tourney.status}`);
+      }
+      if (body.status && body.status !== tourney.status) {
+        if (body.status === "COMPLETED") {
+          throw new ApiError(400, "INVALID_STATUS_TRANSITION", "Tournaments cannot be directly marked as COMPLETED. Use lockResults after recording all race results.");
+        }
+        const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+          UPCOMING: ["OPEN_REGISTRATION", "CANCELLED"],
+          OPEN_REGISTRATION: ["CLOSED_REGISTRATION", "CANCELLED"],
+          CLOSED_REGISTRATION: ["CANCELLED"],
+          CANCELLED: [],
+          COMPLETED: [],
+        };
+        const allowed = ALLOWED_TRANSITIONS[tourney.status] || [];
+        if (!allowed.includes(String(body.status))) {
+          throw new ApiError(400, "INVALID_STATUS_TRANSITION", `Cannot transition tournament status from ${tourney.status} to ${body.status}`);
+        }
+        if (body.status === "OPEN_REGISTRATION") {
+          const deadline = body.registrationDeadline ? new Date(String(body.registrationDeadline)) : new Date(tourney.registrationDeadline);
+          if (deadline < new Date()) {
+            throw new ApiError(400, "INVALID_DEADLINE", "Cannot set Open for Registration when registration deadline is in the past");
+          }
+        }
+      }
       Object.assign(tourney, body, { updatedAt: new Date().toISOString() });
       saveStoredTournaments(list);
       return tourney;
@@ -348,7 +496,22 @@ const routes: Route[] = [
       const [id] = params;
       const actor = currentUser(db);
       if (actor.role !== "CLUB_MANAGER") throw new ApiError(403, "FORBIDDEN", "Only Club Manager can delete tournament");
-      let list = getStoredTournaments();
+      let list = getTournamentsWithFixtures();
+      const tourney = list.find((t) => t.id === id);
+      if (!tourney) throw new ApiError(404, "NOT_FOUND", "Tournament not found");
+      const regCount = Math.max(tourney.registeredCount ?? 0, tourney.registrations?.length ?? 0);
+      if (regCount > 0) {
+        throw new ApiError(400, "HAS_REGISTRATIONS", "Cannot delete tournament with existing horse registrations. Cancel the tournament instead.");
+      }
+      if (tourney.status === "COMPLETED") {
+        throw new ApiError(400, "CANNOT_DELETE_COMPLETED", "Cannot delete a completed tournament");
+      }
+      if (tourney.status === "CANCELLED") {
+        throw new ApiError(400, "CANNOT_DELETE_CANCELLED", "Cannot delete a cancelled tournament. Cancelled tournaments must be preserved for audit history.");
+      }
+      if (tourney.status === "CLOSED_REGISTRATION") {
+        throw new ApiError(400, "CANNOT_DELETE_CLOSED", "Cannot delete a closed tournament. Cancel the tournament if it will not proceed.");
+      }
       list = list.filter((t) => t.id !== id);
       saveStoredTournaments(list);
       return { success: true };
@@ -361,9 +524,20 @@ const routes: Route[] = [
       const [id] = params;
       const actor = currentUser(db);
       const horseId = String(body.horseId);
-      const list = getStoredTournaments();
+      const list = getTournamentsWithFixtures();
       const tourney = list.find((t) => t.id === id);
       if (!tourney) throw new ApiError(404, "NOT_FOUND", "Tournament not found");
+
+      if (tourney.status !== "OPEN_REGISTRATION") {
+        throw new ApiError(
+          400,
+          "REGISTRATION_NOT_OPEN",
+          `Tournament is not open for registration (status: ${tourney.status})`,
+        );
+      }
+      if (tourney.registrationDeadline && new Date(tourney.registrationDeadline) < new Date()) {
+        throw new ApiError(400, "DEADLINE_PASSED", "Hạn đăng ký giải đấu đã kết thúc");
+      }
 
       const horse = getStoredHorses().find((h) => h.id === horseId);
       if (!horse) throw new ApiError(404, "NOT_FOUND", "Horse not found");
@@ -401,29 +575,80 @@ const routes: Route[] = [
   {
     method: "DELETE",
     pattern: /^\/tournaments\/([^/]+)\/registrations\/([^/]+)$/,
-    handler: ({ params }) => {
+    handler: ({ params, body, url }) => {
       const [id, regId] = params;
-      const list = getStoredTournaments();
+      const list = getTournamentsWithFixtures();
       const tourney = list.find((t) => t.id === id);
       if (!tourney) throw new ApiError(404, "NOT_FOUND", "Tournament not found");
-      if (tourney.registrations) {
-        const reg = tourney.registrations.find((r) => r.id === regId);
-        if (reg) {
-          reg.status = "SCRATCHED_MEDICAL";
-        }
+      if (tourney.status === "COMPLETED" || tourney.status === "CANCELLED") {
+        throw new ApiError(400, "TOURNAMENT_LOCKED", `Cannot scratch horse from a tournament that is ${tourney.status}`);
       }
+      if (tourney.status === "UPCOMING") {
+        throw new ApiError(400, "REGISTRATION_NOT_OPEN", "Không thể rút ngựa khi giải đấu chưa mở đăng ký");
+      }
+      const reason = String(body?.reason || url.searchParams.get("reason") || "").trim();
+      if (!reason) {
+        throw new ApiError(400, "REASON_REQUIRED", "Lý do rút ngựa là bắt buộc");
+      }
+      if (!tourney.registrations) {
+        throw new ApiError(404, "NOT_FOUND", "Registration not found");
+      }
+      const reg = tourney.registrations.find((r) => r.id === regId);
+      if (!reg) throw new ApiError(404, "NOT_FOUND", "Registration not found");
+      if (reg.status === "SCRATCHED_MEDICAL") {
+        throw new ApiError(400, "ALREADY_SCRATCHED", "Horse has already been scratched");
+      }
+      reg.status = "SCRATCHED_MEDICAL";
+      (reg as any).scratchReason = reason;
       saveStoredTournaments(list);
-      return { success: true };
+      return { success: true, message: "Rút ngựa thành công", registration: reg };
     },
   },
   {
     method: "POST",
     pattern: /^\/tournaments\/([^/]+)\/results$/,
-    handler: ({ params, body }) => {
+    handler: ({ params, body, db }) => {
+      const actor = currentUser(db);
+      if (actor.role !== "CLUB_MANAGER") {
+        throw new ApiError(403, "FORBIDDEN", "Only the Club Manager has the authority to record or edit tournament results.");
+      }
       const [id] = params;
-      const list = getStoredTournaments();
+      const list = getTournamentsWithFixtures();
       const tourney = list.find((t) => t.id === id);
       if (!tourney) throw new ApiError(404, "NOT_FOUND", "Tournament not found");
+
+      if (tourney.status !== "CLOSED_REGISTRATION") {
+        throw new ApiError(
+          400,
+          "INVALID_STATUS_TRANSITION",
+          `Cannot record results for tournament with status ${tourney.status}. Results can only be recorded when status is CLOSED_REGISTRATION.`,
+        );
+      }
+      if (new Date() < new Date(tourney.raceDate)) {
+        throw new ApiError(
+          400,
+          "RACE_NOT_FINISHED",
+          "Cannot record or lock results before raceDate has arrived.",
+        );
+      }
+
+      if (body.lockResults) {
+        const activeRegs = (tourney.registrations || []).filter(
+          (r) => r.status === "REGISTERED" || r.status === "CONFIRMED",
+        );
+        if (activeRegs.length === 0) {
+          throw new ApiError(400, "NO_REGISTRATIONS", "Cannot lock tournament with no active registrations");
+        }
+        const submittedRegIds = new Set(((body.results as any[]) || []).map((i) => i.registrationId));
+        const missingResults = activeRegs.some((r) => !r.result && !submittedRegIds.has(r.id));
+        if (missingResults) {
+          throw new ApiError(
+            400,
+            "RESULTS_INCOMPLETE",
+            "Cannot lock tournament results until all registered horses have official race times and ranks",
+          );
+        }
+      }
 
       const items = (body.results as any[]) ?? [];
       for (const item of items) {
@@ -458,10 +683,42 @@ const routes: Route[] = [
     handler: ({ params, db }) => {
       const [id] = params;
       const actor = currentUser(db);
-      if (actor.role !== "CLUB_MANAGER") throw new ApiError(403, "FORBIDDEN", "Only Club Manager can lock results");
-      const list = getStoredTournaments();
+      if (actor.role !== "CLUB_MANAGER") {
+        throw new ApiError(403, "FORBIDDEN", "Only the Club Manager has the authority to lock tournament results");
+      }
+      const list = getTournamentsWithFixtures();
       const tourney = list.find((t) => t.id === id);
       if (!tourney) throw new ApiError(404, "NOT_FOUND", "Tournament not found");
+
+      if (tourney.status !== "CLOSED_REGISTRATION") {
+        throw new ApiError(
+          400,
+          "INVALID_STATUS_TRANSITION",
+          `Cannot lock results for tournament with status ${tourney.status}. Results can only be locked when status is CLOSED_REGISTRATION.`,
+        );
+      }
+      if (new Date() < new Date(tourney.raceDate)) {
+        throw new ApiError(
+          400,
+          "RACE_NOT_FINISHED",
+          "Cannot lock results before raceDate has arrived.",
+        );
+      }
+
+      const activeRegs = (tourney.registrations || []).filter(
+        (r) => r.status === "REGISTERED" || r.status === "CONFIRMED",
+      );
+      if (activeRegs.length === 0) {
+        throw new ApiError(400, "NO_REGISTRATIONS", "Cannot lock tournament with no active registrations");
+      }
+      const missingResults = activeRegs.some((r) => !r.result);
+      if (missingResults) {
+        throw new ApiError(
+          400,
+          "RESULTS_INCOMPLETE",
+          "Cannot lock tournament results until all registered horses have official race times and ranks",
+        );
+      }
 
       tourney.status = "COMPLETED";
       tourney.updatedAt = new Date().toISOString();
@@ -2032,7 +2289,7 @@ const routes: Route[] = [
             ? {
                 id: horse.id,
                 name: horse.name,
-                microchipRfid: horse.microchipRfid || horse.rfid || horse.code,
+                microchipRfid: horse.microchipRfid || horse.code,
                 status: horse.statusText || "ACTIVE",
                 stallAllocations: [{ stall: { code: horse.stall, zone: horse.zone } }],
               }
@@ -2339,7 +2596,6 @@ const routes: Route[] = [
           horseCode: h.horseCode || (h.id.startsWith("horse-") ? `HR-${h.id.slice(-6)}` : `HR-000001`),
           name: h.name,
           microchip,
-          rfid: h.rfid || null,
           microchipRfid,
           breed: h.breed || "Thoroughbred",
           dob: h.dob || "2021-04-12",
@@ -2383,7 +2639,6 @@ const routes: Route[] = [
             h.name.toLowerCase().includes(search) ||
             (h.horseCode && h.horseCode.toLowerCase().includes(search)) ||
             (h.microchip && h.microchip.toLowerCase().includes(search)) ||
-            (h.rfid && h.rfid.toLowerCase().includes(search)) ||
             h.breed.toLowerCase().includes(search),
         );
       }
@@ -2473,7 +2728,6 @@ const routes: Route[] = [
         horseCode: h.horseCode || (h.id.startsWith("horse-") ? `HR-${h.id.slice(-6)}` : `HR-000001`),
         name: h.name,
         microchip,
-        rfid: h.rfid || null,
         microchipRfid,
         breed: h.breed || "Thoroughbred",
         dob: h.dob || "2021-04-12",
@@ -2669,7 +2923,6 @@ const routes: Route[] = [
 
       const name = String(body.name || "").trim();
       const microchip = String(body.microchip || "").trim();
-      const rfid = body.rfid ? String(body.rfid).trim().toUpperCase() : undefined;
 
       if (!name) throw new ApiError(400, "VALIDATION", "Horse name is required.");
       if (!microchip || !/^\d{15}$/.test(microchip)) {
@@ -2683,9 +2936,6 @@ const routes: Route[] = [
       if (stored.some((h) => (h as any).microchip === microchip || h.code === microchip)) {
         throw new ApiError(409, "DUPLICATE_MICROCHIP", "Microchip number is already registered to another horse.");
       }
-      if (rfid && stored.some((h) => (h as any).rfid === rfid)) {
-        throw new ApiError(409, "DUPLICATE_RFID", "RFID code is already registered to another horse.");
-      }
 
       const id = `horse-${Date.now()}`;
       const horseCode = `HR-${String(stored.length + 1).padStart(6, "0")}`;
@@ -2695,7 +2945,6 @@ const routes: Route[] = [
         name,
         code: microchip,
         microchip,
-        rfid: rfid || null,
         stall: body.stallCode || "STALL-A01",
         healthGroup: "FIT",
         status: "RESTING",
@@ -2747,13 +2996,6 @@ const routes: Route[] = [
         }
         (existing as any).microchip = chip;
         existing.code = chip;
-      }
-      if (body.rfid) {
-        const rfid = String(body.rfid).trim().toUpperCase();
-        if (stored.some((h) => h.id !== params[0] && (h as any).rfid === rfid)) {
-          throw new ApiError(409, "DUPLICATE_RFID", "RFID code is already registered to another horse.");
-        }
-        (existing as any).rfid = rfid;
       }
       if (body.breed) existing.breed = String(body.breed);
       if (body.dob) existing.dob = String(body.dob);
@@ -5330,3 +5572,5 @@ export async function handleMock(method: HttpMethod, path: string, body?: unknow
   }
   throw new ApiError(404, "NOT_FOUND", `No mock route for ${method} ${url.pathname}`);
 }
+
+

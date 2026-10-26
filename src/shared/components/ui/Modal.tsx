@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import type { ReactNode } from "react";
 import { cx } from "@/shared/lib/cx";
 import { Icon } from "./Icon";
@@ -68,7 +69,7 @@ export function Modal({ title, subtitle, tone, width = 480, foot, onClose, child
     };
   }, []);
 
-  return (
+  return createPortal(
     <div className={styles.overlay} onClick={() => closeRef.current?.()}>
       <div
         ref={dialogRef}
@@ -99,6 +100,7 @@ export function Modal({ title, subtitle, tone, width = 480, foot, onClose, child
         {children != null && <div className={styles.body}>{children}</div>}
         {foot && <footer className={styles.foot}>{foot}</footer>}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

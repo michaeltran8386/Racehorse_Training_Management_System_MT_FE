@@ -194,16 +194,6 @@ export default function AuditLogPage() {
       description={isVietnamese ? "Theo dõi lịch sử hoạt động và các thay đổi trong hệ thống. Bộ lọc sử dụng múi giờ thiết bị của bạn." : tr("Review recorded activity and changes. Times and date filters use your local timezone.")}
       showDate
     />
-    {import.meta.env.VITE_USE_MOCK === "true" && (
-      <Alert
-        tone="info"
-        title={isVietnamese ? "Dữ liệu nhật ký thử nghiệm" : tr("Demo audit history")}
-      >
-        {isVietnamese
-          ? "Chỉ hiển thị các hoạt động được ghi lại trên trình duyệt này (tối đa 200 sự kiện). Các giá trị lịch sử và siêu dữ liệu yêu cầu không được lưu trữ trong chế độ demo."
-          : tr("Only activity recorded in this browser is shown (up to 200 events). Historical before/after values and request metadata are not recorded in demo mode.")}
-      </Alert>
-    )}
     <Card pad={0}>
       <form className={styles.filters} onSubmit={event => { event.preventDefault(); if (!invalidDates) { setFilters({ ...draft }); setPage(1); } }}>
         <label>{isVietnamese ? "Người thực hiện" : tr("Actor")}<Input value={draft.actor} maxLength={200} onChange={e => setDraft({ ...draft, actor: e.target.value })} placeholder={isVietnamese ? "Tìm kiếm tên người thực hiện" : tr("Search actor name")} /></label>

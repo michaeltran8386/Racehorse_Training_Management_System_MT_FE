@@ -6,7 +6,6 @@ export interface HerdHorse {
   name: string;
   code: string;
   horseCode?: string;
-  rfid?: string;
   microchip?: string;
   microchipRfid?: string;
   stall: string;
@@ -123,9 +122,8 @@ export const DEFAULT_HERD_HORSES: HerdHorse[] = [
     name: "Thunderbolt Swift",
     code: "HR-000001",
     horseCode: "HR-000001",
-    rfid: "RFID-985141002341",
     microchip: "985141002341001",
-    microchipRfid: "RFID-985141002341",
+    microchipRfid: "985141002341001",
     breed: "Thoroughbred",
     dob: "2021-04-12",
     gender: "Colt",
@@ -147,9 +145,8 @@ export const DEFAULT_HERD_HORSES: HerdHorse[] = [
     name: "Northern Dancer Legacy",
     code: "HR-000002",
     horseCode: "HR-000002",
-    rfid: "RFID-985141002342",
     microchip: "985141002342002",
-    microchipRfid: "RFID-985141002342",
+    microchipRfid: "985141002342002",
     breed: "Thoroughbred",
     dob: "2020-03-15",
     gender: "Stallion",
@@ -174,9 +171,8 @@ export const DEFAULT_HERD_HORSES: HerdHorse[] = [
     name: "Shadowfax Wonder",
     code: "HR-000003",
     horseCode: "HR-000003",
-    rfid: "RFID-985141002343",
     microchip: "985141002343003",
-    microchipRfid: "RFID-985141002343",
+    microchipRfid: "985141002343003",
     breed: "Arabian Cross",
     dob: "2022-01-20",
     gender: "Filly",
