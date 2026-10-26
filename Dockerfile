@@ -11,10 +11,8 @@ RUN npm install
 COPY . .
 
 # Biến môi trường build time cho Vite
-ARG VITE_USE_MOCK=false
 ARG VITE_API_URL=http://localhost:3000/api
 
-ENV VITE_USE_MOCK=$VITE_USE_MOCK
 ENV VITE_API_URL=$VITE_API_URL
 
 RUN npm run build

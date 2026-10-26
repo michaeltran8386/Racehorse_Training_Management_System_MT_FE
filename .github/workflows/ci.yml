@@ -118,8 +118,6 @@ jobs:
 
       - name: Build Frontend Application
         run: npm run build
-        env:
-          VITE_USE_MOCK: 'true'
 
       - name: Upload Built Application
         uses: actions/upload-artifact@v7
@@ -130,48 +128,26 @@ jobs:
           retention-days: 7
 
   # ==========================================
-  # STAGE 3: BLACK-BOX PLAYWRIGHT BROWSER TESTS
+  # STAGE 3: BLACK-BOX PLAYWRIGHT BROWSER TESTS (DEFERRED IN STANDALONE CI)
   # ==========================================
   black-box-playwright-tests:
-    name: "3. Black-box Playwright UI Tests"
+    name: "3. Black-box Playwright UI Tests (Deferred to Real-Stack CI)"
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v7
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Install Playwright Browsers with OS Dependencies
-        run: npx playwright install --with-deps chromium
-
-      - name: Download Built Application
-        uses: actions/download-artifact@v8
-        with:
-          name: fe-built-application
-          path: dist/
-
-      - name: Run Playwright Tests (Desktop 1440x1000 & 1280x800)
-        run: npm run test:e2e
-
-      - name: Upload Playwright Test Report & Traces
-        uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: playwright-report
-          path: |
-            playwright-report/
-            test-results/
-          if-no-files-found: ignore
-          retention-days: 7
+      - name: Notice — Standalone Integration Playwright Deferred
+        run: |
+          echo "=========================================================================="
+          echo "ℹ️ [NOTICE] Black-box Playwright browser tests are deferred in standalone FE CI."
+          echo "Per approved architectural decision CR-010 and CR-012:"
+          echo "1. Mock-backed browser tests are strictly prohibited in runtime and CI."
+          echo "2. Standalone GitHub Actions runner does not host the NestJS Backend / PostgreSQL."
+          echo "3. Integration Playwright suites must run against live NestJS + PostgreSQL"
+          echo "   services during local/manual task QA gates and multi-repo real-stack CI."
+          echo "=========================================================================="
+          echo "### Playwright: Tạm hoãn trong standalone FE CI" >> "$GITHUB_STEP_SUMMARY"
+          echo "Chế độ mock bị loại bỏ theo CR-010/CR-012. Integration Playwright yêu cầu Backend + PostgreSQL thật và được xác thực ở local/staging gate." >> "$GITHUB_STEP_SUMMARY"
 
   # ==========================================
   # STAGE 4: SECURITY & QUALITY GATE (npm audit + SonarQube)
