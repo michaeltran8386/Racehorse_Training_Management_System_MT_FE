@@ -50,6 +50,7 @@ interface WorkoutDialogProps {
   /** Có = chế độ sửa (BTN-2.20). */
   session?: ExerciseSession;
   defaultDate?: string;
+  defaultType?: ExerciseType;
   onClose: () => void;
   onSaved: (date: string) => void;
 }
@@ -60,7 +61,7 @@ interface WorkoutDialogProps {
  * - BE trả VET_CONFIRMATION_REQUIRED -> hiện ô xác nhận (DL-2.06).
  * - BE trả WARNINGS_NEED_CONFIRMATION -> hiện khung vàng, bấm Lưu lần 2 để xác nhận.
  */
-export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, onClose, onSaved }: WorkoutDialogProps) {
+export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, defaultType, onClose, onSaved }: WorkoutDialogProps) {
   useAppLanguage();
   const toast = useToast();
   const editing = Boolean(session);
@@ -69,7 +70,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, on
   const [phaseId, setPhaseId] = useState(session?.phaseId ?? "");
   const [date, setDate] = useState(session?.sessionDate ?? defaultDate ?? todayClub());
   const [time, setTime] = useState(session?.startTime ?? "06:30");
-  const [type, setType] = useState<ExerciseType>(session?.sessionType ?? "CANTER");
+  const [type, setType] = useState<ExerciseType>(session?.sessionType ?? defaultType ?? "CANTER");
   const [intensity, setIntensity] = useState<ExerciseIntensity>(session?.intensity ?? "MEDIUM");
   const [distance, setDistance] = useState(session?.targetDistanceMeters ?? 1200);
   const [reps, setReps] = useState(session?.repetitions ?? 1);

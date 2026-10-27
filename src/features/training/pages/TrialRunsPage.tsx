@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { useToast } from "@/shared/components/ui/Toast";
 import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
+import { formatDateTime } from "@/shared/lib/format";
 import { todayClub, trainingApi } from "../api";
 import { SESSION_STATUS_LABEL, TRACK_LABEL } from "../types";
 import type { ExerciseSession, TrainingPlan } from "../types";
@@ -189,31 +190,41 @@ export default function TrialRunsPage() {
                         </Badge>
                       </td>
                       <td style={{ padding: "0.5rem 0.75rem", textAlign: "right" }}>
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.5rem" }}>
+                        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: "0.5rem" }}>
                           {user.role === "HEAD_TRAINER" && row.status === "SCHEDULED" && (
-                            <Button
-                              size="sm"
-                              tone="primary"
-                              disabled={
-                                launchingId === row.id ||
-                                row.isHorseLocked ||
-                                new Date(row.scheduledAt) > new Date()
-                              }
-                              title={
-                                row.isHorseLocked
-                                  ? tr("The horse is still under a Training Lock.")
-                                  : new Date(row.scheduledAt) > new Date()
-                                    ? tr("The trial has not reached its scheduled start time.")
-                                    : undefined
-                              }
-                              onClick={() => void launchSimulation(row.id)}
-                            >
-                              {launchingId === row.id
-                                ? tr("Opening…")
-                                : isVietnamese
-                                  ? "Chạy mô phỏng"
-                                  : tr("Run simulation")}
-                            </Button>
+                            <div>
+                              <Button
+                                size="sm"
+                                tone="primary"
+                                disabled={
+                                  launchingId === row.id ||
+                                  row.isHorseLocked ||
+                                  new Date(row.scheduledAt) > new Date()
+                                }
+                                title={
+                                  row.isHorseLocked
+                                    ? tr("The horse is still under a Training Lock.")
+                                    : new Date(row.scheduledAt) > new Date()
+                                      ? tr("The trial has not reached its scheduled start time.")
+                                      : undefined
+                                }
+                                onClick={() => void launchSimulation(row.id)}
+                              >
+                                {launchingId === row.id
+                                  ? tr("Opening…")
+                                  : isVietnamese
+                                    ? "Chạy mô phỏng"
+                                    : tr("Run simulation")}
+                              </Button>
+                              {new Date(row.scheduledAt) > new Date() && (
+                                <div
+                                  data-testid="trial-launch-timing"
+                                  style={{ marginTop: "0.25rem", fontSize: "var(--fs-xs)", color: "var(--text-muted)" }}
+                                >
+                                  {isVietnamese ? "Có thể chạy từ" : "Available from"} {formatDateTime(row.scheduledAt)}
+                                </div>
+                              )}
+                            </div>
                           )}
                           <Link to={`/training/sessions/${row.id}/result`}>
                             <Button size="sm" tone={row.status === "COMPLETED" ? "secondary" : "primary"}>
@@ -237,6 +248,7 @@ export default function TrialRunsPage() {
         <WorkoutDialog
           plans={plans}
           defaultDate={from}
+          defaultType="TRIAL"
           onClose={() => setIsScheduleOpen(false)}
           onSaved={() => {
             setIsScheduleOpen(false);
