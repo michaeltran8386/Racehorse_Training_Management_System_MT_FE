@@ -55,6 +55,7 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
 
   let prisma: any;
   let targetHorseId: string;
+  let targetHorseName: string;
   let targetHorseWeight: number;
   let targetHorseStall: string;
 
@@ -74,6 +75,7 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
     expect(horse.stallAllocations.length).toBeGreaterThan(0);
 
     targetHorseId = horse.id;
+    targetHorseName = horse.name;
     targetHorseWeight = horse.weightKg;
     targetHorseStall = horse.stallAllocations[0].stall.code;
 
@@ -113,24 +115,42 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
     }
   });
 
-  test('R-3: Direct access to port 5175 without session renders safe instruction and rejects dev bypass', async ({ page }) => {
+  test('TASK-015: Direct access to port 5175 without session loads real catalogue from PostgreSQL without login screen', async ({ page }) => {
     const consoleLogs: string[] = [];
     page.on('console', (msg) => consoleLogs.push(msg.text()));
 
-    // 1. Root access without session
+    // 1. Root access without session or token
     await page.goto(`${SIM_BASE}/`);
-    await expect(page.locator('body')).toContainText(/Vui lòng mở Trình giả lập từ Hệ thống quản lý huấn luyện/i);
+
+    // Verify no login form exists
     await expect(page.locator('input[type=email]')).toHaveCount(0);
     await expect(page.locator('input[type=password]')).toHaveCount(0);
 
-    // 2. Bypass attempt via /?dev
-    await page.goto(`${SIM_BASE}/?dev`);
-    await expect(page.locator('body')).toContainText(/Vui lòng mở Trình giả lập từ Hệ thống quản lý huấn luyện/i);
+    // Verify direct catalogue badge loads
+    await expect(page.locator('body')).toContainText(/Danh mục trực tiếp/i);
+
+    // Open horse list modal
+    const horseBtn = page.getByRole('button', { name: /Ngựa/i }).first();
+    await expect(horseBtn).toBeVisible();
+    await horseBtn.click();
+
+    // Verify real horses from PostgreSQL catalogue are present
+    const targetHorseTile = page.getByRole('button', { name: new RegExp(targetHorseName, 'i') }).first();
+    await expect(targetHorseTile).toBeVisible();
+    await targetHorseTile.click();
+
+    // Verify real horse card displays authoritative master data: name, stall, weight
+    await expect(page.locator('body')).toContainText(targetHorseName);
+    await expect(page.locator('body')).toContainText(targetHorseStall);
+    await expect(page.locator('body')).toContainText(`${targetHorseWeight} kg`);
+
+    // Reload page and confirm persisted catalogue data remains identical without session
+    await page.reload();
+    await expect(page.locator('body')).toContainText(/Danh mục trực tiếp/i);
     await expect(page.locator('input[type=email]')).toHaveCount(0);
-    await expect(page.locator('input[type=password]')).toHaveCount(0);
 
     // Save evidence screenshot
-    await page.screenshot({ path: path.join(evidenceDir, 'task013_simulator_direct_access.png') });
+    await page.screenshot({ path: path.join(evidenceDir, 'task015_simulator_direct_catalogue.png') });
   });
 
   test('Slice G: Trial Runs scheduling creates a TRIAL row visible after reload', async ({ page }) => {
