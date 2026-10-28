@@ -1365,4 +1365,694 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
       }
     }
   });
+
+  test('TASK-017: Incident -> Vet review -> Medical Record & Lock -> Round-trip enforcement & lift', async ({ page, context }) => {
+    test.setTimeout(120_000);
+
+    const testStartTime = new Date();
+    const TEST_MARKER = `TASK-017-E2E-${Date.now()}`;
+    const trainerUser = await prisma.user.findUnique({ where: { email: TARGET_TRAINER_EMAIL } });
+    const vetUser = await prisma.user.findUnique({ where: { email: TARGET_VET_EMAIL } });
+    expect(trainerUser).toBeTruthy();
+    expect(vetUser).toBeTruthy();
+
+    // 0. Snapshot the reused horse's original status, isMedicalLocked, and relationships (R-6.3)
+    const initialHorse = await prisma.horse.findUnique({
+      where: { id: targetHorseId },
+      include: {
+        stallAllocations: {
+          where: { isActive: true },
+          select: { assignedGroomUserId: true },
+        },
+      },
+    });
+    expect(initialHorse).toBeTruthy();
+    const originalStatus = initialHorse!.status;
+    const originalIsMedicalLocked = initialHorse!.isMedicalLocked;
+    const initialOwnerId = initialHorse!.ownerId;
+    const initialGroomUserId = initialHorse!.stallAllocations[0]?.assignedGroomUserId;
+    expect(initialOwnerId).toBeTruthy();
+    expect(initialGroomUserId).toBeTruthy();
+
+    // Snapshot pre-existing IDs and counts for the reused horse (R-6.6)
+    const preRegIds = (
+      await prisma.tournamentRegistration.findMany({
+        where: { horseId: targetHorseId },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      })
+    ).map((r: { id: string }) => r.id);
+
+    const preLockIds = (
+      await prisma.medicalLock.findMany({
+        where: { horseId: targetHorseId },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      })
+    ).map((r: { id: string }) => r.id);
+
+    const preRecordIds = (
+      await prisma.medicalRecord.findMany({
+        where: { horseId: targetHorseId },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      })
+    ).map((r: { id: string }) => r.id);
+
+    const preIncidentIds = (
+      await prisma.incidentReport.findMany({
+        where: { horseId: targetHorseId },
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      })
+    ).map((r: { id: string }) => r.id);
+
+    // R-10.1: Snapshot every pre-existing heavy/BREEZE/TRIAL WorkoutSession for targetHorseId (id, status, statusReason)
+    const preWorkoutSnapshots = await prisma.workoutSession.findMany({
+      where: {
+        horseId: targetHorseId,
+        OR: [{ intensity: 'HEAVY' }, { workoutType: { in: ['BREEZE', 'TRIAL'] } }],
+      },
+      select: {
+        id: true,
+        status: true,
+        statusReason: true,
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    // R-10.4: Snapshot pre-existing Notification and AuditLog IDs before execution
+    const preNotificationIds = (
+      await prisma.notification.findMany({
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      })
+    ).map((n: { id: string }) => n.id);
+
+    const preAuditLogIds = (
+      await prisma.auditLog.findMany({
+        select: { id: true },
+        orderBy: { id: 'asc' },
+      })
+    ).map((a: { id: string }) => a.id);
+
+    // Track exact IDs and correlation markers created by this test for non-destructive cleanup (R-6.4)
+    let createdWorkoutSessionId: string | null = null;
+    let createdSessionId: string | null = null;
+    let createdIncidentId: string | null = null;
+    let createdIncidentNumber: string | null = null;
+    let createdMedicalRecordId: string | null = null;
+    let placedLockId: string | null = null;
+    let placedLockCode: string | null = null;
+    let futureWorkoutId: string | null = null;
+    let createdTournamentId: string | null = null;
+    let createdNotificationIds: string[] = [];
+    let simPage: Page | null = null;
+    let sentinelNotificationId: string | null = null;
+    let sentinelAuditLogId: string | null = null;
+    const SENTINEL_MARKER = `SENTINEL-CONCURRENT-${Date.now()}`;
+
+    try {
+      // Add sentinel unrelated Notification & AuditLog created after snapshot to prove cleanup preserves concurrent rows
+      const sentinelNotif = await prisma.notification.create({
+        data: {
+          userId: vetUser.id,
+          type: 'SENTINEL_UNRELATED_CONCURRENT',
+          category: 'SYSTEM',
+          title: `Sentinel Unrelated Notification [${SENTINEL_MARKER}]`,
+          message: 'Simulated concurrent notification that must be preserved by cleanup',
+          params: { sentinel: true, marker: SENTINEL_MARKER },
+        },
+      });
+      sentinelNotificationId = sentinelNotif.id;
+
+      const sentinelAudit = await prisma.auditLog.create({
+        data: {
+          userId: vetUser.id,
+          action: 'SENTINEL_CONCURRENT_ACTION',
+          entityName: 'SystemConfig',
+          entityId: `sentinel-${Date.now()}`,
+          newValuesJson: JSON.stringify({
+            detail: `Sentinel Unrelated AuditLog [${SENTINEL_MARKER}]`,
+            marker: SENTINEL_MARKER,
+          }),
+        },
+      });
+      sentinelAuditLogId = sentinelAudit.id;
+
+      // 1. Get auth token for Trainer (R-1.1)
+      const trainerLoginRes = await page.request.post(`${BE_BASE}/auth/login`, {
+        data: { email: TARGET_TRAINER_EMAIL, password: QA_PASSWORD },
+      });
+      expect(trainerLoginRes.ok()).toBeTruthy();
+      const trainerLoginData = await trainerLoginRes.json();
+      const trainerToken = trainerLoginData.data.accessToken;
+
+      // 2. Prepare eligible SCHEDULED HEAVY/TRIAL workout fixture (R-1.1)
+      const workout = await prisma.workoutSession.create({
+        data: {
+          trainingPlanId: '00000000-0000-4000-a006-000000000001',
+          horseId: targetHorseId,
+          workoutType: 'TRIAL',
+          intensity: 'HEAVY',
+          distanceMeters: 1000,
+          scheduledDate: new Date(Date.now() - 60000), // reached start time
+          status: 'SCHEDULED',
+          trainerNotes: `TASK-017 Active Heavy Trial [${TEST_MARKER}]`,
+        },
+      });
+      createdWorkoutSessionId = workout.id;
+
+      // Start the workout via live NestJS API before lock exists (R-1.1)
+      const startRes = await page.request.post(`${BE_BASE}/simulator/workouts/${workout.id}/start`, {
+        headers: { Authorization: `Bearer ${trainerToken}` },
+      });
+      expect(startRes.status()).toBe(201);
+      const startData = await startRes.json();
+      createdSessionId = startData.data.sessionId;
+
+      // 3. Connect canonical Simulator using the Backend-issued sessionId (R-1.2)
+      simPage = await context.newPage();
+      await simPage.goto(`${SIM_BASE}/?sessionId=${createdSessionId}`);
+      await simPage.waitForLoadState('networkidle');
+
+      const retryBtn = simPage.getByRole('button', { name: /Thử tải lại/i });
+      if (await retryBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await retryBtn.click();
+        await simPage.waitForLoadState('networkidle');
+      }
+
+      // Click "» Bắt đầu chạy thử" to start running
+      const startTrialBtn = simPage.getByRole('button', { name: /Bắt đầu chạy thử|Start trial/i });
+      await expect(startTrialBtn).toBeVisible({ timeout: 15000 });
+      await startTrialBtn.click();
+      await expect(simPage.getByTestId('trial-phase-pill')).toContainText(/Đang chạy/i);
+
+      // 4. Produce/report the incident through the real Simulator Socket.IO contract (R-1.3)
+      const lamenessBtn = simPage.getByRole('button', { name: /! Khập khiễng/i });
+      await expect(lamenessBtn).toBeVisible({ timeout: 10000 });
+      await lamenessBtn.click();
+
+      // 5. Verify PostgreSQL IncidentReport persistence and recipient notifications (R-1.4 & R-1.5)
+      let incident: any = null;
+      for (let i = 0; i < 20; i++) {
+        incident = await prisma.incidentReport.findFirst({
+          where: { horseId: targetHorseId, status: 'REPORTED', id: { notIn: preIncidentIds } },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (incident) break;
+        await page.waitForTimeout(500);
+      }
+      expect(incident).toBeTruthy();
+      createdIncidentId = incident.id;
+      createdIncidentNumber = incident.incidentNumber;
+      expect(incident.status).toBe('REPORTED');
+      expect(incident.severity).toBe('MODERATE');
+      expect(incident.symptomsJson).toContain('LAMENESS');
+
+      // Verify exact incident notification routing (R-7)
+      let incidentNotifs: any[] = [];
+      for (let i = 0; i < 20; i++) {
+        const notifs = await prisma.notification.findMany({
+          where: {
+            createdAt: { gte: testStartTime },
+            category: 'MEDICAL',
+          },
+          include: { user: { select: { id: true, email: true, role: true } } },
+          orderBy: { createdAt: 'desc' },
+        });
+        incidentNotifs = notifs.filter(
+          (n: any) => (n.params as any)?.incidentNumber === incident.incidentNumber,
+        );
+        if (incidentNotifs.length > 0) break;
+        await page.waitForTimeout(500);
+      }
+      expect(incidentNotifs.length).toBeGreaterThan(0);
+      createdNotificationIds = incidentNotifs.map((n: any) => n.id);
+
+      // R-7: Verify required unique recipients and roles for MODERATE simulator incident
+      const recipientUserIds = new Set(incidentNotifs.map((n: any) => n.userId));
+      const recipientRoles = new Set(incidentNotifs.map((n: any) => n.user.role));
+
+      // Intended roles: Veterinarian, Groom, Horse Owner
+      expect(recipientRoles.has('VETERINARIAN')).toBe(true);
+      expect(recipientRoles.has('GROOM')).toBe(true);
+      expect(recipientRoles.has('HORSE_OWNER')).toBe(true);
+
+      // Intended specific users
+      const vetNotif = incidentNotifs.find((n: any) => n.user.email === TARGET_VET_EMAIL);
+      expect(vetNotif).toBeTruthy();
+      expect(recipientUserIds.has(initialGroomUserId!)).toBe(true);
+      expect(recipientUserIds.has(initialOwnerId!)).toBe(true);
+
+      // Verify NO unintended recipients: Head Trainer and Club Manager are NOT notified for MODERATE incident
+      expect(recipientRoles.has('HEAD_TRAINER')).toBe(false);
+      expect(recipientRoles.has('CLUB_MANAGER')).toBe(false);
+      for (const notif of incidentNotifs) {
+        expect(['VETERINARIAN', 'GROOM', 'HORSE_OWNER']).toContain(notif.user.role);
+      }
+
+      // Invariant: incident does not automatically create MedicalRecord or MedicalLock
+      const recordsPreReview = await prisma.medicalRecord.count({ where: { horseId: targetHorseId } });
+      expect(recordsPreReview).toBe(preRecordIds.length);
+      const incidentRecords = await prisma.medicalRecord.count({
+        where: { horseId: targetHorseId, clinicalDiagnosis: { contains: TEST_MARKER } },
+      });
+      expect(incidentRecords).toBe(0);
+      const locksPreReview = await prisma.medicalLock.count({ where: { horseId: targetHorseId, isLocked: true } });
+      expect(locksPreReview).toBe(preLockIds.length);
+      const horsePreReview = await prisma.horse.findUnique({ where: { id: targetHorseId } });
+      expect(horsePreReview?.isMedicalLocked).toBe(originalIsMedicalLocked);
+
+      // 6. Sign in as Veterinarian and navigate to /incidents (R-2.1)
+      await signIn(page, TARGET_VET_EMAIL);
+      await page.goto(`${FE_BASE}/incidents`);
+      await page.waitForLoadState('networkidle');
+
+      // Locate incident card by incidentNumber
+      const incidentCard = page.locator('section').filter({ hasText: incident.incidentNumber });
+      await expect(incidentCard).toBeVisible({ timeout: 15000 });
+
+      // Click Review & Prescribe button
+      await incidentCard.getByTestId('incident-card-review-btn').click();
+
+      // Modal opens: Verify Vet-only controls and perform clinical review
+      const modal = page.locator('div[role="dialog"]');
+      await expect(modal).toBeVisible({ timeout: 10000 });
+
+      const placeLockBtn = modal.locator('[data-testid="incident-action-place-lock"]');
+      const createRecordBtn = modal.locator('[data-testid="incident-action-create-record"]');
+      await expect(placeLockBtn).toBeVisible();
+      await expect(createRecordBtn).toBeVisible();
+
+      // Submit clinical review (Status -> UNDER_REVIEW with Vet Notes)
+      await modal.locator('[data-testid="incident-status-select"]').selectOption('UNDER_REVIEW');
+      await modal.locator('[data-testid="incident-vet-notes"]').fill(`Clinical examination confirms left forelimb lameness [${TEST_MARKER}]`);
+      await modal.locator('[data-testid="incident-submit-review"]').click();
+      await expect(modal).not.toBeVisible({ timeout: 10000 });
+
+      // Invariant check: Status is now UNDER_REVIEW, reviewedAt is set, but still no automatic MedicalRecord or MedicalLock
+      const reviewedIncident = await prisma.incidentReport.findUnique({ where: { id: createdIncidentId } });
+      expect(reviewedIncident?.status).toBe('UNDER_REVIEW');
+      expect(reviewedIncident?.reviewedAt).not.toBeNull();
+      const horsePostReview = await prisma.horse.findUnique({ where: { id: targetHorseId } });
+      expect(horsePostReview?.isMedicalLocked).toBe(originalIsMedicalLocked);
+      const recordsPostReview = await prisma.medicalRecord.count({ where: { horseId: targetHorseId } });
+      expect(recordsPostReview).toBe(preRecordIds.length);
+
+      // Capture review notification ID created by review submission
+      const reviewNotifs = await prisma.notification.findMany({
+        where: {
+          createdAt: { gte: testStartTime },
+          title: { contains: incident.incidentNumber },
+        },
+        select: { id: true },
+      });
+      createdNotificationIds.push(...reviewNotifs.map((n: { id: string }) => n.id));
+
+      // 7. Vet uses Create Medical Record via Main-Web UI (R-2.2)
+      await incidentCard.getByTestId('incident-card-review-btn').click();
+      await expect(modal).toBeVisible({ timeout: 10000 });
+      await modal.locator('[data-testid="incident-action-create-record"]').click();
+
+      await expect(page).toHaveURL(new RegExp(`/medical/records/new\\?horseId=${targetHorseId}`), { timeout: 10000 });
+      await page.waitForLoadState('networkidle');
+
+      // Fill in required fields
+      await page.getByPlaceholder(/Horse exhibits|front limb lameness/i).fill(`Clinical evaluation of post-trial lameness [${TEST_MARKER}]`);
+      await page.getByPlaceholder(/Note lung sounds|lung sounds/i).fill(`Palpation shows left forelimb tendon heat and sensitivity. Grade 2 lameness [${TEST_MARKER}].`);
+      await page.getByPlaceholder(/Acute tenosynovitis/i).fill(`Left forelimb superficial digital flexor tendonitis [${TEST_MARKER}]`);
+
+      // Submit and finalize record
+      const saveRecordBtn = page.getByRole('button', { name: /Save & Finalize|Lưu bệnh án/i });
+      await saveRecordBtn.click();
+      await expect(page).toHaveURL(/.*medical\/records\/.+/, { timeout: 15000 });
+
+      // Verify in PostgreSQL: record persisted for targetHorseId
+      const createdRecord = await prisma.medicalRecord.findFirst({
+        where: { horseId: targetHorseId, clinicalDiagnosis: { contains: TEST_MARKER } },
+      });
+      expect(createdRecord).toBeTruthy();
+      createdMedicalRecordId = createdRecord!.id;
+      expect(createdRecord!.status).toBe('OPEN');
+      expect(createdRecord!.horseId).toBe(targetHorseId);
+
+      // Invariant: record creation does NOT automatically place a MedicalLock
+      const horseAfterRecord = await prisma.horse.findUnique({ where: { id: targetHorseId } });
+      expect(horseAfterRecord?.isMedicalLocked).toBe(originalIsMedicalLocked);
+      const locksAfterRecord = await prisma.medicalLock.count({ where: { horseId: targetHorseId, isLocked: true } });
+      expect(locksAfterRecord).toBe(preLockIds.length);
+
+      // 8. Vet explicitly places the Medical Lock (R-2.3)
+      await page.goto(`${FE_BASE}/locks?horseId=${targetHorseId}&action=place`);
+      await page.waitForLoadState('networkidle');
+
+      const lockModal = page.locator('div[role="dialog"]');
+      await expect(lockModal).toBeVisible({ timeout: 10000 });
+
+      await lockModal.locator('textarea').fill(`Severe left forelimb suspensory desmitis [${TEST_MARKER}]`);
+      const confirmLockBtn = lockModal.getByRole('button', { name: /Confirm Training Lock|Xác nhận khóa/i });
+      await confirmLockBtn.click();
+      await expect(lockModal).not.toBeVisible({ timeout: 10000 });
+
+      // Verify DB: horse is now medical locked and active lock exists
+      const horseLocked = await prisma.horse.findUnique({ where: { id: targetHorseId } });
+      expect(horseLocked?.isMedicalLocked).toBe(true);
+
+      const activeLock = await prisma.medicalLock.findFirst({
+        where: { horseId: targetHorseId, isLocked: true, lockReason: { contains: TEST_MARKER } },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(activeLock).toBeTruthy();
+      placedLockId = activeLock!.id;
+      placedLockCode = activeLock!.lockCode;
+
+      // Capture Training Lock placed notification IDs
+      const lockPlacedNotifs = await prisma.notification.findMany({
+        where: {
+          createdAt: { gte: testStartTime },
+          title: 'Training Lock placed',
+          message: { contains: TEST_MARKER },
+        },
+        select: { id: true },
+      });
+      createdNotificationIds.push(...lockPlacedNotifs.map((n: { id: string }) => n.id));
+
+      // 9. Simulator lock enforcement on already-active session (R-3.1 & R-3.2)
+      // Lock synchronization arrives through sys:medical_lock_sync
+      const lockBanner = simPage.locator('text=/Đang bị Medical Lock/i');
+      await expect(lockBanner).toBeVisible({ timeout: 15000 });
+
+      // Simulator visibly blocks/throttles the active heavy action
+      const heavyIntensityBtn = simPage.locator('div[aria-label="Cường độ"] button').filter({ hasText: /Nặng|HEAVY/i });
+      await expect(heavyIntensityBtn).toBeDisabled();
+
+      // 10. Reject new future HEAVY/TRIAL workout start through live NestJS API (R-3.3)
+      const futureWorkout = await prisma.workoutSession.create({
+        data: {
+          trainingPlanId: '00000000-0000-4000-a006-000000000001',
+          horseId: targetHorseId,
+          workoutType: 'TRIAL',
+          intensity: 'HEAVY',
+          distanceMeters: 1200,
+          scheduledDate: new Date(Date.now() - 30000),
+          status: 'SCHEDULED',
+          trainerNotes: `Future Heavy Attempt [${TEST_MARKER}]`,
+        },
+      });
+      futureWorkoutId = futureWorkout.id;
+
+      const rejectStartRes = await page.request.post(`${BE_BASE}/simulator/workouts/${futureWorkout.id}/start`, {
+        headers: { Authorization: `Bearer ${trainerToken}` },
+      });
+      expect(rejectStartRes.status()).toBe(409); // Conflict
+      const rejectStartData = await rejectStartRes.json();
+      expect(rejectStartData.code || rejectStartData.message).toMatch(/MEDICAL_LOCK_ACTIVE|medical lock/i);
+
+      // 11. Reject future tournament/race registration for locked horse through live NestJS API (R-3.4)
+      const tournament = await prisma.tournament.create({
+        data: {
+          name: `QA T017 Cup [${TEST_MARKER}]`,
+          raceDate: new Date(Date.now() + 7 * 86400000),
+          location: 'QA Racecourse',
+          distanceMeters: 1600,
+          trackType: 'TURF',
+          prizePool: 10000,
+          registrationDeadline: new Date(Date.now() + 2 * 86400000),
+          status: 'OPEN_REGISTRATION',
+        },
+      });
+      createdTournamentId = tournament.id;
+
+      const regRes = await page.request.post(`${BE_BASE}/tournaments/${tournament.id}/registrations`, {
+        headers: { Authorization: `Bearer ${trainerToken}` },
+        data: { horseId: targetHorseId },
+      });
+      expect(regRes.status()).toBe(400); // Bad Request
+      const regData = await regRes.json();
+      expect(regData.code || regData.message).toMatch(/MEDICAL_LOCK_ACTIVE|Medical Lock/i);
+
+      // 12. Vet lifts the Medical Lock in Main Web (R-3.5)
+      await page.goto(`${FE_BASE}/locks`);
+      await page.waitForLoadState('networkidle');
+
+      const lockRow = page.locator('tr').filter({ hasText: TEST_MARKER });
+      const liftBtn = lockRow.locator('[data-testid="training-lock-lift-btn"]').first();
+      await expect(liftBtn).toBeVisible({ timeout: 10000 });
+      await liftBtn.click();
+
+      const liftModal = page.locator('div[role="dialog"]');
+      await expect(liftModal).toBeVisible({ timeout: 10000 });
+
+      await liftModal.locator('textarea').fill(`Ultrasound confirms complete tendon fiber recovery [${TEST_MARKER}]`);
+      const confirmLiftBtn = liftModal.getByRole('button', { name: /Confirm Lift Lock|Xác nhận mở khóa/i });
+      await confirmLiftBtn.click();
+      await expect(liftModal).not.toBeVisible({ timeout: 10000 });
+
+      // Verify in DB: horse is unlocked and lock is RELEASED
+      const horseUnlocked = await prisma.horse.findUnique({ where: { id: targetHorseId } });
+      expect(horseUnlocked?.isMedicalLocked).toBe(originalIsMedicalLocked);
+
+      const releasedLock = await prisma.medicalLock.findUnique({ where: { id: placedLockId } });
+      expect(releasedLock?.isLocked).toBe(false);
+
+      // Capture Training Lock lifted notification IDs
+      const lockLiftedNotifs = await prisma.notification.findMany({
+        where: {
+          createdAt: { gte: testStartTime },
+          title: 'Training Lock lifted',
+          message: { contains: initialHorse!.name },
+        },
+        select: { id: true },
+      });
+      createdNotificationIds.push(...lockLiftedNotifs.map((n: { id: string }) => n.id));
+
+      // Verify Simulator receives sys:medical_lock_sync and clears the block banner
+      await expect(lockBanner).not.toBeVisible({ timeout: 15000 });
+
+      // Simulator returns only to explicitly permitted state, does not automatically resume unsafe active heavy action (R-3.5)
+      await expect(heavyIntensityBtn).not.toHaveClass(/active|selected|btn-primary/i);
+    } finally {
+      if (simPage) {
+        await simPage.close().catch(() => {});
+      }
+      // R-6.4: Delete only rows whose exact IDs were captured as created by this test,
+      // or rows carrying the unique current TEST_MARKER.
+      if (createdSessionId) {
+        await prisma.simulatorSession.deleteMany({ where: { id: createdSessionId } });
+      }
+      if (createdWorkoutSessionId) {
+        await prisma.workoutSession.deleteMany({ where: { id: createdWorkoutSessionId } });
+      }
+      if (futureWorkoutId) {
+        await prisma.workoutSession.deleteMany({ where: { id: futureWorkoutId } });
+      }
+      await prisma.workoutSession.deleteMany({
+        where: { trainerNotes: { contains: TEST_MARKER } },
+      });
+
+      if (createdTournamentId) {
+        await prisma.tournamentRegistration.deleteMany({ where: { tournamentId: createdTournamentId } });
+        await prisma.tournament.deleteMany({ where: { id: createdTournamentId } });
+      }
+      await prisma.tournament.deleteMany({
+        where: { name: { contains: TEST_MARKER } },
+      });
+
+      if (placedLockId) {
+        await prisma.medicalLock.deleteMany({ where: { id: placedLockId } });
+      }
+      await prisma.medicalLock.deleteMany({
+        where: { lockReason: { contains: TEST_MARKER } },
+      });
+
+      if (createdMedicalRecordId) {
+        await prisma.medicalRecord.deleteMany({ where: { id: createdMedicalRecordId } });
+      }
+      await prisma.medicalRecord.deleteMany({
+        where: { clinicalDiagnosis: { contains: TEST_MARKER } },
+      });
+
+      if (createdIncidentId) {
+        await prisma.incidentReport.deleteMany({ where: { id: createdIncidentId } });
+      }
+      await prisma.incidentReport.deleteMany({
+        where: { description: { contains: TEST_MARKER } },
+      });
+
+      // Correlated Notification cleanup: delete test-owned rows using exact created IDs, TEST_MARKER, and correlation fields
+      await prisma.notification.deleteMany({
+        where: {
+          OR: [
+            ...(createdNotificationIds.length > 0 ? [{ id: { in: createdNotificationIds } }] : []),
+            { message: { contains: TEST_MARKER } },
+            { title: { contains: TEST_MARKER } },
+          ],
+        },
+      });
+
+      // Correlated AuditLog cleanup: delete test-owned rows using exact created entity IDs, TEST_MARKER, and correlation fields
+      const correlatedEntityIds = [
+        createdIncidentId,
+        createdMedicalRecordId,
+        placedLockId,
+        createdWorkoutSessionId,
+        futureWorkoutId,
+        createdTournamentId,
+        createdSessionId,
+      ].filter(Boolean) as string[];
+
+      await prisma.auditLog.deleteMany({
+        where: {
+          OR: [
+            { newValuesJson: { contains: TEST_MARKER } },
+            ...(correlatedEntityIds.length > 0 ? [{ entityId: { in: correlatedEntityIds } }] : []),
+            ...(placedLockCode ? [{ newValuesJson: { contains: placedLockCode } }] : []),
+          ],
+        },
+      });
+
+      // R-10.2: Restore pre-existing workout rows to their exact original field values
+      for (const snap of preWorkoutSnapshots) {
+        await prisma.workoutSession.update({
+          where: { id: snap.id },
+          data: {
+            status: snap.status,
+            statusReason: snap.statusReason,
+          },
+        });
+      }
+
+      // R-6.3: Restore horse's original status and isMedicalLocked exactly
+      await prisma.horse.update({
+        where: { id: targetHorseId },
+        data: {
+          status: originalStatus,
+          isMedicalLocked: originalIsMedicalLocked,
+        },
+      });
+
+      // R-6.6: Assert that all pre-existing counts/IDs for the reused horse remain unchanged after cleanup
+      const postRegIds = (
+        await prisma.tournamentRegistration.findMany({
+          where: { horseId: targetHorseId },
+          select: { id: true },
+          orderBy: { id: 'asc' },
+        })
+      ).map((r: { id: string }) => r.id);
+
+      const postLockIds = (
+        await prisma.medicalLock.findMany({
+          where: { horseId: targetHorseId },
+          select: { id: true },
+          orderBy: { id: 'asc' },
+        })
+      ).map((r: { id: string }) => r.id);
+
+      const postRecordIds = (
+        await prisma.medicalRecord.findMany({
+          where: { horseId: targetHorseId },
+          select: { id: true },
+          orderBy: { id: 'asc' },
+        })
+      ).map((r: { id: string }) => r.id);
+
+      const postIncidentIds = (
+        await prisma.incidentReport.findMany({
+          where: { horseId: targetHorseId },
+          select: { id: true },
+          orderBy: { id: 'asc' },
+        })
+      ).map((r: { id: string }) => r.id);
+
+      // R-10.3: Assert complete relevant workout snapshots equal their pre-test values
+      const postWorkoutSnapshots = await prisma.workoutSession.findMany({
+        where: {
+          horseId: targetHorseId,
+          OR: [{ intensity: 'HEAVY' }, { workoutType: { in: ['BREEZE', 'TRIAL'] } }],
+        },
+        select: {
+          id: true,
+          status: true,
+          statusReason: true,
+        },
+        orderBy: { id: 'asc' },
+      });
+
+      // Assert pre-existing Notification rows remain present
+      const postNotifsForPre = await prisma.notification.findMany({
+        where: { id: { in: preNotificationIds } },
+        select: { id: true },
+      });
+      if (postNotifsForPre.length !== preNotificationIds.length) {
+        const postSet = new Set(postNotifsForPre.map((n: { id: string }) => n.id));
+        const missing = preNotificationIds.filter((id: string) => !postSet.has(id));
+        console.error('MISSING PRE-NOTIFICATION IDS:', missing);
+      }
+      expect(postNotifsForPre.length).toBe(preNotificationIds.length);
+
+      // Assert pre-existing AuditLog rows remain present
+      const postAuditsForPre = await prisma.auditLog.findMany({
+        where: { id: { in: preAuditLogIds } },
+        select: { id: true },
+      });
+      expect(postAuditsForPre.length).toBe(preAuditLogIds.length);
+
+      // Assert test-correlated residue is zero
+      const residueNotifs = await prisma.notification.findMany({
+        where: {
+          OR: [
+            { message: { contains: TEST_MARKER } },
+            { title: { contains: TEST_MARKER } },
+            ...(createdNotificationIds.length > 0 ? [{ id: { in: createdNotificationIds } }] : []),
+          ],
+        },
+      });
+      expect(residueNotifs.length).toBe(0);
+
+      const residueAudits = await prisma.auditLog.findMany({
+        where: {
+          OR: [
+            { newValuesJson: { contains: TEST_MARKER } },
+            ...(correlatedEntityIds.length > 0 ? [{ entityId: { in: correlatedEntityIds } }] : []),
+            ...(placedLockCode ? [{ newValuesJson: { contains: placedLockCode } }] : []),
+          ],
+        },
+      });
+      expect(residueAudits.length).toBe(0);
+
+      // Prove cleanup preserved sentinel unrelated Notification & AuditLog created after snapshot
+      if (sentinelNotificationId) {
+        const preservedSentinelNotif = await prisma.notification.findUnique({
+          where: { id: sentinelNotificationId },
+        });
+        expect(preservedSentinelNotif).toBeTruthy();
+        expect(preservedSentinelNotif?.title).toContain(SENTINEL_MARKER);
+        // Clean up sentinel by exact ID afterward
+        await prisma.notification.delete({ where: { id: sentinelNotificationId } });
+        expect(await prisma.notification.findUnique({ where: { id: sentinelNotificationId } })).toBeNull();
+      }
+
+      if (sentinelAuditLogId) {
+        const preservedSentinelAudit = await prisma.auditLog.findUnique({
+          where: { id: sentinelAuditLogId },
+        });
+        expect(preservedSentinelAudit).toBeTruthy();
+        expect(preservedSentinelAudit?.newValuesJson).toContain(SENTINEL_MARKER);
+        // Clean up sentinel by exact ID afterward
+        await prisma.auditLog.delete({ where: { id: sentinelAuditLogId } });
+        expect(await prisma.auditLog.findUnique({ where: { id: sentinelAuditLogId } })).toBeNull();
+      }
+
+      expect(postRegIds).toEqual(preRegIds);
+      expect(postLockIds).toEqual(preLockIds);
+      expect(postRecordIds).toEqual(preRecordIds);
+      expect(postIncidentIds).toEqual(preIncidentIds);
+      expect(postWorkoutSnapshots).toEqual(preWorkoutSnapshots);
+
+      const finalHorse = await prisma.horse.findUnique({ where: { id: targetHorseId } });
+      expect(finalHorse?.status).toBe(originalStatus);
+      expect(finalHorse?.isMedicalLocked).toBe(originalIsMedicalLocked);
+    }
+  });
 });
