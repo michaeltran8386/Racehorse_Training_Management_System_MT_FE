@@ -36,6 +36,7 @@ export default function TrialRunsPage() {
   const [to, setTo] = useState(plusDays(todayClub(), 14));
   const [trials, setTrials] = useState<ExerciseSession[]>([]);
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
+  const [plansLoaded, setPlansLoaded] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [launchingId, setLaunchingId] = useState<string | null>(null);
@@ -43,25 +44,35 @@ export default function TrialRunsPage() {
   const canManage = user.role === "HEAD_TRAINER" || user.role === "CLUB_MANAGER";
 
   const latestRequest = useRef(0);
-  const load = useCallback(async () => {
-    const requestId = ++latestRequest.current;
-    setLoading(true);
-    try {
-      const data = await trainingApi.getTrialRuns({ from, to });
-      if (requestId === latestRequest.current) setTrials(data);
-    } catch (err) {
-      if (requestId === latestRequest.current) toast.show(messageFor(err), "danger");
-    } finally {
-      if (requestId === latestRequest.current) setLoading(false);
-    }
-  }, [from, to, toast]);
+  const load = useCallback(
+    async (customFrom?: string, customTo?: string) => {
+      const requestId = ++latestRequest.current;
+      const queryFrom = customFrom ?? from;
+      const queryTo = customTo ?? to;
+      setLoading(true);
+      try {
+        const data = await trainingApi.getTrialRuns({ from: queryFrom, to: queryTo });
+        if (requestId === latestRequest.current) setTrials(data);
+      } catch (err) {
+        if (requestId === latestRequest.current) toast.show(messageFor(err), "danger");
+      } finally {
+        if (requestId === latestRequest.current) setLoading(false);
+      }
+    },
+    [from, to, toast],
+  );
 
   useEffect(() => {
     void load();
     trainingApi
       .getPlans()
-      .then(setPlans)
-      .catch(() => {});
+      .then((data) => {
+        setPlans(data);
+        setPlansLoaded(true);
+      })
+      .catch(() => {
+        setPlansLoaded(true);
+      });
   }, [load]);
 
   const handleOpenSchedule = () => {
@@ -143,7 +154,7 @@ export default function TrialRunsPage() {
         </div>
       </Card>
 
-      {loading ? (
+      {loading || !plansLoaded ? (
         <SkeletonTable columns={5} rows={5} />
       ) : trials.length === 0 ? (
         <EmptyState
@@ -191,41 +202,43 @@ export default function TrialRunsPage() {
                       </td>
                       <td style={{ padding: "0.5rem 0.75rem", textAlign: "right" }}>
                         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: "0.5rem" }}>
-                          {user.role === "HEAD_TRAINER" && row.status === "SCHEDULED" && (
-                            <div>
-                              <Button
-                                size="sm"
-                                tone="primary"
-                                disabled={
-                                  launchingId === row.id ||
-                                  row.isHorseLocked ||
-                                  new Date(row.scheduledAt) > new Date()
-                                }
-                                title={
-                                  row.isHorseLocked
-                                    ? tr("The horse is still under a Training Lock.")
-                                    : new Date(row.scheduledAt) > new Date()
-                                      ? tr("The trial has not reached its scheduled start time.")
-                                      : undefined
-                                }
-                                onClick={() => void launchSimulation(row.id)}
-                              >
-                                {launchingId === row.id
-                                  ? tr("Opening…")
-                                  : isVietnamese
-                                    ? "Chạy mô phỏng"
-                                    : tr("Run simulation")}
-                              </Button>
-                              {new Date(row.scheduledAt) > new Date() && (
-                                <div
-                                  data-testid="trial-launch-timing"
-                                  style={{ marginTop: "0.25rem", fontSize: "var(--fs-xs)", color: "var(--text-muted)" }}
+                          {user.role === "HEAD_TRAINER" &&
+                            row.status === "SCHEDULED" &&
+                            plans.some((p) => p.id === row.planId) && (
+                              <div>
+                                <Button
+                                  size="sm"
+                                  tone="primary"
+                                  disabled={
+                                    launchingId === row.id ||
+                                    row.isHorseLocked ||
+                                    new Date(row.scheduledAt) > new Date()
+                                  }
+                                  title={
+                                    row.isHorseLocked
+                                      ? tr("The horse is still under a Training Lock.")
+                                      : new Date(row.scheduledAt) > new Date()
+                                        ? tr("The trial has not reached its scheduled start time.")
+                                        : undefined
+                                  }
+                                  onClick={() => void launchSimulation(row.id)}
                                 >
-                                  {isVietnamese ? "Có thể chạy từ" : "Available from"} {formatDateTime(row.scheduledAt)}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                  {launchingId === row.id
+                                    ? tr("Opening…")
+                                    : isVietnamese
+                                      ? "Chạy mô phỏng"
+                                      : tr("Run simulation")}
+                                </Button>
+                                {new Date(row.scheduledAt) > new Date() && (
+                                  <div
+                                    data-testid="trial-launch-timing"
+                                    style={{ marginTop: "0.25rem", fontSize: "var(--fs-xs)", color: "var(--text-muted)" }}
+                                  >
+                                    {isVietnamese ? "Có thể chạy từ" : "Available from"} {formatDateTime(row.scheduledAt)}
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           <Link to={`/training/sessions/${row.id}/result`}>
                             <Button size="sm" tone={row.status === "COMPLETED" ? "secondary" : "primary"}>
                               {row.status === "COMPLETED"
@@ -250,9 +263,21 @@ export default function TrialRunsPage() {
           defaultDate={from}
           defaultType="TRIAL"
           onClose={() => setIsScheduleOpen(false)}
-          onSaved={() => {
+          onSaved={(savedDate?: string) => {
             setIsScheduleOpen(false);
-            void load();
+            let nextFrom = from;
+            let nextTo = to;
+            if (savedDate) {
+              if (savedDate < nextFrom) {
+                nextFrom = savedDate;
+                setFrom(savedDate);
+              }
+              if (savedDate > nextTo) {
+                nextTo = savedDate;
+                setTo(savedDate);
+              }
+            }
+            void load(nextFrom, nextTo);
           }}
         />
       )}
