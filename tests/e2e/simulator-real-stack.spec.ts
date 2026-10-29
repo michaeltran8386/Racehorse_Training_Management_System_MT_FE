@@ -10,7 +10,7 @@ const __dirname = path.dirname(__filename);
 const siblingPrismaPath =
   process.env.PRISMA_CLIENT_PATH ||
   path.resolve(__dirname, '../../..', 'Racehorse_Training_Management_System_MT_BE', 'node_modules', '@prisma/client');
-const { PrismaClient } = require(siblingPrismaPath);
+const { PrismaClient, Prisma } = require(siblingPrismaPath);
 
 const FE_BASE = 'http://localhost:5173';
 const SIM_BASE = 'http://localhost:5175';
@@ -2054,5 +2054,556 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
       expect(finalHorse?.status).toBe(originalStatus);
       expect(finalHorse?.isMedicalLocked).toBe(originalIsMedicalLocked);
     }
+  });
+
+  test('TASK-018: Unified Web-Simulator supply delivery synchronization, truck animation ACK, and offline fallback', async ({ page, context }) => {
+    test.setTimeout(120_000);
+
+    const consoleErrors: string[] = [];
+    page.on('pageerror', (err) => consoleErrors.push(err.message));
+
+    const TARGET_GROOM_EMAIL = 'qa-groom1@gmail.com';
+    const TARGET_CM_EMAIL = 'qa-cm@gmail.com';
+    const TEST_MARKER = `TASK018-${Date.now()}`;
+    const targetZoneId = '7a6f89cc-eb76-44e9-b6ea-3d5d7bd2d8d1'; // Zone A - Barn 1
+    const secondZoneId = 'b4f6b8f7-d132-4f27-8ea7-ec2e9a8826e0'; // Zone B - Barn 2
+    const targetSupplyId = 'bdf3b314-2bc9-44f0-92c1-b152cf75199b'; // SUP_GRAIN_OATS
+    const zeroSupplyId = '0cbcf084-75f8-4dc1-8993-5eafeb008464'; // SUP_HAY_ALFALFA (Zone A)
+    const requestedQty = 20;
+    const fallbackQty = 5;
+
+    // 1. Pre-test snapshot & multi-zone decimal stock baseline setup
+    const preStockA = await prisma.stockBalance.findFirst({
+      where: { zoneId: targetZoneId, supplyId: targetSupplyId },
+    });
+    const preStockAQty = preStockA ? Number(preStockA.quantity) : 0;
+    const preStockANotes = preStockA ? preStockA.notes : null;
+
+    const preStockB = await prisma.stockBalance.findFirst({
+      where: { zoneId: secondZoneId, supplyId: targetSupplyId },
+    });
+    const createdStockB = !preStockB;
+    const preStockBQty = preStockB ? Number(preStockB.quantity) : null;
+    const preStockBNotes = preStockB ? preStockB.notes : null;
+
+    const preZeroStock = await prisma.stockBalance.findFirst({
+      where: { id: zeroSupplyId },
+    });
+    const preZeroStockQty = preZeroStock ? Number(preZeroStock.quantity) : 0;
+    const preZeroStockNotes = preZeroStock ? preZeroStock.notes : null;
+
+    // Set precise decimal baseline quantities:
+    // Zone A Oats = 25.25, Zone B Oats = 0.50, Zero Stock = 0
+    if (preStockA) {
+      await prisma.stockBalance.update({
+        where: { id: preStockA.id },
+        data: { quantity: new Prisma.Decimal(25.25), notes: 'QA T018 decimal baseline 25.25' },
+      });
+    }
+
+    let stockBId: string;
+    if (preStockB) {
+      stockBId = preStockB.id;
+      await prisma.stockBalance.update({
+        where: { id: preStockB.id },
+        data: { quantity: new Prisma.Decimal(0.5), notes: 'QA T018 decimal baseline 0.50' },
+      });
+    } else {
+      const newStockB = await prisma.stockBalance.create({
+        data: {
+          zoneId: secondZoneId,
+          supplyId: targetSupplyId,
+          quantity: new Prisma.Decimal(0.5),
+          minThreshold: new Prisma.Decimal(10),
+          notes: 'QA T018 created multi-zone balance 0.50',
+        },
+      });
+      stockBId = newStockB.id;
+    }
+
+    if (preZeroStock) {
+      await prisma.stockBalance.update({
+        where: { id: preZeroStock.id },
+        data: { quantity: new Prisma.Decimal(0), notes: 'QA T018 zero stock baseline' },
+      });
+    }
+
+    const groomUser = await prisma.user.findFirst({ where: { email: TARGET_GROOM_EMAIL } });
+    expect(groomUser).toBeTruthy();
+
+    // Create sentinel notification to prove concurrent unrelated data is never wiped
+    const sentinelNotif = await prisma.notification.create({
+      data: {
+        userId: groomUser!.id,
+        type: 'RESTOCK_APPROVED',
+        category: 'SYSTEM',
+        title: 'SENTINEL_TASK018_PRESERVE',
+        message: 'Concurrent unrelated notification that must survive test cleanup',
+        readAt: null,
+      },
+    });
+
+    const testCreatedRequestIds: string[] = [];
+    const testCreatedRequestNumbers: string[] = [];
+    let simPage: Page | null = null;
+
+    try {
+      // 2. Open Simulator first in a second browser tab (already open and connected to /supplies)
+      simPage = await context.newPage();
+      simPage.on('pageerror', (err) => consoleErrors.push(`[SIM] ${err.message}`));
+      await simPage.goto(`${SIM_BASE}/?bypassIntro=true`);
+      await simPage.waitForLoadState('networkidle');
+
+      const simRetryBtn = simPage.getByRole('button', { name: /Thử tải lại|Retry/i });
+      if (await simRetryBtn.isVisible().catch(() => false)) {
+        await simRetryBtn.click();
+        await simPage.waitForLoadState('networkidle');
+      }
+
+      // Open Supply Panel in Simulator
+      const hubSupplyBtn = simPage.locator('[data-testid="hub-supply-btn"]');
+      await expect(hubSupplyBtn).toBeVisible({ timeout: 15000 });
+      await hubSupplyBtn.click();
+
+      // Locate supply rows: Oats in Zone A, Oats in Zone B, and Zero-stock Alfalfa in Zone A
+      const simSupplyRowA = simPage.locator('[data-testid="supply-row-SUP_GRAIN_OATS"][data-zone-code="ZONE-A"]');
+      await expect(simSupplyRowA).toBeVisible({ timeout: 10000 });
+
+      const simSupplyRowB = simPage.locator('[data-testid="supply-row-SUP_GRAIN_OATS"][data-zone-code="ZONE-B"]');
+      await expect(simSupplyRowB).toBeVisible({ timeout: 10000 });
+
+      const simZeroRow = simPage.locator('[data-testid="supply-row-SUP_HAY_ALFALFA"][data-zone-code="ZONE-A"]');
+      await expect(simZeroRow).toBeVisible({ timeout: 10000 });
+
+      // Verify exact decimal display and zero stock:
+      // Zone A Oats displays '25.25' (not rounded to 26 or 25)
+      await expect(simSupplyRowA).toContainText('25.25', { timeout: 10000 });
+      // Zone B Oats displays '0.5' (not rounded to 1)
+      await expect(simSupplyRowB).toContainText('0.5', { timeout: 10000 });
+      // Zero-stock supply displays '0'
+      await expect(simZeroRow).toContainText('0 KG', { timeout: 10000 });
+
+      // Verify local ordering buttons are removed under CR-024
+      await expect(simSupplyRowA.getByRole('button', { name: /Đặt hàng|Order/i })).toHaveCount(0);
+      await expect(simSupplyRowB.getByRole('button', { name: /Đặt hàng|Order/i })).toHaveCount(0);
+
+      // 3. Groom logs in to Main Web and submits restock proposal for Zone A Oats
+      await signIn(page, TARGET_GROOM_EMAIL);
+      await page.goto(`${FE_BASE}/supplies/requests`);
+      await page.waitForLoadState('networkidle');
+
+      const proposeBtn = page.getByRole('button', { name: /\+ Đề xuất nhập thêm vật tư|\+ Propose Supply Restock/i });
+      await expect(proposeBtn).toBeVisible({ timeout: 15000 });
+      await proposeBtn.click();
+
+      const modal = page.locator('div[role="dialog"]');
+      await expect(modal).toBeVisible({ timeout: 5000 });
+
+      // Fill proposal form
+      const zoneSelect = modal.locator('select').first();
+      await zoneSelect.selectOption(targetZoneId);
+
+      const supplySelect = modal.locator('select').nth(1);
+      await supplySelect.selectOption(targetSupplyId);
+
+      const qtyInput = modal.locator('input[type="number"]');
+      await qtyInput.fill(String(requestedQty));
+
+      const reasonInput = modal.locator('textarea');
+      await reasonInput.fill(`Morning feeding oats restock [${TEST_MARKER}]`);
+
+      const submitBtn = modal.locator('button[type="submit"]');
+      await submitBtn.click();
+      await expect(modal).not.toBeVisible({ timeout: 10000 });
+
+      // Verify proposal row appears on Web with PENDING status
+      const groomProposalRow = page.locator('tr').filter({ hasText: TEST_MARKER });
+      await expect(groomProposalRow).toBeVisible({ timeout: 10000 });
+      await expect(groomProposalRow).toContainText(/Chờ duyệt|Pending/i);
+
+      // Verify Groom sees NO review button and NO confirm delivery button
+      await expect(groomProposalRow.getByRole('button', { name: /Duyệt đề xuất|Review Proposal/i })).toHaveCount(0);
+      await expect(groomProposalRow.getByRole('button', { name: /Xác nhận nhận hàng|Confirm Receipt/i })).toHaveCount(0);
+
+      const dbReq = await prisma.restockRequest.findFirst({
+        where: { urgencyReason: { contains: TEST_MARKER } },
+      });
+      expect(dbReq).toBeTruthy();
+      expect(dbReq!.status).toBe('PENDING');
+      expect(Number(dbReq!.requestedQuantity)).toBe(requestedQty);
+      testCreatedRequestIds.push(dbReq!.id);
+      testCreatedRequestNumbers.push(dbReq!.requestNumber);
+
+      // 4. API Exclusivity: Non-CM (Groom) cannot review or deliver (403 Forbidden)
+      const unauthorizedReview = await page.evaluate(async (reqId) => {
+        const rawTokens = sessionStorage.getItem('equiflow.tokens') || localStorage.getItem('equiflow.tokens') || '{}';
+        const tokens = JSON.parse(rawTokens);
+        const res = await fetch(`http://localhost:3000/api/inventory/requests/${reqId}/review`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokens.accessToken}`,
+          },
+          body: JSON.stringify({ action: 'APPROVE', approvedQuantity: 20 }),
+        });
+        return { status: res.status };
+      }, dbReq!.id);
+      expect(unauthorizedReview.status).toBe(403);
+
+      // 5. Club Manager logs in to Main Web & reviews proposal
+      await signIn(page, TARGET_CM_EMAIL);
+      await page.goto(`${FE_BASE}/supplies/requests`);
+      await page.waitForLoadState('networkidle');
+
+      const cmProposalRow = page.locator('tr').filter({ hasText: TEST_MARKER });
+      await expect(cmProposalRow).toBeVisible({ timeout: 10000 });
+
+      // CM clicks Review Proposal button
+      const reviewBtn = cmProposalRow.getByRole('button', { name: /Duyệt đề xuất|Review Proposal/i });
+      await expect(reviewBtn).toBeVisible({ timeout: 5000 });
+      await reviewBtn.click();
+
+      const reviewModal = page.locator('div[role="dialog"]');
+      await expect(reviewModal).toBeVisible({ timeout: 5000 });
+
+      // Submit approval for quantity 20
+      const confirmReviewBtn = reviewModal.locator('button[type="submit"]');
+      await confirmReviewBtn.click();
+      await expect(reviewModal).not.toBeVisible({ timeout: 10000 });
+
+      // Web immediately updates to DELIVERING ("Đang giao hàng")
+      await expect(cmProposalRow).toContainText(/Đang giao hàng|Delivering/i, { timeout: 10000 });
+      // There is NO manual "Confirm Receipt" button for DELIVERING rows
+      await expect(cmProposalRow.getByRole('button', { name: /Xác nhận nhận hàng|Confirm Receipt/i })).toHaveCount(0);
+
+      // 6. Simulator delivery indication: MUST match BOTH zoneId and supplyId!
+      // Zone A Oats row reflects inbound delivery:
+      await expect(simSupplyRowA).toContainText(/Xe tải đang giao hàng…|Đang giao/i, { timeout: 8000 });
+      // Zone B Oats row (SAME supply code, DIFFERENT zone) MUST NOT reflect delivery!
+      await expect(simSupplyRowB).not.toContainText(/Đang giao|Xe tải đang giao hàng…/i);
+
+      // 7. Auto-refresh while warehouse panel is open without reloading Simulator:
+      // While warehouse panel is open in simPage, CM performs Web adjustment on Zone B Oats (e.g. 15.75)
+      await page.evaluate(async ({ zoneId, supplyId }) => {
+        const rawTokens = sessionStorage.getItem('equiflow.tokens') || localStorage.getItem('equiflow.tokens') || '{}';
+        const tokens = JSON.parse(rawTokens);
+        const res = await fetch('http://localhost:3000/api/inventory/adjust', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokens.accessToken}`,
+          },
+          body: JSON.stringify({
+            zoneId,
+            supplyId,
+            actualQuantity: 15.75,
+            reason: 'E2E auto-refresh verification',
+            notes: 'Adjusted while Simulator warehouse panel is open',
+          }),
+        });
+        if (!res.ok) throw new Error(`Adjust failed: ${res.status}`);
+      }, { zoneId: secondZoneId, supplyId: targetSupplyId });
+
+      // In Simulator (simPage), WITHOUT manual reload, 2s auto-refresh picks up the adjustment:
+      await expect(simSupplyRowB).toContainText('15.75', { timeout: 8000 });
+
+      // 8. Settle delivery truck animation and ACK
+      // Once Simulator ACK is processed by Backend, Web auto-polls and updates to DELIVERED
+      await expect(cmProposalRow).toContainText(/Đã giao|Delivered/i, { timeout: 20000 });
+
+      // In Simulator, Zone A Oats stock is updated to exact authoritative balance: 25.25 + 20 = 45.25
+      await expect(simSupplyRowA).toContainText('45.25', { timeout: 10000 });
+
+      // Verify PostgreSQL StockBalance incremented EXACTLY ONCE
+      const postDeliveryStock = await prisma.stockBalance.findFirst({
+        where: { zoneId: targetZoneId, supplyId: targetSupplyId },
+      });
+      expect(postDeliveryStock).toBeTruthy();
+      expect(Number(postDeliveryStock!.quantity)).toBe(45.25);
+
+      // Verify DB RestockRequest status is DELIVERED
+      const deliveredReq = await prisma.restockRequest.findUnique({
+        where: { id: dbReq!.id },
+      });
+      expect(deliveredReq!.status).toBe('DELIVERED');
+      expect(deliveredReq!.deliveredAt).toBeTruthy();
+
+      // Reload Simulator page and verify persisted stock values remain exact from PostgreSQL
+      await simPage.reload();
+      await simPage.waitForLoadState('networkidle');
+      if (await simRetryBtn.isVisible().catch(() => false)) {
+        await simRetryBtn.click();
+        await simPage.waitForLoadState('networkidle');
+      }
+      const reloadedHubBtn = simPage.locator('[data-testid="hub-supply-btn"]');
+      await expect(reloadedHubBtn).toBeVisible({ timeout: 15000 });
+      await reloadedHubBtn.click();
+      await expect(simSupplyRowA).toContainText('45.25', { timeout: 10000 });
+      await expect(simSupplyRowB).toContainText('15.75', { timeout: 10000 });
+
+      // 9. Offline Fallback Watchdog Test (20s rule)
+      // Close Simulator so no client is connected to send ACK
+      await simPage.close();
+      simPage = null;
+
+      const FALLBACK_MARKER = `FALLBACK-${Date.now()}`;
+      // Groom submits second proposal for fallback testing
+      await signIn(page, TARGET_GROOM_EMAIL);
+      await page.goto(`${FE_BASE}/supplies/requests`);
+      await page.waitForLoadState('networkidle');
+
+      await page.getByRole('button', { name: /\+ Đề xuất nhập thêm vật tư|\+ Propose Supply Restock/i }).click();
+      const fbModal = page.locator('div[role="dialog"]');
+      await expect(fbModal).toBeVisible({ timeout: 5000 });
+
+      await fbModal.locator('select').first().selectOption(targetZoneId);
+      await fbModal.locator('select').nth(1).selectOption(targetSupplyId);
+      await fbModal.locator('input[type="number"]').fill(String(fallbackQty));
+      await fbModal.locator('textarea').fill(`Fallback watchdog test [${FALLBACK_MARKER}]`);
+      await fbModal.locator('button[type="submit"]').click();
+      await expect(fbModal).not.toBeVisible({ timeout: 10000 });
+
+      const fbReq = await prisma.restockRequest.findFirst({
+        where: { urgencyReason: { contains: FALLBACK_MARKER } },
+      });
+      expect(fbReq).toBeTruthy();
+      testCreatedRequestIds.push(fbReq!.id);
+      testCreatedRequestNumbers.push(fbReq!.requestNumber);
+
+      // CM approves fallback request on Web
+      await signIn(page, TARGET_CM_EMAIL);
+      await page.goto(`${FE_BASE}/supplies/requests`);
+      await page.waitForLoadState('networkidle');
+
+      const fbRow = page.locator('tr').filter({ hasText: FALLBACK_MARKER });
+      await expect(fbRow).toBeVisible({ timeout: 10000 });
+      await fbRow.getByRole('button', { name: /Duyệt đề xuất|Review Proposal/i }).click();
+
+      const fbReviewModal = page.locator('div[role="dialog"]');
+      await expect(fbReviewModal).toBeVisible({ timeout: 5000 });
+      await fbReviewModal.locator('button[type="submit"]').click();
+      await expect(fbReviewModal).not.toBeVisible({ timeout: 10000 });
+
+      // Row moves to DELIVERING
+      await expect(fbRow).toContainText(/Đang giao hàng|Delivering/i, { timeout: 10000 });
+
+      // Since Simulator is closed, Backend 20s watchdog timer completes delivery via FALLBACK
+      // Web auto-polls every 2s while deliveries are active and reflects DELIVERED
+      await expect(fbRow).toContainText(/Đã giao|Delivered/i, { timeout: 30000 });
+
+      // Verify PostgreSQL StockBalance incremented by fallbackQty: 45.25 + 5 = 50.25
+      const finalStock = await prisma.stockBalance.findFirst({
+        where: { zoneId: targetZoneId, supplyId: targetSupplyId },
+      });
+      expect(finalStock).toBeTruthy();
+      expect(Number(finalStock!.quantity)).toBe(50.25);
+
+      expect(consoleErrors).toEqual([]);
+    } finally {
+      // 10. Safe, Non-destructive Cleanup
+      if (simPage) {
+        await simPage.close().catch(() => {});
+      }
+
+      // Restore baseline StockBalance for Zone A Oats
+      if (preStockA) {
+        await prisma.stockBalance.update({
+          where: { id: preStockA.id },
+          data: {
+            quantity: new Prisma.Decimal(preStockAQty),
+            notes: preStockANotes,
+          },
+        });
+      }
+
+      // Restore baseline or delete created StockBalance for Zone B Oats
+      if (createdStockB) {
+        await prisma.stockBalance.deleteMany({
+          where: { zoneId: secondZoneId, supplyId: targetSupplyId },
+        });
+      } else if (preStockB) {
+        await prisma.stockBalance.update({
+          where: { id: preStockB.id },
+          data: {
+            quantity: new Prisma.Decimal(preStockBQty!),
+            notes: preStockBNotes,
+          },
+        });
+      }
+
+      // Restore baseline for Zero Stock supply
+      if (preZeroStock) {
+        await prisma.stockBalance.update({
+          where: { id: preZeroStock.id },
+          data: {
+            quantity: new Prisma.Decimal(preZeroStockQty),
+            notes: preZeroStockNotes,
+          },
+        });
+      }
+
+      // Clean up ONLY test-created RestockRequest records by exact ID
+      if (testCreatedRequestIds.length > 0) {
+        await prisma.restockRequest.deleteMany({
+          where: { id: { in: testCreatedRequestIds } },
+        });
+      }
+
+      // Clean up ONLY test-created notifications by exact matching request numbers
+      if (testCreatedRequestNumbers.length > 0) {
+        await prisma.notification.deleteMany({
+          where: {
+            OR: testCreatedRequestNumbers.map((num) => ({ message: { contains: num } })),
+          },
+        });
+      }
+
+      // Clean up ONLY test-created audit logs by exact entityId
+      if (testCreatedRequestIds.length > 0) {
+        await prisma.auditLog.deleteMany({
+          where: {
+            entityName: 'RestockRequest',
+            entityId: { in: testCreatedRequestIds },
+          },
+        });
+      }
+      if (stockBId) {
+        await prisma.auditLog.deleteMany({
+          where: {
+            entityName: 'StockBalance',
+            entityId: stockBId,
+          },
+        });
+      }
+
+      // Assert sentinel notification was NEVER touched or deleted
+      const checkSentinel = await prisma.notification.findUnique({
+        where: { id: sentinelNotif.id },
+      });
+      expect(checkSentinel).toBeTruthy();
+      expect(checkSentinel!.title).toBe('SENTINEL_TASK018_PRESERVE');
+
+      // Delete sentinel notification
+      await prisma.notification.delete({
+        where: { id: sentinelNotif.id },
+      });
+    }
+  });
+
+  test('TASK-018: Simulator audio engine — autoplay policy handling, HUD control, mute/volume sliders, reload persistence, and sound on/off delivery', async ({ page }) => {
+    test.setTimeout(90_000);
+    const consoleErrors: string[] = [];
+    page.on('pageerror', (err) => consoleErrors.push(err.message));
+
+    // 1. Initial page load & autoplay policy handling
+    // Ensure clean localStorage for audio test
+    await page.goto(`${SIM_BASE}/?bypassIntro=true`);
+    await page.evaluate(() => localStorage.removeItem('equiflow_audio_settings'));
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+
+    const audioRetryBtn = page.getByRole('button', { name: /Thử tải lại|Retry/i });
+    if (await audioRetryBtn.isVisible().catch(() => false)) {
+      await audioRetryBtn.click();
+      await page.waitForLoadState('networkidle');
+    }
+
+    // Button should be visible in FarmHub HUD with default music on ("🎵")
+    const audioBtn = page.locator('button[aria-label="Cài đặt âm thanh"]:visible');
+    await expect(audioBtn).toBeVisible({ timeout: 15000 });
+    await expect(audioBtn).toContainText('🎵');
+
+    // 2. Open Audio HUD Controls popover
+    await audioBtn.click();
+    const popover = page.locator('text=Âm Thanh EquiFlow');
+    await expect(popover).toBeVisible({ timeout: 5000 });
+
+    const bgmCheckbox = page.locator('label:has-text("Nhạc nền (BGM)") input[type="checkbox"]');
+    const sfxCheckbox = page.locator('label:has-text("Hiệu ứng (SFX)") input[type="checkbox"]');
+    const bgmSlider = page.locator('input[type="range"]').first();
+    const sfxSlider = page.locator('input[type="range"]').nth(1);
+
+    await expect(bgmCheckbox).toBeChecked();
+    await expect(sfxCheckbox).toBeChecked();
+    expect(await bgmSlider.inputValue()).toBe('0.5');
+    expect(await sfxSlider.inputValue()).toBe('0.7');
+
+    // 3. Mute BGM, adjust SFX volume, and assert persistence
+    await bgmCheckbox.click();
+    await expect(bgmCheckbox).not.toBeChecked();
+    await expect(audioBtn).toContainText('🔇');
+
+    // Adjust SFX slider to 0.4
+    await sfxSlider.fill('0.4');
+    expect(await sfxSlider.inputValue()).toBe('0.4');
+
+    // Verify localStorage reflects settings
+    const settingsStr = await page.evaluate(() => localStorage.getItem('equiflow_audio_settings'));
+    expect(settingsStr).toBeTruthy();
+    const parsed = JSON.parse(settingsStr!);
+    expect(parsed.musicEnabled).toBe(false);
+    expect(parsed.sfxEnabled).toBe(true);
+    expect(parsed.sfxVolume).toBe(0.4);
+
+    // 4. Reload persistence: reload page and assert audio preferences survive
+    await page.reload();
+    await page.waitForLoadState('networkidle');
+    if (await audioRetryBtn.isVisible().catch(() => false)) {
+      await audioRetryBtn.click();
+      await page.waitForLoadState('networkidle');
+    }
+    await expect(audioBtn).toBeVisible({ timeout: 15000 });
+    await expect(audioBtn).toContainText('🔇');
+
+    await audioBtn.click();
+    await expect(popover).toBeVisible({ timeout: 5000 });
+    await expect(bgmCheckbox).not.toBeChecked();
+    await expect(sfxCheckbox).toBeChecked();
+    expect(await sfxSlider.inputValue()).toBe('0.4');
+
+    // 5. Sound ON real-stack delivery check:
+    // Re-enable sound
+    await bgmCheckbox.click();
+    await expect(bgmCheckbox).toBeChecked();
+    await expect(audioBtn).toContainText('🎵');
+
+    // Close popover
+    const popoverCloseBtn = page.locator('button:has-text("✕")').first();
+    if (await popoverCloseBtn.isVisible()) {
+      await popoverCloseBtn.click();
+    }
+
+    // Verify warehouse inventory opens and operates with sound enabled
+    const hubSupplyBtn = page.locator('[data-testid="hub-supply-btn"]');
+    await expect(hubSupplyBtn).toBeVisible({ timeout: 15000 });
+    await hubSupplyBtn.click();
+
+    const supplyDialog = page.getByRole('dialog', { name: 'Kho vật tư' });
+    await expect(supplyDialog).toBeVisible({ timeout: 10000 });
+
+    // Close supply dialog via its Đóng button
+    const closeSupplyBtn = supplyDialog.getByRole('button', { name: 'Đóng' });
+    await closeSupplyBtn.click();
+    await expect(supplyDialog).not.toBeVisible({ timeout: 5000 });
+
+    // 6. Sound OFF real-stack delivery check:
+    // Completely mute both BGM and SFX
+    await audioBtn.click();
+    await expect(popover).toBeVisible({ timeout: 5000 });
+    await bgmCheckbox.click();
+    await sfxCheckbox.click();
+    await expect(bgmCheckbox).not.toBeChecked();
+    await expect(sfxCheckbox).not.toBeChecked();
+    if (await popoverCloseBtn.isVisible()) {
+      await popoverCloseBtn.click();
+    }
+
+    // Reopen warehouse panel to verify operations still succeed with sound muted
+    await hubSupplyBtn.click();
+    await expect(supplyDialog).toBeVisible({ timeout: 10000 });
+    await closeSupplyBtn.click();
+    await expect(supplyDialog).not.toBeVisible({ timeout: 5000 });
+
+    expect(consoleErrors).toEqual([]);
   });
 });

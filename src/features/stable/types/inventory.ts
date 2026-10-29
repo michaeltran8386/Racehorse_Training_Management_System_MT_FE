@@ -1,6 +1,6 @@
 export type StockHealthStatus = 'SUFFICIENT' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 
-export type RestockStatus = 'PENDING' | 'APPROVED' | 'DELIVERED' | 'REJECTED';
+export type RestockStatus = 'PENDING' | 'APPROVED' | 'DELIVERING' | 'DELIVERED' | 'REJECTED';
 
 export type SupplyCategory = 'FEED' | 'MEDICINE' | 'CARE' | 'EQUIPMENT';
 
