@@ -24,39 +24,54 @@ const TARGET_VET_EMAIL = 'qa-vet1@gmail.com';
 const SLICE_G_PLAN_ID = '00000000-0000-4000-a013-000000000011';
 const SLICE_G_MARKER = 'TASK-013-SLICE-G-E2E';
 
-const evidenceDir = path.resolve(__dirname, '../../..', 'Racehorse_Training_Management_System_MT_BE', 'docs', 'ai-workflow', 'evidence');
+// Current acceptance artifacts must never overwrite historical TASK-013/015/016 evidence.
+const evidenceDir = path.resolve(process.cwd(), 'test-results', 'task019-evidence');
 if (!fs.existsSync(evidenceDir)) {
   fs.mkdirSync(evidenceDir, { recursive: true });
 }
 
+const roleTokens = new Map<string, string>();
+
 async function signIn(page: Page, email: string) {
-  await page.goto(`${FE_BASE}/login`);
-  await page.evaluate(() => {
+  await page.goto(FE_BASE + '/login');
+  // Settle the old document's /me and refresh callbacks before replacing its token store.
+  await page.waitForLoadState('networkidle');
+  const cached = roleTokens.get(email);
+  await page.evaluate((tokens) => {
     localStorage.clear();
     sessionStorage.clear();
-  });
-  await page.goto(`${FE_BASE}/login`);
-  const emailInput = page.locator('input[type=email]');
-  await expect(emailInput).toBeVisible({ timeout: 10000 });
-  await emailInput.fill(email);
-  await page.locator('input[type=password]').fill(QA_PASSWORD);
-  await page.locator('button[type=submit]').click();
-  try {
-    await expect(page).toHaveURL(/.*dashboard/, { timeout: 8000 });
-  } catch {
-    const tooMany = page.locator('text=/Too many requests|quá nhiều/i');
-    if (await tooMany.isVisible()) {
-      await page.waitForTimeout(45000);
-      await page.locator('button[type=submit]').click();
-    } else {
-      const submitBtn = page.locator('button[type=submit]');
-      if (await submitBtn.isVisible()) {
-        await page.waitForTimeout(1500);
-        await submitBtn.click();
-      }
-    }
-    await expect(page).toHaveURL(/.*dashboard/, { timeout: 20000 });
+    if (tokens) localStorage.setItem('equiflow.tokens', tokens);
+  }, cached ?? null);
+  if (cached) {
+    const meResponse = page.waitForResponse(res => res.url().endsWith('/auth/me') && res.request().method() === 'GET');
+    await page.goto(FE_BASE + '/dashboard');
+    expect((await meResponse).status()).toBe(200);
+    await expect(page).toHaveURL(/dashboard/, { timeout: 10000 });
+    return;
   }
+  await page.goto(FE_BASE + '/login');
+  await page.locator('input[type=email]').fill(email);
+  await page.locator('input[type=password]').fill(QA_PASSWORD);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const responsePromise = page.waitForResponse(res => res.url().endsWith('/auth/login') && res.request().method() === 'POST');
+    await page.locator('button[type=submit]').click();
+    const response = await responsePromise;
+    if (response.status() === 429) {
+      const retryAfter = Number(response.headers()['retry-after'] || 60);
+      expect(Number.isFinite(retryAfter) && retryAfter > 0 && retryAfter <= 60).toBe(true);
+      const waitMs = (retryAfter + 1) * 1000;
+      test.setTimeout(test.info().timeout + waitMs);
+      await page.waitForTimeout(waitMs);
+      continue;
+    }
+    expect(response.status()).toBe(200);
+    await expect(page).toHaveURL(/dashboard/, { timeout: 15000 });
+    const tokens = await page.evaluate(() => localStorage.getItem('equiflow.tokens') || sessionStorage.getItem('equiflow.tokens'));
+    expect(tokens).toBeTruthy();
+    roleTokens.set(email, tokens!);
+    return;
+  }
+  throw new Error('Login still throttled after three bounded attempts; guard remains enabled.');
 }
 
 test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator integration', () => {
@@ -106,7 +121,7 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
     });
     await prisma.workoutSession.updateMany({
       where: { id: TARGET_WORKOUT_ID },
-      data: { status: 'SCHEDULED' },
+      data: { status: 'SCHEDULED', scheduledDate: new Date() },
     });
     const examHorse = await prisma.horse.findUnique({
       where: { horseCode: 'QA-T013-EXAM-001' },
@@ -176,7 +191,18 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
 
     const planSelect = page.locator(`select:has(option[value="${SLICE_G_PLAN_ID}"])`);
     await planSelect.selectOption(SLICE_G_PLAN_ID);
-    await page.locator('input[type="date"][min]').fill('2026-10-28');
+
+    // Compute dynamic future date in application's Asia/Bangkok timezone (UTC+7)
+    const bangkokFormatter = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+    const tomorrowBangkok = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    const scheduledDate = bangkokFormatter.format(tomorrowBangkok); // 'YYYY-MM-DD'
+
+    await page.locator('input[type="date"][min]').fill(scheduledDate);
     await page.locator('input[type="time"][min="04:00"]').fill('19:45');
     await page.locator('input[min="10"][max="70"]').fill('55');
     await page.locator('input[maxlength="100"]').fill('QA T013 Slice G Jockey');
@@ -206,7 +232,8 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
       expect(createdId).toBeTruthy();
 
       await page.reload();
-      const createdRow = page.locator('tr', { hasText: 'QA T013 Trial Horse' }).filter({ hasText: '19:45' });
+      const dateCard = page.locator('div', { has: page.locator('h3', { hasText: scheduledDate }) });
+      const createdRow = dateCard.locator('tr', { hasText: 'QA T013 Trial Horse' }).filter({ hasText: '19:45' });
       await expect(createdRow).toBeVisible({ timeout: 15000 });
       await expect(createdRow.getByRole('button', { name: /Chạy mô phỏng|Run simulation/i })).toBeDisabled();
       await expect(createdRow.locator('[data-testid="trial-launch-timing"]')).toContainText(
@@ -214,7 +241,12 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
       );
     } finally {
       const created = await prisma.workoutSession.findMany({
-        where: { trainingPlanId: SLICE_G_PLAN_ID, trainerNotes: SLICE_G_MARKER },
+        where: {
+          OR: [
+            { trainingPlanId: SLICE_G_PLAN_ID, trainerNotes: SLICE_G_MARKER },
+            ...(createdId ? [{ id: createdId }] : []),
+          ],
+        },
         select: { id: true },
       });
       const ids = created.map((row: { id: string }) => row.id);
@@ -744,7 +776,7 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
     });
     await prisma.workoutSession.updateMany({
       where: { id: TARGET_WORKOUT_ID },
-      data: { status: 'SCHEDULED' },
+      data: { status: 'SCHEDULED', scheduledDate: new Date() },
     });
 
     await signIn(page, TARGET_TRAINER_EMAIL);
@@ -890,7 +922,7 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
     });
     await prisma.workoutSession.updateMany({
       where: { id: TARGET_WORKOUT_ID },
-      data: { status: 'SCHEDULED' },
+      data: { status: 'SCHEDULED', scheduledDate: new Date() },
     });
 
     await signIn(page, TARGET_TRAINER_EMAIL);
@@ -957,6 +989,7 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
       where: { id: TARGET_WORKOUT_ID },
       data: {
         status: 'SCHEDULED',
+        scheduledDate: new Date(),
         trainerNotes: 'Deterministic QA Head Trainer Trial Run',
         statusReason: null,
         resultRecordedAt: null,
@@ -1215,6 +1248,7 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
         where: { id: TARGET_WORKOUT_ID },
         data: {
           status: 'SCHEDULED',
+          scheduledDate: new Date(),
           trainerNotes: 'Deterministic QA Head Trainer Trial Run',
           statusReason: null,
           resultRecordedAt: null,
@@ -2065,89 +2099,42 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
     const TARGET_GROOM_EMAIL = 'qa-groom1@gmail.com';
     const TARGET_CM_EMAIL = 'qa-cm@gmail.com';
     const TEST_MARKER = `TASK018-${Date.now()}`;
-    const targetZoneId = '7a6f89cc-eb76-44e9-b6ea-3d5d7bd2d8d1'; // Zone A - Barn 1
-    const secondZoneId = 'b4f6b8f7-d132-4f27-8ea7-ec2e9a8826e0'; // Zone B - Barn 2
-    const targetSupplyId = 'bdf3b314-2bc9-44f0-92c1-b152cf75199b'; // SUP_GRAIN_OATS
-    const zeroSupplyId = '0cbcf084-75f8-4dc1-8993-5eafeb008464'; // SUP_HAY_ALFALFA (Zone A)
+    const zoneA = await prisma.stallZone.findUniqueOrThrow({ where: { code: 'ZONE-A' } });
+    const zoneB = await prisma.stallZone.findUniqueOrThrow({ where: { code: 'ZONE-B' } });
+    expect(zoneA.id).not.toBe(zoneB.id);
+    const targetZoneId = zoneA.id;
+    const secondZoneId = zoneB.id;
+    const oats = await prisma.supplyCatalog.findUniqueOrThrow({ where: { code: 'SUP_GRAIN_OATS' } });
+    const alfalfa = await prisma.supplyCatalog.findUniqueOrThrow({ where: { code: 'SUP_HAY_ALFALFA' } });
+    const targetSupplyId = oats.id;
     const requestedQty = 20;
     const fallbackQty = 5;
 
-    // 1. Pre-test snapshot & multi-zone decimal stock baseline setup
-    const preStockA = await prisma.stockBalance.findFirst({
-      where: { zoneId: targetZoneId, supplyId: targetSupplyId },
-    });
-    const preStockAQty = preStockA ? Number(preStockA.quantity) : 0;
-    const preStockANotes = preStockA ? preStockA.notes : null;
-
-    const preStockB = await prisma.stockBalance.findFirst({
-      where: { zoneId: secondZoneId, supplyId: targetSupplyId },
-    });
-    const createdStockB = !preStockB;
-    const preStockBQty = preStockB ? Number(preStockB.quantity) : null;
-    const preStockBNotes = preStockB ? preStockB.notes : null;
-
-    const preZeroStock = await prisma.stockBalance.findFirst({
-      where: { id: zeroSupplyId },
-    });
-    const preZeroStockQty = preZeroStock ? Number(preZeroStock.quantity) : 0;
-    const preZeroStockNotes = preZeroStock ? preZeroStock.notes : null;
-
-    // Set precise decimal baseline quantities:
-    // Zone A Oats = 25.25, Zone B Oats = 0.50, Zero Stock = 0
-    if (preStockA) {
-      await prisma.stockBalance.update({
-        where: { id: preStockA.id },
-        data: { quantity: new Prisma.Decimal(25.25), notes: 'QA T018 decimal baseline 25.25' },
-      });
-    }
-
-    let stockBId: string;
-    if (preStockB) {
-      stockBId = preStockB.id;
-      await prisma.stockBalance.update({
-        where: { id: preStockB.id },
-        data: { quantity: new Prisma.Decimal(0.5), notes: 'QA T018 decimal baseline 0.50' },
-      });
-    } else {
-      const newStockB = await prisma.stockBalance.create({
-        data: {
-          zoneId: secondZoneId,
-          supplyId: targetSupplyId,
-          quantity: new Prisma.Decimal(0.5),
-          minThreshold: new Prisma.Decimal(10),
-          notes: 'QA T018 created multi-zone balance 0.50',
-        },
-      });
-      stockBId = newStockB.id;
-    }
-
-    if (preZeroStock) {
-      await prisma.stockBalance.update({
-        where: { id: preZeroStock.id },
-        data: { quantity: new Prisma.Decimal(0), notes: 'QA T018 zero stock baseline' },
-      });
-    }
-
-    const groomUser = await prisma.user.findFirst({ where: { email: TARGET_GROOM_EMAIL } });
-    expect(groomUser).toBeTruthy();
-
-    // Create sentinel notification to prove concurrent unrelated data is never wiped
-    const sentinelNotif = await prisma.notification.create({
-      data: {
-        userId: groomUser!.id,
-        type: 'RESTOCK_APPROVED',
-        category: 'SYSTEM',
-        title: 'SENTINEL_TASK018_PRESERVE',
-        message: 'Concurrent unrelated notification that must survive test cleanup',
-        readAt: null,
-      },
-    });
-
+    const stockFixtures: Array<{ id: string; original: any | null }> = [];
     const testCreatedRequestIds: string[] = [];
     const testCreatedRequestNumbers: string[] = [];
     let simPage: Page | null = null;
+    let sentinelNotif: { id: string } | null = null;
+    const groomUser = await prisma.user.findUniqueOrThrow({ where: { email: TARGET_GROOM_EMAIL } });
 
     try {
+      // Seed stock rows only when absent; preserve existing rows for exact restoration.
+      for (const [zoneId, supplyId, quantity] of [
+        [targetZoneId, targetSupplyId, 25.25],
+        [secondZoneId, targetSupplyId, 0.5],
+        [targetZoneId, alfalfa.id, 0],
+      ] as const) {
+        const original = await prisma.stockBalance.findFirst({ where: { zoneId, supplyId } });
+        const row = original
+          ? await prisma.stockBalance.update({ where: { id: original.id }, data: { quantity: new Prisma.Decimal(quantity) } })
+          : await prisma.stockBalance.create({ data: { zoneId, supplyId, quantity: new Prisma.Decimal(quantity), minThreshold: new Prisma.Decimal(10) } });
+        stockFixtures.push({ id: row.id, original });
+      }
+      sentinelNotif = await prisma.notification.create({ data: {
+        userId: groomUser.id, type: 'RESTOCK_APPROVED', category: 'SYSTEM',
+        title: 'SENTINEL_TASK018_PRESERVE', message: 'Unrelated notification preserved through cleanup', readAt: null,
+      } });
+
       // 2. Open Simulator first in a second browser tab (already open and connected to /supplies)
       simPage = await context.newPage();
       simPage.on('pageerror', (err) => consoleErrors.push(`[SIM] ${err.message}`));
@@ -2405,41 +2392,20 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
         await simPage.close().catch(() => {});
       }
 
-      // Restore baseline StockBalance for Zone A Oats
-      if (preStockA) {
-        await prisma.stockBalance.update({
-          where: { id: preStockA.id },
-          data: {
-            quantity: new Prisma.Decimal(preStockAQty),
-            notes: preStockANotes,
-          },
-        });
-      }
-
-      // Restore baseline or delete created StockBalance for Zone B Oats
-      if (createdStockB) {
-        await prisma.stockBalance.deleteMany({
-          where: { zoneId: secondZoneId, supplyId: targetSupplyId },
-        });
-      } else if (preStockB) {
-        await prisma.stockBalance.update({
-          where: { id: preStockB.id },
-          data: {
-            quantity: new Prisma.Decimal(preStockBQty!),
-            notes: preStockBNotes,
-          },
-        });
-      }
-
-      // Restore baseline for Zero Stock supply
-      if (preZeroStock) {
-        await prisma.stockBalance.update({
-          where: { id: preZeroStock.id },
-          data: {
-            quantity: new Prisma.Decimal(preZeroStockQty),
-            notes: preZeroStockNotes,
-          },
-        });
+      // Settle dispatched orders before restoring stock so a late fallback cannot re-credit it.
+      await expect.poll(async () => prisma.restockRequest.count({
+        where: { id: { in: testCreatedRequestIds }, status: 'DELIVERING' },
+      }), { timeout: 25000 }).toBe(0);
+      for (const fixture of stockFixtures) {
+        if (fixture.original) {
+          await prisma.stockBalance.update({ where: { id: fixture.id }, data: {
+            quantity: fixture.original.quantity, notes: fixture.original.notes, updatedAt: fixture.original.updatedAt,
+          } });
+          expect(await prisma.stockBalance.findUnique({ where: { id: fixture.id } })).toEqual(fixture.original);
+        } else {
+          await prisma.stockBalance.delete({ where: { id: fixture.id } });
+          expect(await prisma.stockBalance.findUnique({ where: { id: fixture.id } })).toBeNull();
+        }
       }
 
       // Clean up ONLY test-created RestockRequest records by exact ID
@@ -2467,26 +2433,15 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
           },
         });
       }
-      if (stockBId) {
-        await prisma.auditLog.deleteMany({
-          where: {
-            entityName: 'StockBalance',
-            entityId: stockBId,
-          },
-        });
+      await prisma.auditLog.deleteMany({ where: {
+        entityName: 'StockBalance', entityId: { in: stockFixtures.map(row => row.id) },
+      } });
+      if (sentinelNotif) {
+        const preserved = await prisma.notification.findUnique({ where: { id: sentinelNotif.id } });
+        expect(preserved?.title).toBe('SENTINEL_TASK018_PRESERVE');
+        await prisma.notification.delete({ where: { id: sentinelNotif.id } });
       }
 
-      // Assert sentinel notification was NEVER touched or deleted
-      const checkSentinel = await prisma.notification.findUnique({
-        where: { id: sentinelNotif.id },
-      });
-      expect(checkSentinel).toBeTruthy();
-      expect(checkSentinel!.title).toBe('SENTINEL_TASK018_PRESERVE');
-
-      // Delete sentinel notification
-      await prisma.notification.delete({
-        where: { id: sentinelNotif.id },
-      });
     }
   });
 

@@ -1876,7 +1876,7 @@ const routes: Route[] = [
         id,
         recordNumber,
         horseId: String(body.horseId || "horse-1"),
-        horseName: body.horseId === "horse-2" ? "Northern Dancer Legacy" : "Thunderbolt Swift",
+        horseName: body.horseId === "horse-2" ? "Xích Thố" : "Bạch Long Mã",
         status: body.saveAsDraft ? "DRAFT" : "OPEN",
         examinationDate: String(body.examinationDate || new Date().toISOString()),
         examinationType: String(body.examinationType || "General Examination"),
