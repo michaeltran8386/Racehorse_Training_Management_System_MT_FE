@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { createBrowserRouter, Navigate, Outlet, useParams, useRouteError } from "react-router-dom";
 import { tr } from "@/shared/i18n/tr";
 import AuditLogPage from "@/features/dashboard/pages/AuditLogPage";
@@ -64,6 +64,7 @@ import {
 } from "./lazyPages";
 import { AppShell } from "@/shared/components/layout/AppShell";
 import { Providers } from "@/shared/components/layout/Providers";
+import { useAuth } from "@/shared/components/layout/AuthProvider";
 import { RoleGuard } from "./RoleGuard";
 
 
@@ -143,6 +144,15 @@ function AppLayout() {
   );
 }
 
+// "/": đã đăng nhập → dashboard; khách → landing tĩnh public/landing.html (trang HTML riêng, không đi qua React).
+function HomeRoute() {
+  const { status } = useAuth();
+  useEffect(() => {
+    if (status === "anonymous") window.location.replace("/landing.html");
+  }, [status]);
+  return status === "authenticated" ? <Navigate to="/dashboard" replace /> : null;
+}
+
 // Lấy :id từ URL /accounts/:id/permissions rồi truyền cho trang.
 function PermissionMatrixRoute() {
   const { id = "" } = useParams();
@@ -165,7 +175,7 @@ export const router = createBrowserRouter([
     element: <RootLayout />,
     errorElement: <RouteErrorBoundary />,
     children: [
-      { path: "/", element: <Navigate to="/login" replace /> },
+      { path: "/", element: <HomeRoute /> },
 
       // ---- Trang công khai (chưa đăng nhập)
       { path: "/login", element: <LoginPage /> },
