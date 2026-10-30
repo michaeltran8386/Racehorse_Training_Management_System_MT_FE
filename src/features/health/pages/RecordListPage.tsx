@@ -154,7 +154,7 @@ export default function RecordListPage() {
                 {records.map((r) => (
                   <tr key={r.id} onClick={() => navigate(`/medical/records/${r.id}`)}>
                     <td className="num nowrap"><strong>{r.recordNumber}</strong></td>
-                    <td className="nowrap">{r.horseName || r.horseId}</td>
+                    <td className="nowrap">{r.horseName || (r as any).horse?.name || '—'}{(r.horseCode || (r as any).horse?.horseCode) ? ` (${r.horseCode || (r as any).horse?.horseCode})` : ''}</td>
                     <td className="num nowrap">{formatDate(r.examinationDate)}</td>
                     <td>{r.examinationType}</td>
                     <td>{r.diagnosis || tr("None recorded")}</td>

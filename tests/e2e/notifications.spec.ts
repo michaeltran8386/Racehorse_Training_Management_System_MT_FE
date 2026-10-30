@@ -1,5 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 import { createRequire } from 'module';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -11,15 +12,8 @@ const siblingPrismaPath =
   path.resolve(__dirname, '../../..', 'Racehorse_Training_Management_System_MT_BE', 'node_modules', '@prisma/client');
 
 const API_BASE = 'http://localhost:3000/api';
-const TARGET_HORSE_CODE = 'HR-000014'; // Crimson Flash (Owner: owner@gmail.com, Groom: groom@gmail.com)
-
-async function signIn(page: Page, email: string, password = 'EquiFlow@2026') {
-  await page.goto('/login');
-  await page.locator('input[type=email]').fill(email);
-  await page.locator('input[type=password]').fill(password);
-  await page.locator('button[type=submit]').click();
-  await expect(page).toHaveURL(/.*dashboard/);
-}
+const TARGET_HORSE_CODE = 'HR-000001'; // Thunderbolt Swift (Owner: owner@gmail.com, Groom: groom@gmail.com)
+const AUTH_DIR = path.resolve(process.cwd(), 'test-results', '.auth');
 
 test.describe('TASK-010: Real-stack notifications and real-only runtime cutover', () => {
   let vetToken = '';
@@ -91,15 +85,27 @@ test.describe('TASK-010: Real-stack notifications and real-only runtime cutover'
     });
     scopedPreAuditIds = scopedPreAudits.map((a: { id: string }) => a.id);
 
-    // 1. Authenticate as Vet via real API
-    const loginRes = await request.post(`${API_BASE}/auth/login`, {
-      data: { email: 'vet@gmail.com', password: 'EquiFlow@2026' },
-    });
-    if (!loginRes.ok()) {
-      throw new Error(`Vet login failed with HTTP ${loginRes.status()}: ${await loginRes.text()}`);
+    // 1. Authenticate as Vet via cached storage state or API fallback
+    const vetAuthPath = path.join(AUTH_DIR, 'vet.json');
+    if (fs.existsSync(vetAuthPath)) {
+      try {
+        const authData = JSON.parse(fs.readFileSync(vetAuthPath, 'utf8'));
+        const tokensEntry = authData.origins?.[0]?.localStorage?.find((item: any) => item.name === 'equiflow.tokens');
+        if (tokensEntry) {
+          vetToken = JSON.parse(tokensEntry.value).accessToken;
+        }
+      } catch {}
     }
-    const loginJson = await loginRes.json();
-    vetToken = loginJson.data.accessToken;
+    if (!vetToken) {
+      const loginRes = await request.post(`${API_BASE}/auth/login`, {
+        data: { email: 'vet@gmail.com', password: 'EquiFlow@2026' },
+      });
+      if (!loginRes.ok()) {
+        throw new Error(`Vet login failed with HTTP ${loginRes.status()}: ${await loginRes.text()}`);
+      }
+      const loginJson = await loginRes.json();
+      vetToken = loginJson.data.accessToken;
+    }
 
     // 2. Create unique Medical Lock with current-run marker
     const createRes = await request.post(`${API_BASE}/medical/locks`, {
@@ -273,56 +279,71 @@ test.describe('TASK-010: Real-stack notifications and real-only runtime cutover'
     ).toBeVisible();
   });
 
-  test('Club Manager receives current-run Medical Lock notification via real API', async ({ page }) => {
-    await signIn(page, 'manager@gmail.com');
-    await expect(page.getByRole('button', { name: /Notifications/i })).toBeVisible();
-    await page.goto('/notifications');
-    await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
-    await expect(page.getByText(runMarker).first()).toBeVisible();
-  });
+  test.describe('Role Notification Delivery', () => {
+    test.describe('Club Manager', () => {
+      test.use({ storageState: path.join(AUTH_DIR, 'manager.json') });
+      test('Club Manager receives current-run Medical Lock notification via real API', async ({ page }) => {
+        await page.goto('/notifications');
+        await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
+        await expect(page.getByText(runMarker).first()).toBeVisible();
+      });
+    });
 
-  test('Head Trainer receives current-run Training Lock notification via real API', async ({ page }) => {
-    await signIn(page, 'trainer@gmail.com');
-    await page.goto('/notifications');
-    await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
-    await expect(page.getByText(runMarker).first()).toBeVisible();
-  });
+    test.describe('Head Trainer', () => {
+      test.use({ storageState: path.join(AUTH_DIR, 'trainer.json') });
+      test('Head Trainer receives current-run Training Lock notification via real API', async ({ page }) => {
+        await page.goto('/notifications');
+        await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
+        await expect(page.getByText(runMarker).first()).toBeVisible();
+      });
+    });
 
-  test('Actual Horse Owner receives current-run lock notice and no staff administrative notices', async ({ page }) => {
-    await signIn(page, 'owner@gmail.com');
-    await page.goto('/notifications');
-    await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
-    await expect(page.getByText(runMarker).first()).toBeVisible();
-    await expect(page.getByText(/New Account Registration Request|Tài khoản đăng ký mới/i)).toHaveCount(0);
-    await expect(page.getByText(/Permission Access Request|Yêu cầu cấp quyền/i)).toHaveCount(0);
-    await expect(page.getByText(/Restock Request|Phiếu đề xuất vật tư/i)).toHaveCount(0);
-  });
+    test.describe('Horse Owner', () => {
+      test.use({ storageState: path.join(AUTH_DIR, 'owner.json') });
+      test('Actual Horse Owner receives current-run lock notice and no staff administrative notices', async ({ page }) => {
+        await page.goto('/notifications');
+        await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
+        await expect(page.getByText(runMarker).first()).toBeVisible();
+        await expect(page.getByText(/New Account Registration Request|Tài khoản đăng ký mới/i)).toHaveCount(0);
+        await expect(page.getByText(/Permission Access Request|Yêu cầu cấp quyền/i)).toHaveCount(0);
+        await expect(page.getByText(/Restock Request|Phiếu đề xuất vật tư/i)).toHaveCount(0);
+      });
+    });
 
-  test('Assigned Groom receives current-run Training Lock notification', async ({ page }) => {
-    await signIn(page, 'groom@gmail.com');
-    await page.goto('/notifications');
-    await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
-    await expect(page.getByText(runMarker).first()).toBeVisible();
-  });
+    test.describe('Assigned Groom', () => {
+      test.use({ storageState: path.join(AUTH_DIR, 'groom.json') });
+      test('Assigned Groom receives current-run Training Lock notification', async ({ page }) => {
+        await page.goto('/notifications');
+        await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
+        await expect(page.getByText(runMarker).first()).toBeVisible();
+      });
+    });
 
-  test('Acting Veterinarian isolation: receives zero self-generated lock events', async ({ page }) => {
-    await signIn(page, 'vet@gmail.com');
-    await page.goto('/notifications');
-    await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
-    await expect(page.getByText(runMarker)).toHaveCount(0);
-  });
+    test.describe('Acting Veterinarian Isolation', () => {
+      test.use({ storageState: path.join(AUTH_DIR, 'vet.json') });
+      test('Acting Veterinarian isolation: receives zero self-generated lock events', async ({ page }) => {
+        await page.goto('/notifications');
+        await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
+        await expect(page.getByText(runMarker)).toHaveCount(0);
+      });
+    });
 
-  test('Unrelated Horse Owner isolation: receives zero events for target horse', async ({ page }) => {
-    await signIn(page, 'owner2@gmail.com');
-    await page.goto('/notifications');
-    await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
-    await expect(page.getByText(runMarker)).toHaveCount(0);
-  });
+    test.describe('Unrelated Horse Owner Isolation', () => {
+      test.use({ storageState: path.join(AUTH_DIR, 'owner2.json') });
+      test('Unrelated Horse Owner isolation: receives zero events for target horse', async ({ page }) => {
+        await page.goto('/notifications');
+        await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
+        await expect(page.getByText(runMarker)).toHaveCount(0);
+      });
+    });
 
-  test('Unrelated Groom isolation: receives zero events for target horse', async ({ page }) => {
-    await signIn(page, 'groom2@gmail.com');
-    await page.goto('/notifications');
-    await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
-    await expect(page.getByText(runMarker)).toHaveCount(0);
+    test.describe('Unrelated Groom Isolation', () => {
+      test.use({ storageState: path.join(AUTH_DIR, 'groom2.json') });
+      test('Unrelated Groom isolation: receives zero events for target horse', async ({ page }) => {
+        await page.goto('/notifications');
+        await expect(page.getByRole('heading', { name: /Notifications|Thông báo/i })).toBeVisible();
+        await expect(page.getByText(runMarker)).toHaveCount(0);
+      });
+    });
   });
 });

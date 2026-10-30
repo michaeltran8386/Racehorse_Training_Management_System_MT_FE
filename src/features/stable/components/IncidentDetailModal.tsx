@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Field } from '@/shared/components/form/Field';
 import { Select } from '@/shared/components/form/Select';
@@ -27,7 +28,8 @@ export function IncidentDetailModal({
 }: IncidentDetailModalProps) {
   const toast = useToast();
   const user = useCurrentUser();
-  const canReview = user?.role === 'VETERINARIAN' || user?.role === 'CLUB_MANAGER';
+  const navigate = useNavigate();
+  const canReview = user?.role === 'VETERINARIAN';
 
   const [status, setStatus] = useState<IncidentStatus>(
     incident.status === 'REPORTED' ? 'UNDER_REVIEW' : incident.status,
@@ -194,15 +196,44 @@ export function IncidentDetailModal({
           </div>
         )}
 
-        {/* Khung xử lý dành cho Bác sĩ thú y / Quản lý CLB */}
+        {/* Khung xử lý dành cho Bác sĩ thú y */}
         {canReview && (
           <form onSubmit={handleReview} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {tr('Medical Review & Actions (Vet / Manager)')}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                {tr('Medical Review & Actions (Veterinarian)')}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <Button
+                  type="button"
+                  tone="danger"
+                  size="sm"
+                  data-testid="incident-action-place-lock"
+                  onClick={() => {
+                    onClose();
+                    navigate(`/locks?horseId=${incident.horseId}&action=place`);
+                  }}
+                >
+                  🔒 {tr('Place Training Lock')}
+                </Button>
+                <Button
+                  type="button"
+                  tone="secondary"
+                  size="sm"
+                  data-testid="incident-action-create-record"
+                  onClick={() => {
+                    onClose();
+                    navigate(`/medical/records/new?horseId=${incident.horseId}`);
+                  }}
+                >
+                  📋 {tr('Create Medical Record')}
+                </Button>
+              </div>
             </div>
 
             <Field label={tr('Update Status')} required>
               <Select
+                data-testid="incident-status-select"
                 value={status}
                 onChange={(e) => setStatus(e.target.value as IncidentStatus)}
                 options={[
@@ -215,6 +246,7 @@ export function IncidentDetailModal({
 
             <Field label={tr('Veterinary Prescription / Medical Notes')}>
               <Textarea
+                data-testid="incident-vet-notes"
                 rows={3}
                 value={vetNotes}
                 onChange={(e) => setVetNotes(e.target.value)}
@@ -226,7 +258,7 @@ export function IncidentDetailModal({
               <Button tone="secondary" type="button" onClick={onClose} disabled={busy}>
                 {tr('Close')}
               </Button>
-              <Button tone="primary" type="submit" disabled={busy}>
+              <Button tone="primary" type="submit" data-testid="incident-submit-review" disabled={busy}>
                 {busy ? tr('Saving…') : tr('Save Review')}
               </Button>
             </div>

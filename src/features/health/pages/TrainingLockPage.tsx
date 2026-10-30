@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/shared/components/ui/Button";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -19,12 +19,14 @@ import type { TrainingLockHistoryItem } from "../types";
 import { getHorses } from "@/features/horses/api";
 import { HEALTH_STATUS } from "@/shared/lib/status";
 
-
 import { tr } from "@/shared/i18n/tr";
 export default function TrainingLockPage() {
   const { user } = useAuth();
   const toast = useToast();
   const isVet = user?.role === "VETERINARIAN";
+  const [searchParams] = useSearchParams();
+  const urlHorseId = searchParams.get("horseId");
+  const urlAction = searchParams.get("action");
 
   const [activeTab, setActiveTab] = useState<string>("ACTIVE");
   const [locks, setLocks] = useState<TrainingLockHistoryItem[]>([]);
@@ -34,6 +36,12 @@ export default function TrainingLockPage() {
   const [modalMode, setModalMode] = useState<"place" | "extend" | "lift" | null>(null);
 
   const [horses, setHorses] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (urlAction === "place" && isVet) {
+      setModalMode("place");
+    }
+  }, [urlAction, isVet]);
 
   useEffect(() => {
     getHorses({ limit: 100 }).then((res) => setHorses(res.items || []));
@@ -175,6 +183,7 @@ export default function TrainingLockPage() {
                   tone="secondary"
                   size="sm"
                   icon="unlock"
+                  data-testid="training-lock-lift-btn"
                   onClick={() => {
                     setSelectedLock(lock);
                     setModalMode("lift");
@@ -261,24 +270,28 @@ export default function TrainingLockPage() {
           safeLocks.filter((l) => l.status === "ACTIVE").map((l) => l.horseId),
         );
         const eligibleHorsesForLock = horses.filter(
-          (h) => !h.isLocked && !activeLockHorseIds.has(h.id) && h.status !== "RETIRED",
+          (h) => !h.isMedicalLocked && !activeLockHorseIds.has(h.id) && h.status !== "RETIRED",
         );
+        const targetHorseFromUrl = urlHorseId ? horses.find((h) => h.id === urlHorseId) : undefined;
+        const defaultHorse = targetHorseFromUrl || eligibleHorsesForLock.find((h) => h.id === urlHorseId) || eligibleHorsesForLock[0];
+        const effectiveHorseId = selectedLock?.horseId || urlHorseId || defaultHorse?.id || "";
 
         return (
           <TrainingLockModal
+            key={`${modalMode}-${effectiveHorseId}-${horses.length}`}
             horseName={
               selectedLock
                 ? selectedLock.horseName
                   ? `${selectedLock.horseName} (${selectedLock.horseCode || selectedLock.horseId})`
                   : selectedLock.horseId
-                : eligibleHorsesForLock[0]
-                  ? `${eligibleHorsesForLock[0].name} (${eligibleHorsesForLock[0].code})`
+                : defaultHorse
+                  ? `${defaultHorse.name} (${defaultHorse.horseCode || defaultHorse.microchipRfid || ""})`
                   : "Horse"
             }
-            horseId={selectedLock?.horseId || (eligibleHorsesForLock[0]?.id ?? "")}
+            horseId={effectiveHorseId}
             horseOptions={eligibleHorsesForLock.map((h) => ({
               value: h.id,
-              label: `${h.name} (${h.code}) - ${h.healthGroup}`,
+              label: `${h.name} (${h.horseCode || h.microchipRfid || ""}) - ${h.status || ""}`,
             }))}
             currentReviewDate={selectedLock?.reviewDate}
             mode={modalMode}
@@ -287,7 +300,7 @@ export default function TrainingLockPage() {
               setSelectedLock(null);
             }}
             onPlaceLock={async (dto) => {
-              const targetHorseId = dto.horseId || selectedLock?.horseId || (eligibleHorsesForLock[0]?.id ?? "");
+              const targetHorseId = dto.horseId || effectiveHorseId;
               if (!targetHorseId) {
                 toast.show(tr("No eligible horses available to place a training lock."), "danger");
                 return;

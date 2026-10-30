@@ -239,9 +239,10 @@ export default function IncidentListPage() {
                   <Button
                     tone="secondary"
                     size="sm"
+                    data-testid="incident-card-review-btn"
                     onClick={() => setSelectedIncident(inc)}
                   >
-                    {user?.role === 'VETERINARIAN' || user?.role === 'CLUB_MANAGER'
+                    {user?.role === 'VETERINARIAN'
                       ? tr('Review & Prescribe')
                       : tr('View Details')}
                   </Button>

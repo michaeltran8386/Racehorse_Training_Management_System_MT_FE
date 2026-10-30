@@ -26,7 +26,7 @@ import {
   TRACK_CONDITION_LABEL,
   TRACK_LABEL,
 } from "../types";
-import type { AbnormalSign, CompletionLevel, ExerciseSession, TrackCondition, TrackType, WorkoutSimulationResultDraft } from "../types";
+import type { AbnormalSign, CompletionLevel, ExerciseSession, TrackCondition, TrackType, WorkoutSimulationResult, WorkoutSimulationResultDraft } from "../types";
 
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
@@ -56,7 +56,7 @@ const EDIT_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 /** SC-2.06 Kết quả buổi tập: HT ghi / sửa; CM, VET, OWNER, GROOM (buổi được giao, không thấy điểm) xem. */
 export default function SessionResultPage() {
-  useAppLanguage();
+  const { isVietnamese } = useAppLanguage();
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const toast = useToast();
@@ -80,6 +80,8 @@ export default function SessionResultPage() {
   const [topSpeed, setTopSpeed] = useState("");
   const [simulationAborted, setSimulationAborted] = useState(false);
   const [simulationLoadError, setSimulationLoadError] = useState("");
+  const [simulationImported, setSimulationImported] = useState(false);
+  const [simulationLoading, setSimulationLoading] = useState(false);
   const [score, setScore] = useState("");
   const [completion, setCompletion] = useState<CompletionLevel | "">("");
   const [comment, setComment] = useState("");
@@ -139,28 +141,43 @@ export default function SessionResultPage() {
     setDirty(false);
   }, []);
 
+  const importSimulationResult = useCallback(async (s: ExerciseSession) => {
+    setSimulationLoading(true);
+    try {
+      const simulation: WorkoutSimulationResult = await trainingApi.getLatestSimulationResult(s.id);
+      if (!simulation.resultDraft) return;
+      fill(s, simulation.resultDraft);
+      const plannedDistance = s.targetDistanceMeters;
+      setCompletion(
+        simulation.status === "COMPLETED" &&
+          (simulation.resultDraft.actualDistanceMeters ?? 0) >= plannedDistance
+          ? "ACHIEVED"
+          : "PARTIAL",
+      );
+      setSimulationAborted(simulation.status === "ABORTED_INJURY");
+      setSimulationImported(true);
+      setSimulationLoadError("");
+    } catch (err) {
+      if (!(err instanceof ApiError && err.code === "SIMULATOR_RESULT_NOT_FOUND")) {
+        setSimulationLoadError(messageFor(err));
+      }
+    } finally {
+      setSimulationLoading(false);
+    }
+  }, [fill]);
+
   useEffect(() => {
     let mounted = true;
     void (async () => {
       try {
         const s = await trainingApi.getSession(id);
-        let simulation = null;
-        if (!s.result && isTrainer) {
-          try {
-            simulation = await trainingApi.getLatestSimulationResult(id);
-          } catch (err) {
-            if (!(err instanceof ApiError && err.code === "SIMULATOR_RESULT_NOT_FOUND") && mounted) {
-              setSimulationLoadError(messageFor(err));
-            }
-          }
-        }
         if (!mounted) return;
         setSession(s);
         setLoadedAt(Date.now());
-        fill(s, simulation?.resultDraft);
-        setSimulationAborted(simulation?.status === "ABORTED_INJURY");
+        fill(s);
         // Chưa có kết quả và HT mở -> vào thẳng chế độ ghi.
         setEditing(s.status !== "COMPLETED" && isTrainer);
+        if (!s.result && isTrainer) await importSimulationResult(s);
       } catch (err) {
         if (mounted) setLoadError(messageFor(err));
       }
@@ -168,7 +185,14 @@ export default function SessionResultPage() {
     return () => {
       mounted = false;
     };
-  }, [id, fill, isTrainer]);
+  }, [id, fill, importSimulationResult, isTrainer]);
+
+  useEffect(() => {
+    if (!session || session.result || !isTrainer || dirty) return;
+    const refresh = () => void importSimulationResult(session);
+    window.addEventListener("focus", refresh);
+    return () => window.removeEventListener("focus", refresh);
+  }, [dirty, importSimulationResult, isTrainer, session]);
 
   if (loadError) return <Alert tone="danger" title={tr("Could not load the workout")}>{loadError}</Alert>;
   if (!session) return <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>{tr("Loading workout...")}</div>;
@@ -382,15 +406,54 @@ export default function SessionResultPage() {
         <>
           {error && <Alert tone="danger" title={tr("Cannot save")}>{error}</Alert>}
           {simulationLoadError && <Alert tone="warn" title={tr("Could not load simulator measurements")}>{simulationLoadError}</Alert>}
+          {simulationImported && (
+            <div data-testid="simulation-result-source">
+              <Alert
+                tone="info"
+                title={isVietnamese ? "Đã tải từ Simulator" : "Loaded from Simulator"}
+                action={
+                  <Button
+                    size="sm"
+                    tone="secondary"
+                    disabled={simulationLoading || dirty}
+                    onClick={() => void importSimulationResult(session)}
+                  >
+                    {simulationLoading ? tr("Loading...") : isVietnamese ? "Tải lại" : "Reload"}
+                  </Button>
+                }
+              >
+                {isVietnamese
+                  ? "Nhịp tim hồi phục chưa có dữ liệu. Điểm hiệu suất, nhận xét và dấu hiệu bất thường vẫn cần Head Trainer nhập."
+                  : "Recovery heart rate is unavailable. Performance score, comments, and abnormal signs still require Head Trainer input."}
+              </Alert>
+            </div>
+          )}
+          {!simulationImported && isTrainer && !r && (
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <Button
+                data-testid="simulation-result-retry"
+                size="sm"
+                tone="secondary"
+                disabled={simulationLoading || dirty}
+                onClick={() => void importSimulationResult(session)}
+              >
+                {simulationLoading
+                  ? tr("Loading...")
+                  : isVietnamese
+                    ? "Tải chỉ số từ Simulator"
+                    : "Load measurements from Simulator"}
+              </Button>
+            </div>
+          )}
           {simulationAborted && <Alert tone="warn" title={tr("Simulation ended due to injury")}>{tr("Review the imported measurements and record any abnormal signs before completing this workout.")}</Alert>}
           <Card pad={20}>
             <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{tr("Actual figures")}</h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
               <Field label={tr("Actual distance (m)")} required error={fieldErrors.distance} hint={tr("50 – 10 000, all reps")}>
-                <Input type="number" inputMode="numeric" value={distance} onChange={(e) => set(setDistance, "distance")(e.target.value)} />
+                <Input data-testid="result-distance" type="number" inputMode="numeric" value={distance} onChange={(e) => set(setDistance, "distance")(e.target.value)} />
               </Field>
               <Field label={tr("Running time (mm:ss.s)")} required={needsTime} error={fieldErrors.time} hint={tr("e.g. 01:12.5 or seconds")}>
-                <Input value={time} placeholder="01:12.5" onChange={(e) => set(setTime, "time")(e.target.value)} />
+                <Input data-testid="result-duration" value={time} placeholder="01:12.5" onChange={(e) => set(setTime, "time")(e.target.value)} />
               </Field>
               <Field label={tr("Average speed (km/h)")} hint={tr("Calculated")}>
                 <Input value={avgSpeed ?? ""} readOnly />
@@ -413,13 +476,13 @@ export default function SessionResultPage() {
                 />
               </Field>
               <Field label={tr("Peak heart rate (bpm)")} error={fieldErrors.peakHr} hint="20 – 260 bpm">
-                <Input type="number" inputMode="numeric" value={peakHr} onChange={(e) => set(setPeakHr, "peakHr")(e.target.value)} />
+                <Input data-testid="result-peak-hr" type="number" inputMode="numeric" value={peakHr} onChange={(e) => set(setPeakHr, "peakHr")(e.target.value)} />
               </Field>
               <Field label={tr("Heart rate after 10 min rest (bpm)")} error={fieldErrors.recoveryHr} hint="20 – 200 bpm">
-                <Input type="number" inputMode="numeric" value={recoveryHr} onChange={(e) => set(setRecoveryHr, "recoveryHr")(e.target.value)} />
+                <Input data-testid="result-recovery-hr" type="number" inputMode="numeric" value={recoveryHr} onChange={(e) => set(setRecoveryHr, "recoveryHr")(e.target.value)} />
               </Field>
               <Field label={tr("Top speed (km/h)")} error={fieldErrors.topSpeed} hint={tr("0 – 80 km/h")}>
-                <Input type="number" inputMode="decimal" value={topSpeed} onChange={(e) => set(setTopSpeed, "topSpeed")(e.target.value)} />
+                <Input data-testid="result-top-speed" type="number" inputMode="decimal" value={topSpeed} onChange={(e) => set(setTopSpeed, "topSpeed")(e.target.value)} />
               </Field>
             </div>
             {avgSpeed != null && avgSpeed > 75 && (
@@ -434,6 +497,7 @@ export default function SessionResultPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
               <Field label={tr("Performance score")} required error={fieldErrors.score}>
                 <Select
+                  data-testid="result-performance-score"
                   value={score}
                   onChange={(e) => set(setScore, "score")(e.target.value)}
                   options={[{ value: "", label: "—", disabled: true }, ...Array.from({ length: 10 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))]}
@@ -441,6 +505,7 @@ export default function SessionResultPage() {
               </Field>
               <Field label={tr("Completion")} required error={fieldErrors.completion}>
                 <Select
+                  data-testid="result-completion"
                   value={completion}
                   onChange={(e) => set(setCompletion, "completion")(e.target.value as CompletionLevel)}
                   options={[
@@ -452,7 +517,7 @@ export default function SessionResultPage() {
             </div>
             <div style={{ marginTop: "1rem" }}>
               <Field label={tr(`Professional comment (${comment.trim().length}/2000)`)} required error={fieldErrors.comment} hint={tr("2 – 2000 characters")}>
-                <Textarea rows={3} maxLength={2000} value={comment} onChange={(e) => set(setComment, "comment")(e.target.value)} />
+                <Textarea data-testid="result-comment" rows={3} maxLength={2000} value={comment} onChange={(e) => set(setComment, "comment")(e.target.value)} />
               </Field>
               <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.375rem" }}>
                 <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-muted)", alignSelf: "center" }}>{tr("Quick notes:")}</span>

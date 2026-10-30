@@ -1,12 +1,8 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import path from 'path';
 
-async function signIn(page: Page) {
-  await page.goto('/login');
-  await page.locator('input[type=email]').fill('trainer@gmail.com');
-  await page.locator('input[type=password]').fill('EquiFlow@2026');
-  await page.locator('button[type=submit]').click();
-  await expect(page).toHaveURL('/dashboard');
-}
+const AUTH_DIR = path.resolve(process.cwd(), 'test-results', '.auth');
+const TRAINER_AUTH = path.join(AUTH_DIR, 'trainer.json');
 
 const VIEWPORTS = [
   { name: '1366x768 (Desktop Standard)', width: 1366, height: 768 },
@@ -14,9 +10,9 @@ const VIEWPORTS = [
   { name: '390x844 (Mobile iPhone 12/13/14)', width: 390, height: 844 },
 ];
 
-test.use({ baseURL: 'http://localhost:5173' });
-
 test.describe('RaceRegistrationModal Viewport & Responsive Verification', () => {
+  test.use({ storageState: TRAINER_AUTH });
+
   for (const vp of VIEWPORTS) {
     test(`Modal header/footer pinned, actions visible and only body scrolls at ${vp.name} (zoom 100%)`, async ({
       page,
@@ -24,7 +20,6 @@ test.describe('RaceRegistrationModal Viewport & Responsive Verification', () => 
       // Set exact viewport and 100% zoom (deviceScaleFactor = 1)
       await page.setViewportSize({ width: vp.width, height: vp.height });
 
-      await signIn(page);
       await page.goto('/racing');
       await expect(page.getByRole('heading', { name: /Tournaments & Entries|Giải đấu/i }).first()).toBeVisible();
 

@@ -139,7 +139,11 @@ export const listRecords = async (params?: ListRecordsParams): Promise<ListRecor
 
   if (res && Array.isArray(res.data)) {
     return {
-      records: res.data,
+      records: res.data.map((item: any) => ({
+        ...item,
+        horseName: item.horseName || item.horse?.name || null,
+        horseCode: item.horseCode || item.horse?.horseCode || null,
+      })),
       total: typeof res.total === "number" ? res.total : res.data.length,
       page: typeof res.page === "number" ? res.page : 1,
       limit: typeof res.limit === "number" ? res.limit : 15,

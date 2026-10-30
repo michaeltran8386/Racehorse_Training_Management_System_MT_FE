@@ -64,7 +64,7 @@ export default function LiveMonitorPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "1.5rem" }}>
           {sessions.map((session) => {
             const snapshot = session.lastSnapshot;
-            if (!snapshot) {
+            if (!snapshot || !snapshot.metrics || !snapshot.horse || !snapshot.track) {
               return (
                 <article key={session.id} style={{ padding: "1.5rem", background: "var(--surface)", borderRadius: "var(--radius-card)", border: "1px solid var(--border)" }}>
                   <Badge tone="info">{tr("Running")}</Badge>
@@ -72,10 +72,10 @@ export default function LiveMonitorPage() {
                 </article>
               );
             }
-            const warning = Object.values(snapshot.alerts).some(Boolean);
-            const speedKmh = snapshot.metrics.velocity_mps * 3.6;
-            const progress = snapshot.track.target_distance_m > 0
-              ? Math.min(100, Math.round((snapshot.track.covered_distance_m / snapshot.track.target_distance_m) * 100))
+            const warning = Boolean(snapshot.alerts && Object.values(snapshot.alerts).some(Boolean));
+            const speedKmh = (snapshot.metrics.velocity_mps ?? 0) * 3.6;
+            const progress = (snapshot.track.target_distance_m ?? 0) > 0
+              ? Math.min(100, Math.round(((snapshot.track.covered_distance_m ?? 0) / snapshot.track.target_distance_m) * 100))
               : 0;
 
             return (
@@ -86,7 +86,7 @@ export default function LiveMonitorPage() {
                       <Link to={`/horses/${snapshot.horse.horse_id}`} style={{ color: "inherit" }}>{snapshot.horse.microchip_id ?? snapshot.horse.horse_id}</Link>
                     </h2>
                     <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)" }}>
-                      {snapshot.track.surface} · {snapshot.track.track_condition} · {Math.round(snapshot.sim_time_s)}s
+                      {snapshot.track.surface} · {snapshot.track.track_condition} · {Math.round(snapshot.sim_time_s ?? 0)}s
                     </span>
                   </div>
                   <Badge tone={warning ? "warn" : "ok"}>{warning ? tr("Warning") : tr("Running")}</Badge>
@@ -94,14 +94,14 @@ export default function LiveMonitorPage() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem" }}>
                   <Metric label="Current speed" value={`${speedKmh.toFixed(1)} km/h`} />
-                  <Metric label="Heart rate" value={`${Math.round(snapshot.metrics.heart_rate_bpm)} bpm`} warning={warning} />
-                  <Metric label="Stamina" value={`${Math.round(snapshot.metrics.stamina_pct)}%`} />
-                  <Metric label="Body temperature" value={`${snapshot.metrics.body_temp_c.toFixed(1)} °C`} />
+                  <Metric label="Heart rate" value={`${Math.round(snapshot.metrics.heart_rate_bpm ?? 0)} bpm`} warning={warning} />
+                  <Metric label="Stamina" value={`${Math.round(snapshot.metrics.stamina_pct ?? 0)}%`} />
+                  <Metric label="Body temperature" value={`${(snapshot.metrics.body_temp_c ?? 0).toFixed(1)} °C`} />
                 </div>
 
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                    <span>{snapshot.track.covered_distance_m}m / {snapshot.track.target_distance_m}m</span>
+                    <span>{snapshot.track.covered_distance_m ?? 0}m / {snapshot.track.target_distance_m ?? 0}m</span>
                     <strong>{progress}%</strong>
                   </div>
                   <div style={{ height: 8, background: "var(--surface-sunken)", borderRadius: 4 }}>

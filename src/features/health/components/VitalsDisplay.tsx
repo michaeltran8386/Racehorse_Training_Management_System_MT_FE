@@ -5,6 +5,7 @@ import type { VitalSigns } from "../types";
 import styles from "./VitalsDisplay.module.css";
 import { formatDate, formatDateTime } from "@/shared/lib/format";
 
+import i18n from "@/shared/i18n";
 import { tr } from "@/shared/i18n/tr";
 interface VitalsDisplayProps {
   vitals?: VitalSigns;
@@ -36,6 +37,10 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
   const hrWarn = isHeartRateWarning(vitals.restingHeartRate);
   const rrWarn = isRespiratoryWarning(vitals.respiratoryRate);
 
+  const isVi = (i18n.language || "vi").startsWith("vi");
+  const inRangeLabel = isVi ? "Trong dải tham chiếu" : "Within reference range";
+  const outRangeLabel = isVi ? "Ngoài dải tham chiếu" : "Outside reference range";
+
   return (
     <div className={styles.container}>
       {recordedAt && (
@@ -51,7 +56,7 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
           <div className={styles.headerRow}>
             <span className={styles.vitalLabel}>{tr("Temperature")}</span>
             <Badge tone={tempWarn ? "danger" : "ok"} dot>
-              {tempWarn ? tr("Abnormal") : tr("Normal")}
+              {tempWarn ? outRangeLabel : inRangeLabel}
             </Badge>
           </div>
           <div className={styles.valueRow}>
@@ -66,7 +71,7 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
           <div className={styles.headerRow}>
             <span className={styles.vitalLabel}>{tr("Resting Heart Rate")}</span>
             <Badge tone={hrWarn ? "danger" : "ok"} dot>
-              {hrWarn ? tr("Abnormal") : tr("Normal")}
+              {hrWarn ? outRangeLabel : inRangeLabel}
             </Badge>
           </div>
           <div className={styles.valueRow}>
@@ -81,7 +86,7 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
           <div className={styles.headerRow}>
             <span className={styles.vitalLabel}>{tr("Respiratory Rate")}</span>
             <Badge tone={rrWarn ? "danger" : "ok"} dot>
-              {rrWarn ? tr("Abnormal") : tr("Normal")}
+              {rrWarn ? outRangeLabel : inRangeLabel}
             </Badge>
           </div>
           <div className={styles.valueRow}>
@@ -104,6 +109,20 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
           <span className={styles.reference}>{tr("Standard: 400 – 600 kg")}</span>
         </div>
       </div>
+
+      <p
+        style={{
+          fontSize: "var(--fs-caption)",
+          color: "var(--muted)",
+          marginTop: "0.5rem",
+          lineHeight: 1.4,
+        }}
+        data-testid="vitals-range-disclaimer"
+      >
+        {isVi
+          ? "* Nhãn dải tham chiếu chỉ phản ánh chỉ số đo sinh hiệu so với ngưỡng chuẩn, không thay thế chẩn đoán lâm sàng hay trạng thái khóa y tế / chấn thương của ngựa."
+          : "* Reference range labels classify individual vital measurements against normal physiological thresholds only, and do not imply overall horse health, clinical diagnosis, or Medical Lock status."}
+      </p>
 
       {vitals.clinicalNotes && (
         <div className={styles.notes}>

@@ -119,7 +119,7 @@ if (typeof window !== "undefined") {
 export const DEFAULT_HERD_HORSES: HerdHorse[] = [
   {
     id: "horse-1",
-    name: "Thunderbolt Swift",
+    name: "Bạch Long Mã",
     code: "HR-000001",
     horseCode: "HR-000001",
     microchip: "985141002341001",
@@ -142,7 +142,7 @@ export const DEFAULT_HERD_HORSES: HerdHorse[] = [
   },
   {
     id: "horse-2",
-    name: "Northern Dancer Legacy",
+    name: "Xích Thố",
     code: "HR-000002",
     horseCode: "HR-000002",
     microchip: "985141002342002",

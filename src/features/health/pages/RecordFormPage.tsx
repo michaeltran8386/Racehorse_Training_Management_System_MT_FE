@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams, useBlocker } from "react-router-dom";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Field } from "@/shared/components/form/Field";
@@ -122,7 +122,7 @@ export default function RecordFormPage() {
   const [temperature, setTemperature] = useState<number | undefined>(38.1);
   const [restingHeartRate, setRestingHeartRate] = useState<number | undefined>(36);
   const [respiratoryRate, setRespiratoryRate] = useState<number | undefined>(12);
-  const [weightKg, setWeightKg] = useState<number | undefined>(480);
+  const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
   const [clinicalNotes, setClinicalNotes] = useState("");
 
   // Block 3: Diagnostics
@@ -331,7 +331,7 @@ export default function RecordFormPage() {
     if (respiratoryRate !== undefined && (respiratoryRate < 4 || respiratoryRate > 60)) {
       errs.respiratoryRate = tr("Respiratory rate must be between 4 and 60 breaths/min.");
     }
-    if (weightKg !== undefined && (weightKg < 200 || weightKg > 800)) {
+    if (weightKg !== undefined && weightKg !== null && (weightKg < 200 || weightKg > 800)) {
       errs.weightKg = tr("Horse weight must be between 200 and 800 kg.");
     }
 
@@ -393,7 +393,7 @@ export default function RecordFormPage() {
         temperature: temperature !== undefined ? Number(temperature) : undefined,
         restingHeartRate: restingHeartRate !== undefined ? Number(restingHeartRate) : undefined,
         respiratoryRate: respiratoryRate !== undefined ? Number(respiratoryRate) : undefined,
-        weightKg: weightKg !== undefined ? Number(weightKg) : undefined,
+        weightKg: typeof weightKg === "number" && !isNaN(weightKg) ? Number(weightKg) : undefined,
         clinicalNotes: clinicalNotes.trim() || undefined,
       },
       labTests: labTests.filter((t) => t.result.trim() !== ""),
@@ -455,28 +455,53 @@ export default function RecordFormPage() {
     }
   }
 
-  async function handleLoadExam() {
-    if (!horseId) return;
-    setExamBusy(true);
-    try {
-      const response = await getLatestExamSimulation(horseId);
-      const draft = response.resultDraft;
-      if (!draft) throw new Error(tr("The simulator has not returned measurements yet."));
-      setTemperature(draft.temperature);
-      setRestingHeartRate(draft.restingHeartRate);
-      setRespiratoryRate(draft.respiratoryRate);
-      setWeightKg(draft.weightKg);
-      setExamSource(`${draft.modelVersion} · ${new Date(draft.capturedAt).toLocaleString()}`);
-      setDirty(true);
-      toast.show(tr("Simulator measurements loaded. Review them before saving."), "ok");
-    } catch (err: unknown) {
-      const parsed = parseMedicalErrors(err);
-      setError(parsed.summary);
-      setErrorDetails(parsed.details);
-    } finally {
-      setExamBusy(false);
+  const handleLoadExam = useCallback(
+    async (silent = false) => {
+      if (!horseId) return;
+      if (!silent) setExamBusy(true);
+      try {
+        const response = await getLatestExamSimulation(horseId);
+        const draft = response.resultDraft;
+        if (!draft) {
+          if (!silent) throw new Error(tr("The simulator has not returned measurements yet."));
+          return;
+        }
+        setTemperature(draft.temperature);
+        setRestingHeartRate(draft.restingHeartRate);
+        setRespiratoryRate(draft.respiratoryRate);
+        setWeightKg(typeof draft.weightKg === "number" && !isNaN(draft.weightKg) ? draft.weightKg : undefined);
+        setExamSource(`${draft.modelVersion} · ${new Date(draft.capturedAt).toLocaleString()}`);
+        setDirty(true);
+        if (!silent) {
+          toast.show(tr("Simulator measurements loaded. Review them before saving."), "ok");
+        }
+      } catch (err: unknown) {
+        if (!silent) {
+          const parsed = parseMedicalErrors(err);
+          setError(parsed.summary);
+          setErrorDetails(parsed.details);
+        }
+      } finally {
+        if (!silent) {
+          setExamBusy(false);
+        }
+      }
+    },
+    [horseId, toast],
+  );
+
+  // Slice E: Main Web automatically loads the newest acknowledged Simulator measurements when its tab regains focus
+  useEffect(() => {
+    function onTabFocus() {
+      if (horseId) {
+        void handleLoadExam(true);
+      }
     }
-  }
+    window.addEventListener("focus", onTabFocus);
+    return () => {
+      window.removeEventListener("focus", onTabFocus);
+    };
+  }, [horseId, handleLoadExam]);
 
   const tempWarn = isTempWarning(temperature);
   const hrWarn = isHeartRateWarning(restingHeartRate);

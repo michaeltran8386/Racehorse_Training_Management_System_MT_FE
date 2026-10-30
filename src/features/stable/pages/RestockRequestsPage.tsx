@@ -81,10 +81,25 @@ export default function RestockRequestsPage() {
     fetchRequests();
   }, [fetchRequests]);
 
+  // Tự động làm mới khi có đơn đang trong trạng thái ĐANG GIAO (DELIVERING)
+  const hasActiveDeliveries = useMemo(
+    () => items.some((it) => it.status === 'DELIVERING'),
+    [items],
+  );
+
+  useEffect(() => {
+    if (!hasActiveDeliveries) return;
+    const interval = setInterval(() => {
+      fetchRequests();
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [hasActiveDeliveries, fetchRequests]);
+
   const statusTabs = useMemo(
     () => [
       { key: 'ALL', label: tr('All Proposals') },
       { key: 'PENDING', label: tr('Pending Review') },
+      { key: 'DELIVERING', label: isVietnamese ? 'Đang giao hàng' : 'Delivering' },
       { key: 'APPROVED', label: tr('Approved & In-Transit') },
       { key: 'DELIVERED', label: tr('Delivered / In Stock') },
       { key: 'REJECTED', label: tr('Rejected') },
@@ -103,6 +118,8 @@ export default function RestockRequestsPage() {
     switch (status) {
       case 'PENDING':
         return <Badge tone="warn">{tr('Pending Review')}</Badge>;
+      case 'DELIVERING':
+        return <Badge tone="warn">{isVietnamese ? 'Đang giao hàng' : 'Delivering'}</Badge>;
       case 'APPROVED':
         return <Badge tone="info">{tr('Approved')}</Badge>;
       case 'DELIVERED':
@@ -206,7 +223,7 @@ export default function RestockRequestsPage() {
               </Button>
             )}
 
-            {row.status === 'APPROVED' && (
+            {row.status === 'APPROVED' && isManager && (
               <Button
                 size="sm"
                 tone="secondary"
