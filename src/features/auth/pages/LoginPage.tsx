@@ -12,8 +12,7 @@ import { Button } from "@/shared/components/ui/Button";
 import { formatCountdown } from "@/shared/lib/format";
 import { useCountdown, useQueryParams } from "@/shared/lib/hooks";
 import { useAppLanguage } from "@/shared/lib/language";
-import { loginFailure, messageFor } from "@/shared/lib/messages";
-import { ApiError } from "@/shared/lib/api";
+import { googleFailure, loginFailure } from "@/shared/lib/messages";
 import type { LoginFailure } from "@/shared/lib/messages";
 import { EMAIL_MAX, EMAIL_RE } from "@/shared/lib/email";
 import { PASSWORD_MAX } from "@/shared/lib/password";
@@ -74,7 +73,7 @@ export default function LoginPage() {
   useScreenTranslation();
   const navigate = useNavigate();
   const { status, signIn, signInWithGoogle } = useAuth();
-  const { t, lang } = useAppLanguage();
+  const { t } = useAppLanguage();
   const params = useQueryParams();
 
   const [email, setEmail] = useState("");
@@ -164,8 +163,9 @@ export default function LoginPage() {
     } catch (err) {
       setIsTransitioning(false);
       setGoogleError(true);
-      const serviceError = err instanceof ApiError && (err.status === 0 || err.status === 429 || err.status >= 500);
-      setAlert({ tone: "danger", icon: "xCircle", title: lang === "vi" ? "Không thể đăng nhập bằng Google" : "Google sign-in failed", body: serviceError ? messageFor(err) : lang === "vi" ? "Kiểm tra tài khoản hoặc thử lại sau." : "Check your account or try again later." });
+      const failure = googleFailure(err);
+      setAlert(failure.alert);
+      setNextStep(failure.next);
     } finally {
       setChecking(false);
     }
@@ -193,6 +193,10 @@ export default function LoginPage() {
     ) : nextStep === "acceptInvite" ? (
       <Button size="sm" tone="secondary" onClick={() => navigate(`/accept-invite?email=${encodeURIComponent(mail)}`)}>
         Accept invitation
+      </Button>
+    ) : nextStep === "createAccount" ? (
+      <Button size="sm" tone="secondary" onClick={() => navigate("/sign-up")}>
+        Create account
       </Button>
     ) : nextStep === "signUp" ? (
       <Button size="sm" tone="secondary" onClick={() => navigate("/sign-up")}>

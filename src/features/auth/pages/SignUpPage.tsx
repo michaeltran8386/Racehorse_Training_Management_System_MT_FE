@@ -8,7 +8,8 @@ import { AuthLayout, HERO_TEAM } from "@/shared/components/layout/AuthLayout";
 import { Alert } from "@/shared/components/ui/Alert";
 import { PillButton } from "../components/PillButton";
 import { ApiError } from "@/shared/lib/api";
-import { messageFor } from "@/shared/lib/messages";
+import { googleFailure, messageFor } from "@/shared/lib/messages";
+import type { AlertSpec } from "@/shared/lib/messages";
 import { passwordError } from "@/shared/lib/password";
 import { register, registerWithGoogle } from "../api";
 import { signupFlow } from "../flow";
@@ -34,6 +35,7 @@ export default function SignUpPage() {
   const [agree, setAgree] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [alertBody, setAlertBody] = useState("");
+  const [googleAlert, setGoogleAlert] = useState<AlertSpec | null>(null);
   const [busy, setBusy] = useState(false);
 
   function clearError(key: keyof Errors) {
@@ -91,11 +93,12 @@ export default function SignUpPage() {
     }
     setBusy(true);
     setAlertBody("");
+    setGoogleAlert(null);
     try {
       signupFlow.set(await registerWithGoogle(credential));
       navigate("/sign-up/pending");
     } catch (err) {
-      setAlertBody(messageFor(err));
+      setGoogleAlert(googleFailure(err).alert);
     } finally {
       setBusy(false);
     }
@@ -114,6 +117,16 @@ export default function SignUpPage() {
         {alertBody && (
           <Alert tone="danger" icon="alert" title={tr("Request not sent")}>
             {alertBody}
+          </Alert>
+        )}
+        {googleAlert && (
+          <Alert
+            tone={googleAlert.tone}
+            icon={googleAlert.icon}
+            title={googleAlert.title}
+            action={googleAlert.tone === "info" ? <Link to="/login">{tr("Sign in")}</Link> : undefined}
+          >
+            {googleAlert.body}
           </Alert>
         )}
 

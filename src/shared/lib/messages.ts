@@ -223,7 +223,43 @@ export interface LoginFailure {
   // Khóa tạm sau nhiều lần sai: mốc (ms) server cho phép thử lại — trang đăng nhập đếm ngược tới đây.
   retryAt?: number;
   // Nút đi tiếp trong Alert: nhập OTP xác minh email / nhận lời mời / đăng ký lại.
-  next?: "verifyEmail" | "acceptInvite" | "signUp";
+  next?: "verifyEmail" | "acceptInvite" | "signUp" | "createAccount";
+}
+
+// Lỗi riêng của đăng nhập/đăng ký bằng Google; trạng thái tài khoản (chờ duyệt, bị khóa...) dùng chung loginFailure.
+export function googleFailure(err: unknown): LoginFailure {
+  if (err instanceof ApiError) {
+    switch (err.code) {
+      case "GOOGLE_ACCOUNT_NOT_FOUND":
+        return {
+          alert: {
+            tone: "warn",
+            icon: "mail",
+            title: "This Gmail has no TMEC account yet",
+            body: "Create an account with Google to send a Horse Owner request, or ask the Club Manager to invite you as staff.",
+          },
+          next: "createAccount",
+        };
+      case "GOOGLE_EMAIL_NOT_ALLOWED":
+        return { alert: { tone: "danger", icon: "mail", title: "Only Gmail accounts are accepted", body: "Choose a Google account that ends in @gmail.com." } };
+      case "GOOGLE_ACCOUNT_MISMATCH":
+        return {
+          alert: {
+            tone: "danger",
+            icon: "ban",
+            title: "Google account does not match",
+            body: "This email is linked to a different Google account. Sign in with email and password, or contact the Club Manager.",
+          },
+        };
+      case "GOOGLE_LOGIN_UNAVAILABLE":
+        return { alert: { tone: "danger", icon: "alert", title: "Google sign-in is not available", body: "The server has no Google setup yet. Use email and password for now." } };
+      case "GOOGLE_LOGIN_FAILED":
+        return { alert: { tone: "danger", icon: "xCircle", title: "Google could not confirm this sign-in", body: "Try again, or use email and password." } };
+      case "EMAIL_TAKEN":
+        return { alert: { tone: "info", icon: "mail", title: "This email already has an account", body: "Sign in with Google on the sign-in page instead." } };
+    }
+  }
+  return loginFailure(err);
 }
 
 // "Contact the Club Manager." + lý do CM ghi khi khóa / vô hiệu hóa (nếu có).

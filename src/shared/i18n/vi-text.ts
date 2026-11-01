@@ -3925,5 +3925,17 @@ export const VI_TEXT: Record<string, string> = {
   "Sent": "Đã gửi",
   "Create new account": "Tạo tài khoản mới",
   "It was valid until {{time}}. Request a new one below.": "Mã có hiệu lực đến {{time}}. Hãy yêu cầu mã mới bên dưới.",
+  "This Gmail has no TMEC account yet": "Gmail này chưa có tài khoản TMEC",
+  "Create an account with Google to send a Horse Owner request, or ask the Club Manager to invite you as staff.": "Hãy tạo tài khoản bằng Google để gửi yêu cầu làm Chủ ngựa, hoặc nhờ Quản lý CLB mời bạn vào làm nhân viên.",
+  "Only Gmail accounts are accepted": "Chỉ chấp nhận tài khoản Gmail",
+  "Choose a Google account that ends in @gmail.com.": "Hãy chọn tài khoản Google có đuôi @gmail.com.",
+  "Google account does not match": "Tài khoản Google không khớp",
+  "This email is linked to a different Google account. Sign in with email and password, or contact the Club Manager.": "Email này đã gắn với một tài khoản Google khác. Hãy đăng nhập bằng email và mật khẩu, hoặc liên hệ Quản lý CLB.",
+  "Google sign-in is not available": "Chưa dùng được đăng nhập Google",
+  "The server has no Google setup yet. Use email and password for now.": "Máy chủ chưa cấu hình Google. Tạm thời hãy dùng email và mật khẩu.",
+  "Google could not confirm this sign-in": "Google không xác nhận được lần đăng nhập này",
+  "Try again, or use email and password.": "Hãy thử lại, hoặc dùng email và mật khẩu.",
+  "This email already has an account": "Email này đã có tài khoản",
+  "Sign in with Google on the sign-in page instead.": "Hãy vào trang đăng nhập và chọn Đăng nhập bằng Google.",
 };
 
