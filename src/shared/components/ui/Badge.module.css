@@ -19,3 +19,4 @@
 .neutral { background: var(--slate-bg); color: var(--slate); }
 .violet { background: var(--violet-bg); color: var(--violet); }
 .brand { background: var(--brand-50); color: var(--brand-600); }
+.brand { color: var(--text); }

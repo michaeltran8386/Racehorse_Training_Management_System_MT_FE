@@ -1,3 +1,4 @@
+import formLayout from "@/shared/components/form/FormLayout.module.css";
 import { useEffect, useMemo, useState } from "react";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
@@ -250,7 +251,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
             <Select value={phaseId} onChange={(e) => setPhaseId(e.target.value)} options={phases.map((p) => ({ value: p.id, label: p.name }))} />
           </Field>
         )}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div className={formLayout.columns}>
           <Field label={tr("Date")} required>
             <Input type="date" min={todayClub()} value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
@@ -258,7 +259,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
             <Input type="time" min="04:00" max="20:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
           </Field>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div className={formLayout.columns}>
           <Field label={tr("Workout type")} required>
             <Select
               value={type}
@@ -283,7 +284,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
             />
           </Field>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+        <div className={formLayout.columns}>
           <Field label={tr("Distance per rep (m)")} required hint="100 – 5000">
             <Input type="number" min={100} max={5000} value={distance} onChange={(e) => setDistance(Number(e.target.value))} />
           </Field>
@@ -294,7 +295,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
             <Input type="number" min={10} max={70} step={0.1} value={speed} onChange={(e) => setSpeed(e.target.value)} />
           </Field>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div className={formLayout.columns}>
           <Field label={tr("Track surface")} required>
             <Select
               value={effSurface}
@@ -442,7 +443,7 @@ export function RestoreWorkoutDialog({ session, onClose, onDone }: { session: Ex
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         {error && <Alert tone="danger" title={tr("Cannot restore")}>{error}</Alert>}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div className={formLayout.columns}>
           <Field label={tr("Date")} required>
             <Input type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>

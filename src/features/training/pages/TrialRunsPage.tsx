@@ -1,7 +1,9 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Card } from "@/shared/components/ui/Card";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { SkeletonTable } from "@/shared/components/ui/Skeleton";
@@ -18,6 +20,7 @@ import type { ExerciseSession, TrainingPlan } from "../types";
 import { WorkoutDialog } from "../components/WorkoutDialogs";
 
 import { tr } from "@/shared/i18n/tr";
+import styles from "./TrialRunsPage.module.css";
 function plusDays(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -29,6 +32,7 @@ function plusDays(date: string, days: number): string {
  * Lên lịch trực tiếp hoặc ở Lịch tập; hệ thống chặn 2 lượt trên cùng mặt sân trong khung 15 phút.
  */
 export default function TrialRunsPage() {
+  useScreenTranslation();
   const user = useCurrentUser();
   const toast = useToast();
   const { isVietnamese, t } = useAppLanguage();
@@ -101,34 +105,15 @@ export default function TrialRunsPage() {
   // Nhóm theo ngày + mặt sân để điều phối.
   const groups = new Map<string, ExerciseSession[]>();
   for (const trSession of trials) {
-    const key = `${trSession.sessionDate} · ${TRACK_LABEL[trSession.trackType]}`;
+    const key = `${trSession.sessionDate} · ${tr(TRACK_LABEL[trSession.trackType])}`;
     groups.set(key, [...(groups.get(key) ?? []), trSession]);
   }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "var(--fs-h1)", fontWeight: 700 }}>{t("trialRuns.title")}</h1>
-          <p style={{ margin: "0.25rem 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>
-            {t("trialRuns.subtitle")}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-          {canManage && (
-            <Button tone="primary" onClick={handleOpenSchedule}>
-              + {isVietnamese ? "Lên lịch chạy thử" : tr("Schedule Trial Run")}
-            </Button>
-          )}
-          <Link to="/training/calendar">
-            <Button tone="secondary">
-              {isVietnamese ? "📅 Xem trên lịch tuần" : tr("📅 Weekly Calendar")}
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader title={t("trialRuns.title")} description={t("trialRuns.subtitle")} action={<>{canManage && <Button tone="primary" onClick={handleOpenSchedule}>{isVietnamese ? "Lên lịch chạy thử" : tr("Schedule Trial Run")}</Button>}<LinkButton to="/training/calendar" tone="secondary">{isVietnamese ? "Xem lịch tuần" : tr("Weekly Calendar")}</LinkButton></>} />
 
-      <div style={{ padding: "0.625rem 0.875rem", borderRadius: "8px", background: "color-mix(in srgb, var(--brand) 6%, var(--surface))", border: "1px solid color-mix(in srgb, var(--brand) 20%, var(--border))", fontSize: "var(--fs-sm)", lineHeight: 1.5 }}>
+      <div className={styles.notice}>
         {isVietnamese ? (
           <>
             ⏱️ Giám sát các phiên chạy thử tốc độ cao. Đảm bảo giãn cách an toàn tối thiểu 15 phút giữa các lượt chạy cùng mặt sân.
@@ -141,7 +126,7 @@ export default function TrialRunsPage() {
       </div>
 
       <Card pad={16}>
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div className={styles.filters}>
           <Field label={isVietnamese ? "Từ ngày" : tr("From")}>
             <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           </Field>
@@ -171,9 +156,9 @@ export default function TrialRunsPage() {
       ) : (
         [...groups.entries()].map(([key, rows]) => (
           <Card key={key} pad={20}>
-            <h3 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{key}</h3>
+            <h2 className={styles.groupTitle}>{key}</h2>
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "var(--fs-body)" }}>
+              <table className={styles.table}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
                     <th style={{ padding: "0.5rem 0.75rem" }}>{isVietnamese ? "Giờ chạy" : tr("Time")}</th>
@@ -239,13 +224,11 @@ export default function TrialRunsPage() {
                                 )}
                               </div>
                             )}
-                          <Link to={`/training/sessions/${row.id}/result`}>
-                            <Button size="sm" tone={row.status === "COMPLETED" ? "secondary" : "primary"}>
+                          <LinkButton to={`/training/sessions/${row.id}/result`} size="sm" tone={row.status === "COMPLETED" ? "secondary" : "primary"}>
                               {row.status === "COMPLETED"
                                 ? (isVietnamese ? "Xem kết quả" : tr("View result"))
                                 : (isVietnamese ? "Ghi kết quả" : tr("Record result"))}
-                            </Button>
-                          </Link>
+                          </LinkButton>
                         </div>
                       </td>
                     </tr>

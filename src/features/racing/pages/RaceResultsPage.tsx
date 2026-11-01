@@ -1,21 +1,36 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
+import styles from "./RaceResultsPage.module.css";
 import { Card } from "@/shared/components/ui/Card";
 import { Badge } from "@/shared/components/ui/Badge";
+import { Alert } from "@/shared/components/ui/Alert";
+import { Button } from "@/shared/components/ui/Button";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { SkeletonTable } from "@/shared/components/ui/Skeleton";
 import { tr } from "@/shared/i18n/tr";
+import { messageFor } from "@/shared/lib/messages";
+import { formatDate } from "@/shared/lib/format";
+import { useAppLanguage } from "@/shared/lib/language";
 import { fetchTournaments, fetchTournamentDetail } from "../api";
 import type { Tournament } from "../types";
 
 export default function RaceResultsPage() {
+  useScreenTranslation();
+  const { isVietnamese } = useAppLanguage();
+  const locale = isVietnamese ? "vi-VN" : "en-US";
+  const isOwner = useCurrentUser().role === "HORSE_OWNER";
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [selectedTournamentId, setSelectedTournamentId] = useState<string>("");
-  const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
+  const [detail, setDetail] = useState<{ id: string; tournament: Tournament | null; error: string } | null>(null);
+  const [detailRetry, setDetailRetry] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   const loadCompletedTournaments = useCallback(async () => {
     setLoading(true);
+    setError("");
     try {
       const res = await fetchTournaments({ status: "COMPLETED" });
       const completedList = res.items;
@@ -24,18 +39,9 @@ export default function RaceResultsPage() {
         setSelectedTournamentId(completedList[0].id);
       }
     } catch (err) {
-      console.error("Failed to load completed tournaments", err);
+      setError(messageFor(err));
     } finally {
       setLoading(false);
-    }
-  }, []);
-
-  const loadDetail = useCallback(async (id: string) => {
-    try {
-      const detail = await fetchTournamentDetail(id);
-      setSelectedTournament(detail);
-    } catch (err) {
-      console.error("Failed to load tournament detail", err);
     }
   }, []);
 
@@ -44,31 +50,39 @@ export default function RaceResultsPage() {
   }, [loadCompletedTournaments]);
 
   useEffect(() => {
-    if (selectedTournamentId) {
-      void loadDetail(selectedTournamentId);
-    }
-  }, [selectedTournamentId, loadDetail]);
+    if (!selectedTournamentId) return;
+    let active = true;
+    setDetail(null);
+    fetchTournamentDetail(selectedTournamentId)
+      .then((tournament) => { if (active) setDetail({ id: selectedTournamentId, tournament, error: "" }); })
+      .catch((err) => { if (active) setDetail({ id: selectedTournamentId, tournament: null, error: messageFor(err) }); });
+    return () => { active = false; };
+  }, [selectedTournamentId, detailRetry]);
 
+  const currentDetail = detail?.id === selectedTournamentId ? detail : null;
+  const selectedTournament = currentDetail?.tournament ?? null;
 
   const finishedRegistrations = (selectedTournament?.registrations ?? [])
     .filter((r) => r.result)
     .sort((a, b) => (a.result?.finalRank ?? 99) - (b.result?.finalRank ?? 99));
 
-  const firstPlace = finishedRegistrations[0];
-  const secondPlace = finishedRegistrations[1];
-  const thirdPlace = finishedRegistrations[2];
+  const firstPlace = finishedRegistrations.find((entry) => entry.result?.finalRank === 1);
+  const secondPlace = finishedRegistrations.find((entry) => entry.result?.finalRank === 2);
+  const thirdPlace = finishedRegistrations.find((entry) => entry.result?.finalRank === 3);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <PageHeader
         title={tr("Race Results")}
         description={tr(
-          "Official tournament standings, sprint speeds, and prize distributions.",
+          isOwner ? "Results recorded for your horses in completed events." : "Official tournament standings, sprint speeds, and prize distributions.",
         )}
       />
 
       {loading ? (
         <SkeletonTable columns={5} rows={5} />
+      ) : error ? (
+        <Alert tone="danger" title={tr("Could not load data")} action={<Button tone="secondary" onClick={() => void loadCompletedTournaments()}>{tr("Try again")}</Button>}>{error}</Alert>
       ) : tournaments.length === 0 ? (
         <Card pad={32}>
           <EmptyState
@@ -80,51 +94,47 @@ export default function RaceResultsPage() {
         <>
           {/* Tournament Selector */}
           <Card pad={16}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-                <label style={{ fontWeight: 600, fontSize: "var(--fs-sm)" }}>
+            <div className={styles.selectorBar}>
+              <div className={styles.selectorField}>
+                <label htmlFor="results-tournament">
                   {tr("Select Championship Event:")}
                 </label>
                 <select
+                  id="results-tournament"
                   value={selectedTournamentId}
                   onChange={(e) => setSelectedTournamentId(e.target.value)}
-                  style={{
-                    padding: "0.5rem 1rem",
-                    borderRadius: "var(--r-sm, 6px)",
-                    border: "1px solid var(--border)",
-                    background: "var(--surface)",
-                    color: "var(--ink)",
-                    fontSize: "var(--fs-body)",
-                    fontWeight: 600,
-                  }}
+                  className={styles.select}
                 >
                   {tournaments.map((t) => (
                     <option key={t.id} value={t.id}>
-                      {t.name} ({new Date(t.raceDate).toLocaleDateString()} · {t.distanceMeters}m)
+                      {t.name} ({formatDate(t.raceDate)} · {t.distanceMeters}m)
                     </option>
                   ))}
                 </select>
               </div>
 
               {selectedTournament && (
-                <div style={{ display: "flex", gap: "1rem", fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
-                  <span>📍 {selectedTournament.location}</span>
-                  <span>📏 {selectedTournament.distanceMeters}m ({tr(selectedTournament.trackType)})</span>
-                  <span>💰 {tr("Purse:")} {selectedTournament.prizePool.toLocaleString()} đ</span>
+                <div className={styles.eventMeta}>
+                  <span>{selectedTournament.location}</span>
+                  <span>{selectedTournament.distanceMeters}m ({tr(selectedTournament.trackType)})</span>
+                  <span>{tr("Purse:")} {selectedTournament.prizePool.toLocaleString(locale)} đ</span>
                 </div>
               )}
             </div>
           </Card>
 
+          {!currentDetail ? <SkeletonTable columns={5} rows={5} /> : currentDetail.error ? (
+            <Alert tone="danger" title={tr("Could not load data")} action={<Button tone="secondary" onClick={() => setDetailRetry((n) => n + 1)}>{tr("Try again")}</Button>}>{currentDetail.error}</Alert>
+          ) : <>
           {/* Podium for Top 3 */}
-          {firstPlace && (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+          {(firstPlace || secondPlace || thirdPlace) && (
+            <div className={styles.podium}>
               {/* Gold 1st */}
-              <Card pad={20}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderLeft: "4px solid #f59e0b", paddingLeft: "0.75rem" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: "#d97706" }}>
-                      🥇 {tr("CHAMPION / 1ST PLACE")}
+              {firstPlace && <Card pad={20} className={styles.champion}>
+                <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                  <div className={styles.podiumHeading}>
+                    <span className={styles.podiumLabel}>
+                      {tr("CHAMPION / 1ST PLACE")}
                     </span>
                     <Badge tone="ok">{firstPlace.result?.avgSpeedKmh} km/h</Badge>
                   </div>
@@ -136,31 +146,31 @@ export default function RaceResultsPage() {
                       {firstPlace.horse.breed} · #{firstPlace.horse.horseCode || "N/A"}
                     </p>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-sm)" }}>
+                  <div className={styles.podiumStat}>
                     <span style={{ color: "var(--muted)" }}>{tr("Finish Time:")}</span>
                     <strong>{firstPlace.result?.finishTimeSeconds}s</strong>
                   </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-sm)" }}>
+                  <div className={styles.podiumStat}>
                     <span style={{ color: "var(--muted)" }}>{tr("Prize Won:")}</span>
-                    <strong style={{ color: "var(--brand, #10b981)" }}>
-                      {firstPlace.result?.prizeMoneyWon.toLocaleString()} đ
+                    <strong style={{ color: "var(--brand-700)" }}>
+                      {firstPlace.result?.prizeMoneyWon.toLocaleString(locale)} đ
                     </strong>
                   </div>
                   {firstPlace.result?.officialNotes && (
-                    <p style={{ margin: 0, fontSize: "var(--fs-xs)", color: "var(--muted)", fontStyle: "italic" }}>
+                    <p style={{ margin: 0, fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
                       "{firstPlace.result.officialNotes}"
                     </p>
                   )}
                 </div>
-              </Card>
+              </Card>}
 
               {/* Silver 2nd */}
               {secondPlace && (
                 <Card pad={20}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderLeft: "4px solid #94a3b8", paddingLeft: "0.75rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: "#64748b" }}>
-                        🥈 {tr("RUNNER-UP / 2ND PLACE")}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <div className={styles.podiumHeading}>
+                      <span className={styles.podiumLabel}>
+                        {tr("RUNNER-UP / 2ND PLACE")}
                       </span>
                       <Badge tone="neutral">{secondPlace.result?.avgSpeedKmh} km/h</Badge>
                     </div>
@@ -172,14 +182,14 @@ export default function RaceResultsPage() {
                         {secondPlace.horse.breed} · #{secondPlace.horse.horseCode || "N/A"}
                       </p>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-sm)" }}>
+                    <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Finish Time:")}</span>
                       <strong>{secondPlace.result?.finishTimeSeconds}s</strong>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-sm)" }}>
+                    <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Prize Won:")}</span>
-                      <strong style={{ color: "var(--brand, #10b981)" }}>
-                        {secondPlace.result?.prizeMoneyWon.toLocaleString()} đ
+                      <strong style={{ color: "var(--brand-700)" }}>
+                        {secondPlace.result?.prizeMoneyWon.toLocaleString(locale)} đ
                       </strong>
                     </div>
                   </div>
@@ -189,10 +199,10 @@ export default function RaceResultsPage() {
               {/* Bronze 3rd */}
               {thirdPlace && (
                 <Card pad={20}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem", borderLeft: "4px solid #b45309", paddingLeft: "0.75rem" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span style={{ fontSize: "var(--fs-xs)", fontWeight: 700, color: "#b45309" }}>
-                        🥉 {tr("3RD PLACE")}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                    <div className={styles.podiumHeading}>
+                      <span className={styles.podiumLabel}>
+                        {tr("3RD PLACE")}
                       </span>
                       <Badge tone="neutral">{thirdPlace.result?.avgSpeedKmh} km/h</Badge>
                     </div>
@@ -204,14 +214,14 @@ export default function RaceResultsPage() {
                         {thirdPlace.horse.breed} · #{thirdPlace.horse.horseCode || "N/A"}
                       </p>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-sm)" }}>
+                    <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Finish Time:")}</span>
                       <strong>{thirdPlace.result?.finishTimeSeconds}s</strong>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-sm)" }}>
+                    <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Prize Won:")}</span>
-                      <strong style={{ color: "var(--brand, #10b981)" }}>
-                        {thirdPlace.result?.prizeMoneyWon.toLocaleString()} đ
+                      <strong style={{ color: "var(--brand-700)" }}>
+                        {thirdPlace.result?.prizeMoneyWon.toLocaleString(locale)} đ
                       </strong>
                     </div>
                   </div>
@@ -222,15 +232,15 @@ export default function RaceResultsPage() {
 
           {/* Complete Final Standings Table */}
           <Card pad={20}>
-            <h3 style={{ margin: "0 0 1rem 0", fontSize: "var(--fs-base, 1.125rem)", fontWeight: 700, color: "var(--ink)" }}>
-              {tr("Complete Official Standings")}
+            <h3 className={styles.sectionTitle}>
+              {tr(isOwner ? "Your horses' results" : "Complete Official Standings")}
             </h3>
 
             {finishedRegistrations.length === 0 ? (
-              <p style={{ color: "var(--muted)", margin: 0 }}>{tr("No finishes recorded for this tournament.")}</p>
+              <p style={{ color: "var(--muted)", margin: 0 }}>{tr(isOwner ? "No results for your horses in this event." : "No finishes recorded for this tournament.")}</p>
             ) : (
               <div style={{ overflowX: "auto" }}>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--fs-sm)" }}>
+                <table className={styles.table}>
                   <thead>
                     <tr style={{ borderBottom: "2px solid var(--border)", textAlign: "left", color: "var(--muted)" }}>
                       <th style={{ padding: "0.75rem 0.5rem" }}>{tr("Rank")}</th>
@@ -260,13 +270,13 @@ export default function RaceResultsPage() {
                         <td style={{ padding: "0.75rem 0.5rem", fontWeight: 600 }}>
                           {reg.result?.finishTimeSeconds}s
                         </td>
-                        <td style={{ padding: "0.75rem 0.5rem", color: "var(--brand, #10b981)", fontWeight: 700 }}>
+                        <td style={{ padding: "0.75rem 0.5rem", color: "var(--brand-700)", fontWeight: 700 }}>
                           {reg.result?.avgSpeedKmh} km/h
                         </td>
                         <td style={{ padding: "0.75rem 0.5rem", fontWeight: 600 }}>
-                          {reg.result?.prizeMoneyWon ? `${reg.result.prizeMoneyWon.toLocaleString()} đ` : "—"}
+                          {reg.result?.prizeMoneyWon != null ? `${reg.result.prizeMoneyWon.toLocaleString(locale)} đ` : "—"}
                         </td>
-                        <td style={{ padding: "0.75rem 0.5rem", color: "var(--muted)", fontStyle: "italic" }}>
+                        <td style={{ padding: "0.75rem 0.5rem", color: "var(--muted)" }}>
                           {reg.result?.officialNotes || "—"}
                         </td>
                       </tr>
@@ -276,6 +286,7 @@ export default function RaceResultsPage() {
               </div>
             )}
           </Card>
+          </>}
         </>
       )}
     </div>

@@ -1,4 +1,4 @@
-// Màn Y tế và Huấn luyện tải theo route (React.lazy): file JS đầu tiên nhẹ hơn. Đường dẫn khai báo ở router.tsx.
+// Các màn hình trong workspace tải theo route; phần chờ được hiển thị trong AppLayout.
 import { lazy } from "react";
 
 export const MedicalRecordPage = lazy(() => import("@/features/health/pages/MedicalRecordPage"));
@@ -9,6 +9,8 @@ export const InjuryMapPage = lazy(() => import("@/features/health/pages/InjuryMa
 export const TrainingLockPage = lazy(() => import("@/features/health/pages/TrainingLockPage"));
 export const CareSchedulePage = lazy(() => import("@/features/health/pages/CareSchedulePage"));
 export const HerdHealthPage = lazy(() => import("@/features/health/pages/HerdHealthPage"));
+export const OwnerHealthPage = lazy(() => import("@/features/health/pages/OwnerHealthPage"));
+export const HealthReportPage = lazy(() => import("@/features/health/pages/HealthReportPage"));
 export const PlanListPage = lazy(() => import("@/features/training/pages/PlanListPage"));
 export const PlanWizardPage = lazy(() => import("@/features/training/pages/PlanWizardPage"));
 export const PlanHistoryPage = lazy(() => import("@/features/training/pages/PlanHistoryPage"));
@@ -18,11 +20,42 @@ export const SessionMetricsPage = lazy(() => import("@/features/training/pages/S
 export const LiveMonitorPage = lazy(() => import("@/features/training/pages/LiveMonitorPage"));
 export const AlertListPage = lazy(() => import("@/features/training/pages/AlertListPage"));
 export const TrainingOverviewPage = lazy(() => import("@/features/training/pages/TrainingOverviewPage"));
+export const PerformanceReportPage = lazy(() => import("@/features/training/pages/PerformanceReportPage"));
 export const PlanDetailPage = lazy(() => import("@/features/training/pages/PlanDetailPage"));
 export const SessionResultPage = lazy(() => import("@/features/training/pages/SessionResultPage"));
 export const FitnessChartPage = lazy(() => import("@/features/training/pages/FitnessChartPage"));
 export const MyTrainingPage = lazy(() => import("@/features/training/pages/MyTrainingPage"));
 export const RaceEntryPage = lazy(() => import("@/features/racing/pages/RaceEntryPage"));
 export const RaceResultsPage = lazy(() => import("@/features/racing/pages/RaceResultsPage"));
+export const RaceRecordPage = lazy(() => import("@/features/horses/pages/RaceRecordPage"));
 export const OwnerFinancialReportsPage = lazy(() => import("@/features/financial/pages/OwnerFinancialReportsPage"));
+export const CostReportPage = lazy(() => import("@/features/financial/pages/CostReportPage"));
 
+
+export const AuditLogPage = lazy(() => import("@/features/dashboard/pages/AuditLogPage"));
+export const AccountListPage = lazy(() => import("@/features/accounts/pages/AccountListPage"));
+export const StaffDirectoryPage = lazy(() => import("@/features/master-data/pages/StaffDirectoryPage"));
+export const HorseListPage = lazy(() => import("@/features/horses/pages/HorseListPage"));
+export const HorseDetailPage = lazy(() => import("@/features/horses/pages/HorseDetailPage"));
+export const HorseFormPage = lazy(() => import("@/features/horses/pages/HorseFormPage"));
+export const DeletedHorsesPage = lazy(() => import("@/features/horses/pages/DeletedHorsesPage"));
+export const PermissionMatrix = lazy(() => import("@/features/accounts/pages/PermissionMatrix"));
+export const ChangePasswordPage = lazy(() => import("@/features/auth/pages/ChangePasswordPage"));
+export const MyProfilePage = lazy(() => import("@/features/auth/pages/MyProfilePage"));
+export const SessionExpiredPage = lazy(() => import("@/features/auth/pages/SessionExpiredPage"));
+export const ComingSoonPage = lazy(() => import("@/features/dashboard/pages/ComingSoonPage"));
+export const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage"));
+export const AssistantPage = lazy(() => import("@/features/assistant/pages/AssistantPage"));
+export const NotificationsPage = lazy(() => import("@/features/dashboard/pages/NotificationsPage"));
+export const NotificationSettingsPage = lazy(() => import("@/features/dashboard/pages/NotificationSettingsPage"));
+export const HorseCatalogPage = lazy(() => import("@/features/horses/pages/HorseCatalogPage"));
+export const StableMapPage = lazy(() => import("@/features/stable/pages/StableMapPage"));
+export const StallCatalogPage = lazy(() => import("@/features/stable/pages/StallCatalogPage"));
+export const SuppliesCatalogPage = lazy(() => import("@/features/master-data/pages/SuppliesCatalogPage"));
+export const ShiftCatalogPage = lazy(() => import("@/features/master-data/pages/ShiftCatalogPage"));
+export const ShiftRosterPage = lazy(() => import("@/features/stable/pages/ShiftRosterPage"));
+export const MealRationsPage = lazy(() => import("@/features/stable/pages/MealRationsPage"));
+export const DailyChecklistPage = lazy(() => import("@/features/stable/pages/DailyChecklistPage"));
+export const IncidentListPage = lazy(() => import("@/features/stable/pages/IncidentListPage"));
+export const InventoryPage = lazy(() => import("@/features/stable/pages/InventoryPage"));
+export const RestockRequestsPage = lazy(() => import("@/features/stable/pages/RestockRequestsPage"));

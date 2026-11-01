@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
@@ -21,6 +22,7 @@ interface Forbidden403PageProps {
 
 // Design 1.13: khung app vẫn hiện để người dùng không bị "bỏ rơi".
 export default function Forbidden403Page({ access }: Forbidden403PageProps) {
+  useScreenTranslation();
   const user = useCurrentUser();
   const navigate = useNavigate();
   const toast = useToast();

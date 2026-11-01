@@ -144,7 +144,7 @@
 :global([data-theme="dark"]) .tabBtnActive,
 :global(.theme-dark) .tabBtnActive {
   background: var(--brand-50);
-  color: var(--brand);
+  color: var(--brand-700);
   border-color: rgba(96, 165, 250, 0.35);
 }
 
@@ -391,7 +391,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: var(--brand);
+  color: var(--brand-700);
   font-weight: 700;
   cursor: pointer;
   background: transparent;
@@ -433,7 +433,7 @@
 
 /* Safe Highlight */
 .highlight {
-  color: var(--brand);
+  color: var(--brand-700);
   font-weight: 800;
   background: rgba(49, 93, 75, 0.12);
   border-radius: 2px;
@@ -496,3 +496,22 @@
     gap: 8px;
   }
 }
+:global([data-theme="dark"]) .highlight, :global(.theme-dark) .highlight { color: var(--brand-700); background: var(--brand-50); }
+@media (max-width: 640px) { .popover { border-radius: 0; } }
+/* EquiFlow search palette and controls */
+.popover { border-radius: 0; box-shadow: var(--shadow-pop); }
+.headerIconBox, .escBadge, .tabBtn, .resultRow, .itemIconBox, .statusBadge { border-radius: 0; }
+.headerTitle { font: 800 24px/1.1 var(--font-display); text-transform: uppercase; }
+.tabBtnActive, :global([data-theme="dark"]) .tabBtnActive, :global(.theme-dark) .tabBtnActive { background: var(--brand); color: var(--text-on-brand); border-color: var(--brand); }
+.tabBtn:focus-visible, .footerLink:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.resultRowSelected, :global([data-theme="dark"]) .resultRowSelected, :global(.theme-dark) .resultRowSelected { background: var(--brand-50) !important; border-color: var(--brand) !important; }
+.iconMint, :global([data-theme="dark"]) .iconMint, :global(.theme-dark) .iconMint { background: var(--ok-bg); color: var(--ok); }
+.iconLavender, :global([data-theme="dark"]) .iconLavender, :global(.theme-dark) .iconLavender { background: var(--info-bg); color: var(--info); }
+.iconCoral, :global([data-theme="dark"]) .iconCoral, :global(.theme-dark) .iconCoral { background: var(--danger-bg); color: var(--danger); }
+.iconAmber, :global([data-theme="dark"]) .iconAmber, :global(.theme-dark) .iconAmber { background: var(--warn-bg); color: var(--warn); }
+.badgeDanger, :global([data-theme="dark"]) .badgeDanger, :global(.theme-dark) .badgeDanger { background: var(--danger-bg); color: var(--danger); }
+.badgeWarn, :global([data-theme="dark"]) .badgeWarn, :global(.theme-dark) .badgeWarn { background: var(--warn-bg); color: var(--warn); }
+.badgeOk, :global([data-theme="dark"]) .badgeOk, :global(.theme-dark) .badgeOk { background: var(--ok-bg); color: var(--ok); }
+.highlight, :global([data-theme="dark"]) .highlight, :global(.theme-dark) .highlight { background: var(--brand-100); color: var(--text); border-radius: 0; }
+@media (max-width: 640px) { .popover { border-radius: 0; } .itemRight { gap: 6px; margin-left: 8px; } }
+@media (prefers-reduced-motion: reduce) { .popover { animation: none; } .itemIconBox, .itemChevron { transition: none; } }

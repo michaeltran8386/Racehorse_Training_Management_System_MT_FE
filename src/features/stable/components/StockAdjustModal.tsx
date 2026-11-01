@@ -52,10 +52,7 @@ export function StockAdjustModal({
     [zones],
   );
 
-  const supplyOptions = useMemo(
-    () => supplies.map((s) => ({ value: s.id, label: `${formatSupplyName(s.name)} (${formatSupplyUnit(s.unit)})` })),
-    [supplies],
-  );
+  const supplyOptions = supplies.map((s) => ({ value: s.id, label: `${formatSupplyName(s.name)} (${formatSupplyUnit(s.unit)})` }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -106,7 +103,7 @@ export function StockAdjustModal({
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {error && <Alert tone="danger">{error}</Alert>}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
           <Field label={tr('Stall Zone')} required>
             {stockItem ? (
               <Input value={`${stockItem.zoneCode} - ${stockItem.zoneName}`} disabled />

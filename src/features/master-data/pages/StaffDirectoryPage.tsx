@@ -1,10 +1,12 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./StaffDirectoryPage.module.css";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { Card } from "@/shared/components/ui/Card";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/form/Input";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { listAccounts } from "@/features/accounts/api";
@@ -18,6 +20,7 @@ import { tr } from "@/shared/i18n/tr";
 const STAFF_ROLES: Role[] = ["CLUB_MANAGER", "HEAD_TRAINER", "VETERINARIAN", "GROOM"];
 
 export default function StaffDirectoryPage() {
+  useScreenTranslation();
   const currentUser = useCurrentUser();
   const [accounts, setAccounts] = useState<PublicAccount[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,24 +64,23 @@ export default function StaffDirectoryPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <PageHeader
         title={tr("Staff Directory")}
-        description={tr("Active operating staff, trainers, veterinarians, and grooms managing EquiFlow facilities.")}
+        description={tr("Active operating staff, trainers, veterinarians, and grooms managing TMEC facilities.")}
         action={
           currentUser.permissions.manageAccounts ? (
-            <Link to="/accounts">
-              <Button tone="primary" size="md">
-                {tr("+ Manage Accounts & Invites")}
-              </Button>
-            </Link>
+            <LinkButton to="/accounts" tone="primary">
+              {tr("+ Manage Accounts & Invites")}
+            </LinkButton>
           ) : undefined
         }
       />
 
       <Card pad={16}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+        <div className={styles.toolbar}>
+          <div className={styles.filters}>
             <Button
               size="sm"
               tone={roleFilter === "ALL" ? "primary" : "secondary"}
+              aria-pressed={roleFilter === "ALL"}
               onClick={() => setRoleFilter("ALL")}
             >
               {tr("All Staff ({{count}})", { count: accounts.filter((a) => STAFF_ROLES.includes(a.role)).length })}
@@ -88,6 +90,7 @@ export default function StaffDirectoryPage() {
                 key={r}
                 size="sm"
                 tone={roleFilter === r ? "primary" : "secondary"}
+                aria-pressed={roleFilter === r}
                 onClick={() => setRoleFilter(r)}
               >
                 {tr("{{role}} ({{count}})", { role: tr(ROLE_LABEL[r]), count: accounts.filter((a) => a.role === r).length })}
@@ -95,8 +98,9 @@ export default function StaffDirectoryPage() {
             ))}
           </div>
 
-          <div style={{ minWidth: 260 }}>
+          <div className={styles.search}>
             <Input
+              aria-label={tr("Search staff by name, email...")}
               placeholder={tr("Search staff by name, email...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -117,62 +121,26 @@ export default function StaffDirectoryPage() {
           />
         </Card>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1rem" }}>
+        <div className={styles.directory}>
           {staffMembers.map((staff) => (
             <Card key={staff.id} pad={20}>
-              <div style={{ display: "flex", gap: "1rem", alignItems: "flex-start" }}>
-                <div
-                  style={{
-                    width: 48,
-                    height: 48,
-                    borderRadius: "50%",
-                    background: "var(--surface-sunken)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontWeight: 700,
-                    color: "var(--brand)",
-                    fontSize: "var(--fs-section)",
-                    flexShrink: 0,
-                  }}
-                >
-                  {initials(staff.fullName)}
-                </div>
-
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
-                    <h3 style={{ margin: 0, fontSize: "var(--fs-body-lg)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {staff.fullName}
-                    </h3>
+              <div className={styles.person}>
+                <div className={styles.avatar} aria-hidden="true">{initials(staff.fullName)}</div>
+                <div className={styles.details}>
+                  <div className={styles.heading}>
+                    <h3 className={styles.name}>{staff.fullName}</h3>
                     <Badge tone={ACCOUNT_STATUS[staff.status]?.tone || "neutral"}>
                       {ACCOUNT_STATUS[staff.status]?.label ? tr(ACCOUNT_STATUS[staff.status].label) : staff.status}
                     </Badge>
                   </div>
-
-                  <p style={{ margin: "0.25rem 0", color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>
-                    {tr(ROLE_LABEL[staff.role])}
-                  </p>
-
-                  <div style={{ marginTop: "0.75rem", fontSize: "var(--fs-body)", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--ink-muted)" }}>
-                      <Icon name="mail" size={14} />
-                      <a href={`mailto:${staff.email}`} style={{ color: "inherit", textDecoration: "none" }}>
-                        {staff.email}
-                      </a>
-                    </div>
-                    {staff.phone && (
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", color: "var(--ink-muted)" }}>
-                        <Icon name="phone" size={14} />
-                        <span>{staff.phone}</span>
-                      </div>
-                    )}
+                  <p className={styles.role}>{tr(ROLE_LABEL[staff.role])}</p>
+                  <div className={styles.contact}>
+                    <div><Icon name="mail" size={16} /><a href={`mailto:${staff.email}`} className={styles.email}>{staff.email}</a></div>
+                    {staff.phone && <div><Icon name="phone" size={16} /><span>{staff.phone}</span></div>}
                   </div>
-
                   {currentUser.permissions.manageAccounts && (
-                    <div style={{ marginTop: "1rem", paddingTop: "0.75rem", borderTop: "1px solid var(--border)", display: "flex", gap: "0.5rem" }}>
-                      <Link to={`/accounts/${staff.id}/permissions`} style={{ fontSize: "var(--fs-body)", fontWeight: 600 }}>
-                        {tr("Permissions")}
-                      </Link>
+                    <div className={styles.footer}>
+                      <Link to={`/accounts/${staff.id}/permissions`}>{tr("Permissions")} →</Link>
                     </div>
                   )}
                 </div>

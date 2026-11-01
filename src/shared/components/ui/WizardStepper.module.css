@@ -22,3 +22,5 @@
 .labelDone { color: var(--text-2); }
 .line { flex: 1; height: 1px; background: var(--border); margin-top: 13px; min-width: 20px; }
 .lineDone { background: var(--ok); }
+.steps { overflow-x: auto; padding-bottom: 8px; }
+@media (max-width: 520px) { .node { min-width: 76px; } .label { max-width: 90px; } }

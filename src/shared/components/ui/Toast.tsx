@@ -77,7 +77,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   t.action?.onClick();
                 }}
               >
-                {t.action.label}
+                {trNode(t.action.label)}
               </button>
             )}
             <button type="button" className={styles.close} onClick={() => dismiss(t.id)} aria-label={tr("Dismiss")}>

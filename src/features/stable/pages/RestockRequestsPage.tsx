@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
 import { Card } from '@/shared/components/ui/Card';
@@ -10,6 +11,7 @@ import { Select } from '@/shared/components/form/Select';
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
 import { useAppLanguage } from '@/shared/lib/language';
 import { tr } from '@/shared/i18n/tr';
+import styles from './RestockRequestsPage.module.css';
 import { messageFor } from '@/shared/lib/messages';
 import { getZones } from '../api';
 import { getSupplies } from '@/features/master-data/api/suppliesApi';
@@ -22,8 +24,11 @@ import type { Zone } from '../types';
 import { type SupplyCatalogItem, formatSupplyUnit, formatSupplyName, getFriendlyCategoryName } from '@/features/master-data/types/supplies';
 
 export default function RestockRequestsPage() {
+  useScreenTranslation();
   const currentUser = useCurrentUser();
   const isManager = currentUser.role === 'CLUB_MANAGER';
+  // Chỉ Groom/Vet gửi đề xuất (chờ CM duyệt); CM nhập bổ sung kho trực tiếp
+  const canPropose = currentUser.role === 'GROOM' || currentUser.role === 'VETERINARIAN';
   const { isVietnamese } = useAppLanguage();
 
   const [zones, setZones] = useState<Zone[]>([]);
@@ -139,9 +144,9 @@ export default function RestockRequestsPage() {
         width: '150px',
         render: (row) => (
           <div>
-            <strong style={{ fontFamily: 'monospace', color: 'var(--brand)' }}>{row.requestNumber}</strong>
+            <strong style={{ fontVariantNumeric: 'tabular-nums', color: 'var(--brand-700)' }}>{row.requestNumber}</strong>
             <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-              {new Date(row.createdAt).toLocaleDateString('vi-VN')}
+              {new Date(row.createdAt).toLocaleDateString(isVietnamese ? 'vi-VN' : 'en-GB')}
             </div>
           </div>
         ),
@@ -184,9 +189,16 @@ export default function RestockRequestsPage() {
               <strong>{row.requestedBy.fullName}</strong>{' '}
               <span style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>({row.requestedBy.role})</span>
             </div>
-            <div style={{ color: 'var(--muted)', fontStyle: 'italic', marginTop: '0.125rem' }}>
-              "{row.urgencyReason}"
-            </div>
+            {row.urgencyReason && (
+              <div style={{ color: 'var(--muted)', marginTop: '0.125rem' }}>
+                "{row.urgencyReason}"
+              </div>
+            )}
+            {row.requestedBy.role === 'CLUB_MANAGER' && (
+              <div style={{ color: 'var(--muted)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
+                {tr('Created by Club Manager {{name}}, automatically set to Approved', { name: row.requestedBy.fullName })}
+              </div>
+            )}
             {row.rejectionReason && (
               <div style={{ color: 'var(--danger)', fontSize: '0.75rem', marginTop: '0.25rem' }}>
                 <strong>{tr('Rejection note')}:</strong> {row.rejectionReason}
@@ -245,9 +257,15 @@ export default function RestockRequestsPage() {
         title={tr('Restock Requests & Procurement')}
         description={tr('Submit supply replenishment proposals and manage manager approval workflows.')}
         action={
-          <Button tone="primary" onClick={() => setCreateModalOpen(true)}>
-            + {tr('Propose Supply Restock')}
-          </Button>
+          isManager ? (
+            <Button tone="primary" onClick={() => setCreateModalOpen(true)}>
+              + {tr('Direct stock replenishment')}
+            </Button>
+          ) : canPropose ? (
+            <Button tone="primary" onClick={() => setCreateModalOpen(true)}>
+              + {tr('Propose Supply Restock')}
+            </Button>
+          ) : undefined
         }
       />
 
@@ -257,22 +275,14 @@ export default function RestockRequestsPage() {
       <Card pad={16}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {/* Status Tabs */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+          <div className={styles.statusFilters}>
             {statusTabs.map((tab) => (
               <button
                 key={tab.key}
                 type="button"
                 onClick={() => setStatusFilter(tab.key)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: 'var(--r-sm)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: statusFilter === tab.key ? 600 : 400,
-                  backgroundColor: statusFilter === tab.key ? 'var(--brand)' : 'transparent',
-                  color: statusFilter === tab.key ? 'var(--text-on-brand)' : 'var(--ink)',
-                  transition: 'all 0.15s ease',
-                }}
+                className={`${styles.statusFilter} ${statusFilter === tab.key ? styles.selected : ""}`}
+                aria-pressed={statusFilter === tab.key}
               >
                 {tab.label}
               </button>
@@ -280,17 +290,19 @@ export default function RestockRequestsPage() {
           </div>
 
           {/* Zone & Search Filters */}
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
-            <div style={{ minWidth: '200px', flex: '1 1 200px' }}>
+          <div className={styles.searchFilters}>
+            <div className={styles.zone}>
               <Select
+                aria-label={tr('Stall zone')}
                 options={zoneOptions}
                 value={zoneFilter}
                 onChange={(e) => setZoneFilter(e.target.value)}
               />
             </div>
 
-            <div style={{ minWidth: '260px', flex: '2 1 260px' }}>
+            <div className={styles.search}>
               <Input
+                aria-label={tr('Search by proposal number, supply, requester...')}
                 placeholder={tr('Search by proposal number, supply, requester...')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
@@ -303,6 +315,8 @@ export default function RestockRequestsPage() {
       {/* Requests Table */}
       <Card pad={0}>
         <DataTable
+          pageSize={10}
+          noun="requests"
           columns={columns}
           rows={items}
           rowKey={(r) => r.id}
@@ -316,6 +330,7 @@ export default function RestockRequestsPage() {
         <RestockRequestModal
           zones={zones}
           supplies={supplies}
+          direct={isManager}
           onClose={() => setCreateModalOpen(false)}
           onSaved={fetchRequests}
         />

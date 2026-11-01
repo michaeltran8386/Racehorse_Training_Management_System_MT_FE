@@ -19,3 +19,15 @@
 .actionIcon { font-size: 1.4rem; line-height: 1; }
 .actionText strong { display: block; font-size: var(--fs-body); color: var(--text); }
 .actionText p { margin: 4px 0 0; font-size: var(--fs-caption); color: var(--muted); }
+.changeTableWrapper, .actionCard, .valPillOld, .valPillNew { border-radius: 0; }
+.changeTable th { text-transform: uppercase; letter-spacing: .08em; }
+@media (max-width: 600px) { .metadata { grid-template-columns: 1fr; } .changeTableWrapper { overflow-x: auto; } }
+@media (max-width: 520px) { .filters { padding: 16px; } .filters label { flex-basis: 100%; } .pagination { padding-inline: 16px; } .pagination .actions { width: 100%; } .pagination .actions > * { flex: 1 1 auto; } }
+.metadata { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.metadata > div, .actionText { min-width: 0; }
+.metadata dt, .metadata dd, .changeTable td, .actionText { overflow-wrap: anywhere; }
+.filters > p[role="alert"] { flex-basis: 100%; margin: 0; color: var(--danger); font-size: var(--fs-caption); }
+.changeTable { min-width: 420px; }
+.valPillOld { background: var(--danger-bg); }
+.valPillNew { background: var(--ok-bg); }
+@media (max-width: 600px) { .metadata { grid-template-columns: minmax(0, 1fr); } }

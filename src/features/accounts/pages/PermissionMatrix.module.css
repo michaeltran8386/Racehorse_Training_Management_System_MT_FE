@@ -6,7 +6,7 @@
 .rowText strong { display: block; font-size: var(--fs-caption); font-weight: 700; color: var(--text); }
 .rowText span { font-size: var(--fs-caption); color: var(--muted); line-height: 1.5; }
 
-.aside { display: grid; gap: var(--gap-grid); }
+.aside { display: grid; gap: var(--gap-grid); position: sticky; top: calc(var(--topbar-h) + 16px); max-height: calc(100vh - var(--topbar-h) - 32px); overflow-y: auto; }
 .facts { display: flex; flex-direction: column; gap: 11px; font-size: var(--fs-caption); }
 .facts > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .facts span { color: var(--muted); }
@@ -20,7 +20,7 @@
 
 /* Màn hình hẹp (design 1.10d): danh sách và thẻ tài khoản xếp dọc, nút lưu nằm trong một thanh gọn phía trên. */
 .compact { display: none; }
-@media (max-width: 1280px) {
+@media (max-width: 1100px) {
   .grid { grid-template-columns: 1fr; }
   .aside { display: none; }
   .compact {
@@ -39,3 +39,11 @@
   .compactWho span { font-size: var(--fs-caption); color: var(--muted); }
   .compactBtns { display: flex; gap: 9px; }
 }
+.groupLabel { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.row { padding: 16px 0; }
+.rowText strong, .rowText span, .identity strong, .identity span, .compactWho strong, .compactWho span { overflow-wrap: anywhere; }
+@media (max-width: 520px) { .compactWho { min-width: 0; } .compactWho > div { min-width: 0; } .compactBtns { width: 100%; flex-wrap: wrap; } .compactBtns > * { flex: 1 1 auto; } .row { gap: 12px; } }
+.grid { grid-template-columns: minmax(0, 1fr) 322px; }
+.facts > div, .compactWho { min-width: 0; }
+.facts b, .facts span { overflow-wrap: anywhere; }
+@media (max-width: 1100px) { .grid { grid-template-columns: minmax(0, 1fr); } }

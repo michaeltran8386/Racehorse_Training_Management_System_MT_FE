@@ -35,11 +35,9 @@ export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate 
     if (!canViewLocks) return;
     let cancelled = false;
     const updateLocks = () => {
-      healthApi.getLocks()
-        .then((locks) => {
-          if (!cancelled && Array.isArray(locks)) {
-            setHasActiveLocks(locks.some((l) => l.status === "ACTIVE"));
-          }
+      healthApi.hasActiveLocks()
+        .then((hasLocks) => {
+          if (!cancelled) setHasActiveLocks(hasLocks);
         })
         .catch(() => {
           // Giữ trạng thái cũ, lần cập nhật sau thử lại.
@@ -137,7 +135,7 @@ export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate 
                   onClick={() => handleItemClick(it.id)}
                   aria-current={active ? "page" : undefined}
                   className={cx(styles.item, active && styles.active, isClicked && styles.itemClicked)}
-                  title={collapsed ? itemLabel : undefined}
+                  title={itemLabel}
                 >
                   {active && <span className={styles.activePill} aria-hidden="true" />}
                   <span className={cx(styles.iconWrapper, isClicked && styles.iconBounce)}>

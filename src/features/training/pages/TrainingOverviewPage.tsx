@@ -1,10 +1,12 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Card } from "@/shared/components/ui/Card";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
+import { Paged } from "@/shared/components/ui/Pagination";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
@@ -17,6 +19,8 @@ import { ProgressBar } from "../components/ProgressBar";
 import { EXERCISE_TYPE_LABEL } from "../types";
 import type { OverviewRow, TrainingOverview } from "../types";
 import { Icon } from "@/shared/components/ui/Icon";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./TrainingOverviewPage.module.css";
 
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
@@ -24,6 +28,7 @@ type SortKey = "name" | "progress" | "score" | "load" | "next";
 
 /** SC-2.01 Tổng quan huấn luyện (CM, HT, VET). */
 export default function TrainingOverviewPage() {
+  useScreenTranslation();
   useAppLanguage();
   const navigate = useNavigate();
   const user = useCurrentUser();
@@ -76,22 +81,16 @@ export default function TrainingOverviewPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "var(--fs-h1)", fontWeight: 700 }}>{tr("Training Overview")}</h1>
-          <p style={{ margin: "0.25rem 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>
-            {tr("Progress and fitness of every managed horse.")}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <Link to="/training/calendar"><Button tone="secondary">{tr("Today's schedule")}</Button></Link>
-          {user.role === "HEAD_TRAINER" && (
-            <Button tone="primary" onClick={() => navigate("/training/plans/new")}>{tr("+ Create plan")}</Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Training Overview"
+        description="Progress and fitness of every managed horse."
+        action={<>
+          <Link className={styles.secondaryAction} to="/training/calendar">{tr("Today's schedule")}</Link>
+          {user.role === "HEAD_TRAINER" && <Button tone="primary" onClick={() => navigate("/training/plans/new")}>{tr("+ Create plan")}</Button>}
+        </>}
+      />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+      <div className={styles.metrics}>
         <Link to="/training/plans?status=ACTIVE" style={{ color: "inherit", textDecoration: "none" }}>
           <Card pad={16}>
             <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Active plans")}</div>
@@ -113,7 +112,7 @@ export default function TrainingOverviewPage() {
             <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr("in the next 7 days")}</div>
           </Card>
         </Link>
-        <button type="button" onClick={() => setSpikeOnly(true)} style={{ all: "unset", cursor: "pointer" }}>
+        <button type="button" onClick={() => setSpikeOnly(true)} className={styles.metricButton}>
           <Card pad={16}>
             <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Sudden load increase")}</div>
             <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700, color: k.loadSpikeHorses ? "var(--warn)" : undefined }}>{k.loadSpikeHorses}</div>
@@ -123,10 +122,11 @@ export default function TrainingOverviewPage() {
       </div>
 
       <Card pad={16}>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
-          <Input placeholder={tr("Horse name or code")} value={search} onChange={(e) => setSearch(e.target.value)} style={{ width: 240 }} />
-          <div style={{ width: 200 }}>
+        <div className={styles.filters}>
+          <Input aria-label={tr("Horse name or code")} placeholder={tr("Horse name or code")} value={search} onChange={(e) => setSearch(e.target.value)} className={styles.search} />
+          <div className={styles.filter}>
             <Select
+              aria-label={tr("Filter by plan")}
               value={planFilter}
               onChange={(e) => setPlanFilter(e.target.value)}
               options={[
@@ -136,8 +136,9 @@ export default function TrainingOverviewPage() {
               ]}
             />
           </div>
-          <div style={{ width: 200 }}>
+          <div className={styles.filter}>
             <Select
+              aria-label={tr("Sort")}
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
               options={[
@@ -159,8 +160,9 @@ export default function TrainingOverviewPage() {
         ) : rows.length === 0 ? (
           <EmptyState title={tr("No horses match the filter.")} />
         ) : (
+          <Paged items={rows} noun="horses">{(pageRows) => (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "var(--fs-body)" }}>
+            <table className={styles.table}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
                   {["Horse", "Current plan", "Current phase", "Progress", "Latest score", "7-day load", "Next workout", ""].map((h) => (
@@ -169,7 +171,7 @@ export default function TrainingOverviewPage() {
                 </tr>
               </thead>
               <tbody>
-                {rows.map((r) => {
+                {pageRows.map((r) => {
                   const st = HEALTH_STATUS[r.horse.status as HealthStatus] ?? { label: r.horse.status, tone: "neutral" };
                   const trend =
                     r.latestScore != null && r.previousAvgScore != null
@@ -223,7 +225,7 @@ export default function TrainingOverviewPage() {
                           <Button size="sm" tone="secondary" disabled={!r.plan} onClick={() => r.plan && navigate(`/training/plans/${r.plan.id}`)}>
                             {tr("View plan")}
                           </Button>
-                          <Link to={`/horses/${r.horse.id}/fitness`}><Button size="sm" tone="ghost">{tr("Chart")}</Button></Link>
+                          <LinkButton to={`/horses/${r.horse.id}/fitness`} size="sm" tone="ghost">{tr("Chart")}</LinkButton>
                         </div>
                       </td>
                     </tr>
@@ -232,6 +234,7 @@ export default function TrainingOverviewPage() {
               </tbody>
             </table>
           </div>
+          )}</Paged>
         )}
       </Card>
     </div>

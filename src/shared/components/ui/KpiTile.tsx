@@ -12,7 +12,7 @@ interface KpiTileProps {
   caption?: string;
   icon?: string;
   trend?: { dir: "up" | "down"; value: string };
-  accent?: boolean; // burgundy: chỉ dùng cho MỘT chỉ số nổi bật mỗi trang
+  accent?: boolean; // Nhấn chỉ số bằng màu thông tin, không dùng màu lỗi.
 }
 
 // Ô chỉ số (KPI) trên dashboard: nhãn, số lớn, đơn vị, chú thích và xu hướng.

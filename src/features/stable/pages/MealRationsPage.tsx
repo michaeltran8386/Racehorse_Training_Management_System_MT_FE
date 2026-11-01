@@ -1,15 +1,19 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
+import styles from './StableOperations.module.css';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Input } from '@/shared/components/form/Input';
 import { Select } from '@/shared/components/form/Select';
 import { Badge } from '@/shared/components/ui/Badge';
 import { EmptyState } from '@/shared/components/ui/EmptyState';
+import { Paged } from '@/shared/components/ui/Pagination';
 import { Alert } from '@/shared/components/ui/Alert';
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
 import { useAppLanguage } from '@/shared/lib/language';
 import { tr } from '@/shared/i18n/tr';
+import { formatDate } from '@/shared/lib/format';
 import { messageFor } from '@/shared/lib/messages';
 import { nutritionApi } from '../api/nutritionApi';
 import { getZones } from '../api';
@@ -19,6 +23,7 @@ import type { NutritionPlan } from '../types/nutrition';
 import type { Zone } from '../types';
 
 export default function MealRationsPage() {
+  useScreenTranslation();
   const user = useCurrentUser();
   useAppLanguage();
 
@@ -89,13 +94,10 @@ export default function MealRationsPage() {
     ARCHIVED: tr('Archived'),
   };
 
-  const zoneOptions = useMemo(
-    () => [
+  const zoneOptions = [
       { value: 'ALL', label: tr('All Barn Zones') },
       ...zones.map((z) => ({ value: z.id, label: `${z.name} (${z.code})` })),
-    ],
-    [zones],
-  );
+    ];
 
   const filteredPlans = useMemo(() => {
     let result = plans;
@@ -137,18 +139,12 @@ export default function MealRationsPage() {
       {error && <Alert tone="danger">{error}</Alert>}
 
       {/* KPI Cards */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-          gap: '1rem',
-        }}
-      >
+      <div className={styles.metrics}>
         <Card pad={16}>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
             {tr('Active Feeding Rations')}
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: '#10B981', marginTop: '4px' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--ok)', marginTop: '4px' }}>
             {stats.totalActive}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
@@ -160,7 +156,7 @@ export default function MealRationsPage() {
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
             {tr('Awaiting Vet Approval')}
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: stats.pendingReview > 0 ? '#F59E0B' : 'var(--color-text-secondary)', marginTop: '4px' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: stats.pendingReview > 0 ? 'var(--warn)' : 'var(--color-text-secondary)', marginTop: '4px' }}>
             {stats.pendingReview}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
@@ -174,7 +170,7 @@ export default function MealRationsPage() {
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
             {tr('Nutritional Attention')}
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: stats.attentionCount > 0 ? '#EF4444' : '#10B981', marginTop: '4px' }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: stats.attentionCount > 0 ? 'var(--danger)' : 'var(--ok)', marginTop: '4px' }}>
             {stats.attentionCount}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
@@ -207,6 +203,8 @@ export default function MealRationsPage() {
               return (
                 <button
                   key={tab.id}
+                  type="button"
+                  aria-pressed={active}
                   onClick={() => setStatusFilter(tab.id)}
                   style={{
                     padding: '0.4rem 0.875rem',
@@ -228,8 +226,8 @@ export default function MealRationsPage() {
                   {tab.badge !== undefined && tab.badge > 0 && (
                     <span
                       style={{
-                        background: active ? 'var(--color-primary)' : 'var(--color-border)',
-                        color: active ? '#fff' : 'var(--color-text)',
+                        background: active ? 'var(--brand)' : 'var(--surface-3)',
+                        color: active ? 'var(--text-on-brand)' : 'var(--color-text)',
                         fontSize: '0.75rem',
                         padding: '1px 6px',
                         borderRadius: '999px',
@@ -245,8 +243,9 @@ export default function MealRationsPage() {
           </div>
 
           {/* Search & Zone Dropdown */}
-          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+          <div className={styles.searchFilters}>
             <Select
+              aria-label={tr('Stall zone')}
               options={zoneOptions}
               value={selectedZoneId}
               onChange={(e) => setSelectedZoneId(e.target.value)}
@@ -255,6 +254,7 @@ export default function MealRationsPage() {
 
             <Input
               type="text"
+              aria-label={tr('Search horse, code...')}
               placeholder={tr('Search horse, code...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -295,6 +295,7 @@ export default function MealRationsPage() {
             />
           </div>
         ) : (
+          <Paged items={filteredPlans} noun="plans">{(pagePlans) => (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
@@ -316,7 +317,7 @@ export default function MealRationsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredPlans.map((p) => {
+                {pagePlans.map((p) => {
                   const horse = p.horse;
                   const stall = p.currentStallCode || tr('Unassigned');
                   const zone = p.currentZone?.name || p.currentZone?.code || '';
@@ -371,7 +372,7 @@ export default function MealRationsPage() {
                           <span
                             style={{
                               fontWeight: 700,
-                              color: p.isWithinSafeRange ? '#10B981' : '#F59E0B',
+                              color: p.isWithinSafeRange ? 'var(--ok)' : 'var(--warn)',
                             }}
                           >
                             {p.targetWeightRatioPct}%
@@ -380,11 +381,11 @@ export default function MealRationsPage() {
                             style={{
                               fontSize: '0.75rem',
                               padding: '2px 6px',
-                              borderRadius: '4px',
+                              borderRadius: 'var(--r-sm)',
                               background: p.isWithinSafeRange
-                                ? 'rgba(16, 185, 129, 0.1)'
-                                : 'rgba(245, 158, 11, 0.1)',
-                              color: p.isWithinSafeRange ? '#10B981' : '#D97706',
+                                ? 'var(--ok-bg)'
+                                : 'var(--warn-bg)',
+                              color: p.isWithinSafeRange ? 'var(--ok)' : 'var(--warn)',
                               fontWeight: 600,
                             }}
                           >
@@ -401,8 +402,8 @@ export default function MealRationsPage() {
                       </td>
 
                       {/* Updated Date */}
-                      <td style={{ padding: '0.875rem 1rem', color: 'var(--color-text-secondary)', fontSize: '0.8rem' }}>
-                        {new Date(p.updatedAt).toLocaleDateString()}
+                      <td style={{ padding: '0.875rem 1rem', color: 'var(--color-text-secondary)', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                        {formatDate(p.updatedAt)}
                       </td>
 
                       {/* Action buttons */}
@@ -438,6 +439,7 @@ export default function MealRationsPage() {
               </tbody>
             </table>
           </div>
+          )}</Paged>
         )}
       </Card>
 

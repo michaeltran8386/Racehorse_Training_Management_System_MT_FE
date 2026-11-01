@@ -42,6 +42,8 @@ interface ApiOptions {
   silent?: boolean;
   // Hủy request nếu server không trả lời trong khoảng này (ms) => ApiError 0 TIMEOUT.
   timeoutMs?: number;
+  // true = 401 không thử làm mới token (gọi đăng nhập/đăng xuất, tránh vòng lặp và tránh chờ khóa phiên Google).
+  skipRefresh?: boolean;
 }
 
 export async function api<T>(method: HttpMethod, path: string, body?: unknown, options: ApiOptions = {}): Promise<T> {
@@ -50,7 +52,7 @@ export async function api<T>(method: HttpMethod, path: string, body?: unknown, o
       return await request<T>(method, path, body, options.timeoutMs);
     } catch (err) {
       // Access token hết hạn (15 phút) => đổi refresh token lấy cặp mới rồi gọi lại đúng một lần.
-      if (err instanceof ApiError && err.status === 401 && err.code === "UNAUTHENTICATED" && (await refreshTokens())) {
+      if (!options.skipRefresh && err instanceof ApiError && err.status === 401 && err.code === "UNAUTHENTICATED" && (await refreshTokens())) {
         return await request<T>(method, path, body, options.timeoutMs);
       }
       throw err;
@@ -77,6 +79,8 @@ async function request<T>(method: HttpMethod, path: string, body?: unknown, time
       method,
       headers,
       body: body !== undefined ? JSON.stringify(body) : undefined,
+      // Phiên Google nằm trong cookie HttpOnly của backend.
+      credentials: "include",
       signal: timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined,
     });
   } catch (err) {
@@ -102,18 +106,35 @@ let refreshing: Promise<boolean> | null = null;
 
 function refreshTokens(): Promise<boolean> {
   const refreshToken = getTokens()?.refreshToken;
-  if (!refreshToken) return Promise.resolve(false);
-  refreshing ??= request<{ accessToken: string; refreshToken: string }>("POST", "/auth/refresh", { refreshToken })
-    .then((tokens) => {
-      saveTokens(tokens);
-      return true;
-    })
-    .catch(() => {
-      clearTokens();
-      return false;
-    })
-    .finally(() => {
-      refreshing = null;
-    });
+  refreshing ??= (
+    refreshToken
+      ? request<{ accessToken: string; refreshToken: string }>("POST", "/auth/refresh", { refreshToken })
+          .then((tokens) => {
+            saveTokens(tokens);
+            return true;
+          })
+          .catch(() => {
+            // Chỉ xóa nếu chưa có ai lưu cặp token mới trong lúc chờ.
+            if (getTokens()?.refreshToken === refreshToken) clearTokens();
+            return false;
+          })
+      : // Không có token mật khẩu => thử phiên Google (cookie). Chạy trong khóa để không đua với đăng nhập/đăng xuất.
+        withGoogleSessionLock(() => request<unknown>("POST", "/auth/google/refresh")).then(
+          () => true,
+          () => false,
+        )
+  ).finally(() => {
+    refreshing = null;
+  });
   return refreshing;
+}
+
+// Đăng nhập / đăng xuất / làm mới phiên Google đổi cùng một cặp cookie (refresh token xoay vòng, dùng 1 lần):
+// chạy lần lượt từng thao tác để thao tác sau không dùng cookie đã bị thao tác trước thu hồi.
+let googleSessionQueue: Promise<unknown> = Promise.resolve();
+
+export function withGoogleSessionLock<T>(operation: () => Promise<T>): Promise<T> {
+  const run = googleSessionQueue.then(operation, operation);
+  googleSessionQueue = run.catch(() => undefined);
+  return run;
 }

@@ -1,8 +1,12 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
+import rosterStyles from "./ShiftRosterPage.module.css";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
+import styles from './StableOperations.module.css';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
+import { Icon } from '@/shared/components/ui/Icon';
 import { Alert } from '@/shared/components/ui/Alert';
 import { Select } from '@/shared/components/form/Select';
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
@@ -53,6 +57,7 @@ const DAY_NAMES_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const DAY_NAMES_VI = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 
 export default function ShiftRosterPage() {
+  useScreenTranslation();
   const currentUser = useCurrentUser();
   const isManager = currentUser.role === 'CLUB_MANAGER';
   const isGroom = currentUser.role === 'GROOM';
@@ -239,7 +244,7 @@ export default function ShiftRosterPage() {
         }}
       >
         {/* Điều hướng tuần */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className={styles.weekNavigation}>
           <Button tone="ghost" size="sm" onClick={handlePrevWeek}>
             {tr('◀ Previous week')}
           </Button>
@@ -321,7 +326,7 @@ export default function ShiftRosterPage() {
                     <div
                       style={{
                         padding: '0.75rem 1rem',
-                        background: day.isToday ? 'rgba(var(--brand-rgb), 0.08)' : 'var(--surface-muted)',
+                        background: day.isToday ? 'var(--brand-50)' : 'var(--surface-muted)',
                         borderBottom: '1px solid var(--border)',
                         display: 'flex',
                         alignItems: 'center',
@@ -347,7 +352,7 @@ export default function ShiftRosterPage() {
                           {tr('No duties scheduled for this day.')}
                         </div>
                       ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '0.875rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 300px), 1fr))', gap: '0.875rem' }}>
                           {dayShifts.map((ms) => (
                             <div
                               key={ms.id}
@@ -424,21 +429,13 @@ export default function ShiftRosterPage() {
         /* Ma trận Matrix Grid 7 ngày x Khu x Ca */
         <div>
           {/* Tabs cho Mobile view */}
-          <div
-            className="mobile-day-selector"
-            style={{
-              display: 'none',
-              gap: '0.375rem',
-              overflowX: 'auto',
-              marginBottom: '1rem',
-              paddingBottom: '0.25rem',
-            }}
-          >
+          <div className={rosterStyles.daySelector}>
             {weekDays.map((d, i) => (
               <button
                 key={d.dateStr}
                 type="button"
                 onClick={() => setMobileDayIdx(i)}
+                aria-pressed={mobileDayIdx === i}
                 style={{
                   padding: '0.5rem 0.75rem',
                   borderRadius: 'var(--r-sm)',
@@ -464,6 +461,7 @@ export default function ShiftRosterPage() {
             }}
           >
             <table
+              className={rosterStyles.matrix}
               style={{
                 width: '100%',
                 borderCollapse: 'collapse',
@@ -474,22 +472,22 @@ export default function ShiftRosterPage() {
             >
               <thead>
                 <tr style={{ background: 'var(--surface-muted)', borderBottom: '1px solid var(--border)' }}>
-                  <th style={{ padding: '0.75rem 1rem', width: '180px', fontWeight: 600 }}>
-                    {tr('Zone × Shift')}
-                  </th>
-                  {weekDays.map((d) => (
+                  <th className={rosterStyles.zoneHead}>{tr('Zone')}</th>
+                  <th className={rosterStyles.shiftHead}>{tr('Shift')}</th>
+                  {weekDays.map((d, i) => (
                     <th
                       key={d.dateStr}
+                      className={i === mobileDayIdx ? rosterStyles.selectedDay : rosterStyles.otherDay}
                       style={{
                         padding: '0.75rem 0.5rem',
                         fontWeight: 600,
                         textAlign: 'center',
-                        background: d.isToday ? 'rgba(var(--brand-rgb), 0.08)' : undefined,
+                        background: d.isToday ? 'var(--brand-50)' : undefined,
                         borderLeft: '1px solid var(--border)',
                       }}
                     >
                       <div>{d.dayName}</div>
-                      <div style={{ fontSize: '0.75rem', color: d.isToday ? 'var(--brand)' : 'var(--muted)' }}>
+                      <div style={{ fontSize: '0.75rem', color: d.isToday ? 'var(--brand-700)' : 'var(--muted)' }}>
                         {d.formattedDMY} {d.isToday && ` • ${tr('Today')}`}
                       </div>
                     </th>
@@ -499,7 +497,7 @@ export default function ShiftRosterPage() {
               <tbody>
                 {filteredZones.length === 0 || shifts.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)' }}>
+                    <td colSpan={9} style={{ padding: '2rem', textAlign: 'center', color: 'var(--muted)' }}>
                       {tr('No active zones or shifts available.')}
                     </td>
                   </tr>
@@ -510,27 +508,21 @@ export default function ShiftRosterPage() {
                       return (
                         <tr
                           key={`${zone.id}-${shift.id}`}
-                          style={{
-                            borderBottom: '1px solid var(--border)',
-                            borderTop: isFirstShiftOfZone ? '2px solid var(--border)' : undefined,
-                          }}
+                          className={isFirstShiftOfZone ? rosterStyles.zoneStart : undefined}
                         >
-                          {/* Cột tên Khu & Ca */}
-                          <td
-                            style={{
-                              padding: '0.625rem 1rem',
-                              verticalAlign: 'top',
-                              background: 'var(--surface-muted)',
-                            }}
-                          >
-                            <div style={{ fontWeight: 600 }}>{zone.name}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-                              {shift.name} ({shift.startTime}-{shift.endTime})
-                            </div>
+                          {/* Tên khu gộp cho mọi ca của khu */}
+                          {isFirstShiftOfZone && (
+                            <th scope="rowgroup" rowSpan={shifts.length} className={rosterStyles.zoneCell}>
+                              {zone.name}
+                            </th>
+                          )}
+                          <td className={rosterStyles.shiftCell}>
+                            <div style={{ fontWeight: 600 }}>{shift.name}</div>
+                            <div className={rosterStyles.shiftTime}>{shift.startTime}–{shift.endTime}</div>
                           </td>
 
                           {/* 7 ô cho 7 ngày trong tuần */}
-                          {weekDays.map((day) => {
+                          {weekDays.map((day, dayIndex) => {
                             const slotRosters = rosters.filter(
                               (r) =>
                                 r.date.startsWith(day.dateStr) &&
@@ -543,6 +535,20 @@ export default function ShiftRosterPage() {
                             return (
                               <td
                                 key={day.dateStr}
+                                className={[
+                                  rosterStyles.cell,
+                                  !hasGroom ? rosterStyles.cellEmpty : day.isToday ? rosterStyles.cellToday : '',
+                                  dayIndex === mobileDayIdx ? rosterStyles.selectedDay : rosterStyles.otherDay,
+                                ].join(' ')}
+                                role={isManager ? 'button' : undefined}
+                                tabIndex={isManager ? 0 : undefined}
+                                aria-label={isManager ? [zone.name, shift.name, day.formattedDMY, hasGroom ? slotRosters.map((r) => r.groom.fullName).join(', ') : tr('No groom assigned')].join(' · ') : undefined}
+                                onKeyDown={isManager ? (event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    event.currentTarget.click();
+                                  }
+                                } : undefined}
                                 onClick={() => {
                                   if (isManager) {
                                     setSelectedSlot({
@@ -554,59 +560,18 @@ export default function ShiftRosterPage() {
                                     });
                                   }
                                 }}
-                                style={{
-                                  padding: '0.5rem',
-                                  verticalAlign: 'top',
-                                  borderLeft: '1px solid var(--border)',
-                                  background: !hasGroom
-                                    ? 'rgba(239, 68, 68, 0.04)' // Nền cảnh báo nhẹ khi chưa có người trực
-                                    : day.isToday
-                                      ? 'rgba(var(--brand-rgb), 0.03)'
-                                      : 'transparent',
-                                  cursor: isManager ? 'pointer' : 'default',
-                                  transition: 'background 0.15s ease',
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (isManager) e.currentTarget.style.background = 'var(--surface-hover)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.background = !hasGroom
-                                    ? 'rgba(239, 68, 68, 0.04)'
-                                    : day.isToday
-                                      ? 'rgba(var(--brand-rgb), 0.03)'
-                                      : 'transparent';
-                                }}
                               >
                                 {hasGroom ? (
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                                     {slotRosters.map((r) => (
-                                      <div
-                                        key={r.id}
-                                        style={{
-                                          fontSize: '0.8125rem',
-                                          padding: '0.2rem 0.4rem',
-                                          background: 'var(--surface-muted)',
-                                          borderRadius: 'var(--r-xs)',
-                                          border: '1px solid var(--border)',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'space-between',
-                                        }}
-                                      >
-                                        <span style={{ fontWeight: 500 }}>{r.groom.fullName}</span>
+                                      <div key={r.id} className={rosterStyles.groomChip}>
+                                        {r.groom.fullName}
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <div
-                                    style={{
-                                      fontSize: '0.75rem',
-                                      color: 'var(--danger)',
-                                      fontStyle: 'italic',
-                                      textAlign: 'center',
-                                      padding: '0.5rem 0',
-                                    }}
-                                  >
+                                  <div className={rosterStyles.emptyText}>
+                                    <Icon name="alert" size={13} />
                                     {tr('No groom assigned')}
                                   </div>
                                 )}

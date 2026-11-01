@@ -3,6 +3,10 @@
 .row a { font-size: var(--fs-caption); font-weight: 600; }
 .foot { margin: 0; font-size: var(--fs-caption); color: var(--muted); text-align: center; }
 .foot a { font-weight: 600; }
+.googleSignIn { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.googleSignIn p { margin: 0; color: var(--danger); font-size: var(--fs-caption); text-align: center; }
+.googleDivider { display: flex; align-items: center; gap: 12px; width: 100%; color: var(--muted); font-size: var(--fs-caption); }
+.googleDivider::before, .googleDivider::after { content: ""; flex: 1; height: 1px; background: var(--border-soft); }
 .paragraph { margin: 0; font-size: var(--fs-caption); color: var(--text-2); line-height: 1.7; }
 .summary {
   border: 1px solid var(--border-soft);
@@ -19,3 +23,17 @@
 .summary dl { margin: 0; display: contents; }
 .mono { font-family: var(--font-numeric); }
 @media (max-width: 980px) { .row { min-height: 44px; } .row a { padding: 12px 0; } }
+@media (max-width: 520px) { .row { align-items: flex-start; flex-wrap: wrap; } }
+
+/* Trang xác thực kiểu usefull/: link giữa, nút viền dạng viên thuốc. */
+.centerLink { align-self: center; color: var(--text); font-size: 14.5px; font-weight: 700; letter-spacing: -.01em; text-decoration: none; }
+.centerLink:hover { text-decoration: underline; }
+.outlineLink {
+  display: block; width: 100%; box-sizing: border-box; padding: 13px 22px; border-radius: var(--r-pill);
+  border: 1.5px solid var(--brand-secondary, var(--info)); color: var(--brand-secondary, var(--info));
+  font-size: 15px; font-weight: 800; text-align: center; text-decoration: none; transition: background-color .2s;
+}
+.outlineLink:hover { background: var(--info-bg); }
+.outlineLink:focus-visible, .centerLink:focus-visible { outline: var(--focus-ring); outline-offset: 2px; }
+.shake { display: flex; justify-content: center; width: 100%; }
+@media (prefers-reduced-motion: reduce) { .outlineLink { transition: none; } }

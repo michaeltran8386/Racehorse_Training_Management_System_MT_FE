@@ -1,0 +1,16 @@
+.page { display: grid; gap: 20px; }
+.layout { display: grid; grid-template-columns: minmax(260px, 1fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.heading { margin: 0 0 16px; font: 800 26px/1.1 var(--font-display); text-transform: uppercase; overflow-wrap: anywhere; }
+.meta { color: var(--muted); margin: -8px 0 16px; }
+.events { display: grid; gap: 8px; }
+.event { display: grid; gap: 5px; padding: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); text-align: left; cursor: pointer; }
+.event:hover { border-color: var(--text); }
+.event[aria-pressed="true"] { border-left: 4px solid var(--brand); background: var(--surface-2); }
+.event:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.event strong { overflow-wrap: anywhere; }
+.event span, .table td span { color: var(--muted); font-size: var(--fs-caption); }
+.scroll { max-width: 100%; overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; text-align: left; }
+.table th { color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.table th, .table td { padding: 12px; border-bottom: 1px solid var(--border); }
+.table tbody tr:last-child td { border-bottom: 0; }

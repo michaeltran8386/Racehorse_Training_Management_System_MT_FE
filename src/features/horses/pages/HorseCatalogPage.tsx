@@ -1,5 +1,8 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import { Card } from "@/shared/components/ui/Card";
+import styles from "./HorseCatalogPage.module.css";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
@@ -111,6 +114,7 @@ function ItemDialog({
 
 /** SC-1.06 Danh mục Giống & Màu lông: CM toàn quyền, vai trò khác chỉ xem. Không có xóa cứng. */
 export default function HorseCatalogPage() {
+  useScreenTranslation();
   const user = useCurrentUser();
   const isManager = user.role === "CLUB_MANAGER";
   const toast = useToast();
@@ -170,11 +174,11 @@ export default function HorseCatalogPage() {
         active={type}
         onChange={setType}
       />
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <div style={{ width: 260 }}>
+      <div className={styles.filters}>
+        <div className={styles.search}>
           <Input placeholder={tr("Code or name")} aria-label={tr("Search")} value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        <div style={{ width: 170 }}>
+        <div className={styles.status}>
           <Select
             aria-label={tr("Status")}
             value={status}
@@ -192,7 +196,10 @@ export default function HorseCatalogPage() {
           {error}
         </Alert>
       )}
-      <DataTable
+      <Card pad={0}>
+        <DataTable
+        pageSize={10}
+        noun="catalog items"
         caption={TYPE_LABEL[type]}
         rowKey={(i: HorseCatalogItem) => i.id}
         loading={loading}
@@ -236,6 +243,7 @@ export default function HorseCatalogPage() {
             : []),
         ]}
       />
+      </Card>
 
       {editing && (
         <ItemDialog

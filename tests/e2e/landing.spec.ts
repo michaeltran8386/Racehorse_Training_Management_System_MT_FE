@@ -4,7 +4,7 @@ test.describe('Landing page', () => {
   test('guest opening / lands on the static landing page', async ({ page }) => {
     await page.goto('/');
     await expect(page).toHaveURL(/\/landing\.html$/);
-    await expect(page.getByRole('heading', { level: 1 })).toContainText(/equiflow/i);
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(/tmec/i);
   });
 
   test('sign-up and login buttons open the app auth pages', async ({ page }) => {

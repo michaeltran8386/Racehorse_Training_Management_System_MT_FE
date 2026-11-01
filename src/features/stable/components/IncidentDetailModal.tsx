@@ -101,7 +101,7 @@ export function IncidentDetailModal({
             borderRadius: 'var(--r-md)',
             border: '1px solid var(--border)',
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
             gap: '1rem',
             fontSize: 'var(--fs-sm)',
           }}
@@ -140,10 +140,10 @@ export function IncidentDetailModal({
                   key={idx}
                   style={{
                     padding: '0.25rem 0.625rem',
-                    borderRadius: '999px',
-                    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+                    borderRadius: 'var(--r)',
+                    backgroundColor: 'var(--warn-bg)',
                     color: 'var(--color-warn)',
-                    border: '1px solid rgba(245, 158, 11, 0.25)',
+                    border: '1px solid var(--warn)',
                     fontSize: '0.75rem',
                     fontWeight: 500,
                   }}
@@ -181,9 +181,9 @@ export function IncidentDetailModal({
           <div
             style={{
               padding: '0.875rem 1rem',
-              backgroundColor: 'rgba(16, 185, 129, 0.08)',
+              backgroundColor: 'var(--ok-bg)',
               borderRadius: 'var(--r-sm)',
-              border: '1px solid rgba(16, 185, 129, 0.2)',
+              border: '1px solid var(--ok)',
               fontSize: 'var(--fs-sm)',
             }}
           >
@@ -200,7 +200,7 @@ export function IncidentDetailModal({
         {canReview && (
           <form onSubmit={handleReview} style={{ display: 'flex', flexDirection: 'column', gap: '1rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--brand-700)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                 {tr('Medical Review & Actions (Veterinarian)')}
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>

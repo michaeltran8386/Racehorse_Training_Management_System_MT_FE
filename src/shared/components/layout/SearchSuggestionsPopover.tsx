@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useMemo, useCallback } from "react"
 import { useNavigate } from "react-router-dom";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useAppLanguage } from "@/shared/lib/language";
-import type { HerdHorse } from "@/shared/mock/horsesData";
+import type { HerdHorse } from "@/shared/types/herdHorse";
 import type { AuthUser } from "@/shared/types/auth";
 import styles from "./SearchSuggestionsPopover.module.css";
 

@@ -66,10 +66,14 @@
 
 .primary { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .primaryText { min-width: 0; }
-.primaryText strong { display: block; font-size: var(--fs-body); line-height: 22px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.primaryText span { display: block; font-size: var(--fs-caption); line-height: 18px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.primaryText strong { display: block; font-size: var(--fs-body); line-height: 22px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.primaryText span { display: block; font-size: var(--fs-caption); line-height: 18px; color: var(--muted); overflow-wrap: anywhere; }
 
 @media (max-width: 1280px) {
-  .narrow { display: none; }
   .th, .td { padding-left: 12px; padding-right: 12px; }
 }
+.th { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+.scroll { max-width: 100%; }
+.scroll { max-width: 100%; background: var(--surface); }
+.clickable:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
+@media (prefers-reduced-motion: reduce) { .row { transition: none; } .skeleton::after { animation: none; } }

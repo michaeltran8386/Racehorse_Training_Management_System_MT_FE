@@ -1,42 +1,44 @@
 import { Suspense, useEffect } from "react";
 import { createBrowserRouter, Navigate, Outlet, useParams, useRouteError } from "react-router-dom";
 import { tr } from "@/shared/i18n/tr";
-import AuditLogPage from "@/features/dashboard/pages/AuditLogPage";
-import AccountListPage from "@/features/accounts/pages/AccountListPage";
-import StaffDirectoryPage from "@/features/master-data/pages/StaffDirectoryPage";
-import HorseListPage from "@/features/horses/pages/HorseListPage";
-import HorseDetailPage from "@/features/horses/pages/HorseDetailPage";
-import HorseFormPage from "@/features/horses/pages/HorseFormPage";
-import DeletedHorsesPage from "@/features/horses/pages/DeletedHorsesPage";
+import styles from "./RouteErrorBoundary.module.css";
 import AcceptInvitePage from "@/features/auth/pages/AcceptInvitePage";
-import PermissionMatrix from "@/features/accounts/pages/PermissionMatrix";
-import ChangePasswordPage from "@/features/auth/pages/ChangePasswordPage";
-import Forbidden403Page from "@/features/auth/pages/Forbidden403Page";
 import ForgotPasswordPage from "@/features/auth/pages/ForgotPasswordPage";
 import LoginPage from "@/features/auth/pages/LoginPage";
-import MyProfilePage from "@/features/auth/pages/MyProfilePage";
+import Forbidden403Page from "@/features/auth/pages/Forbidden403Page";
 import PendingApprovalPage from "@/features/auth/pages/PendingApprovalPage";
 import ResetOtpPage from "@/features/auth/pages/ResetOtpPage";
 import ResetPasswordPage from "@/features/auth/pages/ResetPasswordPage";
-import SessionExpiredPage from "@/features/auth/pages/SessionExpiredPage";
 import SignUpPage from "@/features/auth/pages/SignUpPage";
 import VerifyEmailPage from "@/features/auth/pages/VerifyEmailPage";
-import ComingSoonPage from "@/features/dashboard/pages/ComingSoonPage";
-import DashboardPage from "@/features/dashboard/pages/DashboardPage";
-import NotificationsPage from "@/features/dashboard/pages/NotificationsPage";
-import NotificationSettingsPage from "@/features/dashboard/pages/NotificationSettingsPage";
-import HorseCatalogPage from "@/features/horses/pages/HorseCatalogPage";
-import StableMapPage from "@/features/stable/pages/StableMapPage";
-import StallCatalogPage from "@/features/stable/pages/StallCatalogPage";
-import SuppliesCatalogPage from "@/features/master-data/pages/SuppliesCatalogPage";
-import ShiftCatalogPage from "@/features/master-data/pages/ShiftCatalogPage";
-import ShiftRosterPage from "@/features/stable/pages/ShiftRosterPage";
-import MealRationsPage from "@/features/stable/pages/MealRationsPage";
-import DailyChecklistPage from "@/features/stable/pages/DailyChecklistPage";
-import IncidentListPage from "@/features/stable/pages/IncidentListPage";
-import InventoryPage from "@/features/stable/pages/InventoryPage";
-import RestockRequestsPage from "@/features/stable/pages/RestockRequestsPage";
 import {
+  AuditLogPage,
+  AccountListPage,
+  StaffDirectoryPage,
+  HorseListPage,
+  HorseDetailPage,
+  HorseFormPage,
+  DeletedHorsesPage,
+  PermissionMatrix,
+  ChangePasswordPage,
+  MyProfilePage,
+  SessionExpiredPage,
+  ComingSoonPage,
+  DashboardPage,
+  NotificationsPage,
+  AssistantPage,
+  NotificationSettingsPage,
+  HorseCatalogPage,
+  StableMapPage,
+  StallCatalogPage,
+  SuppliesCatalogPage,
+  ShiftCatalogPage,
+  ShiftRosterPage,
+  MealRationsPage,
+  DailyChecklistPage,
+  IncidentListPage,
+  InventoryPage,
+  RestockRequestsPage,
   MedicalRecordPage,
   RecordListPage,
   RecordDetailPage,
@@ -45,6 +47,8 @@ import {
   TrainingLockPage,
   CareSchedulePage,
   HerdHealthPage,
+  OwnerHealthPage,
+  HealthReportPage,
   PlanListPage,
   PlanWizardPage,
   PlanHistoryPage,
@@ -54,17 +58,19 @@ import {
   LiveMonitorPage,
   AlertListPage,
   TrainingOverviewPage,
+  PerformanceReportPage,
   PlanDetailPage,
   SessionResultPage,
   FitnessChartPage,
   MyTrainingPage,
   RaceEntryPage,
   RaceResultsPage,
+  RaceRecordPage,
   OwnerFinancialReportsPage,
+  CostReportPage,
 } from "./lazyPages";
 import { AppShell } from "@/shared/components/layout/AppShell";
 import { Providers } from "@/shared/components/layout/Providers";
-import { useAuth } from "@/shared/components/layout/AuthProvider";
 import { RoleGuard } from "./RoleGuard";
 
 
@@ -76,45 +82,17 @@ function RouteErrorBoundary() {
   const error = useRouteError();
   console.error("Route error captured:", error);
   return (
-    <div style={{ padding: "4rem 1.5rem", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "1rem" }}>
-      <h2 style={{ fontSize: "var(--fs-kpi)", fontWeight: 700, margin: 0, color: "var(--ink)" }}>
-        {tr("Unexpected Display Conflict")}
-      </h2>
-      <p style={{ color: "var(--muted)", maxWidth: 520, margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
-        {tr("The browser encountered a DOM reconciliation conflict (often caused by auto-translation extensions). Please reload or navigate back to the dashboard.")}
-      </p>
-      <div style={{ display: "flex", gap: "0.75rem", marginTop: "0.5rem" }}>
-        <button
-          type="button"
-          onClick={() => window.location.reload()}
-          style={{
-            padding: "0.625rem 1.25rem",
-            background: "var(--brand)",
-            color: "var(--text-on-brand)",
-            border: "none",
-            borderRadius: "var(--r-sm)",
-            cursor: "pointer",
-            fontWeight: 600,
-          }}
-        >
-          {tr("Reload Page")}
-        </button>
-        <a
-          href="/herd"
-          style={{
-            padding: "0.625rem 1.25rem",
-            background: "var(--surface)",
-            color: "var(--ink)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--r-sm)",
-            textDecoration: "none",
-            fontWeight: 600,
-          }}
-        >
-          {tr("Back to Herd Health")}
-        </a>
-      </div>
-    </div>
+    <main className={styles.page}>
+      <section className={styles.panel}>
+        <p className={styles.eyebrow}>TMEC</p>
+        <h1>{tr("This page could not be displayed.")}</h1>
+        <p>{tr("Please reload the page or return to your workspace.")}</p>
+        <div className={styles.actions}>
+          <button type="button" onClick={() => window.location.reload()}>{tr("Reload Page")}</button>
+          <a href="/dashboard">{tr("Back to my workspace")}</a>
+        </div>
+      </section>
+    </main>
   );
 }
 
@@ -135,7 +113,7 @@ function AppLayout() {
     <AppShell>
       {/* RoleGuard chặn trang khi tài khoản không đủ quyền (hiện 403 ngay tại URL đó). */}
       <RoleGuard>
-        {/* Nhóm Y tế và Huấn luyện tải theo route (React.lazy) để file JS đầu tiên nhẹ hơn. */}
+        {/* Các màn hình workspace tải theo route để giảm mã tải ban đầu. */}
         <Suspense fallback={<SkeletonPage />}>
           <Outlet />
         </Suspense>
@@ -145,12 +123,12 @@ function AppLayout() {
 }
 
 // "/": đã đăng nhập → dashboard; khách → landing tĩnh public/landing.html (trang HTML riêng, không đi qua React).
+// Vào FE luôn mở landing trước; nút Đăng nhập trên landing đưa người đã đăng nhập thẳng vào /dashboard.
 function HomeRoute() {
-  const { status } = useAuth();
   useEffect(() => {
-    if (status === "anonymous") window.location.replace("/landing.html");
-  }, [status]);
-  return status === "authenticated" ? <Navigate to="/dashboard" replace /> : null;
+    window.location.replace("/landing.html");
+  }, []);
+  return null;
 }
 
 // Lấy :id từ URL /accounts/:id/permissions rồi truyền cho trang.
@@ -162,12 +140,6 @@ function PermissionMatrixRoute() {
 // "Training Progress" trên menu: Xem danh sách tiến độ giáo án & kế hoạch huấn luyện (SC-2.02).
 function TrainingProgressRoute() {
   return <PlanListPage />;
-}
-
-// Mọi đường dẫn chưa có trang riêng (ngựa, huấn luyện, y tế...). RoleGuard trong AppShell đã kiểm quyền trước đó.
-function ComingSoonRoute() {
-  const { "*": path = "" } = useParams();
-  return <ComingSoonPage slug={path.split("/")[0] ?? ""} />;
 }
 
 export const router = createBrowserRouter([
@@ -204,6 +176,7 @@ export const router = createBrowserRouter([
           { path: "/my-horses", element: <HorseListPage /> },
           { path: "/profile", element: <MyProfilePage /> },
           { path: "/profile/password", element: <ChangePasswordPage /> },
+          { path: "/assistant", element: <AssistantPage /> },
           { path: "/notifications", element: <NotificationsPage /> },
           { path: "/notifications/settings", element: <NotificationSettingsPage /> },
           { path: "/settings/notifications", element: <NotificationSettingsPage /> },
@@ -229,9 +202,12 @@ export const router = createBrowserRouter([
           { path: "/vaccine", element: <CareSchedulePage /> },
           { path: "/medical/herd", element: <HerdHealthPage /> },
           { path: "/herd", element: <HerdHealthPage /> },
+          { path: "/health", element: <OwnerHealthPage /> },
+          { path: "/health-report", element: <HealthReportPage /> },
 
           // ---- Phân hệ Huấn luyện & Giáo án (Flow 2: P2-06 -> P2-09)
           { path: "/training", element: <TrainingOverviewPage /> },
+          { path: "/performance", element: <PerformanceReportPage /> },
           { path: "/progress", element: <TrainingProgressRoute /> },
           { path: "/training/plans", element: <PlanListPage /> },
           { path: "/plans", element: <PlanListPage /> },
@@ -286,14 +262,16 @@ export const router = createBrowserRouter([
           // ---- Phân hệ Thi đấu & Giải đua (Flow 5: SC-5.01 -> SC-5.04)
           { path: "/races", element: <RaceEntryPage /> },
           { path: "/races/results", element: <RaceResultsPage /> },
+          { path: "/race-record", element: <RaceRecordPage /> },
           { path: "/racing", element: <RaceEntryPage /> },
 
           // ---- Phân hệ Tài chính & Quyết toán (Flow 5: SC-5.05 -> SC-5.06)
           { path: "/financial-reports", element: <OwnerFinancialReportsPage /> },
+          { path: "/costs", element: <CostReportPage /> },
           { path: "/owner/financial-reports", element: <OwnerFinancialReportsPage /> },
           { path: "/invoices", element: <OwnerFinancialReportsPage /> },
 
-          { path: "*", element: <ComingSoonRoute /> },
+          { path: "*", element: <ComingSoonPage /> },
         ],
       },
     ],

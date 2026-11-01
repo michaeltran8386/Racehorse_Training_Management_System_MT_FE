@@ -1,9 +1,9 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import type { FormEvent, KeyboardEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Field } from "@/shared/components/form/Field";
-import { Input } from "@/shared/components/form/Input";
-import { Checkbox } from "@/shared/components/form/Checkbox";
+import { FloatingField } from "@/shared/components/form/FloatingField";
+import { SpringCheck } from "@/shared/components/motion/SpringCheck";
 import { useAuth } from "@/shared/components/layout/AuthProvider";
 import { AuthLayout } from "@/shared/components/layout/AuthLayout";
 import { Alert } from "@/shared/components/ui/Alert";
@@ -12,14 +12,16 @@ import { Button } from "@/shared/components/ui/Button";
 import { formatCountdown } from "@/shared/lib/format";
 import { useCountdown, useQueryParams } from "@/shared/lib/hooks";
 import { useAppLanguage } from "@/shared/lib/language";
-import { loginFailure } from "@/shared/lib/messages";
+import { loginFailure, messageFor } from "@/shared/lib/messages";
+import { ApiError } from "@/shared/lib/api";
 import type { LoginFailure } from "@/shared/lib/messages";
 import { EMAIL_MAX, EMAIL_RE } from "@/shared/lib/email";
 import { PASSWORD_MAX } from "@/shared/lib/password";
 import { safeNext } from "../flow";
-import { EMAIL_PLACEHOLDER } from "@/shared/lib/brand";
-import { triggerCloudTransition } from "@/shared/lib/cloudTransition";
 import styles from "./AuthPages.module.css";
+import { GoogleSignIn } from "../components/GoogleSignIn";
+import { PillButton } from "../components/PillButton";
+import { tr } from "@/shared/i18n/tr";
 
 interface AlertState {
   tone: AlertTone;
@@ -69,9 +71,10 @@ function passwordProblem(password: string): string {
 }
 
 export default function LoginPage() {
+  useScreenTranslation();
   const navigate = useNavigate();
-  const { status, signIn } = useAuth();
-  const { t } = useAppLanguage();
+  const { status, signIn, signInWithGoogle } = useAuth();
+  const { t, lang } = useAppLanguage();
   const params = useQueryParams();
 
   const [email, setEmail] = useState("");
@@ -83,6 +86,7 @@ export default function LoginPage() {
   const [passwordError, setPasswordError] = useState("");
   const [capsLock, setCapsLock] = useState(false);
   const [alert, setAlert] = useState<AlertState | null>(null);
+  const [googleError, setGoogleError] = useState(false);
   const [nextStep, setNextStep] = useState<LoginFailure["next"]>();
   // Khóa tạm sau nhiều lần sai: mốc do server trả (retryAt).
   const [lockUntil, setLockUntil] = useState<number | null>(null);
@@ -103,6 +107,7 @@ export default function LoginPage() {
     setEmail(value);
     setEmailError("");
     setAlert(null);
+    setGoogleError(false);
     setNextStep(undefined);
     // Khóa tạm tính theo email: đổi email thì lấy đồng hồ của email mới (nếu có).
     setLockUntil(lockOf(value.trim().toLowerCase()));
@@ -123,15 +128,14 @@ export default function LoginPage() {
     if (eErr || pErr) return;
 
     setAlert(null);
+    setGoogleError(false);
     setNextStep(undefined);
     setChecking(true);
     try {
       setIsTransitioning(true);
       await signIn(mail, password, remember);
       saveLock(mail, null);
-      triggerCloudTransition(() => {
-        navigate(next, { replace: true });
-      });
+      navigate(next, { replace: true });
     } catch (err) {
       setIsTransitioning(false);
       const failure = loginFailure(err);
@@ -148,6 +152,25 @@ export default function LoginPage() {
     }
   }
 
+  async function onGoogleCredential(credential: string) {
+    if (checking) return;
+    setChecking(true);
+    setAlert(null);
+    setGoogleError(false);
+    setIsTransitioning(true);
+    try {
+      await signInWithGoogle(credential);
+      navigate(next, { replace: true });
+    } catch (err) {
+      setIsTransitioning(false);
+      setGoogleError(true);
+      const serviceError = err instanceof ApiError && (err.status === 0 || err.status === 429 || err.status >= 500);
+      setAlert({ tone: "danger", icon: "xCircle", title: lang === "vi" ? "Không thể đăng nhập bằng Google" : "Google sign-in failed", body: serviceError ? messageFor(err) : lang === "vi" ? "Kiểm tra tài khoản hoặc thử lại sau." : "Check your account or try again later." });
+    } finally {
+      setChecking(false);
+    }
+  }
+
   // Đang khóa tạm: đồng hồ đếm ngược; hết giờ thì báo có thể đăng nhập lại.
   const lockAlert: AlertState | null =
     lockUntil === null
@@ -156,7 +179,7 @@ export default function LoginPage() {
         ? { tone: "danger", icon: "clock", title: "Sign-in paused", body: `Try again in ${formatCountdown(lockLeft)} or reset your password.` }
         : { tone: "info", icon: "clock", title: "You can sign in again", body: "" };
 
-  const banner: AlertState | null = lockAlert ?? alert ?? (justReset
+  const banner: AlertState | null = (googleError ? alert : lockAlert ?? alert) ?? (justReset
     ? { tone: "ok", icon: "checkCircle", title: "Password changed", body: "Please sign in again." }
     : justInvited
       ? { tone: "ok", icon: "checkCircle", title: "Account activated", body: "Please sign in." }
@@ -186,57 +209,57 @@ export default function LoginPage() {
           </Alert>
         )}
 
-        <Field label={t("auth.email", "Email")} required error={emailError}>
-          <Input
-            type="email"
-            icon="mail"
-            placeholder={EMAIL_PLACEHOLDER}
-            autoComplete="username"
-            maxLength={EMAIL_MAX}
-            value={email}
-            disabled={checking}
-            onChange={(e) => onEmailChange(e.target.value)}
-            // Chỉ báo sai định dạng khi rời ô; ô trống thì đợi lúc bấm Đăng nhập.
-            onBlur={() => setEmailError(mail ? emailProblem(mail) : "")}
-          />
-        </Field>
-
-        <Field
-          label={t("auth.password", "Password")}
+        <FloatingField
+          label={t("auth.email", "Email")}
+          type="email"
           required
+          autoComplete="username"
+          maxLength={EMAIL_MAX}
+          value={email}
+          disabled={checking}
+          error={emailError}
+          isValid={EMAIL_RE.test(mail)}
+          onChange={onEmailChange}
+          // Chỉ báo sai định dạng khi rời ô; ô trống thì đợi lúc bấm Đăng nhập.
+          onBlur={() => setEmailError(mail ? emailProblem(mail) : "")}
+        />
+
+        <FloatingField
+          label={t("auth.password", "Password")}
+          type="password"
+          required
+          autoComplete="current-password"
+          maxLength={PASSWORD_MAX}
+          value={password}
+          disabled={checking}
           error={passwordError}
           hint={capsLock ? "Caps Lock is on." : undefined}
-        >
-          <Input
-            type="password"
-            icon="key"
-            autoComplete="current-password"
-            maxLength={PASSWORD_MAX}
-            value={password}
-            disabled={checking}
-            onKeyDown={onPasswordKey}
-            onKeyUp={onPasswordKey}
-            onBlur={() => setCapsLock(false)}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setPasswordError("");
-              setAlert(null);
-            }}
-          />
-        </Field>
+          onKeyDown={onPasswordKey}
+          onKeyUp={onPasswordKey}
+          onBlur={() => setCapsLock(false)}
+          onChange={(value) => {
+            setPassword(value);
+            setPasswordError("");
+            setAlert(null);
+            setGoogleError(false);
+          }}
+        />
 
-        <div className={styles.row}>
-          <Checkbox label={t("auth.rememberMe", "Remember me")} checked={remember} onChange={setRemember} disabled={checking} />
-          <Link to="/forgot-password">{t("auth.forgotPassword", "Forgot password?")}</Link>
-        </div>
+        <SpringCheck label={t("auth.rememberMe", "Remember me")} checked={remember} onChange={setRemember} disabled={checking} />
 
-        <Button type="submit" size="lg" block iconAfter="arrowRight" disabled={checking || locked}>
-          {checking ? t("auth.submitting", "Signing in…") : t("auth.submitSignIn", "Sign in")}
-        </Button>
+        <PillButton type="submit" loading={checking} loadingLabel={t("auth.submitting", "Signing in…")} disabled={locked}>
+          {t("auth.submitSignIn", "Sign in")}
+        </PillButton>
 
-        <p className={styles.foot}>
-          {t("auth.noAccount", "No account yet?")} <Link to="/sign-up">{t("auth.signUpLink", "Sign up")}</Link>
-        </p>
+        <Link to="/forgot-password" className={styles.centerLink}>
+          {t("auth.forgotPassword", "Forgot password?")}
+        </Link>
+
+        <GoogleSignIn onCredential={onGoogleCredential} />
+
+        <Link to="/sign-up" className={styles.outlineLink}>
+          {tr("Create new account")}
+        </Link>
         <p className={styles.foot}>
           {t("auth.invitedStaff", "Invited as staff?")} <Link to="/accept-invite">{t("auth.acceptInviteLink", "Accept invitation")}</Link>
         </p>

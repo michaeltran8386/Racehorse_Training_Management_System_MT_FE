@@ -92,3 +92,14 @@
 /* Bị chặn: nền xám, chữ nhạt — không làm mờ cả nút (khó đọc). */
 .off { background: var(--surface-3); border-color: var(--border); color: var(--muted); cursor: not-allowed; box-shadow: none; }
 
+
+.btn, .sm, .md, .lg { border-radius: 0; box-shadow: none; }
+.primary, .primary:hover:not(.off) { box-shadow: none; }
+.quiet { color: var(--text); }
+.danger { color: #fff; }
+.dark { background: var(--bg-inverse); border-color: var(--bg-inverse); color: #f6f1e4; box-shadow: none; }
+.dark, :global([data-theme="dark"]) .dark { background: var(--bg-inverse); border-color: var(--nav-line); color: #f6f1e4; box-shadow: none; }
+.dark:hover:not(.off), :global([data-theme="dark"]) .dark:hover:not(.off) { background: var(--nav-item-hover); border-color: var(--nav-line); box-shadow: none; }
+.outline:hover:not(.off), .secondary:hover:not(.off) { box-shadow: none; }
+.danger { color: var(--text-on-danger); }
+.off, :global([data-theme="dark"]) .off { background: var(--surface-3); border-color: var(--border); color: var(--muted); box-shadow: none; cursor: not-allowed; }

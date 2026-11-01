@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -19,6 +20,7 @@ import { tr } from "@/shared/i18n/tr";
 // Bước 3 quên mật khẩu (design 1.6): đặt mật khẩu mới sau khi OTP đã đúng.
 // Cũng là bước cuối của Accept Invite (flow.kind = "invite"): nhân viên đặt mật khẩu lần đầu.
 export default function ResetPasswordPage() {
+  useScreenTranslation();
   const navigate = useNavigate();
   const [flow, setFlow] = useState<ResetFlow | null | undefined>(undefined);
   const [password, setPassword] = useState("");

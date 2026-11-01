@@ -1,17 +1,22 @@
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useTranslation as useScreenTranslation } from "react-i18next";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams, useBlocker } from "react-router-dom";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
+import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useToast } from "@/shared/components/ui/Toast";
 import { getHorses } from "@/features/horses/api";
 import { tr } from "@/shared/i18n/tr";
+import { ApiError } from "@/shared/lib/api";
+import { simulatedExamVitals } from "@/shared/lib/simulatedMeasurements";
 import {
   createRecord,
   getLatestExamSimulation,
@@ -62,6 +67,7 @@ function getInitialExamDate(): string {
 }
 
 export default function RecordFormPage() {
+  useScreenTranslation();
   const { id } = useParams(); // If id exists, it's edit mode
   const [searchParams] = useSearchParams();
   const horseIdParam = searchParams.get("horseId") || "";
@@ -71,10 +77,10 @@ export default function RecordFormPage() {
 
   const isEdit = Boolean(id);
 
-  const examTypeOptions = useMemo(() => EXAM_TYPE_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) })), []);
-  const discoveryOptions = useMemo(() => DISCOVERY_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) })), []);
-  const labTypeOptions = useMemo(() => LAB_TYPE_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) })), []);
-  const proposedStatusOptions = useMemo(() => PROPOSED_STATUS_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) })), []);
+  const examTypeOptions = EXAM_TYPE_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) }));
+  const discoveryOptions = DISCOVERY_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) }));
+  const labTypeOptions = LAB_TYPE_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) }));
+  const proposedStatusOptions = PROPOSED_STATUS_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) }));
 
   // Block 1: Exam info
   const [horseId, setHorseId] = useState(horseIdParam);
@@ -95,7 +101,7 @@ export default function RecordFormPage() {
             }))
           );
           if (!isEdit && (!horseIdParam || !data.some((h: any) => h.id === horseIdParam))) {
-            setHorseId(data[0].id);
+            setHorseId("");
           }
         } else {
           setHorseOptions([{ value: "", label: tr("-- No horses available --") }]);
@@ -119,9 +125,9 @@ export default function RecordFormPage() {
   const [discoverySource, setDiscoverySource] = useState("VET Self-Discovered");
 
   // Block 2: Vital signs
-  const [temperature, setTemperature] = useState<number | undefined>(38.1);
-  const [restingHeartRate, setRestingHeartRate] = useState<number | undefined>(36);
-  const [respiratoryRate, setRespiratoryRate] = useState<number | undefined>(12);
+  const [temperature, setTemperature] = useState<number | undefined>(undefined);
+  const [restingHeartRate, setRestingHeartRate] = useState<number | undefined>(undefined);
+  const [respiratoryRate, setRespiratoryRate] = useState<number | undefined>(undefined);
   const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
   const [clinicalNotes, setClinicalNotes] = useState("");
 
@@ -131,7 +137,7 @@ export default function RecordFormPage() {
 
   // Block 4: Diagnosis
   const [diagnosis, setDiagnosis] = useState("");
-  const [severity, setSeverity] = useState<SeverityLevel>("MODERATE");
+  const [severity, setSeverity] = useState<SeverityLevel | undefined>(undefined);
   const [proposedStatus, setProposedStatus] = useState("UNDER_OBSERVATION");
   const [proposeMedicalLock, setProposeMedicalLock] = useState(false);
 
@@ -164,25 +170,8 @@ export default function RecordFormPage() {
   // FR-3.20: Chuyển trang qua router / Sidebar khi chưa lưu -> hỏi xác nhận
   const blocker = useBlocker(Boolean(dirty && !busy));
 
-  useEffect(() => {
-    if (blocker.state === "blocked") {
-      if (window.confirm(tr("You have unsaved changes in this medical record. Leaving will lose them. Continue?"))) {
-        blocker.proceed();
-      } else {
-        blocker.reset();
-      }
-    }
-  }, [blocker]);
-
   function handleCancel() {
-    if (dirty) {
-      if (window.confirm(tr("You have unsaved changes in this medical record. Leaving will lose them. Continue?"))) {
-        setDirty(false);
-        navigate(-1);
-      }
-    } else {
-      navigate(-1);
-    }
+    navigate(-1);
   }
 
   // Load existing data if edit mode
@@ -209,7 +198,7 @@ export default function RecordFormPage() {
         }
         setLabTests(r.labTests || []);
         setDiagnosis(r.diagnosis || "");
-        setSeverity(r.severity || "MODERATE");
+        setSeverity(r.severity || undefined);
         setProposedStatus(r.proposedStatus || "UNDER_OBSERVATION");
         setProposeMedicalLock(Boolean(r.proposeMedicalLock));
       });
@@ -274,7 +263,7 @@ export default function RecordFormPage() {
     }
 
     const trimmedReason = examinationReason.trim();
-    if (!saveAsDraft) {
+    if (!saveAsDraft || !trimmedReason) {
       if (!trimmedReason) {
         errs.examinationReason = tr("Please enter the reason for examination.");
       } else if (trimmedReason.length < 5) {
@@ -291,7 +280,7 @@ export default function RecordFormPage() {
     }
 
     const trimmedNotes = clinicalNotes.trim();
-    if (!saveAsDraft) {
+    if (!saveAsDraft || !trimmedNotes) {
       if (!trimmedNotes || trimmedNotes.length < 10) {
         errs.clinicalNotes = tr("Detailed clinical examination notes must be between 10 and 4,000 characters.");
       } else if (trimmedNotes.length > 4000) {
@@ -304,6 +293,8 @@ export default function RecordFormPage() {
         errs.clinicalNotes = tr("Clinical examination notes cannot exceed 4,000 characters.");
       }
     }
+
+    if (!saveAsDraft && !severity) errs.severity = tr("Please select a severity level.");
 
     const trimmedDiagnosis = diagnosis.trim();
     if (!saveAsDraft) {
@@ -322,13 +313,19 @@ export default function RecordFormPage() {
       }
     }
 
-    if (temperature !== undefined && (temperature < 35.0 || temperature > 43.0)) {
+    if (temperature === undefined) {
+      errs.temperature = tr("Please enter the temperature.");
+    } else if (temperature < 35.0 || temperature > 43.0) {
       errs.temperature = tr("Body temperature must be between 35.0°C and 43.0°C.");
     }
-    if (restingHeartRate !== undefined && (restingHeartRate < 20 || restingHeartRate > 120)) {
+    if (restingHeartRate === undefined) {
+      errs.restingHeartRate = tr("Please enter the resting heart rate.");
+    } else if (restingHeartRate < 20 || restingHeartRate > 120) {
       errs.restingHeartRate = tr("Resting heart rate must be between 20 and 120 bpm.");
     }
-    if (respiratoryRate !== undefined && (respiratoryRate < 4 || respiratoryRate > 60)) {
+    if (respiratoryRate === undefined) {
+      errs.respiratoryRate = tr("Please enter the respiratory rate.");
+    } else if (respiratoryRate < 4 || respiratoryRate > 60) {
       errs.respiratoryRate = tr("Respiratory rate must be between 4 and 60 breaths/min.");
     }
     if (weightKg !== undefined && weightKg !== null && (weightKg < 200 || weightKg > 800)) {
@@ -459,11 +456,21 @@ export default function RecordFormPage() {
     async (silent = false) => {
       if (!horseId) return;
       if (!silent) setExamBusy(true);
+      // Bấm nút mà Simulator chưa khám: tự sinh sinh hiệu bình thường thay vì báo lỗi.
+      const generate = () => {
+        const v = simulatedExamVitals();
+        setTemperature(v.temperature);
+        setRestingHeartRate(v.restingHeartRate);
+        setRespiratoryRate(v.respiratoryRate);
+        setExamSource(tr("Simulated measurements (Simulator not run)"));
+        setDirty(true);
+        toast.show(tr("Simulated measurements were generated. You can edit them before saving."), "ok");
+      };
       try {
         const response = await getLatestExamSimulation(horseId);
         const draft = response.resultDraft;
         if (!draft) {
-          if (!silent) throw new Error(tr("The simulator has not returned measurements yet."));
+          if (!silent) generate();
           return;
         }
         setTemperature(draft.temperature);
@@ -476,7 +483,9 @@ export default function RecordFormPage() {
           toast.show(tr("Simulator measurements loaded. Review them before saving."), "ok");
         }
       } catch (err: unknown) {
-        if (!silent) {
+        if (!silent && err instanceof ApiError && err.code === "SIMULATOR_EXAM_RESULT_NOT_FOUND") {
+          generate();
+        } else if (!silent) {
           const parsed = parseMedicalErrors(err);
           setError(parsed.summary);
           setErrorDetails(parsed.details);
@@ -489,19 +498,6 @@ export default function RecordFormPage() {
     },
     [horseId, toast],
   );
-
-  // Slice E: Main Web automatically loads the newest acknowledged Simulator measurements when its tab regains focus
-  useEffect(() => {
-    function onTabFocus() {
-      if (horseId) {
-        void handleLoadExam(true);
-      }
-    }
-    window.addEventListener("focus", onTabFocus);
-    return () => {
-      window.removeEventListener("focus", onTabFocus);
-    };
-  }, [horseId, handleLoadExam]);
 
   const tempWarn = isTempWarning(temperature);
   const hrWarn = isHeartRateWarning(restingHeartRate);
@@ -555,17 +551,17 @@ export default function RecordFormPage() {
           {tr("1. Examination Information")}
         </h2>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: 14 }}>
           <Field
             label={tr("Horse *")}
             hint={tr("Select the horse to examine")}
             error={fieldErrors.horseId}
           >
-            <Select
-              options={horseOptions}
+            <SearchSelect
+              options={isEdit ? horseOptions : [{ value: "", label: tr("— Choose a horse —") }, ...horseOptions]}
               value={horseId}
-              onChange={(e) => {
-                setHorseId(e.target.value);
+              onChange={(v) => {
+                setHorseId(v);
                 clearFieldError("horseId");
               }}
               disabled={isEdit || loadingHorses}
@@ -670,7 +666,7 @@ export default function RecordFormPage() {
           </Alert>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 14 }}>
           <Field
             label={tr("Temperature (°C) *")}
             hint={tempWarn ? tr("Outside reference range (37.2 – 38.6 °C)!") : tr("Normal: 37.2 – 38.6 °C (Allowed: 35.0 – 43.0 °C)")}
@@ -789,7 +785,7 @@ export default function RecordFormPage() {
 
         {labTests.length === 0 ? (
           <div style={{ color: "var(--muted)", fontSize: "var(--fs-body)" }}>
-            {tr("No diagnostic tests added yet. Click &quot;Add Diagnostic Result&quot; to record blood work, X-rays, or ultrasound findings.")}
+            {tr('No diagnostic tests added yet. Click "Add Diagnostic Result" to record blood work, X-rays, or ultrasound findings.')}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -798,7 +794,7 @@ export default function RecordFormPage() {
                 <div
                   style={{
                     display: "grid",
-                    gridTemplateColumns: "1.5fr 1fr 3fr auto",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))",
                     gap: 10,
                     alignItems: "center",
                     padding: "10px",
@@ -808,6 +804,7 @@ export default function RecordFormPage() {
                   }}
                 >
                   <Select
+                    aria-label={tr("Diagnostic test type")}
                     options={labTypeOptions}
                     value={test.testType}
                     onChange={(e) => updateLabTest(idx, "testType", e.target.value)}
@@ -815,11 +812,13 @@ export default function RecordFormPage() {
 
                   <Input
                     type="date"
+                    aria-label={tr("Diagnostic test date")}
                     value={test.testDate}
                     onChange={(e) => updateLabTest(idx, "testDate", e.target.value)}
                   />
 
                   <Input
+                    aria-label={tr("Diagnostic test result")}
                     value={test.result}
                     onChange={(e) => updateLabTest(idx, "result", e.target.value)}
                     placeholder={tr("Result description (e.g., Elevated WBC count, hairline fissure on lateral condyle...)")}
@@ -828,6 +827,7 @@ export default function RecordFormPage() {
 
                   <button
                     type="button"
+                    aria-label={tr("Remove diagnostic result")}
                     onClick={() => removeLabTest(idx)}
                     style={{ border: "none", background: "transparent", color: "var(--danger)", cursor: "pointer" }}
                   >
@@ -871,8 +871,8 @@ export default function RecordFormPage() {
             />
           </Field>
 
-          <Field label={tr("Severity Level *")}>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <Field label={tr("Severity Level *")} error={fieldErrors.severity}>
+            <div role="radiogroup" aria-label={tr("Severity Level")} style={{ display: "flex", gap: 16, flexWrap: "wrap" }} onChange={() => clearFieldError("severity")}>
               <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
                 <input
                   type="radio"
@@ -912,7 +912,7 @@ export default function RecordFormPage() {
             </div>
           </Field>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "center" }}>
+          <div className={styles.formPair}>
             <Field label={tr("Proposed Horse Status")}>
               <Select
                 options={proposedStatusOptions}
@@ -934,6 +934,19 @@ export default function RecordFormPage() {
           </div>
         </div>
       </div>
+
+      {blocker.state === "blocked" && (
+        <ConfirmModal
+          title={tr("Discard changes")}
+          tone="warn"
+          confirmLabel={tr("Discard changes")}
+          cancelLabel={tr("Cancel")}
+          onConfirm={() => blocker.proceed?.()}
+          onCancel={() => blocker.reset?.()}
+        >
+          {tr("You have unsaved changes in this medical record. Leaving will lose them. Continue?")}
+        </ConfirmModal>
+      )}
 
       {/* Action Bar Footer */}
       <div

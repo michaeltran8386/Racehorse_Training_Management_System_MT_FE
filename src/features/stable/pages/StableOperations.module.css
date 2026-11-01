@@ -1,0 +1,16 @@
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.metrics section > div > div:first-child { color: var(--text-2); font-size: 11px !important; font-weight: 700; letter-spacing: .07em; }
+.metrics section > div > div:nth-child(2) { font-family: var(--font-display); font-size: 36px !important; line-height: 1.1; }
+.searchFilters, .weekNavigation { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; min-width: 0; }
+@media (max-width: 720px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .metrics { gap: 8px; } .searchFilters { width: 100%; } .searchFilters > div { flex: 1 1 100%; } }
+.taskMetrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.taskMetrics section > div > div:first-child { font-size: 11px !important; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.taskMetrics section > div > div:nth-child(2) { font: 800 34px/1.1 var(--font-display) !important; font-variant-numeric: tabular-nums; }
+.taskToolbar { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between; }
+.taskHorseHeader { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; padding: 16px 20px; background: var(--surface-sunken); border-bottom: 1px solid var(--border); border-left: 4px solid var(--brand); }
+.taskHorseName { color: var(--ink); font: 700 22px/1.1 var(--font-display); }
+.taskMedicalNotice { padding: 10px 20px; background: var(--danger-bg); border-bottom: 1px solid var(--border); color: var(--danger); font-size: var(--fs-sm); }
+@media (max-width: 900px) { .taskMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .taskMetrics { gap: 8px; } }
+@media (max-width: 520px) { .searchFilters input, .searchFilters select { width: 100% !important; } }

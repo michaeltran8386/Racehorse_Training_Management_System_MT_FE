@@ -1,14 +1,18 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/shared/components/ui/Button";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Field } from "@/shared/components/form/Field";
 import { Badge } from "@/shared/components/ui/Badge";
+import { Alert } from "@/shared/components/ui/Alert";
 import { Card } from "@/shared/components/ui/Card";
 import { DataTable, type Column } from "@/shared/components/ui/DataTable";
+import { Pagination } from "@/shared/components/ui/Pagination";
 import { Tabs } from "@/shared/components/ui/Tabs";
 import { Select } from "@/shared/components/form/Select";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./CareSchedulePage.module.css";
 import { formatDate } from "@/shared/lib/format";
 import type { BadgeTone } from "@/shared/lib/status";
 import { Input } from "@/shared/components/form/Input";
@@ -39,6 +43,7 @@ const STATUS_BADGES: Record<PreventiveStatus, { label: string; tone: BadgeTone; 
 };
 
 export default function CareSchedulePage() {
+  useScreenTranslation();
   const { user } = useAuth();
   const toast = useToast();
   const isVet = user?.role === "VETERINARIAN";
@@ -47,19 +52,18 @@ export default function CareSchedulePage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [items, setItems] = useState<PreventiveCareItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState(false);
+  const [loadingHorses, setLoadingHorses] = useState(false);
   const [search, setSearch] = useState<string>("");
+  const [page, setPage] = useState(1);
 
   // Create Preventive Care Schedule Modal (Bác sĩ thú y thêm Preventive Care)
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [horseList, setHorseList] = useState<Array<{ id: string; name: string; horseCode?: string }>>([]);
   const [createHorseId, setCreateHorseId] = useState<string>("");
   const [createCategory, setCreateCategory] = useState<"VACCINATION" | "DEWORMING" | "FARRIER" | "DENTAL" | "GENERAL">("VACCINATION");
-  const [createType, setCreateType] = useState<string>("Equine Influenza & Tetanus Booster");
-  const [createDueDate, setCreateDueDate] = useState<string>(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 14);
-    return d.toISOString().split("T")[0];
-  });
+  const [createType, setCreateType] = useState<string>("");
+  const [createDueDate, setCreateDueDate] = useState<string>("");
   const [createNotes, setCreateNotes] = useState<string>("");
 
   // Record Completion Modal (DL-3.12)
@@ -69,25 +73,23 @@ export default function CareSchedulePage() {
   const [performedByMode, setPerformedByMode] = useState<"SELF" | "EXTERNAL">("SELF");
   const [productAdministered, setProductAdministered] = useState<string>("");
   const [batchNumber, setBatchNumber] = useState<string>("");
-  const [nextDue, setNextDue] = useState<string>(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 6);
-    return d.toISOString().split("T")[0];
-  });
+  const [nextDue, setNextDue] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const data = await healthApi.getCareSchedules();
       setItems(data);
     } catch {
-      toast.show("Unable to load preventive care schedules", "danger");
+      setItems([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     void loadData();
@@ -106,26 +108,35 @@ export default function CareSchedulePage() {
   }, [loadData]);
 
   const handleOpenCreateModal = async () => {
+    if (loadingHorses) return;
+    setLoadingHorses(true);
     try {
       const res = await getHorses({ limit: 100 });
       const list = res.items || [];
       setHorseList(list);
-      if (list.length > 0 && !createHorseId) {
-        setCreateHorseId(list[0].id);
-      }
+      setCreateHorseId("");
+      setCreateType("");
+      setCreateDueDate("");
+      setShowCreateModal(true);
     } catch {
-      // fallback
+      toast.show(tr("Could not load horses"), "danger");
+    } finally {
+      setLoadingHorses(false);
     }
-    setShowCreateModal(true);
   };
 
   const handleCreateSchedule = async () => {
+    if (submitting) return;
     if (!createHorseId) {
       toast.show(tr("Please select a horse"), "danger");
       return;
     }
     if (!createType.trim()) {
       toast.show(tr("Please enter care service name"), "danger");
+      return;
+    }
+    if (!createDueDate) {
+      toast.show(tr("Please select a due date."), "danger");
       return;
     }
     try {
@@ -151,21 +162,20 @@ export default function CareSchedulePage() {
   const handleOpenCompleteModal = (care: PreventiveCareItem) => {
     setSelectedCare(care);
     setAdminDate(new Date().toISOString().split("T")[0]);
-    setAdminBy(user?.fullName || "Lead Veterinarian");
+    setAdminBy(user?.fullName || "");
     setPerformedByMode("SELF");
-    setProductAdministered(care.type || "");
+    setProductAdministered("");
     setBatchNumber("");
-    const nextDate = new Date();
-    if (care.category === "VACCINATION") nextDate.setMonth(nextDate.getMonth() + 6);
-    else if (care.category === "DEWORMING") nextDate.setMonth(nextDate.getMonth() + 3);
-    else if (care.category === "FARRIER") nextDate.setDate(nextDate.getDate() + 35);
-    else nextDate.setFullYear(nextDate.getFullYear() + 1);
-    setNextDue(nextDate.toISOString().split("T")[0]);
+    setNextDue("");
     setNotes("");
   };
 
   const handleSubmitComplete = async () => {
-    if (!selectedCare) return;
+    if (!selectedCare || submitting) return;
+    if (!adminDate || !adminBy.trim() || !nextDue) {
+      toast.show(tr("Enter the administration date, provider and next due date."), "danger");
+      return;
+    }
     try {
       setSubmitting(true);
       await healthApi.recordCareCompletion(selectedCare.id, {
@@ -213,20 +223,24 @@ export default function CareSchedulePage() {
   });
 
   const count = (st: PreventiveStatus) => items.filter((i) => i.status === st).length;
+  const pageSize = 10;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredItems.length / pageSize)));
+  const visibleItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const columns: Column<PreventiveCareItem>[] = [
     {
       key: "service",
       header: "Care service",
-      render: (item) => <span style={{ display: "block", minWidth: 240, maxWidth: 340, fontWeight: 600 }}>{item.type}</span>,
+      render: (item) => <span className={styles.service}>{item.type}</span>,
     },
     {
       key: "horse",
       header: "Horse",
       render: (item) => (
-        <Link to="/medical/records" style={{ display: "block", minWidth: 140, maxWidth: 200, fontWeight: 600, color: "var(--text)" }}>
-          {item.horseId}
-        </Link>
+        item.realHorseId ? <Link to={`/medical/horses/${item.realHorseId}`} className={styles.horse}>
+          <strong>{item.horseName || item.horseId}</strong>
+          {item.horseName && item.horseCode && <span>{item.horseCode}</span>}
+        </Link> : <span>{item.horseId}</span>
       ),
     },
     {
@@ -274,21 +288,7 @@ export default function CareSchedulePage() {
       header: "Notes",
       hideOnNarrow: true,
       render: (item) => (
-        <span
-          title={item.notes || undefined}
-          style={{
-            maxWidth: 200,
-            display: "-webkit-box",
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: "vertical",
-            overflow: "hidden",
-            fontSize: "var(--fs-caption)",
-            lineHeight: "18px",
-            color: "var(--text-2)",
-          }}
-        >
-          {item.notes || "—"}
-        </span>
+        <span className={styles.notes}>{item.notes || "—"}</span>
       ),
     },
     ...(isVet
@@ -299,7 +299,7 @@ export default function CareSchedulePage() {
             align: "right" as const,
             render: (item: PreventiveCareItem) => (
               <Button tone="secondary" size="sm" icon="check" onClick={() => handleOpenCompleteModal(item)}>
-                {tr("Record")}
+                {tr("Record completion")}
               </Button>
             ),
           },
@@ -314,7 +314,7 @@ export default function CareSchedulePage() {
         description={tr("Vaccinations, deworming, farrier, and dental schedules for all horses.")}
         action={
           isVet ? (
-            <Button tone="primary" icon="plus" onClick={() => void handleOpenCreateModal()}>
+            <Button tone="primary" icon="plus" disabled={loadingHorses} onClick={() => void handleOpenCreateModal()}>
               {tr("Schedule Preventive Care")}
             </Button>
           ) : undefined
@@ -322,27 +322,31 @@ export default function CareSchedulePage() {
       />
 
       <Card pad={0}>
+        {loadError ? <Alert tone="danger" title={tr("Unable to load preventive care schedules")}
+          action={<Button size="sm" tone="secondary" onClick={() => void loadData()}>{tr("Try again")}</Button>}>
+          {tr("Check your connection and try again.")}
+        </Alert> : <>
         <div style={{ padding: "0 20px", borderBottom: "1px solid var(--border)" }}>
           <Tabs
             label={tr("Filter by status")}
             items={[
-              { id: "ALL", label: "All", count: items.length },
-              { id: "OVERDUE", label: "Overdue", count: count("OVERDUE") },
-              { id: "DUE_SOON", label: "Due soon", count: count("DUE_SOON") },
-              { id: "UP_TO_DATE", label: "Up to date", count: count("UP_TO_DATE") },
+              { id: "ALL", label: "All", count: loading ? undefined : items.length },
+              { id: "OVERDUE", label: "Overdue", count: loading ? undefined : count("OVERDUE") },
+              { id: "DUE_SOON", label: "Due soon", count: loading ? undefined : count("DUE_SOON") },
+              { id: "UP_TO_DATE", label: "Up to date", count: loading ? undefined : count("UP_TO_DATE") },
             ]}
             active={activeTab}
-            onChange={setActiveTab}
+            onChange={(value) => { setActiveTab(value); setPage(1); }}
           />
         </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", padding: "16px 20px" }}>
+        <div className={styles.filters}>
           <div style={{ flex: "1 1 260px", maxWidth: 360 }}>
             <Input
               icon="search"
               aria-label={tr("Search care items")}
               placeholder={tr("Service, horse or note")}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
           <div style={{ width: 200 }}>
@@ -350,7 +354,7 @@ export default function CareSchedulePage() {
               aria-label={tr("Category")}
               value={selectedCategory}
               options={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label: value === "ALL" ? "Category: All" : label }))}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
             />
           </div>
         </div>
@@ -358,7 +362,7 @@ export default function CareSchedulePage() {
           <DataTable
             caption={tr("Preventive care schedule")}
             columns={columns}
-            rows={filteredItems}
+            rows={visibleItems}
             rowKey={(item) => item.id}
             loading={loading}
             empty={
@@ -369,14 +373,17 @@ export default function CareSchedulePage() {
               />
             }
           />
+          {!loading && filteredItems.length > pageSize && <Pagination page={currentPage} pageSize={pageSize} total={filteredItems.length} noun="care items" onPage={setPage} />}
         </div>
+        </>}
       </Card>
 
       {/* Record Completion Modal (DL-3.12) */}
       {selectedCare && (
         <Modal
-          onClose={() => setSelectedCare(null)}
+          onClose={submitting ? undefined : () => setSelectedCare(null)}
           title={tr(`Record completion: ${selectedCare.type}`)}
+          foot={<><Button tone="ghost" onClick={() => setSelectedCare(null)} disabled={submitting}>{tr("Cancel")}</Button><Button tone="primary" onClick={() => void handleSubmitComplete()} disabled={submitting}>{submitting ? tr("Saving...") : tr("Confirm Completion")}</Button></>}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <div
@@ -393,7 +400,7 @@ export default function CareSchedulePage() {
               </div>
               <div style={{ marginTop: 3 }}>
                 <strong>{tr("Service:")}</strong> {selectedCare.type} (
-                {CATEGORY_LABELS[selectedCare.category] || selectedCare.category})
+                {tr(CATEGORY_LABELS[selectedCare.category] || selectedCare.category)})
               </div>
             </div>
 
@@ -413,7 +420,7 @@ export default function CareSchedulePage() {
               />
             </Field>
 
-            <Field label={tr("Performed By Mode")} required>
+            <Field label={tr("Provider type")} required>
               <Select
                 value={performedByMode}
                 onChange={(e) => setPerformedByMode(e.target.value as "SELF" | "EXTERNAL")}
@@ -446,7 +453,7 @@ export default function CareSchedulePage() {
             <Field
               label={tr("Next Due Date")}
               required
-              hint={tr("Auto-calculated from protocol interval; can be manually adjusted")}
+              hint={tr("Choose the next due date according to the care plan.")}
             >
               <Input
                 type="date"
@@ -464,25 +471,6 @@ export default function CareSchedulePage() {
               />
             </Field>
 
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "0.75rem",
-                marginTop: "0.5rem",
-              }}
-            >
-              <Button tone="ghost" onClick={() => setSelectedCare(null)}>
-                {tr("Cancel")}
-              </Button>
-              <Button
-                tone="primary"
-                onClick={() => void handleSubmitComplete()}
-                disabled={submitting}
-              >
-                {submitting ? tr("Saving...") : tr("Confirm Completion")}
-              </Button>
-            </div>
           </div>
         </Modal>
       )}
@@ -492,7 +480,8 @@ export default function CareSchedulePage() {
           title={tr("Schedule Preventive Care")}
           subtitle={tr("Plan an upcoming preventive care event for a racehorse.")}
           width={540}
-          onClose={() => setShowCreateModal(false)}
+          onClose={submitting ? undefined : () => setShowCreateModal(false)}
+          foot={<><Button tone="ghost" onClick={() => setShowCreateModal(false)} disabled={submitting}>{tr("Cancel")}</Button><Button tone="primary" onClick={() => void handleCreateSchedule()} disabled={submitting}>{submitting ? tr("Scheduling...") : tr("Create Schedule")}</Button></>}
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <Field label={tr("Select Horse *")}>
@@ -509,18 +498,14 @@ export default function CareSchedulePage() {
               />
             </Field>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div className={styles.formGrid}>
               <Field label={tr("Category *")}>
                 <Select
                   value={createCategory}
                   onChange={(e) => {
                     const cat = e.target.value as any;
                     setCreateCategory(cat);
-                    if (cat === "VACCINATION") setCreateType("Equine Influenza & Tetanus Booster");
-                    else if (cat === "DEWORMING") setCreateType("Ivermectin Paste Deworming");
-                    else if (cat === "FARRIER") setCreateType("Routine Hoof Trimming & Shoe Reset");
-                    else if (cat === "DENTAL") setCreateType("Annual Dental Floating & Oral Exam");
-                    else setCreateType("Routine Health Screening");
+                    setCreateType("");
                   }}
                   options={[
                     { value: "VACCINATION", label: tr("Vaccination") },
@@ -558,14 +543,6 @@ export default function CareSchedulePage() {
               />
             </Field>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", marginTop: "0.5rem" }}>
-              <Button tone="ghost" onClick={() => setShowCreateModal(false)}>
-                {tr("Cancel")}
-              </Button>
-              <Button tone="primary" onClick={() => void handleCreateSchedule()} disabled={submitting}>
-                {submitting ? tr("Scheduling...") : tr("Create Schedule")}
-              </Button>
-            </div>
           </div>
         </Modal>
       )}

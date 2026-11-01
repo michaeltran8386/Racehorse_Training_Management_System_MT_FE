@@ -1,9 +1,10 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Card } from "@/shared/components/ui/Card";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Alert } from "@/shared/components/ui/Alert";
 import { DataTable } from "@/shared/components/ui/DataTable";
@@ -22,10 +23,12 @@ import { getDeletedHorses, restoreHorse } from "../api";
 import type { DeletedHorse } from "../types";
 
 import { tr } from "@/shared/i18n/tr";
-const PAGE_SIZE = 20;
+import styles from "./DeletedHorsesPage.module.css";
+const PAGE_SIZE = 10;
 
 /** SC-1.05 Hồ sơ ngựa đã xóa (chỉ CM, chặn ở screenAccess + BE @Roles). */
 export default function DeletedHorsesPage() {
+  useScreenTranslation();
   const [search, setSearch] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
@@ -94,15 +97,13 @@ export default function DeletedHorsesPage() {
         title={tr("Deleted horse profiles.")}
         description={tr("Profiles deleted by mistake. Restoring brings the horse back in the status it had when deleted, without a stall or groom.")}
         action={
-          <Link to="/horses">
-            <Button tone="secondary">← Back to roster</Button>
-          </Link>
+          <LinkButton to="/horses" tone="secondary" icon="arrowLeft">Back to roster</LinkButton>
         }
       />
 
       <Card pad={16}>
-        <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end" }}>
-          <div style={{ flex: "1 1 240px" }}>
+        <div className={styles.filters}>
+          <div className={styles.search}>
             <Field label={tr("Search")}>
               <Input
                 placeholder={tr("Horse name, horse ID, microchip")}

@@ -1,5 +1,7 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./StallCatalogPage.module.css";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
@@ -114,7 +116,7 @@ function ZoneDialog({ zone, onClose, onSaved }: { zone?: Zone; onClose: () => vo
         <Field label={tr("Zone name")} required error={dirty ? errors.name : undefined}>
           <Input value={name} onChange={(e) => touch(setName)(e.target.value)} />
         </Field>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className={styles.formGrid}>
           <Field label={tr("Rows")} required error={errors.rows || undefined}>
             <Input type="number" min={1} max={30} value={rows} onChange={(e) => touch(setRows)(e.target.value)} />
           </Field>
@@ -212,7 +214,7 @@ function StallDialog({
         <Field label={tr("Stall code")} required error={dirty ? errors.code : undefined}>
           <Input value={code} onChange={(e) => touch(setCode)(e.target.value.toUpperCase())} />
         </Field>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className={styles.formGrid}>
           <Field label={tr("Row")} required error={errors.row || undefined}>
             <Input type="number" min={1} max={zone.rows} value={row} onChange={(e) => touch(setRow)(e.target.value)} />
           </Field>
@@ -238,6 +240,7 @@ function StallDialog({
 
 /** SC-1.07 Danh mục Khu chuồng & Ô chuồng: CM toàn quyền; HT, VET, GROOM chỉ xem. Không có xóa ô (Q-1.C). */
 export default function StallCatalogPage() {
+  useScreenTranslation();
   const user = useCurrentUser();
   const isManager = user.role === "CLUB_MANAGER";
   const toast = useToast();
@@ -350,13 +353,15 @@ export default function StallCatalogPage() {
           {tr("No barn zones yet.")}{isManager ? tr(" Click Add zone to start.") : ""}
         </div>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "minmax(220px, 30%) 1fr", gap: 16, alignItems: "start" }}>
+        <div className={styles.layout}>
           <div style={{ display: "grid", gap: 8 }}>
             {zones.map((z) => (
               <button
                 key={z.id}
                 type="button"
                 onClick={() => setZoneId(z.id)}
+                aria-pressed={z.id === zoneId}
+                className={styles.zoneCard}
                 style={{
                   textAlign: "left",
                   padding: "10px 12px",
@@ -373,7 +378,7 @@ export default function StallCatalogPage() {
                 </div>
                 <div style={{ fontSize: "var(--fs-body)" }}>{z.name}</div>
                 <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
-                  Grid {z.rows} × {z.cols} · {z.stallCount ?? 0} stalls
+                  {tr("Grid")} {z.rows} × {z.cols} · {tr("{{count}} stalls", { count: z.stallCount ?? 0 })}
                 </div>
               </button>
             ))}
@@ -405,7 +410,7 @@ export default function StallCatalogPage() {
                   </div>
                 </div>
                 {isManager && (
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div className={styles.actions}>
                     <Button tone="secondary" onClick={() => setZoneDialog("edit")}>{tr("Edit zone")}</Button>
                     <Button
                       tone="ghost"
@@ -430,6 +435,8 @@ export default function StallCatalogPage() {
               </div>
 
               <DataTable
+                pageSize={10}
+                noun="stalls"
                 caption={tr(`Stalls of ${zone.name}`)}
                 rowKey={(s: Stall) => s.id}
                 loading={loading}
@@ -455,7 +462,7 @@ export default function StallCatalogPage() {
                   {
                     key: "notes",
                     header: "Notes",
-                    render: (s: Stall) => (s.notes ? (s.notes.length > 80 ? `${s.notes.slice(0, 80)}…` : s.notes) : "—"),
+                    render: (s: Stall) => <span className={styles.notes}>{s.notes || "—"}</span>,
                   },
                   ...(isManager
                     ? [
@@ -468,7 +475,7 @@ export default function StallCatalogPage() {
                               <Button tone="ghost" size="sm" onClick={() => setStallDialog({ stall: s })}>Edit</Button>
                               <div style={{ width: 140 }}>
                                 <Select
-                                  aria-label={`Change status of ${s.code}`}
+                                  aria-label={tr("Change status of {{code}}", { code: s.code })}
                                   value=""
                                   onChange={(e) =>
                                     e.target.value && setStatusChange({ stall: s, status: e.target.value as SettableStallStatus })

@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
+import { motion } from "motion/react";
+import { Mail } from "lucide-react";
 import type { FormEvent, ReactNode } from "react";
-import { Field } from "@/shared/components/form/Field";
-import { OtpInput } from "@/shared/components/form/OtpInput";
+import { CodeSlots } from "@/shared/components/motion/CodeSlots";
 import { Alert } from "@/shared/components/ui/Alert";
-import { Button } from "@/shared/components/ui/Button";
+import { PillButton } from "./PillButton";
 import { useToast } from "@/shared/components/ui/Toast";
 import { ApiError } from "@/shared/lib/api";
 import { formatCountdown, formatDateTime } from "@/shared/lib/format";
@@ -13,7 +14,7 @@ import { otpStatus, resendOtp } from "../api";
 import type { OtpPurpose, OtpTimes } from "../types";
 import styles from "./OtpVerifyForm.module.css";
 
-import { tr } from "@/shared/i18n/tr";
+import { tr, trNode } from "@/shared/i18n/tr";
 const CODE_LENGTH = 6;
 
 interface OtpVerifyFormProps {
@@ -39,6 +40,9 @@ export function OtpVerifyForm({ email, purpose, initialCode, sentTitle, sentBody
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [resending, setResending] = useState(false);
+  // Tăng mỗi lần sai mã để chạy lại hiệu ứng rung.
+  const [shakeKey, setShakeKey] = useState(0);
+  const messageId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -73,6 +77,7 @@ export function OtpVerifyForm({ email, purpose, initialCode, sentTitle, sentBody
     } catch (err) {
       setError(otpMessage(err));
       setCode("");
+      setShakeKey((k) => k + 1);
     } finally {
       setBusy(false);
     }
@@ -119,25 +124,44 @@ export function OtpVerifyForm({ email, purpose, initialCode, sentTitle, sentBody
         </Alert>
       )}
 
-      <Field label={tr("Verification code")} required error={error} hint={times && !expired ? tr(`The code expires in ${formatCountdown(expiresLeft)}.`) : undefined}>
-        <OtpInput value={code} onChange={setCode} disabled={busy} autoFocus onComplete={(v) => void submit(v)} />
-      </Field>
+      <motion.div
+        key={shakeKey}
+        className={styles.slots}
+        initial={false}
+        animate={shakeKey > 0 ? { x: [-12, 12, -9, 9, -5, 5, -2, 2, 0] } : { x: 0 }}
+        transition={{ duration: 0.52, ease: "easeInOut" }}
+      >
+        <CodeSlots
+          length={CODE_LENGTH}
+          value={code}
+          disabled={busy}
+          autoFocus
+          status={error ? "error" : "idle"}
+          describedBy={messageId}
+          onChange={(value) => {
+            setCode(value);
+            if (error) setError("");
+          }}
+          onComplete={(value) => void submit(value)}
+        />
+      </motion.div>
+      <p id={messageId} className={error ? styles.error : styles.hint} role={error ? "alert" : undefined}>
+        {error ? trNode(error) : times && !expired ? tr(`The code expires in ${formatCountdown(expiresLeft)}.`) : null}
+      </p>
 
-      <Button type="submit" size="lg" block iconAfter="arrowRight" disabled={busy || expired || !times}>
-        {busy ? tr("Checking…") : submitLabel}
-      </Button>
+      <PillButton type="submit" loading={busy} loadingLabel={tr("Checking…")} disabled={expired || !times}>
+        {submitLabel}
+      </PillButton>
 
-      <Button
+      <PillButton
         tone="secondary"
-        size="lg"
-        block
-        icon="mail"
-        disabled={resending}
+        icon={<Mail size={18} aria-hidden="true" />}
+        loading={resending}
         blockedReason={resendLeft > 0 ? tr(`A new code can be requested in ${formatCountdown(resendLeft)}.`) : undefined}
-        onClick={onResend}
+        onClick={() => void onResend()}
       >
         {tr("Send the code again")}
-      </Button>
+      </PillButton>
 
       <p className={styles.footer}>{footer}</p>
     </form>

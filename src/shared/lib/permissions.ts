@@ -240,7 +240,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
       ],
     },
     { label: "REPORTS", items: [item("progress", "Training Progress", "chart")] },
-    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
   ],
   VETERINARIAN: [
     {
@@ -269,7 +269,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
       ],
     },
     { label: "REPORTS", items: [item("health-report", "Health Reports", "chart", { requires: "viewMedical" })] },
-    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
   ],
   GROOM: [
     { label: "WORKSPACE", items: [item("dashboard", "Dashboard", "home"), item("horses", "Horses", "horse", { requires: "viewHorses" })] },
@@ -292,11 +292,11 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("catalog", "Supplies Catalog", "package"),
       ],
     },
-    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
   ],
   HORSE_OWNER: [
     { label: "WORKSPACE", items: [item("dashboard", "Dashboard", "home"), item("my-horses", "My Horses", "horse", { requires: "viewHorses" })] },
-    { label: "MONITORING", items: [item("progress", "Training Progress", "activity"), item("health", "Health Status", "stethoscope")] },
+    { label: "MONITORING", items: [item("progress", "Training Progress", "activity"), item("health", "Health Status", "stethoscope", { requires: "viewMedical" })] },
     {
       label: "REPORTS",
       items: [
@@ -306,7 +306,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
       ],
     },
     { label: "RACING", items: [item("races", "Race Entries", "trophy")] },
-    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
   ],
   CLUB_MANAGER: [
     { label: "WORKSPACE", items: [item("dashboard", "Dashboard", "home")] },
@@ -363,13 +363,9 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
       ],
     },
     { label: "RACING", items: [item("races", "Race Entries", "trophy")] },
-    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
   ],
 };
-
-// Mục đã có trong thiết kế nhưng chưa có màn hình (route rơi vào trang "Coming soon").
-// Ẩn khỏi sidebar để không có mục chết; đường dẫn vẫn giữ nguyên trong router.
-const NOT_BUILT = new Set(["/health-report", "/costs", "/race-record", "/health", "/performance", "/monitor"]);
 
 // Sidebar chỉ hiện mục mà tài khoản được cấp quyền (xây từ danh sách quyền, không chỉ từ tên vai trò).
 export function navFor(role: Role, permissions: PermissionMap): NavGroup[] {
@@ -377,7 +373,7 @@ export function navFor(role: Role, permissions: PermissionMap): NavGroup[] {
     ? [...ROLE_NAV[role], { label: "AUDIT", items: [item("audit", "Audit Log", "history", { requires: "viewAudit" })] }]
     : ROLE_NAV[role];
   return groups
-    .map((g) => ({ ...g, items: g.items.filter((it) => !NOT_BUILT.has(it.href) && (!it.requires || permissions[it.requires])) }))
+    .map((g) => ({ ...g, items: g.items.filter((it) => !it.requires || permissions[it.requires]) }))
     .filter((g) => g.items.length > 0);
 }
 

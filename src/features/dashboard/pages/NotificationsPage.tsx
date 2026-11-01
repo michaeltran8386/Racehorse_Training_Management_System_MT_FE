@@ -1,7 +1,10 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./NotificationsPage.module.css";
 import { Card } from "@/shared/components/ui/Card";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Icon } from "@/shared/components/ui/Icon";
@@ -20,6 +23,7 @@ import {
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 export default function NotificationsPage() {
+  useScreenTranslation();
   const { isVietnamese: isVi } = useAppLanguage();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
@@ -47,17 +51,17 @@ export default function NotificationsPage() {
   const getCategoryTheme = (category: AppNotification["category"]) => {
     switch (category) {
       case "LOCK":
-        return { icon: "lock", bg: "var(--danger)", text: "var(--surface)", label: "Training Lock" };
+        return { icon: "lock", bg: "var(--danger-bg)", text: "var(--danger)" };
       case "MEDICAL":
-        return { icon: "stethoscope", bg: "var(--info)", text: "var(--surface)", label: "Health & Medical" };
+        return { icon: "stethoscope", bg: "var(--info-bg)", text: "var(--info)" };
       case "TRAINING":
-        return { icon: "activity", bg: "var(--warn)", text: "var(--surface)", label: "Training & Workouts" };
+        return { icon: "activity", bg: "var(--warn-bg)", text: "var(--warn)" };
       case "ACCOUNT":
-        return { icon: "users", bg: "var(--violet)", text: "var(--surface)", label: "Accounts & Roles" };
+        return { icon: "users", bg: "var(--violet-bg)", text: "var(--violet)" };
       case "HORSE":
-        return { icon: "horse", bg: "var(--brand)", text: "var(--surface)", label: "Horse Profiles" };
+        return { icon: "horse", bg: "var(--brand)", text: "var(--text-on-brand)" };
       default:
-        return { icon: "bell", bg: "var(--muted)", text: "var(--surface)", label: "System Notification" };
+        return { icon: "bell", bg: "var(--surface-2)", text: "var(--text)" };
     }
   };
 
@@ -67,52 +71,33 @@ export default function NotificationsPage() {
     return (
       <div
         key={n.id}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            void markNotificationAsRead(n.id);
+            if (n.link) navigate(n.link);
+          }
+        }}
         onClick={() => {
           void markNotificationAsRead(n.id);
           if (n.link) navigate(n.link);
         }}
-        style={{
-          display: "flex",
-          alignItems: "flex-start",
-          gap: 16,
-          padding: "16px 20px",
-          borderRadius: "var(--r)",
-          cursor: "pointer",
-          background: n.read ? "var(--surface)" : "var(--brand-50)",
-          border: `1px solid ${n.read ? "var(--border)" : "var(--brand-100)"}`,
-          transition: "all 0.15s ease",
-          boxShadow: n.read ? "none" : "var(--shadow-sm)",
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.borderColor = "var(--brand)";
-          e.currentTarget.style.transform = "translateY(-1px)";
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.borderColor = n.read ? "var(--border)" : "var(--brand-100)";
-          e.currentTarget.style.transform = "translateY(0)";
-        }}
+        className={`${styles.notification} ${n.read ? "" : styles.unread}`}
       >
-        {/* Category Circle Icon */}
+        {/* Category icon */}
         <div
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: "50%",
-            background: theme.bg,
-            color: theme.text,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            boxShadow: "0 3px 8px rgba(0,0,0,0.18)",
-          }}
+          className={styles.categoryIcon}
+          style={{ background: theme.bg, color: theme.text }}
+          aria-hidden="true"
         >
           <Icon name={theme.icon} size={24} />
         </div>
 
         {/* Content */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+          <div className={styles.meta}>
             <Badge tone={n.category === "LOCK" ? "danger" : n.category === "ACCOUNT" ? "violet" : "info"}>
               {loc.categoryLabel}
             </Badge>
@@ -158,7 +143,7 @@ export default function NotificationsPage() {
                   gap: 4,
                   fontSize: "var(--fs-caption)",
                   fontWeight: 600,
-                  color: "var(--brand)",
+                  color: "var(--brand-700)",
                 }}
               >
                 <span>{tr("View details")}</span>
@@ -189,29 +174,7 @@ export default function NotificationsPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: 880, margin: "0 auto", width: "100%" }}>
-      {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "var(--fs-h1)", fontWeight: 700, }}>
-            {tr("Notifications")}
-          </h1>
-        </div>
-
-        <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-          {unreadCount > 0 && (
-            <Button tone="secondary" onClick={() => void markAllNotificationsAsRead()}>
-              <Icon name="check" size={15} style={{ marginRight: 6 }} />
-              {tr("Mark all as read")}
-            </Button>
-          )}
-          <Link to="/notifications/settings">
-            <Button tone="ghost">
-              <Icon name="settings" size={15} style={{ marginRight: 6 }} />
-              {tr("Notification settings")}
-            </Button>
-          </Link>
-        </div>
-      </div>
+      <PageHeader title="Notifications" action={<>{unreadCount > 0 && <Button tone="secondary" onClick={() => void markAllNotificationsAsRead()} icon="check">{tr("Mark all as read")}</Button>}<LinkButton to="/notifications/settings" tone="ghost" icon="settings">{tr("Notification settings")}</LinkButton></>} />
 
       {/* Filter Tabs */}
       <Card pad={14}>
@@ -220,6 +183,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={() => setActiveTab("all")}
+              aria-pressed={activeTab === "all"}
               style={{
                 padding: "8px 18px",
                 borderRadius: "var(--r-lg)",
@@ -237,6 +201,7 @@ export default function NotificationsPage() {
             <button
               type="button"
               onClick={() => setActiveTab("unread")}
+              aria-pressed={activeTab === "unread"}
               style={{
                 padding: "8px 18px",
                 borderRadius: "var(--r-lg)",
@@ -255,8 +220,8 @@ export default function NotificationsPage() {
               {unreadCount > 0 && (
                 <span
                   style={{
-                    background: "var(--info)",
-                    color: "var(--text-on-brand)",
+                    background: "var(--info-bg)",
+                    color: "var(--info)",
                     fontSize: "var(--fs-caption)",
                     fontWeight: 700,
                     borderRadius: 999,

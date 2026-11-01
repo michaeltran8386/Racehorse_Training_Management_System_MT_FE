@@ -39,6 +39,8 @@ export function Modal({ title, subtitle, tone, width = 480, foot, onClose, child
     document.body.style.overflow = "hidden";
 
     function onKeyDown(e: KeyboardEvent) {
+      const dialogs = document.querySelectorAll('[role="dialog"][aria-modal="true"]');
+      if (dialogs[dialogs.length - 1] !== dialog) return;
       if (e.key === "Escape" && closeRef.current) {
         e.stopPropagation();
         closeRef.current();

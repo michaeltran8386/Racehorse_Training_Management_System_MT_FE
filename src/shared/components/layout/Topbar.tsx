@@ -11,7 +11,7 @@ import {
   getUnreadNotificationsCount,
   type AppNotification,
 } from "@/shared/lib/notifications";
-import type { HerdHorse } from "@/shared/mock/horsesData";
+import type { HerdHorse } from "@/shared/types/herdHorse";
 import { getHealthBoard, type HealthBoardHorse } from "@/features/health/api";
 import { HEALTH_STATUS } from "@/shared/lib/status";
 import type { HealthStatus } from "@/shared/types/enums";
@@ -136,11 +136,11 @@ export function Topbar({ breadcrumb, onMenu, onLogout }: TopbarProps) {
                       </span>
                     )}
                     {!last && href ? (
-                      <Link to={href} className={styles.crumbLink}>
+                      <Link to={href} className={styles.crumbLink} title={label}>
                         {label}
                       </Link>
                     ) : (
-                      <span className={last ? styles.currentLabel : styles.crumbText}>{label}</span>
+                      <span className={last ? styles.currentLabel : styles.crumbText} title={label}>{label}</span>
                     )}
                   </li>
                 );

@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Field } from '@/shared/components/form/Field';
-import { Select } from '@/shared/components/form/Select';
+import { SearchSelect } from '@/shared/components/form/SearchSelect';
 import { Textarea } from '@/shared/components/form/Textarea';
 import { Button } from '@/shared/components/ui/Button';
 import { Alert } from '@/shared/components/ui/Alert';
@@ -38,6 +38,7 @@ export function IncidentReportModal({
   onSuccess,
 }: IncidentReportModalProps) {
   const toast = useToast();
+  const formId = useId();
   const [horses, setHorses] = useState<Horse[]>([]);
   const [loadingHorses, setLoadingHorses] = useState(true);
 
@@ -123,15 +124,22 @@ export function IncidentReportModal({
   const selectedHorse = horses.find((h) => h.id === horseId);
 
   return (
-    <Modal title={tr('Report Health Observation / Incident')} onClose={onClose}>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <Modal title={tr('Report Health Observation / Incident')} onClose={onClose} foot={
+      <>
+        <Button tone="secondary" type="button" onClick={onClose} disabled={busy}>{tr('Cancel')}</Button>
+        <Button tone={severity === 'CRITICAL' ? 'danger' : 'primary'} type="submit" form={formId} disabled={busy || !horseId || !description.trim()}>
+          {busy ? tr('Submitting…') : tr('Submit Report')}
+        </Button>
+      </>
+    }>
+      <form id={formId} onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {error && <Alert tone="danger">{error}</Alert>}
 
         {/* Ngựa liên quan */}
         <Field label={tr('Target Horse')} required>
-          <Select
+          <SearchSelect
             value={horseId}
-            onChange={(e) => setHorseId(e.target.value)}
+            onChange={setHorseId}
             disabled={loadingHorses || busy}
             options={horses.map((h) => ({
               value: h.id,
@@ -169,6 +177,7 @@ export function IncidentReportModal({
                 <button
                   key={sev}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => setSeverity(sev)}
                   style={{
                     padding: '0.875rem 0.5rem',
@@ -193,7 +202,7 @@ export function IncidentReportModal({
                     />
                     <span style={{ fontWeight: 600, color: 'var(--ink)', fontSize: 'var(--fs-body)' }}>{label}</span>
                   </div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.25rem' }}>{hint}</div>
+                  <div style={{ fontSize: 'var(--fs-caption)', color: 'var(--muted)', marginTop: '0.25rem' }}>{hint}</div>
                 </button>
               );
             })}
@@ -217,18 +226,19 @@ export function IncidentReportModal({
                 <button
                   key={sym.key}
                   type="button"
+                  aria-pressed={selected}
                   onClick={() => toggleSymptom(sym.key)}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
                     padding: '0.375rem 0.75rem',
-                    borderRadius: '999px',
+                    borderRadius: 'var(--r)',
                     fontSize: 'var(--fs-sm)',
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     border: selected ? '1px solid var(--brand)' : '1px solid var(--border)',
-                    backgroundColor: selected ? 'rgba(99, 102, 241, 0.12)' : 'var(--surface-sunken)',
-                    color: selected ? 'var(--brand)' : 'var(--ink)',
+                    backgroundColor: selected ? 'var(--brand-50)' : 'var(--surface-sunken)',
+                    color: selected ? 'var(--brand-700)' : 'var(--ink)',
                     fontWeight: selected ? 600 : 400,
                   }}
                 >
@@ -250,18 +260,6 @@ export function IncidentReportModal({
           />
         </Field>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
-          <Button tone="secondary" type="button" onClick={onClose} disabled={busy}>
-            {tr('Cancel')}
-          </Button>
-          <Button
-            tone={severity === 'CRITICAL' ? 'danger' : 'primary'}
-            type="submit"
-            disabled={busy || !horseId || !description.trim()}
-          >
-            {busy ? tr('Submitting…') : tr('Submit Report')}
-          </Button>
-        </div>
       </form>
     </Modal>
   );

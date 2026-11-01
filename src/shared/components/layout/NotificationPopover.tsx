@@ -11,6 +11,7 @@ import {
 } from "@/shared/lib/notifications";
 
 import { tr } from "@/shared/i18n/tr";
+import styles from "./NotificationPopover.module.css";
 import { useAppLanguage } from "@/shared/lib/language";
 interface NotificationPopoverProps {
   notifications: AppNotification[];
@@ -67,17 +68,17 @@ export function NotificationPopover({
   const getCategoryTheme = (category: AppNotification["category"]) => {
     switch (category) {
       case "LOCK":
-        return { icon: "lock", bg: "var(--danger)", text: "var(--surface)" };
+        return { icon: "lock", bg: "var(--danger-bg)", text: "var(--danger)" };
       case "MEDICAL":
-        return { icon: "stethoscope", bg: "var(--info)", text: "var(--surface)" };
+        return { icon: "stethoscope", bg: "var(--info-bg)", text: "var(--info)" };
       case "TRAINING":
-        return { icon: "activity", bg: "var(--warn)", text: "var(--surface)" };
+        return { icon: "activity", bg: "var(--warn-bg)", text: "var(--warn)" };
       case "ACCOUNT":
-        return { icon: "users", bg: "var(--violet)", text: "var(--surface)" };
+        return { icon: "users", bg: "var(--violet-bg)", text: "var(--violet)" };
       case "HORSE":
-        return { icon: "horse", bg: "var(--brand)", text: "var(--surface)" };
+        return { icon: "horse", bg: "var(--brand-50)", text: "var(--brand-700)" };
       default:
-        return { icon: "bell", bg: "var(--muted)", text: "var(--surface)" };
+        return { icon: "bell", bg: "var(--surface-3)", text: "var(--text)" };
     }
   };
 
@@ -85,7 +86,9 @@ export function NotificationPopover({
     const theme = getCategoryTheme(n.category);
     const loc = localizeNotification(n, isVi);
     return (
-      <div
+      <button
+        type="button"
+        className={styles.item}
         key={n.id}
         onClick={() => {
           void markNotificationAsRead(n.id);
@@ -116,14 +119,14 @@ export function NotificationPopover({
           style={{
             width: 44,
             height: 44,
-            borderRadius: "50%",
+            borderRadius: "var(--r-sm)",
             background: theme.bg,
             color: theme.text,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
-            boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+
           }}
         >
           <Icon name={theme.icon} size={22} />
@@ -168,7 +171,7 @@ export function NotificationPopover({
             title={tr("Unread")}
           />
         )}
-      </div>
+      </button>
     );
   };
 
@@ -201,7 +204,7 @@ export function NotificationPopover({
           position: "relative",
         }}
       >
-        <h3 style={{ margin: 0, fontSize: "var(--fs-section)", fontWeight: 700, }}>{tr("Notifications")}</h3>
+        <h3 className={styles.title}>{tr("Notifications")}</h3>
 
         {/* ... More Action Button */}
         <div style={{ position: "relative" }}>
@@ -345,6 +348,7 @@ export function NotificationPopover({
         <button
           type="button"
           onClick={() => setActiveTab("all")}
+          aria-pressed={activeTab === "all"}
           style={{
             padding: "6px 14px",
             borderRadius: "var(--r-lg)",
@@ -362,6 +366,7 @@ export function NotificationPopover({
         <button
           type="button"
           onClick={() => setActiveTab("unread")}
+          aria-pressed={activeTab === "unread"}
           style={{
             padding: "6px 14px",
             borderRadius: "var(--r-lg)",
@@ -380,8 +385,8 @@ export function NotificationPopover({
           {unreadCount > 0 && (
             <span
               style={{
-                background: "var(--info)",
-                color: "var(--text-on-brand)",
+                background: "var(--info-bg)",
+                color: "var(--info)",
                 fontSize: "var(--fs-caption)",
                 borderRadius: 999,
                 padding: "1px 6px",

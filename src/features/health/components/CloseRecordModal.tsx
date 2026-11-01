@@ -102,7 +102,7 @@ export function CloseRecordModal({
           : tr("Concludes medical record. All active medications will automatically be marked as stopped.")
       }
       width={500}
-      onClose={onClose}
+      onClose={busy ? undefined : onClose}
       foot={
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, width: "100%" }}>
           <Button tone="ghost" onClick={onClose} disabled={busy}>
@@ -110,7 +110,8 @@ export function CloseRecordModal({
           </Button>
           <Button
             tone="primary"
-            onClick={handleSubmit}
+            type="submit"
+            form="close-record-form"
             disabled={busy || (isClosed ? !isReopenValid : !isCloseValid)}
           >
             {isClosed ? tr("Confirm Reopen") : tr("Save Conclusion & Close Record")}
@@ -118,9 +119,9 @@ export function CloseRecordModal({
         </div>
       }
     >
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <form id="close-record-form" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {error && (
-          <div style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "10px 12px", background: "var(--danger-bg)", borderRadius: "var(--r)", border: "1px solid var(--danger)" }}>
+          <div role="alert" style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "10px 12px", background: "var(--danger-bg)", borderRadius: "var(--r)", border: "1px solid var(--danger)" }}>
             {error}
           </div>
         )}

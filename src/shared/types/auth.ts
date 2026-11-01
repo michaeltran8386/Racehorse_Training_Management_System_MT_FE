@@ -35,7 +35,7 @@ export type PermissionMap = Record<PermissionKey, boolean>;
 export type NotifyKey = "thresholdAlert" | "lockLifted" | "dailyDigest" | "raceResults";
 export type NotifyMap = Record<NotifyKey, boolean>;
 
-// Bản ghi đầy đủ (chỉ mock/backend mới có `password`).
+// Bản ghi đầy đủ (chỉ backend mới có `password`).
 export interface Account {
   id: string;
   fullName: string;

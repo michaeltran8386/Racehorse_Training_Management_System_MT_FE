@@ -1,0 +1,4 @@
+.formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px; }
+.sectionTitle { margin: 0; padding-bottom: 12px; border-bottom: 1px solid var(--border); font: 800 24px/1 var(--font-display); text-transform: uppercase; }
+.actions { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
+@media (max-width: 720px) { .formGrid { grid-template-columns: minmax(0, 1fr); gap: 24px; } .actions > * { flex: 1 1 auto; } }

@@ -1,0 +1,8 @@
+.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; padding: 16px; background: var(--surface); border: 1px solid var(--border); }
+.search { flex: 1 1 220px; min-width: 0; }
+@media (max-width: 520px) { .filters > div { width: 100% !important; flex-basis: 100%; } }
+.category { flex: 0 1 180px; min-width: 0; }
+.status { flex: 0 1 160px; min-width: 0; }
+.categoryTabs { display: flex; gap: .5rem; flex-wrap: wrap; }
+.supplyName { color: var(--text); font-weight: 700; overflow-wrap: anywhere; }
+.supplyDescription { margin-top: .25rem; color: var(--text-muted); font-size: var(--fs-caption); line-height: 1.5; overflow-wrap: anywhere; }

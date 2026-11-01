@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Field } from '@/shared/components/form/Field';
 import { Input } from '@/shared/components/form/Input';
@@ -46,23 +46,8 @@ export function SupplyModal({ item, onClose, onSaved }: SupplyModalProps) {
 
   const isMedical = category === 'MEDICINE' || category === 'VACCINE' || category === 'DEWORMER';
 
-  const categoryOptions = useMemo(
-    () =>
-      Object.entries(SUPPLY_CATEGORY_LABELS).map(([value, label]) => ({
-        value,
-        label: tr(label),
-      })),
-    [],
-  );
-
-  const unitOptions = useMemo(
-    () =>
-      Object.entries(SUPPLY_UNIT_LABELS).map(([value, label]) => ({
-        value,
-        label: `${tr(label)} (${value})`,
-      })),
-    [],
-  );
+  const categoryOptions = Object.entries(SUPPLY_CATEGORY_LABELS).map(([value, label]) => ({ value, label: tr(label) }));
+  const unitOptions = Object.entries(SUPPLY_UNIT_LABELS).map(([value, label]) => ({ value, label: `${tr(label)} (${value})` }));
 
   const errors = {
     code: item || /^[A-Z0-9_-]{2,30}$/.test(code)

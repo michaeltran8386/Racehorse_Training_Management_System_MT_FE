@@ -1,0 +1,4 @@
+.title { margin: 0; color: var(--text); font: 800 26px/1.1 var(--font-display); text-transform: uppercase; }
+.item { width: calc(100% - 16px); border: 0; font: inherit; text-align: left; }
+.item:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.item strong, .item span { overflow-wrap: anywhere; }

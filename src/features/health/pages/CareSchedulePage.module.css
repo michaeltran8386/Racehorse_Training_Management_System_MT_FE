@@ -1,0 +1,7 @@
+.filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 16px 20px; }
+.formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 520px) { .filters { padding: 16px; } .filters > div { flex: 1 1 100% !important; width: 100% !important; max-width: none !important; } .formGrid { grid-template-columns: minmax(0, 1fr); } }
+.service { display: block; min-width: 180px; max-width: 340px; font-weight: 600; overflow-wrap: anywhere; }
+.horse { display: grid; gap: 3px; min-width: 140px; max-width: 200px; color: var(--text); overflow-wrap: anywhere; }
+.horse span { color: var(--muted); font-size: var(--fs-caption); font-variant-numeric: tabular-nums; }
+.notes { display: block; max-width: 240px; color: var(--text-2); font-size: var(--fs-caption); line-height: 1.5; overflow-wrap: anywhere; }

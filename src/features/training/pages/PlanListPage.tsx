@@ -1,14 +1,17 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Card } from "@/shared/components/ui/Card";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { SkeletonTable } from "@/shared/components/ui/Skeleton";
 import { Input } from "@/shared/components/form/Input";
 import { Pagination } from "@/shared/components/ui/Pagination";
 import { Tabs } from "@/shared/components/ui/Tabs";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./PlanListPage.module.css";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { messageFor } from "@/shared/lib/messages";
 import { trainingApi } from "../api";
@@ -19,10 +22,11 @@ import type { PlanStatus, TrainingPlan } from "../types";
 
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 /** SC-2.02 Danh sách giáo án. Bấm dòng để mở SC-2.04; HT có Lập giáo án và Nhân bản. */
 export default function PlanListPage() {
+  useScreenTranslation();
   useAppLanguage();
   const navigate = useNavigate();
   const [params] = useSearchParams();
@@ -65,27 +69,17 @@ export default function PlanListPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "var(--fs-h1)", fontWeight: 700 }}>{tr("Training Plans")}</h1>
-          <p style={{ margin: "0.25rem 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>
-            {tr("Draft → Active → Completed / Cancelled. Open a plan to manage its phases and workouts.")}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: "0.75rem" }}>
-          <Link to="/training/plans/history">
-            <Button tone="secondary">{tr("History")}</Button>
-          </Link>
-          {isTrainer && (
-            <Button tone="primary" onClick={() => navigate("/training/plans/new")}>
-              {tr("+ Create New Plan")}
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title="Training Plans"
+        description="Draft → Active → Completed / Cancelled. Open a plan to manage its phases and workouts."
+        action={<>
+          <Link className={styles.secondaryAction} to="/training/plans/history">{tr("History")}</Link>
+          {isTrainer && <Button tone="primary" onClick={() => navigate("/training/plans/new")}>{tr("+ Create New Plan")}</Button>}
+        </>}
+      />
 
       <Card pad={16}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
+        <div className={styles.toolbar}>
           <Tabs
             items={[
               { id: "OPEN", label: `Draft + Active (${count("DRAFT") + count("ACTIVE")})` },
@@ -102,6 +96,7 @@ export default function PlanListPage() {
             }}
           />
           <Input
+            aria-label={tr("Plan name, plan code, horse...")}
             placeholder={tr("Plan name, plan code, horse...")}
             value={search}
             onChange={(e) => {
@@ -121,7 +116,7 @@ export default function PlanListPage() {
 
       {loading ? (
         <SkeletonTable columns={6} rows={5} />
-      ) : (
+      ) : !error && (
         <Card>
           {shown.length === 0 ? (
           <EmptyState
@@ -130,7 +125,7 @@ export default function PlanListPage() {
           />
         ) : (
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "var(--fs-body)" }}>
+            <table className={styles.table}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
                   <th style={{ padding: "0.75rem 1rem" }}>{tr("Code")}</th>
@@ -149,6 +144,13 @@ export default function PlanListPage() {
                   <tr
                     key={plan.id}
                     style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                        event.preventDefault();
+                        navigate(`/training/plans/${plan.id}`);
+                      }
+                    }}
                     onClick={() => navigate(`/training/plans/${plan.id}`)}
                   >
                     <td style={{ padding: "0.75rem 1rem", fontWeight: 600 }}>{plan.planCode}</td>
@@ -174,9 +176,7 @@ export default function PlanListPage() {
                     <td style={{ padding: "0.75rem 1rem" }}>{plan.headTrainerName}</td>
                     <td style={{ padding: "0.75rem 1rem", textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: "inline-flex", gap: "0.5rem" }}>
-                        <Link to={`/training/plans/${plan.id}`}>
-                          <Button tone="secondary" size="sm">{tr("View")}</Button>
-                        </Link>
+                        <LinkButton to={`/training/plans/${plan.id}`} tone="secondary" size="sm">{tr("View")}</LinkButton>
                         {isTrainer && (
                           <Button tone="ghost" size="sm" onClick={() => setCloning(plan)}>{tr("Clone")}</Button>
                         )}

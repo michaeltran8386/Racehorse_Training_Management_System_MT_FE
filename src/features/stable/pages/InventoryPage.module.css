@@ -1,0 +1,14 @@
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.metrics section { height: 100%; }
+.metrics section > div { min-height: 108px; display: flex; flex-direction: column; justify-content: center; }
+.metrics section > div > div:first-child { font-size: 11px !important; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+.metrics section > div > div:nth-child(2) { font-family: var(--font-display); font-size: 38px !important; line-height: 1.1; }
+.filters { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.itemName { color: var(--text); font-weight: 700; overflow-wrap: anywhere; }
+.itemMeta { margin-top: .2rem; color: var(--text-muted); font-size: var(--fs-caption); line-height: 1.45; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .metrics { gap: 8px; } .metrics section > div { min-height: 96px; } .filters > div { min-width: 0 !important; flex-basis: 100% !important; } }
+.metrics section { border-top: 3px solid var(--brand); }
+.metrics section > div > div:nth-child(2) { font-variant-numeric: tabular-nums; }
+.filters label { min-width: 0; line-height: 1.5; }
+@media (max-width: 520px) { .filters { gap: 12px; } }

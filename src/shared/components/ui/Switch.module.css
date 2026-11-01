@@ -20,3 +20,6 @@
   transition: transform var(--dur) var(--ease);
 }
 .on .knob { transform: translateX(16px); }
+.on .knob { background: var(--text-on-brand); }
+.switch:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .switch, .knob { transition: none; } }

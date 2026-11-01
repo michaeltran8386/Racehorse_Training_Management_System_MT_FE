@@ -65,7 +65,7 @@ export function Menu({ label, items, trigger = "dots", buttonText = "More", alig
       <button
         ref={buttonRef}
         type="button"
-        aria-label={trigger === "dots" ? label : undefined}
+        aria-label={trigger === "dots" ? trNode(label) : undefined}
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
@@ -76,7 +76,7 @@ export function Menu({ label, items, trigger = "dots", buttonText = "More", alig
           <Icon name="more" size={18} />
         ) : (
           <>
-            {buttonText}
+            {trNode(buttonText)}
             <Icon name="chevronDown" size={16} />
           </>
         )}

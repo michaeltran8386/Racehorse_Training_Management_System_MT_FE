@@ -1,9 +1,11 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
-import { Button } from "@/shared/components/ui/Button";
+import styles from "./StableMapPage.module.css";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
+import { Modal } from "@/shared/components/ui/Modal";
 import { HealthBadge } from "@/shared/components/ui/HealthBadge";
 import { Segmented } from "@/shared/components/ui/Segmented";
 import { Select } from "@/shared/components/form/Select";
@@ -27,6 +29,7 @@ type Dialog = "assign" | "transfer" | "return" | null;
 
 /** SC-1.04 Sơ đồ chuồng trại: CM, HT, VET, GROOM (OWNER bị chặn ở route và BE). */
 export default function StableMapPage() {
+  useScreenTranslation();
   useAppLanguage(); // subscribe to language changes so tr() placeholder re-renders
   const user = useCurrentUser();
   const canManage = user.role === "CLUB_MANAGER" || user.role === "HEAD_TRAINER";
@@ -130,8 +133,8 @@ export default function StableMapPage() {
           flash: flashId === s.id,
         };
       }
-      if (s.status === "MAINTENANCE") return { title: "Maintenance", striped: true, dimmed: onlyMine, flash: flashId === s.id };
-      return { title: "Empty", dashed: true, dimmed: onlyMine, flash: flashId === s.id };
+      if (s.status === "MAINTENANCE") return { title: tr("Maintenance"), striped: true, dimmed: onlyMine, flash: flashId === s.id };
+      return { title: tr("Empty"), dashed: true, dimmed: onlyMine, flash: flashId === s.id };
     },
     [isMine, onlyMine, flashId],
   );
@@ -148,27 +151,13 @@ export default function StableMapPage() {
     const canOpenProfile = !isGroom || isMine(s);
     const alloc = allocationOf(s);
     return (
-      <aside
-        style={{
-          width: 320,
-          flexShrink: 0,
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--radius-card, 12px)",
-          padding: 16,
-          display: "grid",
-          gap: 12,
-          alignContent: "start",
-        }}
+      <Modal
+        title={`${tr("Stall")} ${s.code}`}
+        subtitle={`${tr("Zone {{zone}}", { zone: s.zone })}${s.row && s.col ? tr(" · Row {{row}}, Col {{col}}", { row: s.row, col: s.col }) : ""}`}
+        width={440}
+        onClose={() => setSelectedId(null)}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2 style={{ margin: 0, fontSize: "var(--fs-section)" }}>{tr("Stall")}{" "}{s.code}</h2>
-          <Button tone="ghost" size="sm" icon="x" onClick={() => setSelectedId(null)} aria-label={tr("Close panel")} />
-        </div>
-        <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>
-          {tr("Zone {{zone}}", { zone: s.zone })}
-          {s.row && s.col ? tr(" · Row {{row}}, Col {{col}}", { row: s.row, col: s.col }) : ""}
-        </div>
+      <div className={styles.panel}>
         {a ? (
           <>
             <div>
@@ -181,9 +170,7 @@ export default function StableMapPage() {
             <div style={{ fontSize: "var(--fs-body)" }}>{tr("Groom:")}{" "}{a.assignedGroom?.fullName ?? "—"}</div>
             <div style={{ fontSize: "var(--fs-body)" }}>{tr("In this stall since {{date}}", { date: formatDate(a.startDate) })}</div>
             {canOpenProfile && (
-              <Link to={`/horses/${a.horse.id}`}>
-                <Button tone="secondary" block>{tr("View horse profile")}</Button>
-              </Link>
+              <LinkButton to={`/horses/${a.horse.id}`} tone="secondary">{tr("View horse profile")}</LinkButton>
             )}
             {canManage && alloc && (
               <>
@@ -203,7 +190,8 @@ export default function StableMapPage() {
             )}
           </>
         )}
-      </aside>
+      </div>
+      </Modal>
     );
   }
 
@@ -234,22 +222,10 @@ export default function StableMapPage() {
                 placeholder={tr("Horse name or code")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={{ height: 38, width: 220, padding: "0 12px", borderRadius: "var(--r)", border: "1px solid var(--border)" }}
+                className={styles.search}
               />
               {matches && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "calc(100% + 4px)",
-                    right: 0,
-                    width: 260,
-                    zIndex: 30,
-                    background: "var(--surface)",
-                    border: "1px solid var(--border)",
-                    borderRadius: "var(--r)",
-                    boxShadow: "0 12px 30px rgba(0,0,0,0.12)",
-                  }}
-                >
+                <div className={styles.suggestions}>
                   {matches.length === 0 ? (
                     <div style={{ padding: 12, fontSize: "var(--fs-body)" }}>{tr("No horse found on the map.")}</div>
                   ) : (
@@ -258,7 +234,7 @@ export default function StableMapPage() {
                         key={s.id}
                         type="button"
                         onClick={() => jumpTo(s)}
-                        style={{ display: "block", width: "100%", textAlign: "left", padding: "8px 12px", border: 0, background: "none", cursor: "pointer" }}
+                        className={styles.suggestion}
                       >
                         <strong>{s.allocations[0]?.horse.name}</strong> · {s.code} ({s.zone})
                       </button>
@@ -290,14 +266,12 @@ export default function StableMapPage() {
         <div style={{ padding: 40, textAlign: "center", border: "2px dashed var(--border)", borderRadius: "var(--r-lg)" }}>
           <p>{tr("No barn zones have been set up yet.")}</p>
           {user.role === "CLUB_MANAGER" && (
-            <Link to="/catalogs/stalls">
-              <Button>{tr("Go to the stall catalogue")}</Button>
-            </Link>
+            <LinkButton to="/catalogs/stalls">{tr("Go to the stall catalogue")}</LinkButton>
           )}
         </div>
       ) : (
         <>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: "var(--fs-body)" }}>
+          <div className={styles.summary}>
             <span>{tr("Total stalls:")}{" "}<strong>{counts.total}</strong></span>
             <span>{tr("Occupied:")}{" "}<strong>{counts.occupied}</strong></span>
             <span>{tr("Empty:")}{" "}<strong>{counts.free}</strong></span>
@@ -323,7 +297,7 @@ export default function StableMapPage() {
             </li>
           </ul>
 
-          <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+          <div className={styles.mapLayout}>
             <div style={{ flex: 1, minWidth: 0 }}>
               {loading ? (
                 <div style={{ padding: 40, textAlign: "center", color: "var(--text-muted)" }}>{tr("Loading stable map…")}</div>

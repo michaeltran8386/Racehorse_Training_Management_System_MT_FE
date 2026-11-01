@@ -15,3 +15,6 @@
 .action { flex-shrink: 0; }
 .body { flex: 1; min-width: 0; }
 .foot { padding: 12px 20px; background: var(--surface-2); border-top: 1px solid var(--border); font-size: var(--fs-caption); color: var(--muted); }
+
+.card { border-radius: 0; }
+.title { font-family: var(--font-display); font-size: 22px; font-weight: 800; text-transform: uppercase; }

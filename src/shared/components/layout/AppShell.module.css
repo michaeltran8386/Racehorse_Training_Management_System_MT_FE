@@ -13,53 +13,7 @@
   align-items: start;
 }
 
-.pageTransition {
-  will-change: transform, opacity;
-  width: 100%;
-  display: grid;
-  gap: inherit;
-  align-content: start;
-  animation: pageContainerEntrance 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-@keyframes pageContainerEntrance {
-  0% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-/* Các khối thông tin lướt nhẹ từ trái sang phải, fade từ trên xuống dưới dạng thác nước tinh tế */
-.pageTransition > :nth-child(1) {
-  animation: contentItemEntrance 0.44s cubic-bezier(0.16, 1, 0.3, 1) 0.02s both;
-}
-
-.pageTransition > :nth-child(2) {
-  animation: contentItemEntrance 0.48s cubic-bezier(0.16, 1, 0.3, 1) 0.07s both;
-}
-
-.pageTransition > :nth-child(3) {
-  animation: contentItemEntrance 0.52s cubic-bezier(0.16, 1, 0.3, 1) 0.12s both;
-}
-
-.pageTransition > :nth-child(n+4) {
-  animation: contentItemEntrance 0.56s cubic-bezier(0.16, 1, 0.3, 1) 0.17s both;
-}
-
-@keyframes contentItemEntrance {
-  0% {
-    opacity: 0;
-    transform: translate3d(-18px, -12px, 0);
-    filter: blur(2px);
-  }
-  100% {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-    filter: blur(0);
-  }
-}
+.pageTransition { width: 100%; display: grid; gap: inherit; align-content: start; }
 .scrim { position: fixed; inset: 0; z-index: 40; border: 0; background: var(--scrim-modal); }
 .boot { min-height: 100vh; display: grid; place-items: center; font-size: var(--fs-body); color: var(--muted); }
 
@@ -69,3 +23,4 @@
 @media (max-width: 720px) {
   .content { padding: 16px 12px 24px; }
 }
+@media (max-width: 720px) { .content { padding-inline: 16px; } }

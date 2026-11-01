@@ -27,10 +27,10 @@ export function RecordResultsModal({
     Array<{
       registrationId: string;
       horseName: string;
-      finalRank: number;
-      finishTimeSeconds: number;
-      avgSpeedKmh: number;
-      prizeMoneyWon: number;
+      finalRank: number | "";
+      finishTimeSeconds: number | "";
+      avgSpeedKmh: number | "";
+      prizeMoneyWon: number | "";
       officialNotes: string;
     }>
   >([]);
@@ -48,32 +48,16 @@ export function RecordResultsModal({
         setDetailTournament(full);
         if (full.registrations && full.registrations.length > 0) {
           const activeRegs = full.registrations.filter((r) => r.status !== "SCRATCHED_MEDICAL");
-          const initial = activeRegs.map((reg, index) => {
+          const initial: typeof rows = activeRegs.map((reg) => {
             const existing = reg.result;
-            const rank = existing?.finalRank ?? index + 1;
-            const time = existing?.finishTimeSeconds ?? 70 + index * 1.5;
-            const speed =
-              existing?.avgSpeedKmh ??
-              Math.round(((full.distanceMeters / time) * 3.6) * 100) / 100;
-            const prize =
-              existing?.prizeMoneyWon ??
-              (rank === 1
-                ? Math.round(full.prizePool * 0.5)
-                : rank === 2
-                ? Math.round(full.prizePool * 0.25)
-                : rank === 3
-                ? Math.round(full.prizePool * 0.15)
-                : rank === 4
-                ? Math.round(full.prizePool * 0.1)
-                : 0);
 
             return {
               registrationId: reg.id,
               horseName: reg.horse.name,
-              finalRank: rank,
-              finishTimeSeconds: time,
-              avgSpeedKmh: speed,
-              prizeMoneyWon: prize,
+              finalRank: existing?.finalRank ?? "",
+              finishTimeSeconds: existing?.finishTimeSeconds ?? "",
+              avgSpeedKmh: existing?.avgSpeedKmh ?? "",
+              prizeMoneyWon: existing?.prizeMoneyWon ?? "",
               officialNotes: existing?.officialNotes ?? "",
             };
           });
@@ -100,9 +84,8 @@ export function RecordResultsModal({
     setRows((prev) => {
       const next = [...prev];
       const target = { ...next[index], [field]: val };
-      if (field === "finishTimeSeconds" && val > 0) {
-        target.avgSpeedKmh =
-          Math.round(((tournament.distanceMeters / Number(val)) * 3.6) * 100) / 100;
+      if (field === "finishTimeSeconds") {
+        target.avgSpeedKmh = val > 0 ? Math.round(((tournament.distanceMeters / Number(val)) * 3.6) * 100) / 100 : "";
       }
       next[index] = target;
       return next;
@@ -129,6 +112,10 @@ export function RecordResultsModal({
       setError(tr("Cannot draft or lock results before raceDate has arrived."));
       return;
     }
+    if (rows.some((r) => r.finalRank === "" || !Number.isInteger(r.finalRank) || r.finalRank < 1 || r.finishTimeSeconds === "" || r.finishTimeSeconds <= 0 || r.prizeMoneyWon === "" || r.prizeMoneyWon < 0)) {
+      setError(tr("Enter a valid rank, finish time and prize for every horse. Use 0 when no prize was awarded."));
+      return;
+    }
 
     if (lock) {
       const confirmLock = window.confirm(
@@ -146,7 +133,7 @@ export function RecordResultsModal({
         registrationId: r.registrationId,
         finalRank: Number(r.finalRank),
         finishTimeSeconds: Number(r.finishTimeSeconds),
-        avgSpeedKmh: Number(r.avgSpeedKmh),
+        avgSpeedKmh: r.avgSpeedKmh === "" ? undefined : r.avgSpeedKmh,
         prizeMoneyWon: Number(r.prizeMoneyWon),
         officialNotes: r.officialNotes.trim() || undefined,
       }));
@@ -165,8 +152,8 @@ export function RecordResultsModal({
     <Modal
       title={isCompleted ? tr("Official Race Results (Locked)") : tr("Record Race Execution & Official Results")}
       subtitle={`${currentTourney.name} · ${currentTourney.distanceMeters}m (${tr(currentTourney.trackType)})`}
-      width={860}
-      onClose={onClose}
+      width={960}
+      onClose={loading ? undefined : onClose}
       foot={
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
           <div>
@@ -231,7 +218,7 @@ export function RecordResultsModal({
               border: "1px solid var(--warn-border, #fcd34d)",
             }}
           >
-            ⚠️ {tr("Chỉ có thể ghi nhận hoặc chốt kết quả sau khi giải đấu đã đóng đăng ký (CLOSED_REGISTRATION).")}
+            ⚠️ {tr("Results can only be recorded or locked after registration closes.")}
           </div>
         )}
 
@@ -246,7 +233,7 @@ export function RecordResultsModal({
               border: "1px solid var(--warn-border, #fcd34d)",
             }}
           >
-            ⏳ {tr("Cuộc đua chưa diễn ra. Kết quả chính thức chỉ có thể ghi nhận vào hoặc sau ngày thi đấu:")} {new Date(currentTourney.raceDate).toLocaleString()}
+            ⏳ {tr("Official results can only be recorded on or after the race date:")} {new Date(currentTourney.raceDate).toLocaleString()}
           </div>
         )}
 
@@ -258,25 +245,25 @@ export function RecordResultsModal({
           <div style={{ padding: "2.5rem 1rem", textAlign: "center", color: "var(--muted)", background: "var(--surface)", borderRadius: "var(--r-md)", border: "1px dashed var(--border)" }}>
             <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🏁</div>
             <strong style={{ display: "block", color: "var(--ink)", fontSize: "var(--fs-body)", marginBottom: "0.25rem" }}>
-              {tr("Chưa có kết quả hoặc danh sách đăng ký cho giải đấu này")}
+              {tr("No results or entries for this tournament")}
             </strong>
             <p style={{ margin: 0, fontSize: "var(--fs-sm)" }}>
               {isCompleted
-                ? tr("Giải đấu ở trạng thái Đã hoàn thành nhưng chưa có chiến mã nào được ghi nhận kết quả.")
-                : tr("Giải đấu chưa có ngựa đăng ký tham gia. Hãy đăng ký ngựa thi đấu trước khi ghi nhận kết quả.")}
+                ? tr("This completed tournament has no recorded horse results.")
+                : tr("No horses are registered. Register horses before recording results.")}
             </p>
           </div>
         ) : (
-          <div style={{ maxHeight: "380px", overflowY: "auto", overflowX: "hidden", width: "100%" }}>
-            <table style={{ width: "100%", tableLayout: "fixed", borderCollapse: "collapse", fontSize: "var(--fs-sm)" }}>
+          <div style={{ maxHeight: "380px", overflow: "auto", width: "100%" }}>
+            <table style={{ width: "100%", minWidth: "800px", tableLayout: "fixed", borderCollapse: "collapse", fontSize: "var(--fs-sm)" }}>
               <thead>
                 <tr style={{ borderBottom: "2px solid var(--border)", textAlign: "left", color: "var(--muted)" }}>
-                  <th style={{ padding: "0.5rem", width: "20%" }}>{tr("Horse")}</th>
-                  <th style={{ padding: "0.5rem", width: "11%" }}>{tr("Rank")}</th>
-                  <th style={{ padding: "0.5rem", width: "13%" }}>{tr("Time (s)")}</th>
-                  <th style={{ padding: "0.5rem", width: "13%" }}>{tr("Speed (km/h)")}</th>
-                  <th style={{ padding: "0.5rem", width: "18%" }}>{tr("Prize Won (VND)")}</th>
-                  <th style={{ padding: "0.5rem", width: "25%" }}>{tr("Official Notes")}</th>
+                  <th style={{ padding: "0.5rem", width: "20%", whiteSpace: "normal" }}>{tr("Horse")}</th>
+                  <th style={{ padding: "0.5rem", width: "11%", whiteSpace: "normal" }}>{tr("Rank")}</th>
+                  <th style={{ padding: "0.5rem", width: "13%", whiteSpace: "normal" }}>{tr("Time (s)")}</th>
+                  <th style={{ padding: "0.5rem", width: "13%", whiteSpace: "normal" }}>{tr("Speed (km/h)")}</th>
+                  <th style={{ padding: "0.5rem", width: "18%", whiteSpace: "normal" }}>{tr("Prize Won (VND)")}</th>
+                  <th style={{ padding: "0.5rem", width: "25%", whiteSpace: "normal" }}>{tr("Official Notes")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -287,15 +274,16 @@ export function RecordResultsModal({
                     </td>
                     <td style={{ padding: "0.5rem" }}>
                       {isReadOnly ? (
-                        <strong style={{ color: row.finalRank === 1 ? "var(--brand)" : "inherit" }}>
-                          #{row.finalRank}
+                        <strong style={{ color: row.finalRank === 1 ? "var(--brand-700)" : "inherit" }}>
+                          {row.finalRank === "" ? "—" : `#${row.finalRank}`}
                         </strong>
                       ) : (
                         <input
                           type="number"
+                          aria-label={`${tr("Rank")} — ${row.horseName}`}
                           min={1}
                           value={row.finalRank}
-                          onChange={(e) => handleFieldChange(idx, "finalRank", Number(e.target.value))}
+                          onChange={(e) => handleFieldChange(idx, "finalRank", e.target.value === "" ? "" : Number(e.target.value))}
                           style={{
                             width: "100%",
                             padding: "0.375rem 0.5rem",
@@ -309,15 +297,16 @@ export function RecordResultsModal({
                     </td>
                     <td style={{ padding: "0.5rem" }}>
                       {isReadOnly ? (
-                        <span>{row.finishTimeSeconds}s</span>
+                        <span>{row.finishTimeSeconds === "" ? "—" : `${row.finishTimeSeconds}s`}</span>
                       ) : (
                         <input
                           type="number"
+                          aria-label={`${tr("Time (s)")} — ${row.horseName}`}
                           step={0.01}
                           min={1}
                           value={row.finishTimeSeconds}
                           onChange={(e) =>
-                            handleFieldChange(idx, "finishTimeSeconds", Number(e.target.value))
+                            handleFieldChange(idx, "finishTimeSeconds", e.target.value === "" ? "" : Number(e.target.value))
                           }
                           style={{
                             width: "100%",
@@ -330,22 +319,23 @@ export function RecordResultsModal({
                         />
                       )}
                     </td>
-                    <td style={{ padding: "0.5rem", fontWeight: 600, color: "var(--brand, #10b981)" }}>
-                      {row.avgSpeedKmh}
+                    <td style={{ padding: "0.5rem", fontWeight: 600, color: "var(--brand-700)" }}>
+                      {row.avgSpeedKmh === "" ? "—" : row.avgSpeedKmh}
                     </td>
                     <td style={{ padding: "0.5rem", wordBreak: "break-word" }}>
                       {isReadOnly ? (
-                        <span style={{ fontWeight: 600, color: row.prizeMoneyWon > 0 ? "var(--brand)" : "var(--muted)", whiteSpace: "nowrap" }}>
-                          {row.prizeMoneyWon.toLocaleString()} đ
+                        <span style={{ fontWeight: 600, color: row.prizeMoneyWon !== "" && row.prizeMoneyWon > 0 ? "var(--brand-700)" : "var(--muted)", whiteSpace: "nowrap" }}>
+                          {row.prizeMoneyWon === "" ? "—" : `${row.prizeMoneyWon.toLocaleString()} đ`}
                         </span>
                       ) : (
                         <input
                           type="number"
+                          aria-label={`${tr("Prize Won (VND)")} — ${row.horseName}`}
                           step={1000000}
                           min={0}
                           value={row.prizeMoneyWon}
                           onChange={(e) =>
-                            handleFieldChange(idx, "prizeMoneyWon", Number(e.target.value))
+                            handleFieldChange(idx, "prizeMoneyWon", e.target.value === "" ? "" : Number(e.target.value))
                           }
                           style={{
                             width: "100%",
@@ -367,6 +357,7 @@ export function RecordResultsModal({
                       ) : (
                         <input
                           type="text"
+                          aria-label={`${tr("Official Notes")} — ${row.horseName}`}
                           placeholder={tr("e.g. Broke out cleanly, strong stretch run")}
                           value={row.officialNotes}
                           onChange={(e) => handleFieldChange(idx, "officialNotes", e.target.value)}

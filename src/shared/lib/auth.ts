@@ -1,6 +1,6 @@
 // Hàm gọi API đăng nhập/đăng xuất và hỏi "tôi là ai". Trạng thái phiên nằm ở AuthProvider.
 
-import { api } from "@/shared/lib/api";
+import { api, withGoogleSessionLock } from "@/shared/lib/api";
 import { clearTokens, getTokens, saveTokens, type TokenPair } from "@/shared/lib/tokens";
 import type { AuthUser } from "@/shared/types/auth";
 
@@ -12,19 +12,37 @@ const LOGIN_TIMEOUT_MS = 15_000;
 
 export async function login(email: string, password: string, remember: boolean): Promise<AuthUser> {
   const res = await api<LoginResponse>("POST", "/auth/login", { email, password, remember }, { timeoutMs: LOGIN_TIMEOUT_MS });
-  if (res.accessToken && res.refreshToken) {
-    saveTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken }, remember);
-  }
+  await withGoogleSessionLock(async () => {
+    await api<unknown>("POST", "/auth/google/logout", {}, { silent: true, skipRefresh: true, timeoutMs: 3000 }).catch(() => undefined);
+    if (res.accessToken && res.refreshToken) {
+      saveTokens({ accessToken: res.accessToken, refreshToken: res.refreshToken }, remember);
+    }
+  });
   return res.user;
 }
 
-export async function logout(): Promise<void> {
-  try {
-    // Thu hồi refresh token ở backend (mock bỏ qua body).
-    await api<unknown>("POST", "/auth/logout", { refreshToken: getTokens()?.refreshToken });
-  } finally {
+export async function loginWithGoogle(credential: string): Promise<AuthUser> {
+  return withGoogleSessionLock(async () => {
+    const res = await api<{ user: AuthUser }>("POST", "/auth/google", { credential }, { silent: true, skipRefresh: true, timeoutMs: LOGIN_TIMEOUT_MS });
     clearTokens();
-  }
+    return res.user;
+  });
+}
+
+export async function logout(): Promise<void> {
+  const refreshToken = getTokens()?.refreshToken;
+  return withGoogleSessionLock(async () => {
+    try {
+      // Thu hồi refresh token ở backend (mock bỏ qua body).
+      await api<unknown>("POST", "/auth/logout", { refreshToken }, { silent: true, skipRefresh: true, timeoutMs: 3000 });
+    } finally {
+      try {
+        await api<unknown>("POST", "/auth/google/logout", {}, { silent: true, skipRefresh: true, timeoutMs: 3000 });
+      } finally {
+        if (getTokens()?.refreshToken === refreshToken) clearTokens();
+      }
+    }
+  });
 }
 
 // silent = true: lúc mở trang mà chưa đăng nhập thì 401 là bình thường, không mở Session Expired.

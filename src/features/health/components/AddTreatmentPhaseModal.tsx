@@ -1,3 +1,4 @@
+import formLayout from "@/shared/components/form/FormLayout.module.css";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Field } from "@/shared/components/form/Field";
@@ -29,15 +30,13 @@ export function AddTreatmentPhaseModal({ onClose, onSubmit }: AddTreatmentPhaseM
     new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
   );
   const [target, setTarget] = useState("");
-  const [allowedActivity, setAllowedActivity] = useState("Strict stall rest");
-  const [instructions, setInstructions] = useState<CareInstructionItem[]>([
-    { activity: "Cold water hosing 20 mins", frequency: "2 times/day" },
-  ]);
+  const [allowedActivity, setAllowedActivity] = useState("");
+  const [instructions, setInstructions] = useState<CareInstructionItem[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function addInstruction() {
-    setInstructions([...instructions, { activity: "", frequency: "1 time/day" }]);
+    setInstructions([...instructions, { activity: "", frequency: "" }]);
   }
 
   function removeInstruction(index: number) {
@@ -87,21 +86,21 @@ export function AddTreatmentPhaseModal({ onClose, onSubmit }: AddTreatmentPhaseM
       title={tr("Add Treatment Phase")}
       subtitle={tr("Define phase objectives, allowed activity level, and care instructions for Grooms.")}
       width={560}
-      onClose={onClose}
+      onClose={busy ? undefined : onClose}
       foot={
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, width: "100%" }}>
           <Button tone="ghost" onClick={onClose} disabled={busy}>
             {tr("Cancel")}
           </Button>
-          <Button tone="primary" onClick={handleSubmit} disabled={busy}>
+          <Button tone="primary" type="submit" form="treatment-phase-form" disabled={busy}>
             {tr("Save Phase")}
           </Button>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <form id="treatment-phase-form" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {error && (
-          <div style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "4px" }}>
+          <div role="alert" style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "var(--r)" }}>
             {error}
           </div>
         )}
@@ -115,18 +114,19 @@ export function AddTreatmentPhaseModal({ onClose, onSubmit }: AddTreatmentPhaseM
           />
         </Field>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+        <div className={formLayout.columns}>
           <Field label={tr("Start Date *")}>
             <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
           </Field>
           <Field label={tr("End Date *")}>
-            <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
+            <Input type="date" min={startDate} value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
           </Field>
         </div>
 
         <Field label={tr("Allowed Activity Level *")}>
           <Select
-            options={ACTIVITY_OPTIONS.map((opt) => ({ value: opt.value, label: tr(opt.label) }))}
+            required
+            options={[{ value: "", label: tr("Select activity level"), disabled: true }, ...ACTIVITY_OPTIONS.map((opt) => ({ value: opt.value, label: tr(opt.label) }))]}
             value={allowedActivity}
             onChange={(e) => setAllowedActivity(e.target.value)}
           />
@@ -163,7 +163,7 @@ export function AddTreatmentPhaseModal({ onClose, onSubmit }: AddTreatmentPhaseM
                   onChange={(e) => updateInstruction(idx, "frequency", e.target.value)}
                   placeholder={tr("Frequency (e.g., 2 times/day)")}
                 />
-                {instructions.length > 1 && (
+                {instructions.length > 0 && (
                   <button
                     type="button"
                     onClick={() => removeInstruction(idx)}

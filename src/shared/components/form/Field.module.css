@@ -1,6 +1,7 @@
-.field { display: grid; gap: 6px; }
+.field { display: grid; align-content: start; gap: 6px; }
 .field > * { min-width: 0; }
 .label { font-size: var(--fs-body); line-height: 20px; font-weight: 600; color: var(--text); }
 .required { color: var(--danger); margin-left: 3px; }
 .error { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-caption); line-height: 18px; color: var(--danger); font-weight: 600; }
 .hint { font-size: var(--fs-caption); color: var(--muted); line-height: 18px; }
+.label { font-size: 12px; letter-spacing: .03em; }

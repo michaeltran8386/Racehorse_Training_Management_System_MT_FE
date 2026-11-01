@@ -44,7 +44,8 @@ export function markPendingRequestsSeen(accounts?: PublicAccount[] | null): void
   if (toMark.length > 0) {
     void markNotificationsRead(toMark);
   } else if (notifs.length === 0) {
-    void refreshNotifications().then(() => {
+    void refreshNotifications().then((loaded) => {
+      if (!loaded) return;
       const fresh = getNotifications().filter((n) => !n.read && isSignUpNotification(n)).map((n) => n.id);
       if (fresh.length > 0) {
         void markNotificationsRead(fresh);

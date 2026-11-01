@@ -1,3 +1,7 @@
 .form { display: flex; flex-direction: column; gap: 16px; }
 .footer { margin: 0; font-size: var(--fs-caption); color: var(--muted); text-align: center; }
 .footer a { font-weight: 600; }
+.slots { display: flex; justify-content: center; width: 100%; margin: 4px 0 0; }
+.hint, .error { margin: -6px 0 0; min-height: 1.4em; text-align: center; font-size: var(--fs-caption); }
+.hint { color: var(--muted); }
+.error { color: var(--danger); font-weight: 600; }

@@ -1,8 +1,10 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./HorseFormPage.module.css";
 import { Card } from "@/shared/components/ui/Card";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
 import { Field } from "@/shared/components/form/Field";
@@ -41,6 +43,7 @@ function generateMicrochip15(): string {
 }
 
 export default function HorseFormPage() {
+  useScreenTranslation();
   const { id } = useParams<{ id: string }>();
   const isEdit = Boolean(id);
   const navigate = useNavigate();
@@ -273,9 +276,7 @@ export default function HorseFormPage() {
             {tr("This horse is marked as Retired. Historical profiles cannot be modified without reactivation.")}
           </Alert>
           <div style={{ marginTop: "1rem" }}>
-            <Link to={id ? `/horses/${id}` : "/horses"}>
-              <Button tone="secondary">{tr("Back to Profile")}</Button>
-            </Link>
+            <LinkButton to={id ? `/horses/${id}` : "/horses"} tone="secondary">{tr("Back to Profile")}</LinkButton>
           </div>
         </Card>
       </div>
@@ -302,29 +303,6 @@ export default function HorseFormPage() {
             ? tr("Update identity and profile details.")
             : tr("Enter identity details to register a new horse.")
         }
-        action={
-          <div style={{ display: "flex", gap: "0.75rem" }}>
-            <Button tone="secondary" onClick={handleCancel}>
-              Cancel
-            </Button>
-            {!isEdit && (
-              <Button
-                tone="secondary"
-                disabled={submitting}
-                onClick={() => handleSave(true)}
-              >
-                Save & Add Another
-              </Button>
-            )}
-            <Button
-              tone="primary"
-              disabled={submitting}
-              onClick={() => handleSave(false)}
-            >
-              {submitting ? "Saving..." : "Save Profile"}
-            </Button>
-          </div>
-        }
       />
 
       {generalError && (
@@ -334,10 +312,10 @@ export default function HorseFormPage() {
       )}
 
       <Card pad={24}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "1.5rem" }}>
+        <div className={styles.formGrid}>
           {/* Column 1: Identity */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            <h3 style={{ margin: 0, fontSize: "var(--fs-body-lg)", fontWeight: 700, borderBottom: "1px solid var(--border)", paddingBottom: "0.5rem" }}>
+            <h3 className={styles.sectionTitle}>
               {tr("Identity Details")}
             </h3>
 
@@ -399,7 +377,7 @@ export default function HorseFormPage() {
 
           {/* Column 2: Traits & Pedigree */}
           <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-            <h3 style={{ margin: 0, fontSize: "var(--fs-body-lg)", fontWeight: 700, borderBottom: "1px solid var(--border)", paddingBottom: "0.5rem" }}>
+            <h3 className={styles.sectionTitle}>
               {tr("Physical Traits")}
             </h3>
 
@@ -417,7 +395,7 @@ export default function HorseFormPage() {
             <Field
               label={tr("Date of Birth *")}
               error={errors.dob}
-              hint={tr(`Max 12 years (${minDobStr} – ${todayStr})`)}
+              hint={tr("Max 12 years ({{min}} – {{max}})", { min: minDobStr, max: todayStr })}
             >
               <Input
                 type="date"
@@ -477,8 +455,8 @@ export default function HorseFormPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: "2rem", paddingTop: "1rem", borderTop: "1px solid var(--border)", display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
-          <Button tone="secondary" onClick={handleCancel}>
+        <div className={styles.actions}>
+          <Button tone="secondary" onClick={handleCancel} disabled={submitting}>
             {tr("Cancel")}
           </Button>
           {!isEdit && (

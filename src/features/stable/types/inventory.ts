@@ -68,7 +68,7 @@ export interface RestockRequestItem {
   requestedQuantity: number;
   approvedQuantity: number | null;
   status: RestockStatus;
-  urgencyReason: string;
+  urgencyReason?: string;
   rejectionReason: string | null;
   deliveryNotes: string | null;
   requestedById: string;
@@ -118,7 +118,7 @@ export interface CreateRestockRequestPayload {
   zoneId: string;
   supplyId: string;
   requestedQuantity: number;
-  urgencyReason: string;
+  urgencyReason?: string;
 }
 
 export interface ReviewRestockRequestPayload {

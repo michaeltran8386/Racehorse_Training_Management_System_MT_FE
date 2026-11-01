@@ -1,0 +1,14 @@
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.metrics > div { background: var(--surface); border: 1px solid var(--border); }
+.metrics strong { overflow-wrap: anywhere; font-size: clamp(24px, 2vw, 38px); }
+.events { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 20px; }
+.events h3 { font-family: var(--font-display); font-size: 28px !important; font-weight: 800; line-height: 1; text-transform: uppercase; overflow-wrap: anywhere; }
+.guide { padding: 16px 20px; background: var(--surface-2); border: 1px solid var(--border); border-left: 4px solid var(--brand); font-size: var(--fs-body); line-height: 1.6; }
+@media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .metrics { gap: 8px; } }
+.searchBar { display: flex; align-items: center; gap: .5rem; min-width: 0; }
+.searchBar input { min-width: 0; min-height: 44px; }
+.searchBar input:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.eventHeading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: .5rem; }
+.eventHeading > div { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 520px) { .searchBar { width: 100%; } .searchBar input { flex: 1 1 auto; width: auto !important; } }

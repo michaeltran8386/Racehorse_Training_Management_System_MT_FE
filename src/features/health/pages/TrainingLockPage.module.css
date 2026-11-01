@@ -1,0 +1,6 @@
+.toolbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 8px 20px; border-bottom: 1px solid var(--border); }
+.search { width: min(300px, 100%); }
+@media (max-width: 520px) { .toolbar { padding: 12px 16px; } .search { width: 100%; } }
+.reason { display: grid; gap: 3px; min-width: 180px; max-width: 320px; line-height: 1.5; overflow-wrap: anywhere; }
+.rowActions { display: inline-flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.release { color: var(--muted); font-size: var(--fs-caption); line-height: 1.5; overflow-wrap: anywhere; }

@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -76,6 +77,7 @@ function groupDigits(code: string): string {
 }
 
 export default function HorseListPage() {
+  useScreenTranslation();
   const currentUser = useCurrentUser();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -88,7 +90,7 @@ export default function HorseListPage() {
   const queryNoStall = searchParams.get("noStall") === "true";
   const querySort = searchParams.get("sort") || "name_asc";
   const queryPage = parseInt(searchParams.get("page") || "1", 10);
-  const queryLimit = parseInt(searchParams.get("limit") || "20", 10);
+  const queryLimit = parseInt(searchParams.get("limit") || "10", 10);
 
   const [searchInput, setSearchInput] = useState(querySearch);
   const [horses, setHorses] = useState<Horse[]>([]);
@@ -96,12 +98,13 @@ export default function HorseListPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const latestRequest = useRef(0);
   const [breedOptions, setBreedOptions] = useState([{ value: "ALL", label: tr("Breed: All") }]);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-  const genderOptions = useMemo(() => GENDER_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) })), []);
-  const lockOptions = useMemo(() => LOCK_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) })), []);
-  const sortOptions = useMemo(() => SORT_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) })), []);
+  const genderOptions = GENDER_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) }));
+  const lockOptions = LOCK_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) }));
+  const sortOptions = SORT_OPTIONS.map((o) => ({ value: o.value, label: tr(o.label) }));
 
   const activeAdvancedFilterCount = useMemo(() => {
     return [
@@ -157,6 +160,7 @@ export default function HorseListPage() {
   }
 
   const loadData = useCallback(() => {
+    const requestId = ++latestRequest.current;
     setLoading(true);
     setError("");
 
@@ -176,22 +180,30 @@ export default function HorseListPage() {
 
     getHorses(filter)
       .then((res) => {
+        if (requestId !== latestRequest.current) return;
         setHorses(res.items);
         setTotal(res.total);
       })
       .catch((err) => {
+        if (requestId !== latestRequest.current) return;
         setError(messageFor(err));
       })
       .finally(() => {
-        setLoading(false);
+        if (requestId === latestRequest.current) setLoading(false);
       });
   }, [querySearch, queryStatus, queryLock, queryGender, queryBreed, queryNoStall, querySort, queryPage, queryLimit]);
 
   useEffect(() => {
     loadData();
+    return () => { latestRequest.current += 1; };
   }, [loadData]);
 
+  useEffect(() => () => {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+  }, []);
+
   function resetFilters() {
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
     setSearchInput("");
     setSearchParams(new URLSearchParams());
   }
@@ -384,6 +396,7 @@ export default function HorseListPage() {
                   (showAdvancedFilters || activeAdvancedFilterCount > 0) && styles.filterActive
                 )}
                 aria-expanded={showAdvancedFilters}
+                aria-controls={showAdvancedFilters ? "horse-advanced-filters" : undefined}
                 title={tr("Advanced filters")}
               >
                 <Icon name="sliders" size={15} />
@@ -422,14 +435,14 @@ export default function HorseListPage() {
 
           {/* Tier 3: Ngăn kéo bộ lọc nâng cao (Expandable Drawer khi cần) */}
           {showAdvancedFilters && (
-            <div className={styles.filterDrawer}>
+            <div id="horse-advanced-filters" className={styles.filterDrawer}>
               <div className={styles.filterGrid}>
                 <div className={styles.filterField}>
                   <label className={styles.fieldLabel}>{tr("Breed")}</label>
                   <Select
                     aria-label={tr("Breed")}
                     value={queryBreed}
-                    options={breedOptions}
+                    options={breedOptions.map((option) => option.value === "ALL" ? { ...option, label: tr("Breed: All") } : option)}
                     onChange={(e) => updateUrl({ breed: e.target.value, page: 1 })}
                   />
                 </div>
@@ -510,7 +523,7 @@ export default function HorseListPage() {
 
               {queryGender !== "ALL" && (
                 <span className={styles.chip}>
-                  {tr("Sex")}: <strong>{queryGender}</strong>
+                  {tr("Sex")}: <strong>{tr(queryGender)}</strong>
                   <button
                     type="button"
                     aria-label={tr("Remove filter")}

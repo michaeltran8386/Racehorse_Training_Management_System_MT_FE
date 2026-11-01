@@ -1,5 +1,8 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
+import { Card } from "@/shared/components/ui/Card";
+import styles from './CatalogPages.module.css';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Alert } from '@/shared/components/ui/Alert';
@@ -23,6 +26,7 @@ import {
 } from '../types/supplies';
 
 export default function SuppliesCatalogPage() {
+  useScreenTranslation();
   const currentUser = useCurrentUser();
   const toast = useToast();
   const isManager = currentUser.role === 'CLUB_MANAGER';
@@ -113,36 +117,28 @@ export default function SuppliesCatalogPage() {
       {error && <Alert tone="danger">{error}</Alert>}
 
       {/* Bộ lọc */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '0.75rem',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          background: 'var(--surface)',
-          padding: '0.875rem 1rem',
-          borderRadius: 'var(--r-md)',
-          border: '1px solid var(--border)',
-        }}
-      >
-        <div style={{ minWidth: 220 }}>
+      <div className={styles.filters}>
+        <div className={styles.search}>
           <Input
+            aria-label={tr('Search by supply name...')}
             placeholder={tr('Search by supply name...')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        <div style={{ width: 180 }}>
+        <div className={styles.category}>
           <Select
+            aria-label={tr('Category')}
             value={categoryFilter}
             options={categoryOptions}
             onChange={(e) => setCategoryFilter(e.target.value)}
           />
         </div>
 
-        <div style={{ width: 160 }}>
+        <div className={styles.status}>
           <Select
+            aria-label={tr('Status')}
             value={statusFilter}
             options={statusOptions}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -164,7 +160,7 @@ export default function SuppliesCatalogPage() {
       </div>
 
       {/* Category Tabs for fast category switching */}
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+      <div className={styles.categoryTabs}>
         {[
           { key: 'ALL', label: tr('All Categories') },
           { key: 'FEED', label: tr('Feed & Forage') },
@@ -175,6 +171,7 @@ export default function SuppliesCatalogPage() {
             key={tab.key}
             size="sm"
             tone={categoryFilter === tab.key ? 'primary' : 'secondary'}
+            aria-pressed={categoryFilter === tab.key}
             onClick={() => setCategoryFilter(tab.key)}
           >
             {tab.label}
@@ -183,7 +180,10 @@ export default function SuppliesCatalogPage() {
       </div>
 
       {/* Bảng dữ liệu */}
-      <DataTable<SupplyCatalogItem>
+      <Card pad={0}>
+        <DataTable<SupplyCatalogItem>
+        pageSize={10}
+        noun="supplies"
         loading={loading}
         rows={items}
         rowKey={(it) => it.id}
@@ -196,9 +196,9 @@ export default function SuppliesCatalogPage() {
             header: tr('Supply Name'),
             render: (it) => (
               <div>
-                <div style={{ fontWeight: 600 }}>{formatSupplyName(it.name)}</div>
+                <div className={styles.supplyName}>{formatSupplyName(it.name)}</div>
                 {it.description && (
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{it.description}</div>
+                  <div className={styles.supplyDescription}>{it.description}</div>
                 )}
               </div>
             ),
@@ -265,6 +265,7 @@ export default function SuppliesCatalogPage() {
             : []),
         ]}
       />
+      </Card>
 
       {/* Dialog Thêm/Sửa */}
       {isManager && editingItem !== undefined && (

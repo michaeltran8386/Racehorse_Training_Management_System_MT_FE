@@ -53,22 +53,22 @@ export function StopPrescriptionModal({ medicationName, onClose, onSubmit }: Sto
       subtitle={tr("Marks medication status as Discontinued. Discontinued prescriptions cannot be reactivated.")}
       width={480}
       tone="warn"
-      onClose={onClose}
+      onClose={busy ? undefined : onClose}
       foot={
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, width: "100%" }}>
           <Button tone="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button tone="danger" onClick={handleSubmit} disabled={busy}>
+          <Button tone="danger" type="submit" form="stop-prescription-form" disabled={busy}>
             Confirm Discontinue
           </Button>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <form id="stop-prescription-form" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {error && (
-          <div style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "4px" }}>
-            {error}
+          <div role="alert" style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "var(--r)" }}>
+            {tr(error)}
           </div>
         )}
 

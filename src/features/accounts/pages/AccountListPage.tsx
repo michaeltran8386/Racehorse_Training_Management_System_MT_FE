@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Input } from "@/shared/components/form/Input";
@@ -64,6 +65,7 @@ const EMPTY_COPY: Record<AccountTab, { title: string; description: string }> = {
 // Design 1.9: danh sách tài khoản — duyệt yêu cầu, khóa/mở khóa, mở màn Permissions của từng tài khoản.
 // Trang này KHÔNG tự kiểm vai trò: RoleGuard đã chặn ở cấp route (Club Manager mới vào được).
 export default function AccountListPage() {
+  useScreenTranslation();
   const me = useCurrentUser();
   const toast = useToast();
 
@@ -184,6 +186,7 @@ export default function AccountListPage() {
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const current = Math.min(page, pageCount);
   const visible = rows.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);
+  const hasSearchFilter = Boolean(search.trim()) || roleFilter !== "ALL";
 
   const columns: Column<PublicAccount>[] = [
     {
@@ -216,7 +219,7 @@ export default function AccountListPage() {
                   alignItems: "center",
                   gap: 4,
                   fontSize: "var(--fs-caption)",
-                  color: owned.length > 0 ? "var(--brand)" : "var(--muted)",
+                  color: owned.length > 0 ? "var(--brand-700)" : "var(--muted)",
                   fontWeight: 600,
                   marginTop: 2,
                   textDecoration: "none",
@@ -332,10 +335,14 @@ export default function AccountListPage() {
   const empty = (
     <EmptyState
       icon="users"
-      title={EMPTY_COPY[tab].title}
-      description={EMPTY_COPY[tab].description}
+      title={hasSearchFilter ? tr("No accounts match this filter.") : tab === "ALL" ? tr("No accounts yet.") : EMPTY_COPY[tab].title}
+      description={hasSearchFilter ? tr("Clear the filters to see all accounts.") : tab === "ALL" ? tr("Create an account for a new member of the club.") : EMPTY_COPY[tab].description}
       action={
-        tab === "ALL" ? (
+        hasSearchFilter ? (
+          <Button size="sm" tone="secondary" onClick={() => { setSearch(""); setRoleFilter("ALL"); setTab("ALL"); setPage(1); }}>
+            {tr("Clear filters")}
+          </Button>
+        ) : tab === "ALL" ? (
           <Button size="sm" icon="plus" onClick={() => setCreateOpen(true)}>
             {tr("Create account")}
           </Button>
@@ -369,6 +376,22 @@ export default function AccountListPage() {
             date: formatDate(new Date()),
           })}
         </Alert>
+      )}
+
+      {accounts && (
+        <section className={styles.summary} aria-label={tr("Account status")}>
+          {[
+            { label: "All", value: accounts.length },
+            { label: "Active", value: accounts.filter((account) => tabOf(account.status) === "ACTIVE").length },
+            { label: "Pending", value: accounts.filter((account) => tabOf(account.status) === "PENDING").length },
+            { label: "Locked", value: accounts.filter((account) => tabOf(account.status) === "LOCKED").length },
+          ].map((item) => (
+            <div key={item.label} className={styles.summaryItem}>
+              <span>{tr(item.label)}</span>
+              <strong>{item.value}</strong>
+            </div>
+          ))}
+        </section>
       )}
 
       <PermissionRequestsPanel />
@@ -432,7 +455,7 @@ export default function AccountListPage() {
           )}
         </div>
 
-        {!loadError && accounts !== null && (
+        {!loadError && accounts !== null && rows.length > PAGE_SIZE && (
           <Pagination page={current} pageSize={PAGE_SIZE} total={rows.length} noun="accounts" onPage={setPage} />
         )}
       </Card>

@@ -34,7 +34,7 @@ export const vi: TranslationResources = {
     viewAll: "Xem tất cả",
     clearAll: "Xóa tất cả",
     markAsRead: "Đánh dấu đã đọc",
-    confirmLogoutTitle: "Đăng xuất khỏi EquiFlow?",
+    confirmLogoutTitle: "Đăng xuất khỏi TMEC?",
     confirmLogoutSubtitle: "Các thay đổi chưa lưu trên các biểu mẫu đang mở sẽ bị hủy bỏ.",
     staySignedIn: "Tiếp tục đăng nhập",
   },
@@ -113,6 +113,7 @@ export const vi: TranslationResources = {
     sessionExpired: "Phiên đăng nhập hết hạn",
     settings: "Cài đặt hệ thống",
     notifications: "Thông báo",
+    assistant: "Trợ lý TMEC",
 
     // Specific nav keys to avoid collisions / role differences
     trainingOverview: "Tổng quan huấn luyện",

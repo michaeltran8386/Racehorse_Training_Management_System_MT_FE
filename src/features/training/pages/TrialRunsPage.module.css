@@ -1,0 +1,7 @@
+.notice { padding: 14px 16px; background: var(--brand-50); border-left: 3px solid var(--brand); color: var(--text); font-size: var(--fs-body); line-height: 1.5; }
+.filters { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; }
+.groupTitle { margin: 0 0 1rem; font: 800 26px/1.1 var(--font-display); text-transform: uppercase; overflow-wrap: anywhere; }
+.table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--fs-body); }
+.table th { color: var(--text-2); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.table tbody tr:hover { background: var(--surface-row-hover); }
+@media (max-width: 520px) { .filters > * { flex: 1 1 100%; min-width: 0; } }

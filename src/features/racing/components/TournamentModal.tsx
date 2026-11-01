@@ -1,3 +1,4 @@
+import formLayout from "@/shared/components/form/FormLayout.module.css";
 import { useState, useEffect } from "react";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
@@ -162,7 +163,7 @@ export function TournamentModal({
           />
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div className={formLayout.columns}>
           <div>
             <label style={{ display: "block", fontSize: "var(--fs-sm, 0.875rem)", fontWeight: 600, marginBottom: "0.375rem" }}>
               {tr("Race Date")} *
@@ -234,7 +235,7 @@ export function TournamentModal({
           />
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div className={formLayout.columns}>
           <div>
             <label style={{ display: "block", fontSize: "var(--fs-sm, 0.875rem)", fontWeight: 600, marginBottom: "0.375rem" }}>
               {tr("Distance (Meters)")}
@@ -286,7 +287,7 @@ export function TournamentModal({
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+        <div className={formLayout.columns}>
           <div>
             <label style={{ display: "block", fontSize: "var(--fs-sm, 0.875rem)", fontWeight: 600, marginBottom: "0.375rem" }}>
               {tr("Total Prize Pool (VND)")}

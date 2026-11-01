@@ -50,6 +50,7 @@ export function Input({ icon, invalid, numeric, className, id, type, placeholder
         <button
           type="button"
           className={styles.toggle}
+          disabled={rest.disabled}
           onClick={() => setVisible((v) => !v)}
           aria-label={tr(visible ? "Hide password" : "Show password")}
         >

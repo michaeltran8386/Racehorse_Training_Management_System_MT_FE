@@ -1,13 +1,17 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { trainingApi } from "@/features/training/api";
 import type { LiveSimulatorSession } from "@/features/training/types";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { LinkButton } from "@/shared/components/ui/Button";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./TrainingMetrics.module.css";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { tr } from "@/shared/i18n/tr";
 
 export default function LiveMonitorPage() {
+  useScreenTranslation();
   const [sessions, setSessions] = useState<LiveSimulatorSession[]>([]);
   const [loading, setLoading] = useState(true);
   const [offline, setOffline] = useState(false);
@@ -39,74 +43,67 @@ export default function LiveMonitorPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span aria-hidden="true" style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--brand)" }} />
-            <h1 style={{ margin: 0, fontSize: "var(--fs-h1)", fontWeight: 700 }}>{tr("Live Session Telemetry")}</h1>
-          </div>
-          <p style={{ margin: "0.25rem 0 0", color: "var(--text-muted)" }}>{tr("Biometrics sent by running simulator sessions")}</p>
-        </div>
-        <Link to="/training/calendar"><Button tone="secondary">{tr("← Master Calendar")}</Button></Link>
-      </div>
+      <PageHeader title="Live Session Telemetry" description="Biometrics sent by running simulator sessions" action={<LinkButton to="/training/calendar" tone="secondary" icon="arrowLeft">{tr("Master Calendar")}</LinkButton>} />
 
       {offline && (
         <div role="alert" style={{ padding: "0.75rem 1rem", borderRadius: "var(--r)", background: "var(--warn-bg)", color: "var(--warn)" }}>
-          {tr("Live telemetry is temporarily unavailable. Showing the latest received data.")}
+          {tr(sessions.length ? "Live telemetry is temporarily unavailable. Showing the latest received data." : "Live telemetry is temporarily unavailable.")}
         </div>
       )}
 
       {loading ? (
         <p aria-live="polite">{tr("Loading live telemetry…")}</p>
-      ) : sessions.length === 0 ? (
+      ) : offline && sessions.length === 0 ? null : sessions.length === 0 ? (
         <EmptyState icon="activity" title="No trial is running" description="Start a due trial to see live telemetry here." />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", gap: "1.5rem" }}>
+        <div className={styles.liveGrid}>
           {sessions.map((session) => {
             const snapshot = session.lastSnapshot;
             if (!snapshot || !snapshot.metrics || !snapshot.horse || !snapshot.track) {
               return (
-                <article key={session.id} style={{ padding: "1.5rem", background: "var(--surface)", borderRadius: "var(--radius-card)", border: "1px solid var(--border)" }}>
+                <article key={session.id} className={styles.liveCard}>
                   <Badge tone="info">{tr("Running")}</Badge>
                   <p style={{ marginBottom: 0 }}>{tr("Waiting for the first telemetry packet…")}</p>
                 </article>
               );
             }
             const warning = Boolean(snapshot.alerts && Object.values(snapshot.alerts).some(Boolean));
-            const speedKmh = (snapshot.metrics.velocity_mps ?? 0) * 3.6;
-            const progress = (snapshot.track.target_distance_m ?? 0) > 0
-              ? Math.min(100, Math.round(((snapshot.track.covered_distance_m ?? 0) / snapshot.track.target_distance_m) * 100))
-              : 0;
+            const speed = snapshot.metrics.velocity_mps;
+            const covered = snapshot.track.covered_distance_m;
+            const target = snapshot.track.target_distance_m;
+            const progress = covered != null && target != null && target > 0
+              ? Math.max(0, Math.min(100, Math.round((covered / target) * 100)))
+              : null;
 
             return (
-              <article key={session.id} style={{ padding: "1.5rem", background: "var(--surface)", borderRadius: "var(--radius-card)", border: warning ? "2px solid var(--warn)" : "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem" }}>
+              <article key={session.id} className={`${styles.liveCard} ${warning ? styles.liveWarning : ""}`}>
+                <div className={styles.liveHeading}>
                   <div>
-                    <h2 style={{ margin: 0, fontSize: "var(--fs-section)" }}>
+                    <h2 className={styles.itemTitle}>
                       <Link to={`/horses/${snapshot.horse.horse_id}`} style={{ color: "inherit" }}>{snapshot.horse.microchip_id ?? snapshot.horse.horse_id}</Link>
                     </h2>
                     <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)" }}>
-                      {snapshot.track.surface} · {snapshot.track.track_condition} · {Math.round(snapshot.sim_time_s ?? 0)}s
+                      {tr(snapshot.track.surface)} · {tr(snapshot.track.track_condition)} · {snapshot.sim_time_s != null ? `${Math.round(snapshot.sim_time_s)}s` : "—"}
                     </span>
                   </div>
                   <Badge tone={warning ? "warn" : "ok"}>{warning ? tr("Warning") : tr("Running")}</Badge>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "0.75rem" }}>
-                  <Metric label="Current speed" value={`${speedKmh.toFixed(1)} km/h`} />
-                  <Metric label="Heart rate" value={`${Math.round(snapshot.metrics.heart_rate_bpm ?? 0)} bpm`} warning={warning} />
-                  <Metric label="Stamina" value={`${Math.round(snapshot.metrics.stamina_pct ?? 0)}%`} />
-                  <Metric label="Body temperature" value={`${(snapshot.metrics.body_temp_c ?? 0).toFixed(1)} °C`} />
+                <div className={styles.liveMetrics}>
+                  <Metric label="Current speed" value={speed != null ? `${(speed * 3.6).toFixed(1)} km/h` : "—"} />
+                  <Metric label="Heart rate" value={snapshot.metrics.heart_rate_bpm != null ? `${Math.round(snapshot.metrics.heart_rate_bpm)} bpm` : "—"} warning={warning} />
+                  <Metric label="Stamina" value={snapshot.metrics.stamina_pct != null ? `${Math.round(snapshot.metrics.stamina_pct)}%` : "—"} />
+                  <Metric label="Body temperature" value={snapshot.metrics.body_temp_c != null ? `${snapshot.metrics.body_temp_c.toFixed(1)} °C` : "—"} />
                 </div>
 
                 <div>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.3rem" }}>
-                    <span>{snapshot.track.covered_distance_m ?? 0}m / {snapshot.track.target_distance_m ?? 0}m</span>
-                    <strong>{progress}%</strong>
+                    <span>{covered ?? "—"}m / {target ?? "—"}m</span>
+                    <strong>{progress == null ? "—" : `${progress}%`}</strong>
                   </div>
-                  <div style={{ height: 8, background: "var(--surface-sunken)", borderRadius: 4 }}>
-                    <div style={{ width: `${progress}%`, height: "100%", background: warning ? "var(--warn)" : "var(--ok)", borderRadius: 4 }} />
-                  </div>
+                  {progress != null && <div className={styles.track}>
+                    <div className={styles.trackFill} style={{ width: `${progress}%`, background: warning ? "var(--warn)" : "var(--ok)" }} />
+                  </div>}
                 </div>
               </article>
             );
@@ -119,9 +116,9 @@ export default function LiveMonitorPage() {
 
 function Metric({ label, value, warning = false }: { label: string; value: string; warning?: boolean }) {
   return (
-    <div style={{ padding: "0.9rem", background: warning ? "var(--warn-bg)" : "var(--surface-sunken)", borderRadius: "var(--r)", textAlign: "center" }}>
-      <div style={{ color: "var(--text-muted)", fontSize: "var(--fs-caption)" }}>{tr(label)}</div>
-      <strong style={{ display: "block", marginTop: "0.25rem", fontSize: "var(--fs-section)", color: warning ? "var(--warn)" : "var(--text-main)" }}>{value}</strong>
+    <div className={`${styles.liveMetric} ${warning ? styles.metricWarning : ""}`}>
+      <div className={styles.metricLabel}>{tr(label)}</div>
+      <strong className={styles.metricValue}>{value}</strong>
     </div>
   );
 }

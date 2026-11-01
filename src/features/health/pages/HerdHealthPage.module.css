@@ -1,0 +1,18 @@
+.panel { display: grid; gap: 12px; align-content: start; }
+.summary { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
+.summary button { min-height: 96px; }
+.summary button > div:first-child { font-size: 11px !important; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
+.summary button > div:last-child { font-family: var(--font-display); font-size: 32px !important; line-height: 1; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 16px; border: 1px solid var(--border); background: var(--surface); }
+.board { display: flex; gap: 16px; align-items: flex-start; }
+.groupTitle { margin: 0 0 12px; font: 800 24px/1 var(--font-display); text-transform: uppercase; color: var(--text); }
+.horseCard { display: grid; gap: 8px; min-width: 0; padding: 16px; text-align: left; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--border); cursor: pointer; }
+.horseCard strong { font: 700 20px/1.1 var(--font-display); overflow-wrap: anywhere; }
+.horseCard:hover { border-color: var(--text); }
+.horseCard[aria-pressed="true"] { border-color: var(--brand); box-shadow: 3px 3px 0 var(--brand); }
+.horseCard:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+.horseCardLocked { border-left-color: var(--danger); }
+.horseStatus { justify-self: start; padding: 3px 8px; font-size: var(--fs-caption); font-weight: 700; }
+@media (max-width: 900px) { .board { flex-direction: column; } .board > div { width: 100%; } }
+@media (max-width: 520px) { .filters > div { width: 100% !important; } }
+.panel section { min-width: 0; overflow-wrap: anywhere; }

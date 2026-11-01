@@ -5,3 +5,9 @@
 .description { margin: 0; font-size: var(--fs-body); color: var(--text-2); line-height: 22px; max-width: 80ch; }
 .side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; flex-wrap: wrap; }
 .meta { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-body); color: var(--text-2); margin-right: 8px; }
+
+.header { border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+.title { font-family: var(--font-display); font-size: clamp(32px, 3vw, 42px); font-weight: 800; line-height: 1; letter-spacing: .01em; text-transform: uppercase; }
+.text, .side { max-width: 100%; }
+.title, .description { overflow-wrap: anywhere; }
+@media (max-width: 520px) { .header { align-items: stretch; } .side { min-width: 0; } }

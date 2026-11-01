@@ -1,6 +1,9 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./RaceEntryPage.module.css";
 import { Card } from "@/shared/components/ui/Card";
+import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
@@ -10,6 +13,8 @@ import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { tr, isVietnamese } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
+import { messageFor } from "@/shared/lib/messages";
+import { formatDate } from "@/shared/lib/format";
 
 const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
   UPCOMING: "Sắp diễn ra",
@@ -46,7 +51,9 @@ import { RaceRegistrationModal } from "../components/RaceRegistrationModal";
 import { RecordResultsModal } from "../components/RecordResultsModal";
 
 export default function RaceEntryPage() {
-  useAppLanguage();
+  useScreenTranslation();
+  const { isVietnamese: isVi } = useAppLanguage();
+  const locale = isVi ? "vi-VN" : "en-US";
   const user = useCurrentUser();
   const isClubManager = user.role === "CLUB_MANAGER";
   const isTrainer = user.role === "HEAD_TRAINER";
@@ -54,6 +61,7 @@ export default function RaceEntryPage() {
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -77,6 +85,7 @@ export default function RaceEntryPage() {
   useEffect(() => {
     let active = true;
     setLoading(true);
+    setError("");
     fetchTournaments({
       status: statusFilter,
       search: searchTerm,
@@ -89,7 +98,7 @@ export default function RaceEntryPage() {
       })
       .catch((err) => {
         if (active) {
-          console.error("Failed to load tournaments", err);
+          setError(messageFor(err));
           setLoading(false);
         }
       });
@@ -211,46 +220,37 @@ export default function RaceEntryPage() {
       />
 
       {/* KPI Tiles */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "1rem" }}>
+      <div className={styles.metrics}>
         <KpiTile
           label={tr("Championship Tournaments")}
-          value={String(totalTournaments)}
-          caption={tr("All organized racing events")}
+          value={loading || error ? "—" : String(totalTournaments)}
+          caption={tr("Events in the current results")}
         />
         <KpiTile
           label={tr("Registration Open")}
-          value={String(openCount)}
+          value={loading || error ? "—" : String(openCount)}
           caption={tr("Actively recruiting club horses")}
           accent={openCount > 0}
         />
         <KpiTile
           label={tr("Total Prize Pool")}
-          value={`${(totalPrize / 1000000).toLocaleString()}M`}
+          value={loading || error ? "—" : totalPrize.toLocaleString(locale)}
           unit="VND"
-          caption={tr("Total purse across all seasons")}
+          caption={tr("Purse in the current results")}
         />
         <KpiTile
           label={tr("Enrolled Horses")}
-          value={String(totalRegisteredHorses)}
-          caption={tr("Active race entries from stable")}
+          value={loading || error ? "—" : String(totalRegisteredHorses)}
+          caption={tr("Entries in the current results")}
         />
       </div>
 
       {/* Status Guide Accordion / Information Card */}
-      <div
-        style={{
-          padding: "0.875rem 1.25rem",
-          borderRadius: "8px",
-          background: "color-mix(in srgb, var(--brand) 6%, var(--surface))",
-          border: "1px solid color-mix(in srgb, var(--brand) 20%, var(--border))",
-          fontSize: "var(--fs-sm)",
-          lineHeight: 1.6,
-        }}
-      >
+      <div className={styles.guide}>
         <div style={{ fontWeight: 700, color: "var(--ink)", marginBottom: "0.25rem", display: "flex", alignItems: "center", gap: "0.5rem" }}>
           <span>ℹ️</span> {isVietnamese() ? "Giải thích trạng thái giải đấu & Quy trình đăng ký:" : tr("Tournament Status & Registration Process:")}
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "0.75rem", marginTop: "0.5rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "0.75rem", marginTop: "0.5rem" }}>
           <div>
             <strong style={{ color: "var(--info, #3b82f6)" }}>• {isVietnamese() ? "Sắp diễn ra (Upcoming):" : "Upcoming:"}</strong>{" "}
             {isVietnamese()
@@ -258,7 +258,7 @@ export default function RaceEntryPage() {
               : tr("Tournament is scheduled on the calendar but registration is not open yet.")}
           </div>
           <div>
-            <strong style={{ color: "var(--brand, #10b981)" }}>• {isVietnamese() ? "Đang mở đăng ký (Open for Registration):" : "Open for Registration:"}</strong>{" "}
+            <strong style={{ color: "var(--brand-700)" }}>• {isVietnamese() ? "Đang mở đăng ký (Open for Registration):" : "Open for Registration:"}</strong>{" "}
             {isVietnamese()
               ? "Cổng nộp hồ sơ đang mở. Chủ ngựa và HLV có thể bấm 'Đăng ký ngựa thi đấu' để đưa chiến mã đủ điều kiện tham gia tranh tài."
               : tr("Registration is actively open. Horse Owners and Trainers can enroll eligible horses.")}
@@ -302,9 +302,10 @@ export default function RaceEntryPage() {
             onChange={(v) => setStatusFilter(v)}
           />
 
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <div className={styles.searchBar}>
             <input
               type="text"
+              aria-label={tr("Search by name or location...")}
               placeholder={tr("Search by name or location...")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -318,7 +319,7 @@ export default function RaceEntryPage() {
                 background: "var(--surface)",
                 color: "var(--ink)",
                 fontSize: "var(--fs-sm)",
-                width: "240px",
+                width: "min(240px, 100%)",
               }}
             />
             <Button tone="secondary" onClick={() => loadData()}>
@@ -333,6 +334,10 @@ export default function RaceEntryPage() {
         <Card pad={32}>
           <div style={{ textAlign: "center", color: "var(--muted)" }}>{tr("Loading tournaments...")}</div>
         </Card>
+      ) : error ? (
+        <Alert tone="danger" title={tr("Could not load data")} action={<Button tone="secondary" onClick={loadData}>{tr("Try again")}</Button>}>
+          {error}
+        </Alert>
       ) : filtered.length === 0 ? (
         <Card pad={32}>
           <EmptyState
@@ -348,7 +353,7 @@ export default function RaceEntryPage() {
           />
         </Card>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(360px, 1fr))", gap: "1.25rem" }}>
+        <div className={styles.events}>
           {filtered.map((tourney) => {
             const registeredCount = tourney.registeredCount ?? tourney.registrations?.length ?? 0;
             const isCompleted = tourney.status === "COMPLETED";
@@ -361,13 +366,13 @@ export default function RaceEntryPage() {
                 <div style={{ display: "flex", flexDirection: "column", gap: "1rem", height: "100%", justifyContent: "space-between" }}>
                   <div>
                     {/* Header */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem" }}>
+                    <div className={styles.eventHeading}>
                       <div>
                         <h3 style={{ margin: 0, fontSize: "var(--fs-kpi, 1.125rem)", fontWeight: 700, color: "var(--ink)" }}>
                           {tourney.name}
                         </h3>
                         <p style={{ margin: "4px 0 0 0", fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>
-                          📍 {tourney.location}
+                          {tourney.location}
                         </p>
                       </div>
                       <Badge
@@ -405,7 +410,7 @@ export default function RaceEntryPage() {
                           {tr("Race Date")}
                         </span>
                         <strong style={{ fontSize: "var(--fs-sm)", color: "var(--ink)" }}>
-                          {new Date(tourney.raceDate).toLocaleDateString()}
+                          {formatDate(tourney.raceDate)}
                         </strong>
                       </div>
                       <div>
@@ -421,15 +426,15 @@ export default function RaceEntryPage() {
                           {tr("Registration Deadline")}
                         </span>
                         <span style={{ fontSize: "var(--fs-xs)", color: "var(--ink)", fontWeight: 600 }}>
-                          {new Date(tourney.registrationDeadline).toLocaleDateString()}
+                          {formatDate(tourney.registrationDeadline)}
                         </span>
                       </div>
                       <div>
                         <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", display: "block" }}>
                           {tr("Purse Pool")}
                         </span>
-                        <strong style={{ fontSize: "var(--fs-sm)", color: "var(--brand, #10b981)" }}>
-                          {tourney.prizePool.toLocaleString()} đ
+                        <strong style={{ fontSize: "var(--fs-sm)", color: "var(--brand-700)" }}>
+                          {tourney.prizePool.toLocaleString(locale)} đ
                         </strong>
                       </div>
                     </div>
@@ -453,7 +458,7 @@ export default function RaceEntryPage() {
                           fontSize: "var(--fs-xs)",
                         }}
                       >
-                        <div style={{ fontWeight: 700, color: "var(--brand)" }}>🏆 {tr("Official Results:")}</div>
+                        <div style={{ fontWeight: 700, color: "var(--brand-700)" }}>🏆 {tr("Official Results:")}</div>
                         {tourney.registrations
                           .filter((r) => r.result)
                           .sort((a, b) => (a.result?.finalRank ?? 99) - (b.result?.finalRank ?? 99))

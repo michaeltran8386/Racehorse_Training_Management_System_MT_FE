@@ -8,8 +8,8 @@ import { breadcrumbFor } from "@/shared/lib/navigation";
 import { ROLE_LABEL } from "@/shared/lib/permissions";
 import { useAppLanguage } from "@/shared/lib/language";
 import { startNotificationPolling } from "@/shared/lib/notifications";
-import { triggerCloudLogoutTransition } from "@/shared/lib/cloudTransition";
 import { SkeletonWorkspace } from "@/shared/components/ui/Skeleton";
+import { MascotAssistant } from "@/shared/components/mascot/MascotAssistant";
 import { useAuth } from "./AuthProvider";
 import { BreadcrumbContext } from "./BreadcrumbContext";
 import { Sidebar } from "./Sidebar";
@@ -23,7 +23,7 @@ import { tr } from "@/shared/i18n/tr";
 export function AppShell({ children }: { children: ReactNode }) {
   const { status, user, expired, signOut, refresh } = useAuth();
   const { pathname } = useLocation();
-  const { t, lang } = useAppLanguage();
+  const { t } = useAppLanguage();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -64,14 +64,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             onMenu={() => setMenuOpen(true)}
             onLogout={() => setLogoutOpen(true)}
           />
-          {/* key theo ngôn ngữ: đổi ngôn ngữ thì trang vẽ lại để mọi chữ tr() đổi theo. */}
-          <main id="content" className={styles.content} key={lang}>
+          <main id="content" className={styles.content}>
             <div key={pathname} className={styles.pageTransition}>
               {children}
             </div>
           </main>
         </div>
       </div>
+
+      <MascotAssistant user={user} />
 
       {/* Hộp thoại nằm NGOÀI RoleGuard: vẫn hiện được khi trang bên trong bị chặn (403). */}
       {logoutOpen && (
@@ -84,10 +85,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           onCancel={() => setLogoutOpen(false)}
           onConfirm={async () => {
             setLogoutOpen(false);
-            triggerCloudLogoutTransition(async () => {
-              await signOut();
-              navigate("/login", { replace: true });
-            });
+            await signOut();
+            navigate("/login", { replace: true });
           }}
         >
           {t("common.confirmLogoutBody", `The session for ${user.fullName} · ${t(`nav.role_${user.role}`, ROLE_LABEL[user.role])} closes and the browser returns to the sign-in page.`)}

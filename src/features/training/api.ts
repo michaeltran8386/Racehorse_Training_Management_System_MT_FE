@@ -23,7 +23,6 @@ import type {
 } from "./types";
 
 // Mọi lỗi từ BE đi thẳng ra màn hình (không còn "lưu tạm vào trình duyệt rồi báo thành công").
-// Chế độ mock (VITE_USE_MOCK=true) do shared/mock/handlers.ts trả về đúng dạng dữ liệu của BE.
 
 // ------------------------------------------------------------ Giờ câu lạc bộ (UTC+7)
 

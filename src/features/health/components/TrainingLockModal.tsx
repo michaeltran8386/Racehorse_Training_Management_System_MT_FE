@@ -1,11 +1,13 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { Button } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/ui/Modal";
+import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { messageFor } from "@/shared/lib/messages";
 import { formatDate } from "@/shared/lib/format";
 
@@ -48,26 +50,17 @@ export function TrainingLockModal({
   const minDate = new Date(Date.now() + 86400000).toISOString().split("T")[0];
   const maxDate = new Date(Date.now() + 180 * 86400000).toISOString().split("T")[0];
 
-  const [selectedHorseId, setSelectedHorseId] = useState(
-    horseId || (horseOptions && horseOptions.length > 0 ? horseOptions[0].value : "")
-  );
+  const [selectedHorseId, setSelectedHorseId] = useState(horseId || "");
   const [reason, setReason] = useState("");
-  const [appliedStatus, setAppliedStatus] = useState("INJURED");
-  const [reviewDate, setReviewDate] = useState(() =>
-    new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
-  );
-  const [newReviewDate, setNewReviewDate] = useState(() => {
-    if (currentReviewDate) {
-      const currTime = new Date(currentReviewDate).getTime();
-      const baseTime = currTime > Date.now() ? currTime : Date.now();
-      return new Date(baseTime + 7 * 86400000).toISOString().split("T")[0];
-    }
-    return new Date(Date.now() + 14 * 86400000).toISOString().split("T")[0];
-  });
-  const [restoreStatus, setRestoreStatus] = useState("RESTING");
+  const [appliedStatus, setAppliedStatus] = useState("");
+  const [reviewDate, setReviewDate] = useState("");
+  const [newReviewDate, setNewReviewDate] = useState("");
+  const [restoreStatus, setRestoreStatus] = useState("");
   const [unlockConditions, setUnlockConditions] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
+  const initial = useRef({ selectedHorseId, appliedStatus, reviewDate, newReviewDate, restoreStatus });
 
   const activeHorseLabel =
     horseOptions?.find((h) => h.value === selectedHorseId)?.label || horseName;
@@ -92,19 +85,20 @@ export function TrainingLockModal({
       ? newReviewDate >= minDate && newReviewDate <= maxDate
       : true;
 
-  const isFormValid = isReasonValid && isDateValid;
+  const isFormValid = isReasonValid && isDateValid && (mode !== "place" || Boolean(selectedHorseId && appliedStatus)) && (mode !== "lift" || Boolean(restoreStatus));
 
   function handleCancel() {
-    if (reason.trim().length > 0) {
-      if (!window.confirm("You have unsaved changes. Are you sure you want to discard them?")) {
-        return;
-      }
-    }
+    if (busy) return;
+    const changed = reason.trim() || unlockConditions.trim() || selectedHorseId !== initial.current.selectedHorseId ||
+      appliedStatus !== initial.current.appliedStatus || reviewDate !== initial.current.reviewDate ||
+      newReviewDate !== initial.current.newReviewDate || restoreStatus !== initial.current.restoreStatus;
+    if (changed) { setConfirmDiscard(true); return; }
     onClose();
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (busy || (mode === "place" && (!selectedHorseId || !appliedStatus)) || (mode === "lift" && !restoreStatus)) return;
     if (!reason.trim()) {
       setError("Please enter a clinical reason (10 to 500 characters).");
       return;
@@ -158,6 +152,19 @@ export function TrainingLockModal({
     }
   }
 
+  if (confirmDiscard) {
+    return <ConfirmModal
+      title={tr("Discard changes")}
+      tone="warn"
+      confirmLabel={tr("Discard changes")}
+      cancelLabel={tr("Cancel")}
+      onConfirm={onClose}
+      onCancel={() => setConfirmDiscard(false)}
+    >
+      {tr("You have unsaved changes. Are you sure you want to discard them?")}
+    </ConfirmModal>;
+  }
+
   return (
     <Modal
       title={titles[mode]}
@@ -172,7 +179,8 @@ export function TrainingLockModal({
           </Button>
           <Button
             tone={mode === "lift" ? "primary" : mode === "place" ? "danger" : "primary"}
-            onClick={handleSubmit}
+            type="submit"
+            form="training-lock-form"
             disabled={busy || !isFormValid}
           >
             {mode === "place" ? "Confirm Training Lock" : mode === "lift" ? "Confirm Lift Lock" : "Save Extension"}
@@ -180,10 +188,10 @@ export function TrainingLockModal({
         </div>
       }
     >
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <form id="training-lock-form" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {error && (
-          <div style={{ color: "var(--danger)", fontSize: "13px", padding: "8px 12px", background: "var(--danger-bg)", borderRadius: "6px" }}>
-            {error}
+          <div role="alert" style={{ color: "var(--danger)", fontSize: "13px", padding: "8px 12px", background: "var(--danger-bg)", borderRadius: "var(--r)" }}>
+            {tr(error)}
           </div>
         )}
 
@@ -192,9 +200,9 @@ export function TrainingLockModal({
             <div
               style={{
                 padding: "12px 14px",
-                background: "rgba(239, 68, 68, 0.05)",
-                border: "1px solid rgba(239, 68, 68, 0.2)",
-                borderRadius: "8px",
+                background: "var(--danger-bg)",
+                border: "1px solid var(--danger)",
+                borderRadius: "var(--r)",
                 fontSize: "13px",
                 display: "flex",
                 flexDirection: "column",
@@ -205,7 +213,7 @@ export function TrainingLockModal({
                 <span>{tr("⚠️ Clinical Order Impact Assessment")}</span>
               </div>
               <div style={{ color: "var(--text)", lineHeight: 1.5 }}>
-                • <strong>{tr("Health Status:")}</strong> {tr("Transitions horse to")}{" "}<strong>{appliedStatus}</strong> {tr("immediately.")}<br/>
+                • <strong>{tr("Health Status:")}</strong> {appliedStatus ? <>{tr("Transitions horse to")} <strong>{tr(APPLIED_STATUS_OPTIONS.find((option) => option.value === appliedStatus)?.label || appliedStatus)}</strong> {tr("immediately.")}</> : tr("Select a health status.")}<br/>
                 • <strong>{tr("Training Impact:")}</strong> {tr("Automatically")}{" "}<strong>{tr("BLOCKS")}</strong> {tr("all upcoming high-intensity workouts.")}<br/>
                 • <strong>{tr("Racing:")}</strong> {tr("Suspends pending race nominations during the medical hold.")}<br/>
                 • <strong>{tr("Notifications:")}</strong> {tr("Urgent alerts dispatched to Head Trainer, Club Manager, Groom & Owner.")}
@@ -214,17 +222,17 @@ export function TrainingLockModal({
 
             {horseOptions && horseOptions.length > 0 && (
               <Field label={tr("Target Horse *")}>
-                <Select
-                  options={horseOptions}
+                <SearchSelect
+                  options={[{ value: "", label: tr("— Select a horse —") }, ...horseOptions]}
                   value={selectedHorseId}
-                  onChange={(e) => setSelectedHorseId(e.target.value)}
+                  onChange={setSelectedHorseId}
                 />
               </Field>
             )}
 
             <Field label={tr("Applied Health Status *")}>
               <Select
-                options={APPLIED_STATUS_OPTIONS}
+                options={[{ value: "", label: tr("— Select —") }, ...APPLIED_STATUS_OPTIONS]}
                 value={appliedStatus}
                 onChange={(e) => setAppliedStatus(e.target.value)}
               />
@@ -268,7 +276,7 @@ export function TrainingLockModal({
           <>
             <Field label={tr("Post-Lift Health Status *")}>
               <Select
-                options={RESTORE_STATUS_OPTIONS}
+                options={[{ value: "", label: tr("— Select —") }, ...RESTORE_STATUS_OPTIONS]}
                 value={restoreStatus}
                 onChange={(e) => setRestoreStatus(e.target.value)}
               />

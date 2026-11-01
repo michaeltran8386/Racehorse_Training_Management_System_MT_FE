@@ -1,9 +1,11 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Card } from "@/shared/components/ui/Card";
+import styles from "./TrainingMetrics.module.css";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Select } from "@/shared/components/form/Select";
 import { Tabs } from "@/shared/components/ui/Tabs";
@@ -53,6 +55,7 @@ function distanceOf(s: ExerciseSession): number {
 
 /** SC-2.04 Chi tiết giáo án. HT thao tác; CM, VET, OWNER chỉ xem. */
 export default function PlanDetailPage() {
+  useScreenTranslation();
   useAppLanguage();
   const { id = "" } = useParams();
   const [params, setParams] = useSearchParams();
@@ -114,7 +117,7 @@ export default function PlanDetailPage() {
         <div style={{ display: "flex", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
           <div>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-              <h1 style={{ margin: 0, fontSize: "var(--fs-kpi)" }}>{plan.name}</h1>
+              <h1 className={styles.planTitle}>{plan.name}</h1>
               <Badge tone="neutral">{plan.planCode}</Badge>
               <Badge tone={PLAN_STATUS_TONE[plan.status]}>{PLAN_STATUS_LABEL[plan.status]}</Badge>
             </div>
@@ -171,9 +174,7 @@ export default function PlanDetailPage() {
               </Button>
             )}
             {isTrainer && <Button tone="ghost" onClick={() => setDialog({ kind: "clone" })}>{tr("Clone")}</Button>}
-            <Link to={`/horses/${plan.horseId}/fitness`}>
-              <Button tone="secondary">{tr("Fitness chart")}</Button>
-            </Link>
+            <LinkButton to={`/horses/${plan.horseId}/fitness`} tone="secondary">{tr("Fitness chart")}</LinkButton>
           </div>
         </div>
       </Card>
@@ -206,7 +207,7 @@ export default function PlanDetailPage() {
       </Card>
 
       {tab === "phases" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "1rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "1rem" }}>
           {plan.phases.length === 0 && <EmptyState title={tr("No phases")} />}
           {plan.phases.map((ph) => (
             <PhaseCard key={ph.id} phase={ph} sessions={sessions.filter((s) => s.phaseId === ph.id)} current={ph.startDate <= today && today <= ph.endDate} />
@@ -216,16 +217,18 @@ export default function PlanDetailPage() {
 
       {tab === "workouts" && (
         <Card pad={16}>
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center", marginBottom: "1rem" }}>
-            <div style={{ width: 220 }}>
+          <div className={styles.planFilters}>
+            <div className={styles.planFilter}>
               <Select
+                aria-label={tr("Phase")}
                 value={phaseFilter}
                 onChange={(e) => setPhaseFilter(e.target.value)}
                 options={[{ value: "ALL", label: tr("All phases") }, ...plan.phases.map((p) => ({ value: p.id, label: p.name }))]}
               />
             </div>
-            <div style={{ width: 200 }}>
+            <div className={styles.planFilter}>
               <Select
+                aria-label={tr("Status")}
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 options={[
@@ -241,7 +244,7 @@ export default function PlanDetailPage() {
             <EmptyState title={tr("No workouts yet.")} />
           ) : (
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "var(--fs-body)" }}>
+              <table className={styles.table}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
                     {["Date", "Phase", "Type", "Intensity", "Distance × reps", "Target speed", "Surface", "Jockey", "Groom", "Status", "Result", ""].map((h) => (
@@ -275,10 +278,10 @@ export default function PlanDetailPage() {
                           <div style={{ display: "flex", gap: "0.35rem", justifyContent: "flex-end" }}>
                             {b.edit && <Button size="sm" tone="ghost" onClick={() => setDialog({ kind: "edit", session: s })}>{tr("Edit")}</Button>}
                             {b.record && (
-                              <Link to={`/training/sessions/${s.id}/result`}><Button size="sm" tone="secondary">{tr("Record result")}</Button></Link>
+                              <LinkButton to={`/training/sessions/${s.id}/result`} size="sm" tone="secondary">{tr("Record result")}</LinkButton>
                             )}
                             {b.viewResult && (
-                              <Link to={`/training/sessions/${s.id}/result`}><Button size="sm" tone="secondary">{tr("View result")}</Button></Link>
+                              <LinkButton to={`/training/sessions/${s.id}/result`} size="sm" tone="secondary">{tr("View result")}</LinkButton>
                             )}
                             {b.restore && (
                               <Button
@@ -320,7 +323,7 @@ export default function PlanDetailPage() {
               <Card key={s.id} pad={16}>
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
                   <strong>{s.sessionDate} {s.startTime}</strong>
-                  <span>{EXERCISE_TYPE_LABEL[s.sessionType]}</span>
+                  <span>{tr(EXERCISE_TYPE_LABEL[s.sessionType])}</span>
                   {s.result?.performanceScore != null && <Badge tone="info">{s.result.performanceScore}/10</Badge>}
                   {s.result?.hasAbnormalSigns && <Badge tone="danger">{tr("Abnormal signs")}</Badge>}
                   <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>by {s.result?.recordedBy ?? "—"}</span>
@@ -328,7 +331,7 @@ export default function PlanDetailPage() {
                 <div style={{ marginTop: "0.35rem" }}>{s.result?.headTrainerFeedback || "—"}</div>
                 {s.result?.hasAbnormalSigns && (
                   <div style={{ marginTop: "0.35rem", color: "var(--danger)", fontSize: "var(--fs-body)" }}>
-                    {s.result.abnormalSignTypes.map((x) => ABNORMAL_SIGN_LABEL[x]).join(", ")}: {s.result.abnormalSignsDescription}
+                    {s.result.abnormalSignTypes.map((x) => tr(ABNORMAL_SIGN_LABEL[x])).join(", ")}: {s.result.abnormalSignsDescription}
                   </div>
                 )}
               </Card>
@@ -382,9 +385,9 @@ function PhaseCard({ phase, sessions, current }: { phase: TrainingPhase; session
 
   return (
     <Card pad={16}>
-      <div style={{ border: current ? "2px solid var(--brand)" : "none", borderRadius: "var(--r)", padding: current ? "0.5rem" : 0 }}>
+      <div className={`${styles.phaseCard} ${current ? styles.currentPhase : ""}`}>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-          <strong>{phase.name}</strong>
+          <strong className={styles.phaseName}>{phase.name}</strong>
           <Badge tone="neutral">{PHASE_TYPE_LABEL[phase.type] ?? phase.type}</Badge>
           {current && <Badge tone="info">{tr("Current")}</Badge>}
         </div>

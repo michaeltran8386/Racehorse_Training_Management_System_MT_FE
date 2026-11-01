@@ -30,3 +30,6 @@
   place-items: center;
   border: 2px solid var(--surface);
 }
+.badge { color: #fff; }
+.badge { background: var(--danger-bg); color: var(--danger); border-color: var(--surface); border-radius: 0; }
+.btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }

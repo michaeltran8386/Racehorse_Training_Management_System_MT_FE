@@ -1,0 +1,4 @@
+.filters { display: flex; gap: 12px; flex-wrap: wrap; padding: 16px; background: var(--surface); border: 1px solid var(--border); }
+.search { flex: 1 1 260px; max-width: 360px; min-width: 0; }
+.status { width: 170px; }
+@media (max-width: 520px) { .search, .status { width: 100%; max-width: none; flex-basis: 100%; } }

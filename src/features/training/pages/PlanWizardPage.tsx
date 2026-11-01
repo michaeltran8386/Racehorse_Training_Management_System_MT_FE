@@ -1,11 +1,14 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useBlocker } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
 import { Card } from "@/shared/components/ui/Card";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { useToast } from "@/shared/components/ui/Toast";
@@ -16,6 +19,7 @@ import { todayClub, trainingApi } from "../api";
 import { PHASE_TYPE_LABEL } from "../types";
 import type { PhaseSurface, PhaseType, TrainingPhase, TrainingPlan } from "../types";
 
+import styles from "./PlanWizardPage.module.css";
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 const SURFACE_LABEL: Record<PhaseSurface, string> = { TURF: "Turf", DIRT: "Dirt", SYNTHETIC: "Mixed / synthetic" };
@@ -58,6 +62,7 @@ function validate(name: string, objective: string, start: string, end: string, p
 
 /** SC-2.03 Tạo / Sửa giáo án (HT). Sửa được khi Nháp hoặc Đang áp dụng. */
 export default function PlanWizardPage() {
+  useScreenTranslation();
   useAppLanguage();
   const { id } = useParams<{ id?: string }>();
   const editing = Boolean(id);
@@ -186,75 +191,32 @@ export default function PlanWizardPage() {
   const canActivateAfterSave = !editing || existing?.status === "DRAFT";
 
   return (
-    <div style={{ maxWidth: 920, margin: "0 auto", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      <div>
-        <h1 style={{ fontSize: "var(--fs-kpi)", fontWeight: 700, margin: 0 }}>
-          {editing ? tr(`Edit ${existing?.planCode ?? "plan"}`) : tr("Create Training Plan")}
-        </h1>
-        <p style={{ margin: "0.25rem 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>
-          {tr("Set goals, dates, and periodization phases for the training plan.")}
-        </p>
-      </div>
+    <div className={styles.page}>
+      <PageHeader
+        title={editing ? tr("Edit {{code}}", { code: existing?.planCode ?? "plan" }) : "Create Training Plan"}
+        description="Set goals, dates, and periodization phases for the training plan."
+      />
 
-      {/* 2-Step Periodization Roadmap Guide */}
-      <Card pad={16}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.5rem 0.875rem",
-                borderRadius: "var(--r-sm, 6px)",
-                background: "var(--brand-muted, rgba(16, 185, 129, 0.12))",
-                border: "1px solid var(--brand, #10b981)",
-                color: "var(--brand, #10b981)",
-                fontWeight: 700,
-                fontSize: "var(--fs-sm)",
-              }}
-            >
-              <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--brand, #10b981)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem" }}>
-                1
-              </span>
-              <span>{tr("Step 1: Goals, Duration & Phases")}</span>
-            </div>
-            <span style={{ color: "var(--muted)", fontWeight: 700 }}>➔</span>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.5rem",
-                padding: "0.5rem 0.875rem",
-                borderRadius: "var(--r-sm, 6px)",
-                background: "var(--surface-sunken, #f8fafc)",
-                border: "1px dashed var(--border)",
-                color: "var(--muted)",
-                fontSize: "var(--fs-sm)",
-              }}
-            >
-              <span style={{ width: 20, height: 20, borderRadius: "50%", background: "var(--muted)", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem" }}>
-                2
-              </span>
-              <span>{tr("Step 2: Add Workouts & Calendar")}</span>
-            </div>
-          </div>
-          <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", maxWidth: 360 }}>
-            💡 {tr("Workouts are scheduled within phase date boundaries.")}
-          </div>
+      <Card pad={20}>
+        <div className={styles.roadmap}>
+          <ol className={styles.steps}>
+            <li className={styles.currentStep} aria-current="step"><span>01</span>{tr("Step 1: Goals, Duration & Phases")}</li>
+            <li className={styles.nextStep}><span>02</span>{tr("Step 2: Add Workouts & Calendar")}</li>
+          </ol>
+          <p className={styles.hint}>{tr("Workouts are scheduled within phase date boundaries.")}</p>
         </div>
       </Card>
 
       {error && <Alert tone="danger" title={tr("Cannot save")}>{error}</Alert>}
 
       <Card pad={24}>
-        <h2 style={{ margin: "0 0 1rem", fontSize: "var(--fs-section)" }}>{tr("General information")}</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+        <h2 className={styles.sectionTitle}>{tr("General information")}</h2>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: "1rem" }}>
           <Field label={tr("Horse")} required>
-            <Select
+            <SearchSelect
               value={horseId}
               disabled={editing}
-              onChange={(e) => change(setHorseId)(e.target.value)}
+              onChange={change(setHorseId)}
               options={horses.map((h) => ({ value: h.id, label: `${h.name} (${h.horseCode ?? ""})${h.isMedicalLocked ? " · Training Lock" : ""}` }))}
             />
           </Field>
@@ -290,20 +252,20 @@ export default function PlanWizardPage() {
         </div>
       </Card>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h2 style={{ margin: 0, fontSize: "var(--fs-section)" }}>{tr("Phases ({{count}}/12)", { count: phases.length })}</h2>
+      <div className={styles.sectionHeader}>
+        <h2 className={styles.phaseTitle}>{tr("Phases ({{count}}/12)", { count: phases.length })}</h2>
         <Button tone="secondary" onClick={addPhase} disabled={phases.length >= 12}>{tr("+ Add phase")}</Button>
       </div>
 
       {phases.map((ph, i) => (
         <Card key={ph.id} pad={20}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+          <div className={styles.phaseHeader}>
             <strong>{tr("Phase #{{number}}", { number: i + 1 })}</strong>
             {phases.length > 1 && (
               <Button tone="ghost" size="sm" onClick={() => removePhase(i)}>{tr("Remove phase")}</Button>
             )}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "1rem" }}>
             <Field label={tr("Phase name")} required>
               <Input value={ph.name} maxLength={100} onChange={(e) => updatePhase(i, { name: e.target.value })} />
             </Field>

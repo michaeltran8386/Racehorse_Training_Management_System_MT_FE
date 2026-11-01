@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Field } from "@/shared/components/form/Field";
@@ -23,6 +24,7 @@ import { fullNameError } from "@/shared/lib/name";
 import { tr } from "@/shared/i18n/tr";
 // Design 1.15: hồ sơ cá nhân — dùng chung cho cả 5 vai trò, mỗi người chỉ thấy hồ sơ của mình.
 export default function MyProfilePage() {
+  useScreenTranslation();
   const user = useCurrentUser();
   const { setUser } = useAuth();
   const { isVietnamese, t } = useAppLanguage();
@@ -112,7 +114,7 @@ export default function MyProfilePage() {
               </Field>
               <Field label={tr("Role")}>
                 <Tooltip label={tr("Only the Club Manager can change a role.")} placement="bottom" block>
-                  <Input value={ROLE_LABEL[user.role]} disabled readOnly />
+                  <Input value={tr(ROLE_LABEL[user.role])} disabled readOnly />
                 </Tooltip>
               </Field>
             </div>
@@ -160,14 +162,14 @@ export default function MyProfilePage() {
                 <div>
                   <strong>{user.fullName}</strong>
                   <span>
-                    {ROLE_LABEL[user.role]} {tr("· since")}{" "}{formatDate(user.createdAt)}
+                    {tr(ROLE_LABEL[user.role])} {tr("· since")}{" "}{formatDate(user.createdAt)}
                   </span>
                 </div>
               </div>
               <div className={styles.rows}>
                 <div>
                   <span>{tr("Status")}</span>
-                  <Badge tone={status.tone}>{status.label}</Badge>
+                  <Badge tone={status.tone}>{tr(status.label)}</Badge>
                 </div>
                 <div>
                   <span>{tr("Permissions")}</span>
