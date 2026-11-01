@@ -34,6 +34,7 @@ dist
 # Local assistant notes
 CLAUDE.md
 .claude/
+.impeccable/
 jpd133*.md
 playwright-report/
 test-results/
