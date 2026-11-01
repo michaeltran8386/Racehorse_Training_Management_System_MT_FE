@@ -6,6 +6,10 @@ import type { ForbiddenInfo, InviteVerifyResult, OtpPurpose, OtpTimes, RegisterI
 // ---- đăng ký + xác minh email (OTP) ----
 export const register = (input: RegisterInput) => api<{ email: string } & OtpTimes>("POST", "/auth/register", input);
 
+// Đăng ký bằng Google: email đã được Google xác minh nên đi thẳng tới bước chờ Club Manager duyệt.
+export const registerWithGoogle = (credential: string) =>
+  api<RegistrationResult>("POST", "/auth/google/register", { credential });
+
 export const verifyEmail = (email: string, code: string) =>
   api<RegistrationResult>("POST", "/auth/verify-email", { email, code });
 

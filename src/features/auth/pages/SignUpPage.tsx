@@ -10,7 +10,9 @@ import { PillButton } from "../components/PillButton";
 import { ApiError } from "@/shared/lib/api";
 import { messageFor } from "@/shared/lib/messages";
 import { passwordError } from "@/shared/lib/password";
-import { register } from "../api";
+import { register, registerWithGoogle } from "../api";
+import { signupFlow } from "../flow";
+import { GoogleSignIn } from "../components/GoogleSignIn";
 import { EMAIL_PLACEHOLDER } from "@/shared/lib/brand";
 import styles from "./AuthPages.module.css";
 import { fullNameError } from "@/shared/lib/name";
@@ -75,6 +77,25 @@ export default function SignUpPage() {
         setErrors({});
         setAlertBody(messageFor(err));
       }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onGoogleCredential(credential: string) {
+    if (busy) return;
+    setErrors({});
+    if (!agree) {
+      setAlertBody(tr("Accept the club rules to send the request."));
+      return;
+    }
+    setBusy(true);
+    setAlertBody("");
+    try {
+      signupFlow.set(await registerWithGoogle(credential));
+      navigate("/sign-up/pending");
+    } catch (err) {
+      setAlertBody(messageFor(err));
     } finally {
       setBusy(false);
     }
@@ -163,6 +184,8 @@ export default function SignUpPage() {
         >
           {tr("Send request to Club Manager")}
         </PillButton>
+
+        <GoogleSignIn mode="signup" onCredential={onGoogleCredential} />
 
         <Link to="/login" className={styles.outlineLink}>
           {tr("Already have an account?")} {tr("Sign in")}

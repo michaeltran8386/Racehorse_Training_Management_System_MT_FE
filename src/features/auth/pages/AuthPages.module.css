@@ -3,7 +3,18 @@
 .row a { font-size: var(--fs-caption); font-weight: 600; }
 .foot { margin: 0; font-size: var(--fs-caption); color: var(--muted); text-align: center; }
 .foot a { font-weight: 600; }
-.googleSignIn { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.googleSignIn { display: flex; flex-direction: column; align-items: center; gap: 12px; width: 100%; }
+/* Nút Google cùng khổ với nút pill khác; nút thật của Google (tối đa 400×40) phủ trong suốt lên trên để nhận click. */
+.googleButton {
+  position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; box-sizing: border-box; padding: 13px 22px; border-radius: var(--r-pill);
+  border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+  font-size: 15px; font-weight: 800; overflow: hidden; transition: background-color .2s;
+}
+.googleButton:hover { background: var(--surface-2); }
+.googleButton:focus-within { outline: var(--focus-ring); outline-offset: 2px; }
+.googleHit { position: absolute; top: 50%; left: 50%; opacity: 0.01; transform-origin: center; }
+@media (prefers-reduced-motion: reduce) { .googleButton { transition: none; } }
 .googleSignIn p { margin: 0; color: var(--danger); font-size: var(--fs-caption); text-align: center; }
 .googleDivider { display: flex; align-items: center; gap: 12px; width: 100%; color: var(--muted); font-size: var(--fs-caption); }
 .googleDivider::before, .googleDivider::after { content: ""; flex: 1; height: 1px; background: var(--border-soft); }
