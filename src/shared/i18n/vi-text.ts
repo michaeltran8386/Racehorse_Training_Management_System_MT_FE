@@ -2063,7 +2063,7 @@ export const VI_TEXT: Record<string, string> = {
   "The Audit Log is no longer readable by this account.": "Tài khoản này không còn xem được Nhật ký kiểm toán.",
   "The Club Manager always keeps account management.": "Quản lý CLB luôn giữ quyền quản lý tài khoản.",
   "The Club Manager declined this account request.{{reason}} Send a new request if the details were wrong.": "Quản lý CLB đã từ chối yêu cầu tài khoản này.{{reason}} Hãy gửi yêu cầu mới nếu thông tin bị sai.",
-  "The Club Manager locked this account at {{time}}. Contact support@equiflow.vn to have it unlocked.{{reason}}": "Quản lý CLB đã khóa tài khoản này lúc {{time}}. Liên hệ support@equiflow.vn để được mở khóa.{{reason}}",
+  "The Club Manager locked this account at {{time}}. Contact support@tmec.site to have it unlocked.{{reason}}": "Quản lý CLB đã khóa tài khoản này lúc {{time}}. Liên hệ support@tmec.site để được mở khóa.{{reason}}",
   "The Club Manager registers new horses and assigns them.": "Quản lý CLB đăng ký ngựa mới và phân công.",
   "The Head Trainer has not recorded a result yet.": "Huấn luyện viên trưởng chưa ghi kết quả.",
   "The Training Lock of {{horse}} now runs until {{date}}.": "Khóa huấn luyện của {{horse}} kéo dài tới {{date}}.",
@@ -2161,7 +2161,7 @@ export const VI_TEXT: Record<string, string> = {
   "This account can no longer delete or deactivate Horse Profiles.": "Tài khoản này không thể xóa hay ngừng quản lý hồ sơ ngựa nữa.",
   "This account does not exist.": "Tài khoản này không tồn tại.",
   "This account has been used, so it cannot be deleted. Deactivate it instead to keep its history.": "Tài khoản đã từng được dùng nên không thể xóa. Hãy vô hiệu hóa để giữ lịch sử.",
-  "This account was switched off. Contact support@equiflow.vn to reactivate it.{{reason}}": "Tài khoản này đã bị vô hiệu hóa. Liên hệ support@equiflow.vn để kích hoạt lại.{{reason}}",
+  "This account was switched off. Contact support@tmec.site to reactivate it.{{reason}}": "Tài khoản này đã bị vô hiệu hóa. Liên hệ support@tmec.site để kích hoạt lại.{{reason}}",
   "This action is not part of your permissions.": "Thao tác này nằm ngoài quyền của bạn.",
   "This alert no longer exists. Reload the list.": "Cảnh báo này không còn tồn tại. Hãy tải lại danh sách.",
   "This barn zone is inactive. Reactivate it before adding stalls.": "Khu chuồng này đang ngừng dùng. Hãy dùng lại khu trước khi thêm ô.",
@@ -3937,5 +3937,10 @@ export const VI_TEXT: Record<string, string> = {
   "Try again, or use email and password.": "Hãy thử lại, hoặc dùng email và mật khẩu.",
   "This email already has an account": "Email này đã có tài khoản",
   "Sign in with Google on the sign-in page instead.": "Hãy vào trang đăng nhập và chọn Đăng nhập bằng Google.",
+  "I accept the Terms of Use, the Privacy Policy and the stable safety rules":
+    "Tôi đồng ý với Điều khoản sử dụng, Chính sách quyền riêng tư và nội quy an toàn chuồng trại",
+  "Read before signing up:": "Đọc trước khi đăng ký:",
+  "Terms of Use": "Điều khoản sử dụng",
+  "Privacy Policy": "Chính sách quyền riêng tư",
 };
 

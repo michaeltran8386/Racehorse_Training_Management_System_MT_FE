@@ -27,9 +27,9 @@ export const BRAND = {
   emailDomain: "gmail.com",
 
   /** Thông tin hỗ trợ ở chân trang đăng nhập. */
-  supportEmail: "support@equiflow.vn",
+  supportEmail: "support@tmec.site",
   supportPhone: "024 3771 2088",
 } as const;
 
-/** Gợi ý mẫu trong ô nhập email, ví dụ "name@equiflow.vn". */
+/** Gợi ý mẫu trong ô nhập email, ví dụ "name@gmail.com". */
 export const EMAIL_PLACEHOLDER = `name@${BRAND.emailDomain}`;

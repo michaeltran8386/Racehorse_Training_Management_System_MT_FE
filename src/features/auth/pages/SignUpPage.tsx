@@ -187,7 +187,17 @@ export default function SignUpPage() {
           }}
         />
 
-        <SpringCheck label={tr("I accept the club data and stable safety rules")} checked={agree} onChange={setAgree} />
+        <SpringCheck
+          label={tr("I accept the Terms of Use, the Privacy Policy and the stable safety rules")}
+          checked={agree}
+          onChange={setAgree}
+        />
+        <p className={styles.foot}>
+          {tr("Read before signing up:")}{" "}
+          <a href="/terms.html" target="_blank" rel="noopener noreferrer">{tr("Terms of Use")}</a>
+          {" · "}
+          <a href="/privacy.html" target="_blank" rel="noopener noreferrer">{tr("Privacy Policy")}</a>
+        </p>
 
         <PillButton
           type="submit"
