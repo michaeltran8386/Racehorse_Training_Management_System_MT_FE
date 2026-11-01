@@ -1,6 +1,8 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Badge } from "@/shared/components/ui/Badge";
+import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
 import { Icon } from "@/shared/components/ui/Icon";
 import { Checkbox } from "@/shared/components/form/Checkbox";
@@ -8,10 +10,12 @@ import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Select } from "@/shared/components/form/Select";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useAuth } from "@/shared/components/layout/AuthProvider";
 import { useToast } from "@/shared/components/ui/Toast";
 import { cx } from "@/shared/lib/cx";
+import { messageFor } from "@/shared/lib/messages";
 import { isVietnamese } from "@/shared/lib/language";
 import { HorseAnatomyGraphic } from "../components/HorseAnatomyGraphic";
 import type { InjuryItem, InjuryStage, SeverityLevel } from "../types";
@@ -65,18 +69,19 @@ const SEVERITY_OPTIONS = [
 ];
 
 interface PointInjury extends InjuryItem {
-  x: number; // % coordinates on canvas
-  y: number;
+  x: number | null; // % coordinates on canvas
+  y: number | null;
 }
 
 import { getHorseInjuries, createInjury, updateInjury, deleteInjury } from "../api";
 import { getHorseById, getHorses } from "@/features/horses/api";
 import type { Horse } from "@/features/horses/types";
-import { formatDate } from "@/shared/lib/format";
+import { capitalize, formatDate } from "@/shared/lib/format";
 
 import { tr } from "@/shared/i18n/tr";
 export default function InjuryMapPage() {
-  const { id = "horse-1" } = useParams();
+  useScreenTranslation();
+  const { id = "" } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
@@ -84,6 +89,10 @@ export default function InjuryMapPage() {
   const isVet = user?.role === "VETERINARIAN";
   const [horse, setHorse] = useState<Horse | null>(null);
   const [availableHorses, setAvailableHorses] = useState<Horse[]>([]);
+  const [horseListError, setHorseListError] = useState("");
+  const [horseError, setHorseError] = useState("");
+  const [horseListRetry, setHorseListRetry] = useState(0);
+  const [detailRetry, setDetailRetry] = useState(0);
 
   const [view, setView] = useState<"LEFT" | "RIGHT">("LEFT");
   const [layer, setLayer] = useState<"MUSCLE" | "SKELETON">("MUSCLE");
@@ -91,36 +100,48 @@ export default function InjuryMapPage() {
   const [showHealed, setShowHealed] = useState(false);
 
   const [injuries, setInjuries] = useState<PointInjury[]>([]);
+  const [injuriesLoading, setInjuriesLoading] = useState(false);
+  const [injuriesError, setInjuriesError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
+    let active = true;
+    setHorseListError("");
     getHorses({ limit: 100 })
       .then((res) => {
-        if (res && Array.isArray(res.items)) {
+        if (active && res && Array.isArray(res.items)) {
           setAvailableHorses(res.items);
         }
       })
-      .catch(console.error);
-  }, []);
+      .catch((err) => { if (active) setHorseListError(messageFor(err)); });
+    return () => { active = false; };
+  }, [horseListRetry]);
 
   useEffect(() => {
     let active = true;
+    setHorse(null);
+    setHorseError("");
+    setInjuries([]);
+    setSelectedId(null);
+    setMarkingMode(false);
+    setInjuriesError("");
+    setInjuriesLoading(Boolean(id));
     if (id) {
       getHorseById(id)
         .then((res: any) => {
           if (active) setHorse(res.data || res);
         })
-        .catch(console.error);
+        .catch((err) => { if (active) setHorseError(messageFor(err)); });
 
       getHorseInjuries(id)
         .then((res: any) => {
           if (!active) return;
           const list = Array.isArray(res) ? res : res.injuries || [];
           const mappedList: PointInjury[] = list.map((item: any) => {
-            const rawX = item.coordinateX ?? item.x ?? 0.5;
-            const rawY = item.coordinateY ?? item.y ?? 0.5;
-            const x = rawX <= 1 ? Math.round(rawX * 100) : Math.round(rawX);
-            const y = rawY <= 1 ? Math.round(rawY * 100) : Math.round(rawY);
+            const rawX = item.coordinateX ?? item.x;
+            const rawY = item.coordinateY ?? item.y;
+            const x = typeof rawX === "number" && Number.isFinite(rawX) && rawX >= 0 && rawX <= 100 ? Math.round(rawX <= 1 ? rawX * 100 : rawX) : null;
+            const y = typeof rawY === "number" && Number.isFinite(rawY) && rawY >= 0 && rawY <= 100 ? Math.round(rawY <= 1 ? rawY * 100 : rawY) : null;
             const rawLayer = item.layer || "MUSCLE";
             const mappedLayer = rawLayer === "BONE" || rawLayer === "TENDON_LIGAMENT" ? "SKELETON" : rawLayer;
             return {
@@ -135,33 +156,34 @@ export default function InjuryMapPage() {
           setInjuries(mappedList);
           setSelectedId(mappedList[0]?.id || null);
         })
-        .catch(console.error);
+        .catch((err) => { if (active) setInjuriesError(messageFor(err)); })
+        .finally(() => { if (active) setInjuriesLoading(false); });
     }
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, detailRetry]);
 
   // Dialogs & Actions
   const [addModalPoint, setAddModalPoint] = useState<{ x: number; y: number } | null>(null);
   const [showStageModal, setShowStageModal] = useState(false);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [repositioningId, setRepositioningId] = useState<string | null>(null);
+  const [savingInjury, setSavingInjury] = useState(false);
 
   // Form add
-  const [formRegion, setFormRegion] = useState("Superficial Digital Flexor Tendon (SDFT)");
+  const [formRegion, setFormRegion] = useState("");
   const [formType, setFormType] = useState("");
-  const [formSeverity, setFormSeverity] = useState<SeverityLevel>("MODERATE");
+  const [formSeverity, setFormSeverity] = useState<SeverityLevel | "">("");
   const [formNotes, setFormNotes] = useState("");
 
   // Form update stage
-  const [newStage, setNewStage] = useState<InjuryStage>("SUBACUTE");
+  const [newStage, setNewStage] = useState<InjuryStage | "">("");
   const [stageNotes, setStageNotes] = useState("");
 
   function handleLayerChange(newLayer: "MUSCLE" | "SKELETON") {
     setLayer(newLayer);
-    const options = newLayer === "MUSCLE" ? MUSCLE_REGION_OPTIONS : SKELETON_REGION_OPTIONS;
-    setFormRegion(options[0].value);
+    setFormRegion("");
     setRepositioningId(null);
   }
 
@@ -218,13 +240,18 @@ export default function InjuryMapPage() {
 
     // If in marking mode to place a new pin
     if (markingMode) {
+      setFormRegion("");
+      setFormType("");
+      setFormSeverity("");
+      setFormNotes("");
       setAddModalPoint({ x, y });
       setMarkingMode(false);
     }
   }
 
   async function handleSaveNewInjury() {
-    if (!addModalPoint || !formType.trim()) return;
+    if (savingInjury || !addModalPoint || !formRegion || !formType.trim() || !formSeverity) return;
+    setSavingInjury(true);
     try {
       const normX = Number((addModalPoint.x / 100).toFixed(4));
       const normY = Number((addModalPoint.y / 100).toFixed(4));
@@ -266,11 +293,14 @@ export default function InjuryMapPage() {
     } catch (error) {
       toast.show(getErrorMessage(error, "Failed to create injury point."), "danger");
       console.error(error);
+    } finally {
+      setSavingInjury(false);
     }
   }
 
   async function handleConfirmDelete() {
-    if (!deleteTargetId) return;
+    if (savingInjury || !deleteTargetId) return;
+    setSavingInjury(true);
     try {
       await deleteInjury(deleteTargetId);
       const target = injuries.find((i) => i.id === deleteTargetId);
@@ -285,11 +315,14 @@ export default function InjuryMapPage() {
     } catch (error) {
       toast.show(getErrorMessage(error, "Failed to delete injury point."), "danger");
       console.error(error);
+    } finally {
+      setSavingInjury(false);
     }
   }
 
   async function handleUpdateStage() {
-    if (!selectedInjury) return;
+    if (savingInjury || !selectedInjury || !newStage) return;
+    setSavingInjury(true);
     try {
       const payload: any = { stage: newStage };
       if (stageNotes.trim()) {
@@ -316,6 +349,8 @@ export default function InjuryMapPage() {
     } catch (error) {
       toast.show(getErrorMessage(error, "Failed to update injury stage."), "danger");
       console.error(error);
+    } finally {
+      setSavingInjury(false);
     }
   }
 
@@ -328,7 +363,7 @@ export default function InjuryMapPage() {
             {horse ? tr("Medical Record") : tr("Herd Health")}
           </Button>
           <div>
-            <h1 style={{ fontSize: "var(--fs-section)", fontWeight: 700, margin: 0, color: "var(--ink)" }}>
+            <h1 className={styles.pageTitle}>
               <span>{tr("2D Anatomical Injury Map")}</span>
               {horse && <span>{` · ${horse.name} (${horse.horseCode || horse.id.slice(0,6)})`}</span>}
             </h1>
@@ -343,13 +378,14 @@ export default function InjuryMapPage() {
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {availableHorses.length > 0 && (
             <div style={{ minWidth: 220 }}>
-              <Select
-                value={id}
-                onChange={(newId) => navigate(`/health/injury-map/${newId}`)}
-                options={availableHorses.map((h) => ({
+              <SearchSelect
+                value={id ?? ""}
+                aria-label={tr("Select a horse")}
+                onChange={(v) => { if (v) navigate(`/medical/horses/${encodeURIComponent(v)}/injuries`); }}
+                options={[{ value: "", label: tr("— Select a horse —") }, ...availableHorses.map((h) => ({
                   value: h.id,
                   label: `${h.name} (${h.horseCode || h.id.slice(0, 6)})`,
-                }))}
+                }))]}
               />
             </div>
           )}
@@ -358,6 +394,7 @@ export default function InjuryMapPage() {
             <Button
               tone={markingMode ? "danger" : "primary"}
               icon="pin"
+              disabled={!horse}
               onClick={() => setMarkingMode(!markingMode)}
             >
               {markingMode ? tr("Marking Mode Active (Click on model)") : tr("Enable Marking Mode")}
@@ -365,6 +402,9 @@ export default function InjuryMapPage() {
           )}
         </div>
       </div>
+
+      {horseListError && <Alert tone="danger" title={tr("Could not load horses")} action={<Button tone="secondary" onClick={() => setHorseListRetry((value) => value + 1)}>{tr("Try again")}</Button>}>{horseListError}</Alert>}
+      {horseError && <Alert tone="danger" title={tr("Unable to load medical profile")} action={<Button tone="secondary" onClick={() => setDetailRetry((value) => value + 1)}>{tr("Try again")}</Button>}>{horseError}</Alert>}
 
       <div className={styles.mainLayout}>
         {/* Model 2D Canvas */}
@@ -490,10 +530,13 @@ export default function InjuryMapPage() {
               <HorseAnatomyGraphic view={view} layer={layer} />
 
               {/* Render Pins for Active Layer */}
-              {visibleInjuries.map((inj, idx) => (
-                <div
+              {visibleInjuries.map((inj, idx) => inj.x == null || inj.y == null ? null : (
+                <button
                   key={inj.id}
+                  type="button"
                   className={cx(styles.pin, inj.id === activeSelectedId && styles.selected, "notranslate")}
+                  aria-label={`${inj.region}: ${inj.injuryType} (${tr(STAGE_LABELS[inj.stage])})`}
+                  aria-pressed={inj.id === activeSelectedId}
                   style={{
                     left: `${inj.x}%`,
                     top: `${inj.y}%`,
@@ -506,7 +549,7 @@ export default function InjuryMapPage() {
                   title={`${inj.region}: ${inj.injuryType} (${STAGE_LABELS[inj.stage]})`}
                 >
                   <span>{idx + 1}</span>
-                </div>
+                </button>
               ))}
             </div>
           </div>
@@ -538,11 +581,17 @@ export default function InjuryMapPage() {
           <div className={styles.panelCard}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <strong style={{ fontSize: "var(--fs-body)" }}>
-                {tr("Injury Points")} ({visibleInjuries.length}) · {layer === "MUSCLE" ? tr("Muscular") : tr("Skeletal")}
+                {tr("Injury Points")} ({!id || injuriesLoading || injuriesError ? "—" : visibleInjuries.length}) · {layer === "MUSCLE" ? tr("Muscular") : tr("Skeletal")}
               </strong>
             </div>
 
-            {visibleInjuries.length === 0 ? (
+            {!id ? (
+              <div style={{ color: "var(--muted)", fontSize: "var(--fs-body)" }}>{tr("Select a horse to view injury points.")}</div>
+            ) : injuriesLoading ? (
+              <div style={{ color: "var(--muted)", fontSize: "var(--fs-body)" }}>{tr("Loading...")}</div>
+            ) : injuriesError ? (
+              <Alert tone="danger" title={tr("Could not load injury points.")} action={<Button tone="secondary" onClick={() => setDetailRetry((value) => value + 1)}>{tr("Try again")}</Button>}>{injuriesError}</Alert>
+            ) : visibleInjuries.length === 0 ? (
               <div style={{ color: "var(--muted)", fontSize: "var(--fs-body)" }}>
                 {isVietnamese()
                   ? `Chưa có điểm chấn thương nào trên ${layer === "MUSCLE" ? "lớp cơ" : "lớp xương"} (${view === "LEFT" ? "mặt trái" : "mặt phải"}).`
@@ -554,15 +603,15 @@ export default function InjuryMapPage() {
                   <div
                     key={inj.id}
                     className={cx(styles.injuryItem, inj.id === activeSelectedId && styles.active)}
-                    onClick={() => setSelectedId(inj.id)}
                     style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
                   >
-                    <div>
+                    <button type="button" className={styles.injurySelect} onClick={() => setSelectedId(inj.id)} aria-pressed={inj.id === activeSelectedId}>
                       <div style={{ fontWeight: 600, fontSize: "var(--fs-body)" }}>
                         #{idx + 1} {inj.region}
                       </div>
                       <div style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>{inj.injuryType}</div>
-                    </div>
+                      {(inj.x == null || inj.y == null) && <div style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>{tr("Position not recorded")}</div>}
+                    </button>
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <Badge tone={inj.stage === "ACUTE" ? "danger" : inj.stage === "HEALED" ? "ok" : "warn"} dot>
                         {tr(STAGE_LABELS[inj.stage])}
@@ -571,6 +620,7 @@ export default function InjuryMapPage() {
                         <button
                           type="button"
                           title={tr("Delete pin")}
+                          aria-label={`${tr("Delete pin")}: ${inj.region}`}
                           onClick={(e) => {
                             e.stopPropagation();
                             setDeleteTargetId(inj.id);
@@ -618,7 +668,7 @@ export default function InjuryMapPage() {
                       {repositioningId === selectedInjury.id ? tr("Cancel Move") : tr("Relocate Pin")}
                     </Button>
                     {selectedInjury.stage !== "HEALED" && (
-                      <Button size="sm" tone="primary" onClick={() => setShowStageModal(true)}>
+                      <Button size="sm" tone="primary" onClick={() => { setNewStage(""); setStageNotes(""); setShowStageModal(true); }}>
                         {tr("Update Recovery")}
                       </Button>
                     )}
@@ -639,7 +689,7 @@ export default function InjuryMapPage() {
                 <div>{tr("Region:")}{" "}<strong>{selectedInjury.region}</strong> ({selectedInjury.view === "LEFT" ? tr("Left View") : tr("Right View")} · {selectedInjury.layer === "MUSCLE" ? tr("Muscular Layer") : tr("Skeletal Layer")})</div>
                 <div>{tr("Condition:")}{" "}<strong>{selectedInjury.injuryType}</strong></div>
                 <div>
-                  {tr("Severity:")}{" "}<Badge tone={selectedInjury.severity === "CRITICAL" ? "danger" : "warn"}>{selectedInjury.severity}</Badge>
+                  {tr("Severity:")}{" "}<Badge tone={selectedInjury.severity === "CRITICAL" || selectedInjury.severity === "SEVERE" ? "danger" : "warn"}>{tr(capitalize(selectedInjury.severity))}</Badge>
                 </div>
                 <div>
                   {tr("Stage:")}{" "}<Badge tone={selectedInjury.stage === "ACUTE" ? "danger" : "ok"} dot>{tr(STAGE_LABELS[selectedInjury.stage])}</Badge>
@@ -657,13 +707,13 @@ export default function InjuryMapPage() {
                   <div className={styles.timelineNode}>
                     <div className={styles.timelineDot} />
                     <strong>{tr("Initial Diagnosis")}</strong>
-                    <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>{selectedInjury.detectedDate}</span>
+                    <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>{formatDate(selectedInjury.detectedDate)}</span>
                   </div>
                   {selectedInjury.updatedDate && (
                     <div className={styles.timelineNode}>
                       <div className={styles.timelineDot} />
                       <strong>{tr("Phase Update:")} {tr(STAGE_LABELS[selectedInjury.stage])}</strong>
-                      <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>{selectedInjury.updatedDate}</span>
+                      <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>{formatDate(selectedInjury.updatedDate)}</span>
                     </div>
                   )}
                 </div>
@@ -679,18 +729,19 @@ export default function InjuryMapPage() {
           title={tr("Mark New Injury Point")}
           subtitle={tr(`Layer: ${layer === "MUSCLE" ? "Muscular Layer" : "Skeletal Layer"} · Orientation: ${view === "LEFT" ? "Left View" : "Right View"} · Coordinates (${addModalPoint.x}%, ${addModalPoint.y}%)`)}
           width={480}
-          onClose={() => setAddModalPoint(null)}
+          onClose={savingInjury ? undefined : () => setAddModalPoint(null)}
           foot={
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, width: "100%" }}>
-              <Button tone="ghost" onClick={() => setAddModalPoint(null)}>{tr("Cancel")}</Button>
-              <Button tone="primary" onClick={handleSaveNewInjury}>{tr("Save Injury Point")}</Button>
+              <Button tone="ghost" onClick={() => setAddModalPoint(null)} disabled={savingInjury}>{tr("Cancel")}</Button>
+              <Button tone="primary" onClick={handleSaveNewInjury} disabled={savingInjury || !formRegion || !formType.trim() || !formSeverity}>{tr(savingInjury ? "Saving..." : "Save Injury Point")}</Button>
             </div>
           }
         >
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             <Field label={tr("Anatomical Region *")}>
               <Select
-                options={layer === "MUSCLE" ? MUSCLE_REGION_OPTIONS : SKELETON_REGION_OPTIONS}
+                options={[{ value: "", label: tr("— Select —") }, ...(layer === "MUSCLE" ? MUSCLE_REGION_OPTIONS : SKELETON_REGION_OPTIONS)]}
+                disabled={savingInjury}
                 value={formRegion}
                 onChange={(e) => setFormRegion(e.target.value)}
               />
@@ -699,6 +750,7 @@ export default function InjuryMapPage() {
             <Field label={tr("Injury / Lesion Type *")} hint={tr("e.g. Tendinitis, Bone fissure, Desmitis, Fracture...")}>
               <Input
                 value={formType}
+                disabled={savingInjury}
                 onChange={(e) => setFormType(e.target.value)}
                 placeholder={tr("Enter injury classification...")}
                 required
@@ -706,13 +758,14 @@ export default function InjuryMapPage() {
             </Field>
 
             <Field label={tr("Severity Level *")}>
-              <Select options={SEVERITY_OPTIONS} value={formSeverity} onChange={(e) => setFormSeverity(e.target.value as SeverityLevel)} />
+              <Select options={[{ value: "", label: tr("— Select —") }, ...SEVERITY_OPTIONS]} value={formSeverity} disabled={savingInjury} onChange={(e) => setFormSeverity(e.target.value as SeverityLevel | "")} />
             </Field>
 
             <Field label={tr("Clinical Notes & Instructions")}>
               <Textarea
                 rows={2}
                 value={formNotes}
+                disabled={savingInjury}
                 onChange={(e) => setFormNotes(e.target.value)}
                 placeholder={tr("Note down lesion size, heat, pain response...")}
               />
@@ -727,11 +780,11 @@ export default function InjuryMapPage() {
           title={tr(`Update Recovery Stage: ${selectedInjury.region}`)}
           subtitle={tr(`Current Phase: ${STAGE_LABELS[selectedInjury.stage]}`)}
           width={460}
-          onClose={() => setShowStageModal(false)}
+          onClose={savingInjury ? undefined : () => setShowStageModal(false)}
           foot={
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, width: "100%" }}>
-              <Button tone="ghost" onClick={() => setShowStageModal(false)}>Cancel</Button>
-              <Button tone="primary" onClick={handleUpdateStage}>Confirm Stage Transition</Button>
+              <Button tone="ghost" onClick={() => setShowStageModal(false)} disabled={savingInjury}>Cancel</Button>
+              <Button tone="primary" onClick={handleUpdateStage} disabled={savingInjury || !newStage}>{tr(savingInjury ? "Saving..." : "Confirm Stage Transition")}</Button>
             </div>
           }
         >
@@ -739,13 +792,15 @@ export default function InjuryMapPage() {
             <Field label={tr("New Recovery Stage *")}>
               <Select
                 options={[
+                  { value: "", label: tr("— Select —") },
                   { value: "ACUTE", label: "Acute" },
                   { value: "SUBACUTE", label: "Subacute" },
                   { value: "RECOVERING", label: "Recovering" },
                   { value: "HEALED", label: "Healed" },
                 ]}
                 value={newStage}
-                onChange={(e) => setNewStage(e.target.value as InjuryStage)}
+                disabled={savingInjury}
+                onChange={(e) => setNewStage(e.target.value as InjuryStage | "")}
               />
             </Field>
 
@@ -753,6 +808,7 @@ export default function InjuryMapPage() {
               <Textarea
                 rows={3}
                 value={stageNotes}
+                disabled={savingInjury}
                 onChange={(e) => setStageNotes(e.target.value)}
                 placeholder={tr("Describe pain reduction, gait recovery, palpation feedback...")}
               />
@@ -767,14 +823,14 @@ export default function InjuryMapPage() {
           title={tr("Delete Injury Point")}
           subtitle={tr("Confirm removal of anatomical lesion marker")}
           width={440}
-          onClose={() => setDeleteTargetId(null)}
+          onClose={savingInjury ? undefined : () => setDeleteTargetId(null)}
           foot={
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, width: "100%" }}>
-              <Button tone="ghost" onClick={() => setDeleteTargetId(null)}>
+              <Button tone="ghost" onClick={() => setDeleteTargetId(null)} disabled={savingInjury}>
                 Cancel
               </Button>
-              <Button tone="danger" icon="trash" onClick={handleConfirmDelete}>
-                Delete Point
+              <Button tone="danger" icon="trash" onClick={handleConfirmDelete} disabled={savingInjury}>
+                {tr(savingInjury ? "Deleting..." : "Delete Point")}
               </Button>
             </div>
           }

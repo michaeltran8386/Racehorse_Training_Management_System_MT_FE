@@ -1,0 +1,16 @@
+.page { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.25rem; }
+.roadmap { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; }
+.steps { display: flex; flex-wrap: wrap; gap: .5rem; list-style: none; margin: 0; padding: 0; }
+.steps li { display: flex; align-items: center; gap: .65rem; padding: .65rem .85rem; border: 1px solid var(--border); font-size: 13px; font-weight: 700; }
+.steps li span { font-family: var(--font-pixel); font-size: 24px; line-height: 1; }
+.currentStep { background: var(--brand-50); border-color: var(--brand) !important; color: var(--text); }
+.currentStep span { color: var(--brand-700); }
+.nextStep { background: var(--surface-2); color: var(--text-muted); }
+.hint { margin: 0; max-width: 32ch; color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+.sectionTitle, .phaseTitle { font: 800 28px/1.05 var(--font-display); text-transform: uppercase; color: var(--text); }
+.sectionTitle { margin: 0 0 1.25rem; }
+.phaseTitle { margin: 0; }
+.sectionHeader, .phaseHeader { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .75rem; }
+.phaseHeader { margin-bottom: 1rem; padding-bottom: .75rem; border-bottom: 1px solid var(--border); }
+.phaseHeader strong { font: 700 22px/1.1 var(--font-display); text-transform: uppercase; }
+@media (max-width: 520px) { .steps { width: 100%; } .steps li { flex: 1 1 100%; } .hint { max-width: none; } }

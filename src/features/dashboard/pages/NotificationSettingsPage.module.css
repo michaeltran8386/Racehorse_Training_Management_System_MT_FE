@@ -17,7 +17,7 @@
 .topRow {
   display: flex;
   align-items: center;
-  justifyContent: space-between;
+  justify-content: space-between;
   gap: 1rem;
 }
 
@@ -27,7 +27,7 @@
   gap: 6px;
   font-size: var(--fs-body);
   font-weight: 600;
-  color: var(--brand);
+  color: var(--brand-700);
   text-decoration: none;
   cursor: pointer;
 }
@@ -117,7 +117,7 @@
   height: 42px;
   border-radius: 50%;
   background: var(--surface-sunken);
-  color: var(--brand);
+  color: var(--brand-700);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -206,10 +206,28 @@
 
 .footerBar {
   display: flex;
-  justifyContent: space-between;
+  justify-content: space-between;
   align-items: center;
   padding: 14px 18px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r, 8px);
+}
+.title { font-family: var(--font-display); font-size: 40px; font-weight: 800; line-height: 1; text-transform: uppercase; }
+.sectionTitle { font-family: var(--font-display); font-size: 24px; font-weight: 800; text-transform: uppercase; }
+.topRow { justify-content: space-between; }
+
+.itemTitle { flex-wrap: wrap; overflow-wrap: anywhere; }
+.itemRow:focus-visible, .backLink:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.channelRow { gap: 1rem; }
+.channelRow > div { min-width: 0; }
+.noticeBanner { background: var(--info-bg); color: var(--text); border-color: var(--info); }
+@media (max-width: 520px) {
+  .container { gap: 1rem; }
+  .topRow, .footerBar { flex-wrap: wrap; gap: .75rem; }
+  .title { font-size: 34px; }
+  .itemRow { padding: 14px; gap: 10px; }
+  .itemIcon { width: 36px; height: 36px; }
+  .itemAccordion { padding: 14px; }
+  .channelRow { align-items: flex-start; }
 }

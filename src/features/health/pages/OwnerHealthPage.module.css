@@ -1,0 +1,9 @@
+.page { display: grid; gap: 20px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.horse { display: grid; gap: 20px; align-content: start; min-width: 0; padding: 22px; background: var(--surface); border: 1px solid var(--border); }
+.head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.head h2 { margin: 6px 0 0; font: 800 26px/1.1 var(--font-display); text-transform: uppercase; overflow-wrap: anywhere; }
+.code { color: var(--muted); font-size: var(--fs-caption); font-weight: 700; }
+.details { display: grid; gap: 10px; color: var(--text-2); font-size: var(--fs-body); }
+.details span { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.horse a { justify-self: start; }

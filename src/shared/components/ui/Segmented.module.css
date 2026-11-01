@@ -57,3 +57,9 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
+.group, :global([data-theme="dark"]) .group { background: var(--surface-2); border-color: var(--border-strong); border-radius: 0; box-shadow: none; }
+.item { border-radius: 0; }
+.item:hover, :global([data-theme="dark"]) .item:hover { background: var(--surface-3); color: var(--text); }
+.on, :global([data-theme="dark"]) .on { background: var(--surface); color: var(--text); border-color: var(--border); box-shadow: inset 0 -2px var(--brand); }
+.item:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.item:active { transform: none; }

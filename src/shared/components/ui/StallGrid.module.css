@@ -33,3 +33,4 @@
 .legend { display: flex; flex-wrap: wrap; gap: 14px; font-family: var(--font); font-size: var(--fs-caption); color: var(--muted); }
 .legendItem { display: inline-flex; align-items: center; gap: 6px; }
 .swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--bg); border: 1px solid color-mix(in srgb, var(--fg) 35%, transparent); }
+.cell { border-radius: 0; border-color: var(--border); }

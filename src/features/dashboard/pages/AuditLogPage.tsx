@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { Input } from "@/shared/components/form/Input";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -141,6 +142,7 @@ function parseAuditChanges(log: AuditLog, isVi: boolean): { summary: string; rec
 const emptyFilters = { actor: "", action: "", from: "", to: "" };
 
 export default function AuditLogPage() {
+  useScreenTranslation();
   const { isVietnamese } = useAppLanguage();
   const [draft, setDraft] = useState(emptyFilters);
   const [filters, setFilters] = useState(emptyFilters);
@@ -155,7 +157,7 @@ export default function AuditLogPage() {
 
   useEffect(() => {
     let active = true;
-    const query = new URLSearchParams({ page: String(page), pageSize: "20" });
+    const query = new URLSearchParams({ page: String(page), pageSize: "10" });
     if (filters.actor.trim()) query.set("actor", filters.actor.trim());
     if (filters.action.trim()) query.set("action", filters.action.trim());
     if (filters.from) query.set("from", new Date(filters.from).toISOString());

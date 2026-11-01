@@ -1,12 +1,12 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Checkbox } from "@/shared/components/form/Checkbox";
-import { Field } from "@/shared/components/form/Field";
-import { Input } from "@/shared/components/form/Input";
+import { FloatingField } from "@/shared/components/form/FloatingField";
+import { SpringCheck } from "@/shared/components/motion/SpringCheck";
 import { AuthLayout, HERO_TEAM } from "@/shared/components/layout/AuthLayout";
 import { Alert } from "@/shared/components/ui/Alert";
-import { Button } from "@/shared/components/ui/Button";
+import { PillButton } from "../components/PillButton";
 import { ApiError } from "@/shared/lib/api";
 import { messageFor } from "@/shared/lib/messages";
 import { passwordError } from "@/shared/lib/password";
@@ -23,6 +23,7 @@ import { EMAIL_RE } from "@/shared/lib/email";
 type Errors = Partial<Record<"name" | "email" | "password" | "confirm", string>>;
 
 export default function SignUpPage() {
+  useScreenTranslation();
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -95,77 +96,77 @@ export default function SignUpPage() {
           </Alert>
         )}
 
-        <Field label={tr("Full name")} required error={errors.name}>
-          <Input
-            icon="user"
-            placeholder="Jane Smith"
-            autoComplete="name"
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-              clearError("name");
-            }}
-          />
-        </Field>
+        <FloatingField
+          label={tr("Full name")}
+          required
+          autoComplete="name"
+          value={name}
+          error={errors.name}
+          isValid={name.trim().length > 0 && !fullNameError(name)}
+          onChange={(value) => {
+            setName(value);
+            clearError("name");
+          }}
+        />
 
-        <Field label={tr("Club email")} required error={errors.email} hint={tr(`For example ${EMAIL_PLACEHOLDER}`)}>
-          <Input
-            type="email"
-            icon="mail"
-            placeholder={EMAIL_PLACEHOLDER}
-            autoComplete="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              clearError("email");
-            }}
-          />
-        </Field>
+        <FloatingField
+          label={tr("Club email")}
+          type="email"
+          required
+          autoComplete="email"
+          value={email}
+          error={errors.email}
+          hint={tr(`For example ${EMAIL_PLACEHOLDER}`)}
+          isValid={EMAIL_RE.test(email.trim().toLowerCase())}
+          onChange={(value) => {
+            setEmail(value);
+            clearError("email");
+          }}
+        />
 
-        <Field label={tr("Password")} required error={errors.password}>
-          <Input
-            type="password"
-            icon="key"
-            placeholder={tr("At least 8 characters")}
-            autoComplete="new-password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              clearError("password");
-            }}
-          />
-        </Field>
+        <FloatingField
+          label={tr("Password")}
+          type="password"
+          required
+          autoComplete="new-password"
+          value={password}
+          error={errors.password}
+          hint={tr("At least 8 characters")}
+          isValid={password.length > 0 && !passwordError(password)}
+          onChange={(value) => {
+            setPassword(value);
+            clearError("password");
+          }}
+        />
 
-        <Field label={tr("Confirm password")} required error={errors.confirm}>
-          <Input
-            type="password"
-            icon="key"
-            placeholder={tr("Repeat the password")}
-            autoComplete="new-password"
-            value={confirm}
-            onChange={(e) => {
-              setConfirm(e.target.value);
-              clearError("confirm");
-            }}
-          />
-        </Field>
+        <FloatingField
+          label={tr("Confirm password")}
+          type="password"
+          required
+          autoComplete="new-password"
+          value={confirm}
+          error={errors.confirm}
+          isValid={confirm.length > 0 && confirm === password}
+          onChange={(value) => {
+            setConfirm(value);
+            clearError("confirm");
+          }}
+        />
 
-        <Checkbox label={tr("I accept the club data and stable safety rules")} checked={agree} onChange={setAgree} />
+        <SpringCheck label={tr("I accept the club data and stable safety rules")} checked={agree} onChange={setAgree} />
 
-        <Button
+        <PillButton
           type="submit"
-          size="lg"
-          block
-          iconAfter="arrowRight"
-          disabled={busy}
+          loading={busy}
+          loadingLabel={tr("Sending…")}
           blockedReason={!agree ? tr("Accept the club rules to send the request.") : undefined}
         >
-          {busy ? tr("Sending…") : tr("Send request to Club Manager")}
-        </Button>
+          {tr("Send request to Club Manager")}
+        </PillButton>
 
-        <p className={styles.foot}>
-          {tr("Already have an account?")}{" "}<Link to="/login">{tr("Sign in")}</Link>
-        </p>
+        <Link to="/login" className={styles.outlineLink}>
+          {tr("Already have an account?")} {tr("Sign in")}
+        </Link>
         {hasErrors && <span className="sr-only" role="status">{tr("The form has errors.")}</span>}
       </form>
     </AuthLayout>

@@ -1,12 +1,15 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./TrainingMetrics.module.css";
 import { Card } from "@/shared/components/ui/Card";
 import { KpiTile } from "@/shared/components/ui/KpiTile";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
-import { Select } from "@/shared/components/form/Select";
+import { Paged } from "@/shared/components/ui/Pagination";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { messageFor } from "@/shared/lib/messages";
 import { getHorses } from "@/features/horses/api";
@@ -29,6 +32,7 @@ function minusDays(date: string, days: number): string {
  * và các kết quả 14 ngày gần nhất; mọi vai trò được vào có lối mở Biểu đồ thể lực (SC-2.07).
  */
 export default function SessionMetricsPage() {
+  useScreenTranslation();
   useAppLanguage();
   const user = useCurrentUser();
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
@@ -83,31 +87,21 @@ export default function SessionMetricsPage() {
       <td style={{ padding: "0.6rem 0.75rem" }}><strong>{s.horseName}</strong></td>
       <td style={{ padding: "0.6rem 0.75rem" }}>{tr(EXERCISE_TYPE_LABEL[s.sessionType])} · {s.targetDistanceMeters} m × {s.repetitions}</td>
       <td style={{ padding: "0.6rem 0.75rem" }}><Badge tone={SESSION_STATUS_TONE[s.status]}>{tr(SESSION_STATUS_LABEL[s.status])}</Badge></td>
-      <td style={{ padding: "0.6rem 0.75rem", fontWeight: 700, color: s.result?.performanceScore != null && s.result.performanceScore >= 7 ? "var(--brand, #10b981)" : "inherit" }}>
+      <td style={{ padding: "0.6rem 0.75rem", fontWeight: 700, color: s.result?.performanceScore != null && s.result.performanceScore >= 7 ? "var(--brand-700)" : "inherit" }}>
         {s.result?.performanceScore != null ? `${s.result.performanceScore}/10` : "—"}
       </td>
       <td style={{ padding: "0.6rem 0.75rem", textAlign: "right" }}>
-        <Link to={`/training/sessions/${s.id}/result`}><Button size="sm" tone="secondary">{tr(action)}</Button></Link>
+        <LinkButton to={`/training/sessions/${s.id}/result`} size="sm" tone="secondary">{tr(action)}</LinkButton>
       </td>
     </tr>
   );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "var(--fs-h1)", fontWeight: 700 }}>{tr("Session Metrics")}</h1>
-          <p style={{ margin: "0.25rem 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>
-            {tr("Log workout performance, biometric telemetry, and abnormal health indicators.")}
-          </p>
-        </div>
-        {(user.role === "HEAD_TRAINER" || user.role === "VETERINARIAN") && (
-          <Link to="/training/alerts"><Button tone="secondary">{tr("Abnormal-sign alerts")}</Button></Link>
-        )}
-      </div>
+      <PageHeader title="Session Metrics" description="Log workout performance, biometric telemetry, and abnormal health indicators." action={(user.role === "HEAD_TRAINER" || user.role === "VETERINARIAN") ? <LinkButton to="/training/alerts" tone="secondary">{tr("Abnormal-sign alerts")}</LinkButton> : undefined} />
 
       {/* KPI Stats Overview */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+      <div className={styles.metrics}>
         <KpiTile
           label={tr("Recent Sessions (14d)")}
           value={String(totalSessionsCount)}
@@ -135,40 +129,44 @@ export default function SessionMetricsPage() {
       <Card pad={16}>
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
           <span style={{ fontWeight: 600 }}>{tr("Fitness chart for:")}</span>
-          <div style={{ minWidth: 260 }}>
-            <Select value={horseId} onChange={(e) => setHorseId(e.target.value)} options={horses} />
+          <div className={styles.selector}>
+            <SearchSelect aria-label={tr("Horse")} value={horseId} onChange={setHorseId} options={horses} />
           </div>
-          <Link to={`/horses/${horseId}/fitness`}><Button tone="primary" disabled={!horseId}>{tr("Open chart")}</Button></Link>
+          {horseId ? <LinkButton to={`/horses/${horseId}/fitness`} tone="primary">{tr("Open chart")}</LinkButton> : <Button tone="primary" disabled>{tr("Open chart")}</Button>}
         </div>
       </Card>
 
       {error && <Alert tone="danger" title={tr("Could not load data")}>{error}</Alert>}
 
       {user.role === "HEAD_TRAINER" && (
-        <Card pad={16}>
+        <Card pad={16} className={styles.tableCard}>
           <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{tr("Waiting for a result ({{count}})", { count: pending.length })}</h2>
           {loading ? null : pending.length === 0 ? (
             <EmptyState title={tr("Nothing to record right now.")} />
           ) : (
-            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--fs-body)", textAlign: "left" }}>
-              <TableHead />
-              <tbody>{pending.map((s) => <Row key={s.id} s={s} action="Record result" />)}</tbody>
-            </table>
+            <Paged items={pending} noun="workouts">{(items) => (
+              <div className={styles.tableScroll}><table className={styles.table}>
+                <TableHead />
+                <tbody>{items.map((s) => <Row key={s.id} s={s} action="Record result" />)}</tbody>
+              </table></div>
+            )}</Paged>
           )}
         </Card>
       )}
 
-      <Card pad={16}>
+      <Card pad={16} className={styles.tableCard}>
         <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{tr("Results – last 14 days ({{count}})", { count: recent.length })}</h2>
         {loading ? (
           <div style={{ color: "var(--text-muted)" }}>{tr("Loading...")}</div>
         ) : recent.length === 0 ? (
           <EmptyState title={tr("No results in the last 14 days.")} />
         ) : (
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--fs-body)", textAlign: "left" }}>
-            <TableHead />
-            <tbody>{recent.map((s) => <Row key={s.id} s={s} action="View result" />)}</tbody>
-          </table>
+          <Paged items={recent} noun="workouts">{(items) => (
+            <div className={styles.tableScroll}><table className={styles.table}>
+              <TableHead />
+              <tbody>{items.map((s) => <Row key={s.id} s={s} action="View result" />)}</tbody>
+            </table></div>
+          )}</Paged>
         )}
       </Card>
     </div>

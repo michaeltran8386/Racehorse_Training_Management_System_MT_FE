@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/shared/components/layout/AuthLayout";
@@ -13,6 +14,7 @@ import styles from "./AuthPages.module.css";
 import { tr } from "@/shared/i18n/tr";
 // Design 1.3: yêu cầu đã tới Club Manager, chưa đăng nhập được cho tới khi được duyệt.
 export default function PendingApprovalPage() {
+  useScreenTranslation();
   const navigate = useNavigate();
   const [data, setData] = useState<RegistrationResult | null | undefined>(undefined);
 

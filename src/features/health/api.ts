@@ -415,11 +415,24 @@ export const reopenRecord = async (recordId: string, input: ReopenRecordInput): 
 
 
 // P2-04: Khóa huấn luyện (SC-3.06, FR-3.10, FR-3.11, FR-3.12, FR-3.19)
+async function fetchMedicalPages(path: string): Promise<any[]> {
+  const first = await api<any>("GET", `${path}?page=1&limit=100`);
+  const items = Array.isArray(first) ? first : (first?.data ?? first?.items ?? first?.locks);
+  if (!Array.isArray(items)) throw new Error("Unable to load medical data");
+  const pages = Array.isArray(first) ? 1 : Number(first?.totalPages ?? 1);
+  if (!Number.isInteger(pages) || pages < 0 || pages > 100) throw new Error("Unable to load medical data");
+  for (let page = 2; page <= pages; page += 1) {
+    const next = await api<any>("GET", `${path}?page=${page}&limit=100`);
+    const batch = Array.isArray(next) ? next : (next?.data ?? next?.items ?? next?.locks);
+    if (!Array.isArray(batch)) throw new Error("Unable to load medical data");
+    items.push(...batch);
+  }
+  return items;
+}
+
 // 1. Lấy danh sách khóa huấn luyện (getLocks): GET /api/medical/locks
 export const getLocks = async (): Promise<import("./types").TrainingLockHistoryItem[]> => {
-  const res = await api<any>("GET", "/medical/locks");
-  const rawList = Array.isArray(res) ? res : (res?.data || res?.items || res?.locks || []);
-  if (!Array.isArray(rawList)) return [];
+  const rawList = await fetchMedicalPages("/medical/locks");
 
   return rawList.map((item: any) => ({
     id: item.id,
@@ -438,6 +451,13 @@ export const getLocks = async (): Promise<import("./types").TrainingLockHistoryI
     durationDays: item.lockDurationDays ?? item.expectedRestDays ?? item.durationDays,
     status: item.isLocked === false ? "RELEASED" : (item.status || (item.isLocked ? "ACTIVE" : "RELEASED")),
   }));
+};
+
+export const hasActiveLocks = async (): Promise<boolean> => {
+  const res = await api<any>("GET", "/medical/locks?tab=ACTIVE&limit=1");
+  const items = Array.isArray(res) ? res : (res?.data ?? res?.items ?? res?.locks);
+  if (!Array.isArray(items)) throw new Error("Unable to load medical data");
+  return items.some((item: any) => item.isLocked === true || item.status === "ACTIVE");
 };
 
 // 2. Apply training lock (POST /api/medical/locks)
@@ -519,9 +539,7 @@ export const togglePreventiveCatalogStatus = async (id: string) => {
 };
 
 export const getCareSchedules = async (): Promise<import("./types").PreventiveCareItem[]> => {
-  const res = await api<any>("GET", "/medical/preventive/schedules");
-  const rawList = Array.isArray(res) ? res : (res?.data || res?.items || []);
-  if (!Array.isArray(rawList)) return [];
+  const rawList = await fetchMedicalPages("/medical/preventive/schedules");
 
   return rawList.map((item: any) => {
     let cat: "VACCINATION" | "DEWORMING" | "FARRIER" | "DENTAL" | "GENERAL" = "VACCINATION";
@@ -536,20 +554,23 @@ export const getCareSchedules = async (): Promise<import("./types").PreventiveCa
     else if (item.statusBadge === "UPCOMING" || item.isUpcomingNotice) st = "DUE_SOON";
     else if (item.statusBadge === "NODATA") st = "NO_DATA";
 
+    const horseCode = item.horse?.microchipRfid || item.horse?.id?.slice(0, 6);
     const horseNameDisplay = item.horse?.name
-      ? `${item.horse.name} (${item.horse.microchipRfid || item.horse.id.slice(0, 6)})`
+      ? `${item.horse.name}${horseCode ? ` (${horseCode})` : ""}`
       : item.horseId;
 
     return {
       id: item.id,
       horseId: horseNameDisplay,
+      horseName: item.horse?.name,
+      horseCode,
       realHorseId: item.horse?.id || item.horseId,
       typeCatalogId: item.typeCatalogId,
       type: item.typeCatalog?.name || item.productAdministered || item.type || "Routine Care",
       category: cat,
       lastAdministeredDate: item.lastCompletedDate ? String(item.lastCompletedDate).split("T")[0] : undefined,
-      administeredBy: item.performedByName || item.veterinarian?.fullName || "Veterinarian",
-      dueDate: item.dueDate ? String(item.dueDate).split("T")[0] : new Date().toISOString().split("T")[0],
+      administeredBy: item.performedByName || item.veterinarian?.fullName || undefined,
+      dueDate: item.dueDate ? String(item.dueDate).split("T")[0] : "",
       status: st,
       notes: item.notes || item.typeCatalog?.description,
     };
@@ -619,6 +640,7 @@ export const healthApi = {
   closeRecord,
   reopenRecord,
   getLocks,
+  hasActiveLocks,
   applyTrainingLock,
   releaseTrainingLock,
   extendTrainingLock,

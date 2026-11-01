@@ -1,13 +1,12 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect } from "react";
 import { useAuth } from "@/shared/components/layout/AuthProvider";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Card } from "@/shared/components/ui/Card";
 
 import { tr } from "@/shared/i18n/tr";
-// Trang xem thử Session Expired (design 1.14): mở hộp thoại ngay khi vào.
-// Trong thực tế hộp thoại này xuất hiện sau 30 phút không thao tác, khi API trả 401,
-// hoặc ngay khi Club Manager khóa tài khoản / thu hồi quyền của màn hình đang mở.
 export default function SessionExpiredPage() {
+  useScreenTranslation();
   const { markExpired, status } = useAuth();
 
   useEffect(() => {
@@ -17,9 +16,9 @@ export default function SessionExpiredPage() {
   return (
     <>
       <PageHeader title={tr("The session has expired.")} showDate />
-      <Card title={tr("Review page")} subtitle={tr("Shown behind the expiry dialog")}>
+      <Card>
         <p style={{ margin: 0, fontSize: "var(--fs-caption)", color: "var(--muted)" }}>
-          {tr("The dialog above has no close control: the choice must be made. Signing in again keeps you on this screen; leaving returns to the sign-in page.")}
+          {tr("Your session has ended. Please sign in again to continue.")}
         </p>
       </Card>
     </>

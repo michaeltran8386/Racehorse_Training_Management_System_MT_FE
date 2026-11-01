@@ -4,6 +4,7 @@ import { RouterProvider } from "react-router-dom";
 import { router } from "@/app/router";
 import "@/shared/styles/tokens.css";
 import "@/shared/styles/fonts.css";
+import "@/shared/styles/equiflow-fonts.css";
 import "@/shared/styles/global.css";
 import "@/shared/i18n";
 

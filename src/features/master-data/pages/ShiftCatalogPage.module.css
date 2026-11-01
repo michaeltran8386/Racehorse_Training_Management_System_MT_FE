@@ -1,0 +1,10 @@
+.page { display: flex; flex-direction: column; gap: 1.25rem; }
+.summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.summary > div { display: flex; flex-direction: column; gap: .5rem; min-width: 0; padding: 1rem 1.25rem; background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--brand); }
+.summary span { color: var(--text-muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; overflow-wrap: anywhere; }
+.summary strong { color: var(--text); font: 800 34px/1 var(--font-display); font-variant-numeric: tabular-nums; }
+.code { color: var(--brand-700); font-variant-numeric: tabular-nums; }
+.shiftName { color: var(--text); font-weight: 700; }
+.description { color: var(--text-muted); font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
+.hours { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 520px) { .summary { gap: .5rem; } .summary > div { padding: .75rem; } .summary strong { font-size: 28px; } }

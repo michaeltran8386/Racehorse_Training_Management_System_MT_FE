@@ -5,6 +5,7 @@
 .buttons { display: flex; justify-content: flex-end; gap: var(--sp-2); }
 .formError { color: var(--danger); font-size: var(--fs-caption); }
 .danger { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding-top: var(--sp-3); border-top: 1px solid var(--border-soft); }
-.dangerText { margin: 0; font-size: var(--fs-caption); color: var(--muted); line-height: var(--lh-body); }
+.dangerText { flex: 1; min-width: 0; margin: 0; font-size: var(--fs-caption); color: var(--muted); line-height: var(--lh-body); overflow-wrap: anywhere; }
+.danger > button, .danger > span { flex-shrink: 0; }
 .dangerText strong { display: block; color: var(--text); font-size: var(--fs-body); }
 @media (max-width: 520px) { .danger { flex-direction: column; align-items: stretch; } }

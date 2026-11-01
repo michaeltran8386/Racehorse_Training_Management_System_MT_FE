@@ -1,14 +1,18 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect, useCallback } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Button } from "@/shared/components/ui/Button";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Badge } from "@/shared/components/ui/Badge";
+import { Alert } from "@/shared/components/ui/Alert";
 import { Card } from "@/shared/components/ui/Card";
 import { DataTable, type Column } from "@/shared/components/ui/DataTable";
+import { Pagination } from "@/shared/components/ui/Pagination";
 import { HealthBadge } from "@/shared/components/ui/HealthBadge";
 import { Tabs } from "@/shared/components/ui/Tabs";
 import { Input } from "@/shared/components/form/Input";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./TrainingLockPage.module.css";
 import { formatDate } from "@/shared/lib/format";
 import type { HealthStatus } from "@/shared/types/enums";
 import { useAuth } from "@/shared/components/layout/AuthProvider";
@@ -21,6 +25,7 @@ import { HEALTH_STATUS } from "@/shared/lib/status";
 
 import { tr } from "@/shared/i18n/tr";
 export default function TrainingLockPage() {
+  useScreenTranslation();
   const { user } = useAuth();
   const toast = useToast();
   const isVet = user?.role === "VETERINARIAN";
@@ -31,7 +36,11 @@ export default function TrainingLockPage() {
   const [activeTab, setActiveTab] = useState<string>("ACTIVE");
   const [locks, setLocks] = useState<TrainingLockHistoryItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [loadError, setLoadError] = useState(false);
+  const [horsesError, setHorsesError] = useState(false);
+  const [horsesLoading, setHorsesLoading] = useState(true);
   const [search, setSearch] = useState<string>("");
+  const [page, setPage] = useState(1);
   const [selectedLock, setSelectedLock] = useState<TrainingLockHistoryItem | null>(null);
   const [modalMode, setModalMode] = useState<"place" | "extend" | "lift" | null>(null);
 
@@ -43,21 +52,34 @@ export default function TrainingLockPage() {
     }
   }, [urlAction, isVet]);
 
-  useEffect(() => {
-    getHorses({ limit: 100 }).then((res) => setHorses(res.items || []));
+  const loadHorses = useCallback(async () => {
+    setHorsesLoading(true);
+    try {
+      const res = await getHorses({ limit: 100 });
+      setHorses(res.items || []);
+      setHorsesError(false);
+    } catch {
+      setHorsesError(true);
+    } finally {
+      setHorsesLoading(false);
+    }
   }, []);
+
+  useEffect(() => { void loadHorses(); }, [loadHorses]);
 
   const loadLocks = useCallback(async () => {
     try {
       setLoading(true);
+      setLoadError(false);
       const data = await healthApi.getLocks();
       setLocks(Array.isArray(data) ? data : []);
     } catch {
-      toast.show("Failed to load training locks", "danger");
+      setLocks([]);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     void loadLocks();
@@ -94,6 +116,9 @@ export default function TrainingLockPage() {
     RELEASED: safeLocks.filter((l) => l.status === "RELEASED").length,
     ALL: safeLocks.length,
   };
+  const pageSize = 10;
+  const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredLocks.length / pageSize)));
+  const visibleLocks = filteredLocks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   const columns: Column<TrainingLockHistoryItem>[] = [
     {
@@ -134,10 +159,8 @@ export default function TrainingLockPage() {
       header: tr("Reason"),
       width: "26%",
       render: (lock) => (
-        <div style={{ display: "grid", minWidth: 0, maxWidth: 320 }}>
-          <span title={lock.lockReason} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {lock.lockReason}
-          </span>
+        <div className={styles.reason}>
+          <span>{lock.lockReason}</span>
           <span className="nowrap" style={{ fontSize: "var(--fs-caption)", lineHeight: "18px", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis" }}>
             {tr("Vet:")} {lock.lockedBy}
           </span>
@@ -168,7 +191,7 @@ export default function TrainingLockPage() {
           align: "right" as const,
           render: (lock: TrainingLockHistoryItem) =>
             lock.status === "ACTIVE" ? (
-              <div style={{ display: "inline-flex", gap: 8 }}>
+              <div className={styles.rowActions}>
                 <Button
                   tone="ghost"
                   size="sm"
@@ -193,8 +216,8 @@ export default function TrainingLockPage() {
                 </Button>
               </div>
             ) : (
-              <span className="nowrap" style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>
-                {tr("Released")}{" "}{lock.releasedAt ? formatDate(lock.releasedAt) : ""} · {lock.releaseReason || tr("Recovered")}
+              <span className={styles.release}>
+                {tr("Released")}{" "}{lock.releasedAt ? formatDate(lock.releasedAt) : "—"} · {lock.releaseReason || "—"}
               </span>
             ),
         },
@@ -211,6 +234,7 @@ export default function TrainingLockPage() {
           isVet && (
             <Button
               icon="lock"
+              disabled={horsesLoading || horsesError || loading || loadError}
               onClick={() => {
                 setSelectedLock(null);
                 setModalMode("place");
@@ -222,38 +246,47 @@ export default function TrainingLockPage() {
         }
       />
 
+      {horsesError && <Alert tone="danger" title={tr("Could not load horses")}
+        action={<Button size="sm" tone="secondary" onClick={() => void loadHorses()}>{tr("Try again")}</Button>}>
+        {tr("Check your connection and try again.")}
+      </Alert>}
+
       <Card pad={0}>
-        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 16, padding: "0 20px", borderBottom: "1px solid var(--border)" }}>
+        {loadError ? <Alert tone="danger" title={tr("Failed to load training locks")}
+          action={<Button size="sm" tone="secondary" onClick={() => void loadLocks()}>{tr("Try again")}</Button>}>
+          {tr("Check your connection and try again.")}
+        </Alert> : <>
+        <div className={styles.toolbar}>
           <Tabs
             label={tr("Filter by lock status")}
             items={[
-              { id: "ACTIVE", label: tr("Active"), count: counts.ACTIVE },
-              { id: "RELEASED", label: tr("Released"), count: counts.RELEASED },
-              { id: "ALL", label: tr("All"), count: counts.ALL },
+              { id: "ACTIVE", label: tr("Active"), count: loading ? undefined : counts.ACTIVE },
+              { id: "RELEASED", label: tr("Released"), count: loading ? undefined : counts.RELEASED },
+              { id: "ALL", label: tr("All"), count: loading ? undefined : counts.ALL },
             ]}
             active={activeTab}
-            onChange={setActiveTab}
+            onChange={(value) => { setActiveTab(value); setPage(1); }}
           />
-          <div style={{ width: 300, padding: "8px 0" }}>
+          <div className={styles.search}>
             <Input
               icon="search"
               aria-label={tr("Search locks")}
               placeholder={tr("Lock code, horse or reason")}
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
           </div>
         </div>
         <DataTable
           caption={tr("Training locks")}
           columns={columns}
-          rows={filteredLocks}
+          rows={visibleLocks}
           rowKey={(lock) => lock.id || lock.lockCode}
           loading={loading}
           empty={
             <EmptyState
               icon="lock"
-              title={search ? "No locks match this search" : activeTab === "ACTIVE" ? "No active Training Locks" : "No Training Locks yet"}
+              title={search ? "No locks match this search" : activeTab === "ACTIVE" ? "No active Training Locks" : activeTab === "RELEASED" ? "No released Training Locks" : "No Training Locks yet"}
               description={
                 search
                   ? "Try a lock code, a horse name or part of the reason."
@@ -262,10 +295,12 @@ export default function TrainingLockPage() {
             />
           }
         />
+        {!loading && filteredLocks.length > pageSize && <Pagination page={currentPage} pageSize={pageSize} total={filteredLocks.length} noun="locks" onPage={setPage} />}
+        </>}
       </Card>
 
       {/* Lock Modals */}
-      {modalMode && (() => {
+      {modalMode && (modalMode !== "place" || (!horsesLoading && !horsesError && !loading && !loadError)) && (() => {
         const activeLockHorseIds = new Set(
           safeLocks.filter((l) => l.status === "ACTIVE").map((l) => l.horseId),
         );
@@ -273,8 +308,8 @@ export default function TrainingLockPage() {
           (h) => !h.isMedicalLocked && !activeLockHorseIds.has(h.id) && h.status !== "RETIRED",
         );
         const targetHorseFromUrl = urlHorseId ? horses.find((h) => h.id === urlHorseId) : undefined;
-        const defaultHorse = targetHorseFromUrl || eligibleHorsesForLock.find((h) => h.id === urlHorseId) || eligibleHorsesForLock[0];
-        const effectiveHorseId = selectedLock?.horseId || urlHorseId || defaultHorse?.id || "";
+        const defaultHorse = targetHorseFromUrl;
+        const effectiveHorseId = selectedLock?.horseId || defaultHorse?.id || "";
 
         return (
           <TrainingLockModal

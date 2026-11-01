@@ -1,0 +1,11 @@
+.sectionTitle, .resultTitle { color: var(--text); font: 800 28px/1.05 var(--font-display); text-transform: uppercase; }
+.sectionTitle { margin: 0 0 1rem; }
+.resultTitle { margin: 0; }
+.sectionHeading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
+.summaryGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: .5rem; font-size: var(--fs-body); }
+.summaryGrid > div { min-width: 0; padding: .75rem; background: var(--surface-2); border-left: 2px solid var(--border-strong); color: var(--text-muted); line-height: 1.5; overflow-wrap: anywhere; }
+.summaryGrid strong { color: var(--text); font-variant-numeric: tabular-nums; }
+.quickNote { min-height: 36px; padding: .4rem .65rem; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: 600 var(--fs-caption) var(--font); cursor: pointer; }
+.quickNote:hover { background: var(--surface-2); border-color: var(--brand-700); }
+.quickNote:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (max-width: 520px) { .summaryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .summaryGrid > div { padding: .6rem; } }

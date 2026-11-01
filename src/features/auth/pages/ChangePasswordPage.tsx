@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +22,7 @@ type Errors = Partial<Record<"current" | "next" | "confirm", string>>;
 
 // Design 1.16: đổi mật khẩu — mọi thiết bị khác bị đăng xuất sau khi lưu.
 export default function ChangePasswordPage() {
+  useScreenTranslation();
   const navigate = useNavigate();
   const toast = useToast();
   const [current, setCurrent] = useState("");

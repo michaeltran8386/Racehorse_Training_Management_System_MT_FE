@@ -251,7 +251,7 @@ export function NutritionPlanDetailModal({
                 style={{
                   fontSize: '0.75rem',
                   fontWeight: 600,
-                  color: plan.isWithinSafeRange ? '#10B981' : '#F59E0B',
+                  color: plan.isWithinSafeRange ? 'var(--ok)' : 'var(--warn)',
                 }}
               >
                 ({plan.isWithinSafeRange ? tr('Optimal') : tr('Attention')})
@@ -271,7 +271,7 @@ export function NutritionPlanDetailModal({
               {tr('Horse Weight Baseline')}
             </div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, marginTop: '2px' }}>
-              {plan.horseWeightSnapshot || 500} kg
+              {plan.horseWeightSnapshot && plan.horseWeightSnapshot > 0 ? `${plan.horseWeightSnapshot} kg` : tr('Weight not recorded')}
             </div>
           </div>
         </div>
@@ -280,13 +280,13 @@ export function NutritionPlanDetailModal({
         {plan.status === 'REJECTED' && plan.rejectionReason && (
           <div
             style={{
-              background: 'rgba(239, 68, 68, 0.08)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'var(--danger-bg)',
+              border: '1px solid var(--danger)',
               borderRadius: 'var(--radius-md)',
               padding: '0.875rem',
             }}
           >
-            <div style={{ fontWeight: 600, color: '#DC2626', marginBottom: '4px' }}>
+            <div style={{ fontWeight: 600, color: 'var(--danger)', marginBottom: '4px' }}>
               {tr('Rejection Reason from Veterinarian:')}
             </div>
             <div style={{ fontSize: '0.9rem' }}>{plan.rejectionReason}</div>
@@ -297,8 +297,8 @@ export function NutritionPlanDetailModal({
         {plan.vetNotes && (
           <div
             style={{
-              background: 'rgba(59, 130, 246, 0.08)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
+              background: 'var(--info-bg)',
+              border: '1px solid var(--info)',
               borderRadius: 'var(--radius-md)',
               padding: '0.875rem',
             }}
@@ -364,7 +364,7 @@ export function NutritionPlanDetailModal({
                     </thead>
                     <tbody>
                       {meal.items.map((it, idx) => (
-                        <tr key={idx} style={{ borderBottom: '1px solid rgba(0,0,0,0.04)' }}>
+                        <tr key={idx} style={{ borderBottom: '1px solid var(--border-soft)' }}>
                           <td style={{ padding: '6px 0', fontWeight: 500 }}>
                             {formatSupplyName(it.supplyName)}
                           </td>
@@ -409,8 +409,8 @@ export function NutritionPlanDetailModal({
           <div
             style={{
               padding: '1rem',
-              background: 'rgba(239, 68, 68, 0.05)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
+              background: 'var(--danger-bg)',
+              border: '1px solid var(--danger)',
               borderRadius: 'var(--radius-md)',
               display: 'flex',
               flexDirection: 'column',
@@ -505,7 +505,6 @@ export function NutritionPlanDetailModal({
                   tone="primary"
                   onClick={handleApprove}
                   disabled={busy}
-                  style={{ background: '#10B981', borderColor: '#10B981' }}
                 >
                   {busy ? tr('Approving...') : tr('Approve Plan')}
                 </Button>

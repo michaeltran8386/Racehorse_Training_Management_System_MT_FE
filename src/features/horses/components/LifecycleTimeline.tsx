@@ -61,17 +61,17 @@ export function LifecycleTimeline({ events, isManager }: { events: TimelineEvent
                 alignItems: "center",
                 gap: 5,
                 padding: "4px 10px",
-                borderRadius: 999,
+                borderRadius: "var(--r)",
                 border: `1px solid ${on ? "var(--brand)" : "var(--border)"}`,
                 background: on ? "var(--brand-surface)" : "var(--surface)",
-                color: on ? "var(--brand)" : "var(--ink-secondary)",
+                color: on ? "var(--brand-700)" : "var(--ink-secondary)",
                 fontWeight: on ? 600 : 500,
                 cursor: "pointer",
                 fontSize: "var(--fs-body)",
               }}
             >
               <Icon name={g.iconName} size={13} />
-              <span>{g.label}</span>
+              <span>{tr(g.label)}</span>
             </button>
           );
         })}
@@ -112,7 +112,7 @@ export function LifecycleTimeline({ events, isManager }: { events: TimelineEvent
                   borderRadius: "50%",
                   background: "var(--brand-surface)",
                   border: "1px solid var(--border-subtle)",
-                  color: "var(--brand)",
+                  color: "var(--brand-700)",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",

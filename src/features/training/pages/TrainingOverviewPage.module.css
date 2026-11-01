@@ -1,0 +1,19 @@
+.secondaryAction { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font-weight: 600; }
+.secondaryAction:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.metrics > a, .metrics > button { min-width: 0; }
+.metrics > button { width: 100%; text-align: left; }
+.metricButton { padding: 0; border: 0; background: transparent; cursor: pointer; font: inherit; color: inherit; }
+.metricButton:focus-visible, .metrics > a:focus-visible, .secondaryAction:focus-visible { outline: 2px solid var(--brand-700); outline-offset: 3px; }
+.metrics > a > section, .metrics > button > section { height: 100%; }
+.metrics > a:hover > section, .metrics > button:hover > section { border-color: var(--brand); }
+.metrics > a > section > div, .metrics > button > section > div { min-height: 120px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
+.metrics > a > section > div > div:nth-child(2), .metrics > button > section > div > div:nth-child(2) { font-family: var(--font-display); font-size: 38px !important; line-height: 1.1; }
+.filters { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.search { width: min(240px, 100%); }
+.filter { flex: 0 1 200px; min-width: 150px; }
+.table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--fs-body); }
+.table th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+.table tbody tr:hover { background: var(--surface-row-hover); }
+@media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .metrics { gap: 8px; } .metrics > a > section > div, .metrics > button > section > div { min-height: 104px; } .filter { flex: 1 1 100%; } .search { width: 100%; } }

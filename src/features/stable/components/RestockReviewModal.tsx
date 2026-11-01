@@ -114,7 +114,7 @@ export function RestockReviewModal({ request, onClose, onSaved }: RestockReviewM
           </div>
           <div style={{ marginTop: '0.25rem' }}>
             <span style={{ color: 'var(--muted)' }}>{tr('Urgency Reason')}:</span>
-            <p style={{ margin: '0.25rem 0 0 0', fontStyle: 'italic', color: 'var(--ink)' }}>
+            <p style={{ margin: '0.25rem 0 0 0', color: 'var(--ink)' }}>
               "{request.urgencyReason}"
             </p>
           </div>
@@ -122,7 +122,7 @@ export function RestockReviewModal({ request, onClose, onSaved }: RestockReviewM
 
         {/* Quyết định phê duyệt */}
         <Field label={tr('Manager Decision')} required>
-          <div style={{ display: 'flex', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
             <label
               style={{
                 flex: 1,
@@ -158,7 +158,7 @@ export function RestockReviewModal({ request, onClose, onSaved }: RestockReviewM
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem',
-                backgroundColor: action === 'REJECT' ? 'rgba(239, 68, 68, 0.08)' : 'var(--surface)',
+                backgroundColor: action === 'REJECT' ? 'var(--danger-bg)' : 'var(--surface)',
                 fontWeight: action === 'REJECT' ? 600 : 400,
               }}
             >
@@ -211,7 +211,7 @@ export function RestockReviewModal({ request, onClose, onSaved }: RestockReviewM
           </Field>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
           <Button type="button" tone="secondary" onClick={onClose} disabled={busy}>
             {tr('Cancel')}
           </Button>

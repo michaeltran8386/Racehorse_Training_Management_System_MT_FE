@@ -1,0 +1,27 @@
+.daySelector { display: none; gap: .375rem; overflow-x: auto; margin-bottom: 1rem; padding-bottom: .25rem; }
+.daySelector button { color: var(--text); }
+.daySelector button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (max-width: 700px) {
+  .daySelector { display: flex; }
+  .matrix { min-width: 0 !important; table-layout: fixed; }
+  .matrix .otherDay { display: none; }
+  .matrix th:first-child { width: 45% !important; }
+  .matrix td, .matrix th { overflow-wrap: anywhere; }
+}
+.matrix td[role="button"]:focus-visible { outline: 2px solid var(--brand); outline-offset: -3px; }
+.zoneHead, .shiftHead { padding: .75rem 1rem; font-weight: 600; text-align: left; }
+.zoneHead { width: 150px; }
+.shiftHead { width: 120px; border-left: 1px solid var(--border); }
+.matrix tbody tr { border-bottom: 1px solid var(--border); }
+.matrix tbody tr.zoneStart { border-top: 2px solid var(--text); }
+.zoneCell { padding: .75rem 1rem; vertical-align: top; text-align: left; font: 800 18px/1.1 var(--font-display); text-transform: uppercase; background: var(--surface-2); overflow-wrap: anywhere; }
+.shiftCell { padding: .625rem .75rem; vertical-align: top; background: var(--surface-2); border-left: 1px solid var(--border); }
+.shiftTime { font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.cell { padding: .5rem; vertical-align: top; border-left: 1px solid var(--border); transition: background var(--dur-fast) var(--ease); }
+.cellToday { background: var(--brand-50); }
+.cellEmpty { background: color-mix(in srgb, var(--danger-bg) 55%, transparent); }
+.cell[role="button"] { cursor: pointer; }
+.cell[role="button"]:hover { background: var(--surface-3); }
+.groomChip { font-size: .8125rem; font-weight: 500; padding: .25rem .5rem; margin-bottom: .25rem; background: var(--surface); border: 1px solid var(--border); }
+.emptyText { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: .5rem 0; font-size: .75rem; font-weight: 600; color: var(--danger); text-align: center; }
+@media (prefers-reduced-motion: reduce) { .cell { transition: none; } }

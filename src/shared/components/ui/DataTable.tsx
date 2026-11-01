@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
+import { usePaged } from "@/shared/lib/hooks";
 import { cx } from "@/shared/lib/cx";
 import { EmptyState } from "./EmptyState";
+import { Pagination } from "./Pagination";
 import styles from "./DataTable.module.css";
 import { tr, trNode } from "@/shared/i18n/tr";
 
@@ -9,7 +11,7 @@ export interface Column<T> {
   header: string;
   width?: number | string;
   align?: "left" | "right";
-  // Ẩn cột này khi màn hình hẹp (≤ 1280px) — design giữ lại vai trò, trạng thái, hành động.
+  // Giữ tương thích với cấu hình cột hiện có; bảng desktop luôn hiển thị đầy đủ cột.
   hideOnNarrow?: boolean;
   render: (row: T) => ReactNode;
 }
@@ -23,18 +25,25 @@ interface DataTableProps<T> {
   caption: string; // mô tả bảng cho trình đọc màn hình
   selectedKey?: string | null;
   onRowClick?: (row: T) => void;
+  // Phân trang phía client cho danh sách tải trọn một lần (tránh trang cuộn dài vô tận).
+  pageSize?: number;
+  noun?: string; // danh từ số nhiều cho chân bảng, vd "items"
 }
 
 const SKELETON_ROWS = 5;
 
 // Bảng dữ liệu dùng chung. Tự lo 3 trạng thái: đang tải (skeleton) · rỗng · có dữ liệu.
 // (Trạng thái lỗi do trang quyết định vì cần nút "Try again" riêng.)
-export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, selectedKey, onRowClick }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, selectedKey, onRowClick, pageSize, noun = "items" }: DataTableProps<T>) {
+  const pager = usePaged(rows, pageSize ?? 10);
+
   if (!loading && rows.length === 0) {
+    if (typeof empty === "string") return <EmptyState title={empty} />;
     return <>{empty ?? <EmptyState title={tr("Nothing to show yet.")} description={tr("New records appear here as soon as they exist.")} />}</>;
   }
 
   return (
+    <>
     <div className={styles.scroll}>
       <table className={styles.table} aria-busy={loading || undefined}>
         <caption className="sr-only">{trNode(caption)}</caption>
@@ -44,7 +53,7 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
               <th
                 key={c.key}
                 scope="col"
-                className={cx(styles.th, c.align === "right" && styles.right, c.hideOnNarrow && styles.narrow)}
+                className={cx(styles.th, c.align === "right" && styles.right)}
                 style={{ width: c.width }}
               >
                 {trNode(c.header)}
@@ -66,7 +75,7 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
                 return (
                   <tr key={i} className={styles.row}>
                     {columns.map((c, colIdx) => (
-                      <td key={c.key} className={cx(styles.td, c.hideOnNarrow && styles.narrow)}>
+                      <td key={c.key} className={styles.td}>
                         <span
                           className={styles.skeleton}
                           style={{ width: widths[colIdx % widths.length] || "60%" }}
@@ -76,16 +85,27 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
                   </tr>
                 );
               })
-            : rows.map((row) => {
+            : pager.items.map((row) => {
                 const isSelected = selectedKey !== undefined && selectedKey !== null && rowKey(row) === selectedKey;
                 return (
                   <tr
                     key={rowKey(row)}
                     className={cx(styles.row, onRowClick && styles.clickable, isSelected && styles.selected)}
-                    onClick={() => onRowClick?.(row)}
+                    tabIndex={onRowClick ? 0 : undefined}
+                    aria-selected={onRowClick && selectedKey !== undefined ? isSelected : undefined}
+                    onKeyDown={(event) => {
+                      if (onRowClick && event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) {
+                        event.preventDefault();
+                        onRowClick(row);
+                      }
+                    }}
+                    onClick={(event) => {
+                      if (event.target instanceof Element && event.target.closest("a, button, input, select, textarea, [role='button']")) return;
+                      onRowClick?.(row);
+                    }}
                   >
                     {columns.map((c) => (
-                      <td key={c.key} className={cx(styles.td, c.align === "right" && styles.right, c.hideOnNarrow && styles.narrow)}>
+                      <td key={c.key} className={cx(styles.td, c.align === "right" && styles.right)}>
                         {c.render(row)}
                       </td>
                     ))}
@@ -95,6 +115,8 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
         </tbody>
       </table>
     </div>
+    {pager.paged && !loading && <Pagination page={pager.page} pageSize={pager.pageSize} total={pager.total} noun={noun} onPage={pager.setPage} />}
+    </>
   );
 }
 

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerApiHandlers } from "@/shared/lib/api";
-import { fetchMe, login, logout } from "@/shared/lib/auth";
+import { fetchMe, login, loginWithGoogle, logout } from "@/shared/lib/auth";
 import type { AuthUser } from "@/shared/types/auth";
 
 // Không thao tác trong 30 phút => phiên hết hạn (design 1.14).
@@ -16,6 +16,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   expired: boolean;
   signIn: (email: string, password: string, remember: boolean) => Promise<AuthUser>;
+  signInWithGoogle: (credential: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
   setUser: (user: AuthUser) => void;
@@ -29,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("loading");
   const [user, setUserState] = useState<AuthUser | null>(null);
   const [expired, setExpired] = useState(false);
+  const sessionVersion = useRef(0);
 
   // Ref để callback (đăng ký một lần) luôn đọc được trạng thái mới nhất.
   const statusRef = useRef<AuthStatus>("loading");
@@ -49,14 +51,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Lúc mở trang: hỏi "tôi là ai" để khôi phục phiên.
   useEffect(() => {
     let cancelled = false;
+    const version = sessionVersion.current;
     fetchMe(true)
       .then((u) => {
-        if (cancelled) return;
+        if (cancelled || version !== sessionVersion.current) return;
         setUserState(u);
         setStatus("authenticated");
       })
       .catch(() => {
-        if (!cancelled) setStatus("anonymous");
+        if (!cancelled && version === sessionVersion.current) setStatus("anonymous");
       });
     return () => {
       cancelled = true;
@@ -79,37 +82,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [status, expired, markExpired]);
 
   const signIn = useCallback(async (email: string, password: string, remember: boolean) => {
-    const u = await login(email, password, remember);
-    setUserState(u);
-    setStatus("authenticated");
-    setExpired(false);
-    return u;
+    const version = ++sessionVersion.current;
+    try {
+      const u = await login(email, password, remember);
+      if (version !== sessionVersion.current) throw new Error("Session changed");
+      setUserState(u);
+      setStatus("authenticated");
+      setExpired(false);
+      return u;
+    } catch (error) {
+      if (version === sessionVersion.current && statusRef.current === "loading") setStatus("anonymous");
+      throw error;
+    }
+  }, []);
+
+  const signInWithGoogle = useCallback(async (credential: string) => {
+    const version = ++sessionVersion.current;
+    try {
+      const u = await loginWithGoogle(credential);
+      if (version !== sessionVersion.current) throw new Error("Session changed");
+      setUserState(u);
+      setStatus("authenticated");
+      setExpired(false);
+      return u;
+    } catch (error) {
+      if (version === sessionVersion.current && statusRef.current === "loading") setStatus("anonymous");
+      throw error;
+    }
   }, []);
 
   const signOut = useCallback(async () => {
+    const version = ++sessionVersion.current;
     try {
       await logout();
     } catch {
       // Dù server không trả lời vẫn đăng xuất ở phía giao diện.
     }
-    setUserState(null);
-    setStatus("anonymous");
-    setExpired(false);
+    if (version === sessionVersion.current) {
+      setUserState(null);
+      setStatus("anonymous");
+      setExpired(false);
+    }
   }, []);
 
   // Hỏi lại server giữa phiên: quyền/trạng thái có thể vừa bị Club Manager đổi.
   const refresh = useCallback(async () => {
+    const version = sessionVersion.current;
     try {
       const u = await fetchMe(false);
-      setUserState((prev) => (JSON.stringify(prev) === JSON.stringify(u) ? prev : u));
+      if (version === sessionVersion.current) setUserState((prev) => (JSON.stringify(prev) === JSON.stringify(u) ? prev : u));
     } catch {
       // 401 đã được xử lý chung (mở Session Expired).
     }
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, expired, signIn, signOut, refresh, setUser: setUserState, markExpired }),
-    [status, user, expired, signIn, signOut, refresh, markExpired],
+    () => ({ status, user, expired, signIn, signInWithGoogle, signOut, refresh, setUser: setUserState, markExpired }),
+    [status, user, expired, signIn, signInWithGoogle, signOut, refresh, markExpired],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

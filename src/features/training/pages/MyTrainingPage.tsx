@@ -1,8 +1,10 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Card } from "@/shared/components/ui/Card";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Tabs } from "@/shared/components/ui/Tabs";
@@ -12,6 +14,7 @@ import { EXERCISE_TYPE_LABEL, isHeavy, SESSION_STATUS_LABEL, SESSION_STATUS_TONE
 import type { ExerciseSession } from "../types";
 
 import { tr } from "@/shared/i18n/tr";
+import styles from "./TrainingActivity.module.css";
 const REFRESH_MS = 5 * 60 * 1000;
 
 function plusDays(date: string, days: number): string {
@@ -22,6 +25,7 @@ function plusDays(date: string, days: number): string {
 
 /** SC-2.08 Lịch tập của tôi (GROOM): buổi được phân công, tự làm mới mỗi 5 phút. */
 export default function MyTrainingPage() {
+  useScreenTranslation();
   const [tab, setTab] = useState("today");
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,6 +39,7 @@ export default function MyTrainingPage() {
 
   const load = useCallback(async () => {
     const requestId = ++latest.current;
+    setLoading(true);
     setError("");
     try {
       const rows = await trainingApi.getSessions({ from: range.from, to: range.to });
@@ -53,11 +58,9 @@ export default function MyTrainingPage() {
   }, [load]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: 720, margin: "0 auto" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.75rem" }}>
-        <h1 style={{ margin: 0, fontSize: "var(--fs-kpi)" }}>{tr("My training schedule")}</h1>
-        <Button size="sm" tone="secondary" onClick={() => void load()}>{tr("Refresh")}</Button>
-      </div>
+    <div className={styles.page}>
+      <PageHeader title="My training schedule" action={<Button size="sm" tone="secondary" onClick={() => void load()}>{tr("Refresh")}</Button>} />
+
       <Tabs
         items={[
           { id: "today", label: "Today" },
@@ -66,40 +69,41 @@ export default function MyTrainingPage() {
         ]}
         active={tab}
         onChange={(t) => {
+          if (t === tab) return;
           setTab(t);
           setLoading(true);
         }}
       />
-      {error && <Alert tone="danger" title={tr("Could not load data")}>{error}</Alert>}
+      {error && <Alert tone="danger" title={tr("Could not load data")} action={<Button size="sm" tone="secondary" onClick={() => void load()}>{tr("Try again")}</Button>}>{error}</Alert>}
       {loading ? (
         <div style={{ padding: "2rem", textAlign: "center", color: "var(--text-muted)" }}>{tr("Loading...")}</div>
-      ) : sessions.length === 0 ? (
+      ) : error ? null : sessions.length === 0 ? (
         <EmptyState title={tab === "today" ? tr("You have no workouts assigned today.") : tr("No workouts assigned in this period.")} />
       ) : (
         sessions.map((s) => {
           const blocked = s.status === "BLOCKED";
           const cancelled = s.status === "CANCELLED";
           return (
-            <Card key={s.id} pad={16}>
-              <div style={{ background: blocked ? "var(--danger-bg)" : undefined, textDecoration: cancelled ? "line-through" : undefined }}>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
-                  <strong style={{ fontSize: "var(--fs-section)" }}>
+            <Card key={s.id} pad={20}>
+              <div className={`${styles.session} ${blocked ? styles.blocked : ""} ${cancelled ? styles.cancelled : ""}`}>
+                <div className={styles.cardHeading}>
+                  <strong className={styles.cardTitle}>
                     {tab === "week" ? `${s.sessionDate.slice(5)} ` : ""}{s.startTime} · {s.horseName}
                   </strong>
                   <Badge tone={SESSION_STATUS_TONE[s.status]}>{SESSION_STATUS_LABEL[s.status]}</Badge>
                 </div>
-                <div style={{ fontSize: "var(--fs-body)", marginTop: "0.25rem" }}>
-                  {tr("Stall")}{" "}{s.stallCode ?? "—"} · {EXERCISE_TYPE_LABEL[s.sessionType]}{" "}
+                <div className={styles.metadata}>
+                  {tr("Stall")}{" "}{s.stallCode ?? "—"} · {tr(EXERCISE_TYPE_LABEL[s.sessionType])}{" "}
                   {isHeavy(s.sessionType, s.intensity) && <Badge tone="danger">{tr("Heavy")}</Badge>} · {s.targetDistanceMeters} m × {s.repetitions} ·{" "}
-                  {TRACK_LABEL[s.trackType]} {tr("· Jockey:")}{" "}{s.jockeyName || "—"}
+                  {tr(TRACK_LABEL[s.trackType])} {tr("· Jockey:")}{" "}{s.jockeyName || "—"}
                 </div>
                 {blocked && (
-                  <div style={{ color: "var(--danger)", fontWeight: 600, marginTop: "0.35rem" }}>
+                  <div className={styles.warning}>
                     {tr("Blocked by a veterinary Training Lock – do not take the horse to the track.")}
                   </div>
                 )}
                 {open === s.id ? (
-                  <div style={{ marginTop: "0.5rem", fontSize: "var(--fs-body)" }}>
+                  <div className={styles.note}>
                     <div><strong>{tr("Instructions:")}</strong> {s.notes || "—"}</div>
                     {s.status === "COMPLETED" && (
                       <Link to={`/training/sessions/${s.id}/result`}>{tr("View result")}</Link>

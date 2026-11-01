@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout, HERO_TEAM } from "@/shared/components/layout/AuthLayout";
@@ -10,6 +11,7 @@ import { OtpVerifyForm } from "../components/OtpVerifyForm";
 import { tr } from "@/shared/i18n/tr";
 // Bước 2 của đăng ký: nhập mã OTP gửi về email. Đúng mã => yêu cầu chuyển tới Club Manager.
 export default function VerifyEmailPage() {
+  useScreenTranslation();
   const navigate = useNavigate();
   const params = useQueryParams();
   const email = params?.get("email") ?? "";
@@ -39,7 +41,7 @@ export default function VerifyEmailPage() {
         }}
         footer={
           <>
-            Wrong address? <Link to="/sign-up">Start over</Link>
+            {tr("Wrong address?")} <Link to="/sign-up">{tr("Start over")}</Link>
           </>
         }
       />

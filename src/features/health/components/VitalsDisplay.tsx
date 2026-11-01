@@ -40,6 +40,7 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
   const isVi = (i18n.language || "vi").startsWith("vi");
   const inRangeLabel = isVi ? "Trong dải tham chiếu" : "Within reference range";
   const outRangeLabel = isVi ? "Ngoài dải tham chiếu" : "Outside reference range";
+  const notRecordedLabel = isVi ? "Chưa ghi nhận" : "Not recorded";
 
   return (
     <div className={styles.container}>
@@ -55,12 +56,12 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
         <div className={cx(styles.vitalCard, tempWarn && styles.warning)}>
           <div className={styles.headerRow}>
             <span className={styles.vitalLabel}>{tr("Temperature")}</span>
-            <Badge tone={tempWarn ? "danger" : "ok"} dot>
-              {tempWarn ? outRangeLabel : inRangeLabel}
+            <Badge tone={vitals.temperature == null ? "neutral" : tempWarn ? "danger" : "ok"} dot>
+              {vitals.temperature == null ? notRecordedLabel : tempWarn ? outRangeLabel : inRangeLabel}
             </Badge>
           </div>
           <div className={styles.valueRow}>
-            <span className={styles.value}>{vitals.temperature !== undefined ? vitals.temperature.toFixed(1) : "—"}</span>
+            <span className={styles.value}>{vitals.temperature != null ? vitals.temperature.toFixed(1) : "—"}</span>
             <span className={styles.unit}>°C</span>
           </div>
           <span className={styles.reference}>{tr("Reference: 37.2 – 38.6 °C")}</span>
@@ -70,8 +71,8 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
         <div className={cx(styles.vitalCard, hrWarn && styles.warning)}>
           <div className={styles.headerRow}>
             <span className={styles.vitalLabel}>{tr("Resting Heart Rate")}</span>
-            <Badge tone={hrWarn ? "danger" : "ok"} dot>
-              {hrWarn ? outRangeLabel : inRangeLabel}
+            <Badge tone={vitals.restingHeartRate == null ? "neutral" : hrWarn ? "danger" : "ok"} dot>
+              {vitals.restingHeartRate == null ? notRecordedLabel : hrWarn ? outRangeLabel : inRangeLabel}
             </Badge>
           </div>
           <div className={styles.valueRow}>
@@ -85,8 +86,8 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
         <div className={cx(styles.vitalCard, rrWarn && styles.warning)}>
           <div className={styles.headerRow}>
             <span className={styles.vitalLabel}>{tr("Respiratory Rate")}</span>
-            <Badge tone={rrWarn ? "danger" : "ok"} dot>
-              {rrWarn ? outRangeLabel : inRangeLabel}
+            <Badge tone={vitals.respiratoryRate == null ? "neutral" : rrWarn ? "danger" : "ok"} dot>
+              {vitals.respiratoryRate == null ? notRecordedLabel : rrWarn ? outRangeLabel : inRangeLabel}
             </Badge>
           </div>
           <div className={styles.valueRow}>
@@ -100,7 +101,7 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
         <div className={styles.vitalCard}>
           <div className={styles.headerRow}>
             <span className={styles.vitalLabel}>{tr("Body Weight")}</span>
-            <Badge tone="neutral">{tr("Routine")}</Badge>
+            <Badge tone="neutral">{vitals.weightKg == null ? notRecordedLabel : tr("Routine")}</Badge>
           </div>
           <div className={styles.valueRow}>
             <span className={styles.value}>{vitals.weightKg ?? "—"}</span>

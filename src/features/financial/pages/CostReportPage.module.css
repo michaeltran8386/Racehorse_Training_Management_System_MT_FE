@@ -1,0 +1,17 @@
+.page { display: grid; gap: 20px; }
+.filter { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.filter label { font-weight: 700; }
+.filter span { color: var(--muted); font-size: var(--fs-caption); }
+.filter select { min-height: 40px; padding: 8px 12px; border: 1px solid var(--border-field); background: var(--surface); color: var(--text); font: inherit; }
+.filter select:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.metrics > div { background: var(--surface); border: 1px solid var(--border); }
+.metrics strong { overflow-wrap: anywhere; font-size: clamp(24px, 2vw, 38px); }
+.scroll { max-width: 100%; overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; text-align: left; }
+.table th { color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.table th, .table td { padding: 12px; border-bottom: 1px solid var(--border); }
+.table td:first-child { white-space: nowrap; }
+.table tbody tr:last-child td { border-bottom: 0; }
+.table tbody tr:hover { background: var(--surface-row-hover); }
+.table td span { color: var(--muted); font-size: var(--fs-caption); }

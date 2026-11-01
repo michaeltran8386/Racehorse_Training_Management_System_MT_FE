@@ -88,7 +88,7 @@ export function CopyWeekRosterModal({
             <span style={{ fontSize: '0.75rem', color: 'var(--muted)', textTransform: 'uppercase' }}>
               {tr('To target week:')}
             </span>
-            <div style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--brand)' }}>
+            <div style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--brand-700)' }}>
               {targetWeekLabel}
             </div>
           </div>

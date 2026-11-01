@@ -5,7 +5,7 @@ import { Modal } from "@/shared/components/ui/Modal";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
-import { Select } from "@/shared/components/form/Select";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useToast } from "@/shared/components/ui/Toast";
 import { useAppLanguage } from "@/shared/lib/language";
@@ -104,7 +104,7 @@ export function ActivatePlanDialog({ plan, onClose, onDone }: DialogProps) {
           )}
         </ul>
         {plan.workoutCount === 0 && (
-          <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.8rem", borderRadius: "8px", background: "var(--surface-sunken)", border: "1px solid var(--border)", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+          <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.8rem", borderRadius: "var(--r)", background: "var(--surface-sunken)", border: "1px solid var(--border)", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
             {isVietnamese ? (
               <>
                 💡 <strong>Hướng dẫn:</strong> Giáo án cần có ít nhất 1 bài tập trước khi kích hoạt. Hãy đóng hộp thoại này, mở tab <strong>{tr("Workouts")}</strong> của giáo án và bấm <strong>{tr("+ Add workout")}</strong> để thêm bài tập (hoặc thêm một lượt chạy thử Trial run).
@@ -238,9 +238,9 @@ export function ClonePlanDialog({ plan, onClose, onDone }: DialogProps) {
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         <Field label={tr("Horse")} required>
-          <Select
+          <SearchSelect
             value={horseId}
-            onChange={(e) => setHorseId(e.target.value)}
+            onChange={setHorseId}
             options={horses.map((h) => ({ value: h.id, label: `${h.name} (${h.horseCode ?? ""})${h.isMedicalLocked ? " · Training Lock" : ""}` }))}
           />
         </Field>

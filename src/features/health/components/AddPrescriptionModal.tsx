@@ -1,3 +1,4 @@
+import formLayout from "@/shared/components/form/FormLayout.module.css";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Field } from "@/shared/components/form/Field";
@@ -28,17 +29,17 @@ const ROUTE_OPTIONS = [
 ];
 
 const COMMON_EQUINE_MEDICATIONS = [
-  { value: "Phenylbutazone 20% dung dịch tiêm", label: "Phenylbutazone 20% (NSAID giảm đau/kháng viêm)", defaultUnit: "ml", defaultRoute: "Intravenous", defaultWithdrawalDays: 7 },
-  { value: "Flunixin Meglumine 50mg/ml", label: "Flunixin Meglumine 50mg/ml (Kháng viêm nội tạng/hạ sốt)", defaultUnit: "ml", defaultRoute: "Intramuscular", defaultWithdrawalDays: 5 },
-  { value: "Dexamethasone 2mg/ml", label: "Dexamethasone 2mg/ml (Corticosteroid chống sốc/viêm)", defaultUnit: "ml", defaultRoute: "Intravenous", defaultWithdrawalDays: 7 },
-  { value: "Thuốc tẩy giun Ivermectin Paste 1.87%", label: "Ivermectin Paste 1.87% (Tẩy giun sán đường ruột)", defaultUnit: "g", defaultRoute: "Oral", defaultWithdrawalDays: 0 },
-  { value: "Omeprazole GastroGard Paste", label: "Omeprazole GastroGard (Điều trị viêm loét dạ dày)", defaultUnit: "g", defaultRoute: "Oral", defaultWithdrawalDays: 0 },
-  { value: "Meloxicam Oral Suspension", label: "Meloxicam Oral Suspension (Kháng viêm khớp)", defaultUnit: "ml", defaultRoute: "Oral", defaultWithdrawalDays: 3 },
-  { value: "Gentamicin Sulfate 100mg/ml", label: "Gentamicin Sulfate 100mg/ml (Kháng sinh phổ rộng)", defaultUnit: "ml", defaultRoute: "Intramuscular", defaultWithdrawalDays: 14 },
-  { value: "Cefquinome (Cobactan 2.5%)", label: "Cefquinome 2.5% (Kháng sinh Cephalosporin thế hệ 4)", defaultUnit: "ml", defaultRoute: "Intramuscular", defaultWithdrawalDays: 8 },
-  { value: "Men vi sinh đường ruột EquiFlora dạng ống", label: "Men vi sinh đường ruột EquiFlora dạng ống", defaultUnit: "ml", defaultRoute: "Oral", defaultWithdrawalDays: 0 },
-  { value: "Bột bù điện giải Post-Workout Electrolyte", label: "Bột bù điện giải Post-Workout Electrolyte", defaultUnit: "sachets", defaultRoute: "Oral", defaultWithdrawalDays: 0 },
-  { value: "OTHER", label: "Khác / Nhập tên thuốc khác...", defaultUnit: "ml", defaultRoute: "Oral", defaultWithdrawalDays: 0 },
+  { value: "Phenylbutazone 20% dung dịch tiêm", label: "Phenylbutazone 20% (NSAID giảm đau/kháng viêm)" },
+  { value: "Flunixin Meglumine 50mg/ml", label: "Flunixin Meglumine 50mg/ml (Kháng viêm nội tạng/hạ sốt)" },
+  { value: "Dexamethasone 2mg/ml", label: "Dexamethasone 2mg/ml (Corticosteroid chống sốc/viêm)" },
+  { value: "Thuốc tẩy giun Ivermectin Paste 1.87%", label: "Ivermectin Paste 1.87% (Tẩy giun sán đường ruột)" },
+  { value: "Omeprazole GastroGard Paste", label: "Omeprazole GastroGard (Điều trị viêm loét dạ dày)" },
+  { value: "Meloxicam Oral Suspension", label: "Meloxicam Oral Suspension (Kháng viêm khớp)" },
+  { value: "Gentamicin Sulfate 100mg/ml", label: "Gentamicin Sulfate 100mg/ml (Kháng sinh phổ rộng)" },
+  { value: "Cefquinome (Cobactan 2.5%)", label: "Cefquinome 2.5% (Kháng sinh Cephalosporin thế hệ 4)" },
+  { value: "Men vi sinh đường ruột EquiFlora dạng ống", label: "Men vi sinh đường ruột EquiFlora dạng ống" },
+  { value: "Bột bù điện giải Post-Workout Electrolyte", label: "Bột bù điện giải Post-Workout Electrolyte" },
+  { value: "OTHER", label: "Khác / Nhập tên thuốc khác..." },
 ];
 
 interface AddPrescriptionModalProps {
@@ -47,38 +48,41 @@ interface AddPrescriptionModalProps {
 }
 
 export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModalProps) {
-  const [selectedMed, setSelectedMed] = useState(COMMON_EQUINE_MEDICATIONS[0].value);
-  const [medicationName, setMedicationName] = useState(COMMON_EQUINE_MEDICATIONS[0].value);
-  const [dosage, setDosage] = useState(1);
-  const [unit, setUnit] = useState(COMMON_EQUINE_MEDICATIONS[0].defaultUnit);
-  const [route, setRoute] = useState(COMMON_EQUINE_MEDICATIONS[0].defaultRoute);
-  const [frequencyPerDay, setFrequencyPerDay] = useState(2);
+  const [selectedMed, setSelectedMed] = useState("");
+  const [medicationName, setMedicationName] = useState("");
+  const [dosage, setDosage] = useState("");
+  const [unit, setUnit] = useState("");
+  const [route, setRoute] = useState("");
+  const [frequencyPerDay, setFrequencyPerDay] = useState("");
   const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
-  const [daysCount, setDaysCount] = useState(5);
-  const [withdrawalDays, setWithdrawalDays] = useState(COMMON_EQUINE_MEDICATIONS[0].defaultWithdrawalDays);
+  const [daysCount, setDaysCount] = useState("");
+  const [withdrawalDays, setWithdrawalDays] = useState("");
   const [notes, setNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleMedChange = (val: string) => {
     setSelectedMed(val);
+    setDosage("");
+    setFrequencyPerDay("");
+    setDaysCount("");
+    setUnit("");
+    setRoute("");
+    setWithdrawalDays("");
     const found = COMMON_EQUINE_MEDICATIONS.find((m) => m.value === val);
     if (found && val !== "OTHER") {
       setMedicationName(found.value);
-      setUnit(found.defaultUnit);
-      setRoute(found.defaultRoute);
-      setWithdrawalDays(found.defaultWithdrawalDays);
     } else {
       setMedicationName("");
     }
   };
 
-  const totalAmount = dosage * frequencyPerDay * daysCount;
+  const totalAmount = Number(dosage) * Number(frequencyPerDay) * Number(daysCount);
 
   // Calculate withdrawal clearance date
   const startD = new Date(startDate);
-  const endD = new Date(startD.getTime() + (daysCount - 1) * 86400000);
-  const withdrawalEndD = new Date(endD.getTime() + withdrawalDays * 86400000);
+  const endD = new Date(startD.getTime() + (Number(daysCount) - 1) * 86400000);
+  const withdrawalEndD = new Date(endD.getTime() + Number(withdrawalDays) * 86400000);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -86,7 +90,7 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
       setError("Please enter medication name.");
       return;
     }
-    if (dosage <= 0 || frequencyPerDay <= 0 || daysCount <= 0) {
+    if (Number(dosage) <= 0 || Number(frequencyPerDay) <= 0 || Number(daysCount) <= 0) {
       setError("Dose, frequency, and treatment days must be greater than 0.");
       return;
     }
@@ -123,22 +127,22 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
 
       subtitle={tr("Manage dosage, administration route, and automated pre-race withdrawal clearance calculation.")}
       width={540}
-      onClose={onClose}
+      onClose={busy ? undefined : onClose}
       foot={
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, width: "100%" }}>
           <Button tone="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button tone="primary" onClick={handleSubmit} disabled={busy}>
+          <Button tone="primary" type="submit" form="prescription-form" disabled={busy}>
             Save Prescription
           </Button>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <form id="prescription-form" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {error && (
-          <div style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "4px" }}>
-            {error}
+          <div role="alert" style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "var(--r)" }}>
+            {tr(error)}
           </div>
         )}
 
@@ -146,20 +150,21 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
           <Select
             value={selectedMed}
             onChange={(e) => handleMedChange(e.target.value)}
-            options={COMMON_EQUINE_MEDICATIONS.map((m) => ({ value: m.value, label: m.label }))}
+            required
+            options={[{ value: "", label: tr("Select medication"), disabled: true }, ...COMMON_EQUINE_MEDICATIONS.map((m) => ({ value: m.value, label: m.label }))]}
           />
-          {selectedMed === "OTHER" && (
-            <div style={{ marginTop: 8 }}>
-              <Input
-                value={medicationName}
-                onChange={(e) => setMedicationName(e.target.value)}
-                placeholder={tr("Nhập tên thuốc / hoạt chất dược phẩm...")}
-                required
-                autoFocus
-              />
-            </div>
-          )}
         </Field>
+        {selectedMed === "OTHER" && (
+          <Field label={tr("Other medication name")} required>
+            <Input
+              value={medicationName}
+              onChange={(e) => setMedicationName(e.target.value)}
+              placeholder={tr("Enter medication name or active ingredient...")}
+              required
+              autoFocus
+            />
+          </Field>
+        )}
 
         <div style={{ display: "grid", gridTemplateColumns: "1.5fr 1fr 1.5fr", gap: 10 }}>
           <Field label={tr("Dose per Intake *")}>
@@ -168,26 +173,26 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
               step="any"
               min={0.1}
               value={dosage}
-              onChange={(e) => setDosage(Number(e.target.value))}
+              onChange={(e) => setDosage(e.target.value)}
               required
             />
           </Field>
           <Field label={tr("Unit *")}>
-            <Select options={UNIT_OPTIONS} value={unit} onChange={(e) => setUnit(e.target.value)} />
+            <Select required options={[{ value: "", label: tr("Select unit"), disabled: true }, ...UNIT_OPTIONS]} value={unit} onChange={(e) => setUnit(e.target.value)} />
           </Field>
           <Field label={tr("Route *")}>
-            <Select options={ROUTE_OPTIONS} value={route} onChange={(e) => setRoute(e.target.value)} />
+            <Select required options={[{ value: "", label: tr("Select route"), disabled: true }, ...ROUTE_OPTIONS]} value={route} onChange={(e) => setRoute(e.target.value)} />
           </Field>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+        <div className={formLayout.columns}>
           <Field label={tr("Frequency (times/day) *")}>
             <Input
               type="number"
               min={1}
               max={6}
               value={frequencyPerDay}
-              onChange={(e) => setFrequencyPerDay(Number(e.target.value))}
+              onChange={(e) => setFrequencyPerDay(e.target.value)}
               required
             />
           </Field>
@@ -200,7 +205,7 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
               min={1}
               max={90}
               value={daysCount}
-              onChange={(e) => setDaysCount(Number(e.target.value))}
+              onChange={(e) => setDaysCount(e.target.value)}
               required
             />
           </Field>
@@ -218,27 +223,28 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
           }}
         >
           <span>
-            {tr("Total medication required:")}{" "}<strong>{totalAmount} {tr(unit)}</strong>
+            {tr("Total medication required:")}{" "}<strong>{dosage && frequencyPerDay && daysCount ? `${totalAmount} ${tr(unit)}` : "—"}</strong>
           </span>
           <span>
-            {tr("Through:")}{" "}<strong>{formatDate(endD)}</strong>
+            {tr("Through:")}{" "}<strong>{Number(daysCount) > 0 ? formatDate(endD) : "—"}</strong>
           </span>
         </div>
 
         <Field
-          label={tr("Pre-Race Withdrawal Period (days)")}
+          label={tr("Pre-Race Withdrawal Period (days)") + " *"}
           hint={tr("Anti-doping clearance protocol; triggers alerts upon race registration if violated.")}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 10, alignItems: "center" }}>
+          <div className={formLayout.columns}>
             <Input
               type="number"
               min={0}
               max={90}
+              required
               value={withdrawalDays}
-              onChange={(e) => setWithdrawalDays(Number(e.target.value))}
+              onChange={(e) => setWithdrawalDays(e.target.value)}
             />
             <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>
-              {tr("Clearance date:")}{" "}<strong>{formatDate(withdrawalEndD)}</strong>
+              {tr("Clearance date:")}{" "}<strong>{Number(daysCount) > 0 && withdrawalDays !== "" ? formatDate(withdrawalEndD) : "—"}</strong>
             </span>
           </div>
         </Field>

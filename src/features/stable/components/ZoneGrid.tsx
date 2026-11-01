@@ -124,7 +124,7 @@ export function ZoneGrid({
           <p style={{ margin: "16px 0 8px", fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>
             {tr("Stalls without a grid position (set Row / Column in the stall catalogue):")}
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(110px, 1fr))", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(100%, 110px), 1fr))", gap: 10 }}>
             {unplaced.map((s) => (
               <div key={s.id}>{renderCell(s)}</div>
             ))}

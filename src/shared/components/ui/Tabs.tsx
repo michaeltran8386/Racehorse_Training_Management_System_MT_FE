@@ -21,13 +21,15 @@ export function Tabs<T extends string>({ items, active, onChange, label = "Filte
   function onKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
     const index = items.findIndex((t) => t.id === active);
-    const next = items[(index + (e.key === "ArrowRight" ? 1 : items.length - 1)) % items.length];
+    const nextIndex = (index + (e.key === "ArrowRight" ? 1 : items.length - 1)) % items.length;
+    const next = items[nextIndex];
     onChange(next.id);
+    e.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus();
     e.preventDefault();
   }
 
   return (
-    <div role="tablist" aria-label={label} className={styles.tabs} onKeyDown={onKeyDown}>
+    <div role="tablist" aria-label={tr(label)} className={styles.tabs} onKeyDown={onKeyDown}>
       {items.map((t) => {
         const on = t.id === active;
         return (

@@ -1,49 +1,20 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
-import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Button } from "@/shared/components/ui/Button";
-import { Card } from "@/shared/components/ui/Card";
-import { EmptyState } from "@/shared/components/ui/EmptyState";
-import { ROLE_NAV } from "@/shared/lib/permissions";
+import styles from "./ComingSoonPage.module.css";
 
 import { tr } from "@/shared/i18n/tr";
-// Chỗ giữ cho các màn hình của Priority 2–7 (ngựa, huấn luyện, y tế...). Menu đã trỏ tới đây;
-// khi làm xong màn nào thì thêm route riêng vào src/app/router.tsx để thay thế.
-export default function ComingSoonPage({ slug }: { slug: string }) {
-  const user = useCurrentUser();
+export default function ComingSoonPage() {
+  useScreenTranslation();
   const navigate = useNavigate();
-  // Tìm mục menu (của chính vai trò này) có id trùng đoạn đầu của URL.
-  const group = ROLE_NAV[user.role].find((g) => g.items.some((it) => it.id === slug));
-  const item = group?.items.find((it) => it.id === slug);
-  const found = group && item ? { group, item } : undefined;
-
-  if (!found) {
-    return (
-      <Card>
-        <EmptyState
-          icon="map"
-          title={tr("This page does not exist.")}
-          description={tr("Check the address, or go back to your workspace.")}
-          action={
-            <Button size="sm" icon="home" onClick={() => navigate("/dashboard")}>
-              Back to my workspace
-            </Button>
-          }
-        />
-      </Card>
-    );
-  }
-
   return (
-    <>
-      <PageHeader title={found.item.label} />
-      <Card>
-        <EmptyState
-          icon={found.item.icon}
-          title={tr(`${found.item.label} Management`)}
-          description={tr("This section is currently under development.")}
-        />
-      </Card>
-    </>
+    <section className={styles.panel}>
+      <span className={styles.symbol} aria-hidden="true">404</span>
+      <div className={styles.copy}>
+        <h1>{tr("This page does not exist.")}</h1>
+        <p>{tr("Check the address, or go back to your workspace.")}</p>
+        <Button icon="home" onClick={() => navigate("/dashboard")}>{tr("Back to my workspace")}</Button>
+      </div>
+    </section>
   );
 }

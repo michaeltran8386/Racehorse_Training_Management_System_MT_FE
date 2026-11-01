@@ -62,22 +62,22 @@ export function FinalizeRecordModal({
       title={tr(`Finalize Medical Record ${recordNumber}`)}
       subtitle={tr("Transitions medical record to In-Treatment status. Examination and diagnostic sections will be locked against editing.")}
       width={520}
-      onClose={onClose}
+      onClose={busy ? undefined : onClose}
       foot={
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, width: "100%" }}>
           <Button tone="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button tone="primary" onClick={handleSubmit} disabled={busy}>
+          <Button tone="primary" type="submit" form="finalize-record-form" disabled={busy}>
             Confirm Finalization
           </Button>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <form id="finalize-record-form" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {error && (
-          <div style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "4px" }}>
-            {error}
+          <div role="alert" style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "var(--r)" }}>
+            {tr(error)}
           </div>
         )}
 

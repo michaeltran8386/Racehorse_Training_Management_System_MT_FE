@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { useTranslation as useScreenTranslation } from "react-i18next";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button } from "@/shared/components/ui/Button";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
@@ -20,7 +21,8 @@ import { TrainingLockModal } from "../components/TrainingLockModal";
 import { HorseAnatomyGraphic } from "../components/HorseAnatomyGraphic";
 import type { HorseMedicalProfile, ObservationNote } from "../types";
 import styles from "./MedicalRecordPage.module.css";
-import { formatDate, formatDateTime } from "@/shared/lib/format";
+import { capitalize, formatDate, formatDateTime } from "@/shared/lib/format";
+import { messageFor } from "@/shared/lib/messages";
 
 import { tr } from "@/shared/i18n/tr";
 const TABS = [
@@ -33,9 +35,11 @@ const TABS = [
 ];
 
 export default function MedicalRecordPage() {
+  useScreenTranslation();
   const { id = "" } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "overview";
+  const requestedTab = searchParams.get("tab");
+  const activeTab = TABS.some((tab) => tab.id === requestedTab) ? requestedTab! : "overview";
   const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
@@ -43,10 +47,14 @@ export default function MedicalRecordPage() {
   const [profile, setProfile] = useState<HorseMedicalProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const profileRequest = useRef(0);
+  const observationRequest = useRef(0);
+  const loadedUrgency = useRef("");
 
   // Observation filters
   const [obsUrgency, setObsUrgency] = useState<string>("");
   const [observations, setObservations] = useState<ObservationNote[]>([]);
+  const [observationsLoading, setObservationsLoading] = useState(false);
 
   // Lock modal states
   const [lockModalMode, setLockModalMode] = useState<"place" | "lift" | "extend" | null>(null);
@@ -56,33 +64,50 @@ export default function MedicalRecordPage() {
   const isGroom = user?.role === "GROOM";
 
   const loadData = useCallback(async () => {
-    if (!id) return;
+    const current = ++profileRequest.current;
+    observationRequest.current += 1;
+    setObservationsLoading(false);
+    if (!id) { setProfile(null); setLoading(false); return; }
     setLoading(true);
     setError(null);
     try {
       const res = await getHorseMedicalProfile(id);
+      if (current !== profileRequest.current) return;
       setProfile(res);
       setObservations(res.observations || []);
+      loadedUrgency.current = "";
+      setObsUrgency("");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Unable to load horse medical profile.");
+      if (current !== profileRequest.current) return;
+      setProfile(null);
+      setError(messageFor(err));
     } finally {
-      setLoading(false);
+      if (current === profileRequest.current) setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
     void loadData();
+    return () => { profileRequest.current += 1; observationRequest.current += 1; };
   }, [loadData]);
 
   // Load observations with filter
   async function handleFilterObservations(urgency: string) {
+    const current = ++observationRequest.current;
     setObsUrgency(urgency);
     if (!id) return;
+    setObservationsLoading(true);
     try {
       const res = await getHorseObservations(id, { urgency: urgency || undefined });
+      if (current !== observationRequest.current) return;
       setObservations(res.observations);
+      loadedUrgency.current = urgency;
     } catch {
+      if (current !== observationRequest.current) return;
+      setObsUrgency(loadedUrgency.current);
       toast.show("Error filtering observation notes.", "danger");
+    } finally {
+      if (current === observationRequest.current) setObservationsLoading(false);
     }
   }
 
@@ -212,8 +237,8 @@ export default function MedicalRecordPage() {
               <div style={{ fontSize: "var(--fs-body)", display: "flex", flexDirection: "column", gap: 10 }}>
                 <div>
                   {tr("Allowed activity level:")}{" "}
-                  <Badge tone="brand">
-                    {overview.allowedActivity || tr("Normal")}
+                  <Badge tone={overview.allowedActivity ? "brand" : "neutral"}>
+                    {overview.allowedActivity ? tr(overview.allowedActivity) : tr("Not recorded")}
                   </Badge>
                 </div>
                 <div>
@@ -308,16 +333,16 @@ export default function MedicalRecordPage() {
                   </thead>
                   <tbody>
                     {records.map((r) => (
-                      <tr key={r.id} onClick={() => navigate(`/medical/records/${r.id}`)}>
+                      <tr key={r.id}>
                         <td>
-                          <strong>{r.recordNumber}</strong>
+                          <Link className={styles.recordLink} to={`/medical/records/${r.id}`}>{r.recordNumber}</Link>
                         </td>
                         <td>{formatDate(r.examinationDate)}</td>
-                        <td>{r.examinationType}</td>
-                        <td>{r.diagnosis || tr("None")}</td>
+                        <td>{r.examinationType ? tr(r.examinationType) : "—"}</td>
+                        <td>{r.diagnosis || tr("Not recorded")}</td>
                         <td>
-                          <Badge tone={r.severity === "CRITICAL" || r.severity === "SEVERE" ? "danger" : "ok"}>
-                            {r.severity || "—"}
+                          <Badge tone={!r.severity ? "neutral" : r.severity === "CRITICAL" || r.severity === "SEVERE" ? "danger" : r.severity === "MODERATE" ? "warn" : "ok"}>
+                            {r.severity ? tr(capitalize(r.severity)) : "—"}
                           </Badge>
                         </td>
                         <td>
@@ -347,7 +372,7 @@ export default function MedicalRecordPage() {
               borderRadius: "var(--radius-card)",
               border: "1px solid var(--border)",
               display: "grid",
-              gridTemplateColumns: "minmax(280px, 400px) 1fr",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
               gap: "1.5rem",
               alignItems: "center",
             }}
@@ -467,17 +492,12 @@ export default function MedicalRecordPage() {
                   </thead>
                   <tbody>
                     {injuries.map((inj) => (
-                      <tr
-                        key={inj.id}
-                        onClick={() => navigate(`/medical/horses/${horse.id}/injuries`)}
-                        style={{ cursor: "pointer" }}
-                        title={tr("Click to inspect this pin on the 2D anatomical model")}
-                      >
-                        <td><strong>{inj.region}</strong> ({inj.view === "LEFT" ? tr("Left View") : tr("Right View")})</td>
+                      <tr key={inj.id}>
+                        <td><Link className={styles.recordLink} to={`/medical/horses/${horse.id}/injuries`}>{inj.region}</Link> ({inj.view === "LEFT" ? tr("Left View") : tr("Right View")})</td>
                         <td>{inj.injuryType}</td>
                         <td>
                           <Badge tone={inj.severity === "SEVERE" || inj.severity === "CRITICAL" ? "danger" : "warn"}>
-                            {inj.severity}
+                            {tr(capitalize(inj.severity))}
                           </Badge>
                         </td>
                         <td>
@@ -634,7 +654,9 @@ export default function MedicalRecordPage() {
               </div>
             </div>
 
-            {observations.length === 0 ? (
+            {observationsLoading ? (
+              <p role="status">{tr("Loading observations...")}</p>
+            ) : observations.length === 0 ? (
               <EmptyState title={tr("No observation notes")} description={tr("No observation logs submitted by care staff.")} />
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>

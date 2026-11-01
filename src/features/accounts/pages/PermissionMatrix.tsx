@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useBreadcrumbTail } from "@/shared/components/layout/BreadcrumbContext";
@@ -32,6 +33,7 @@ function effective(account: PublicAccount, perms: PermissionMap, meta: Permissio
 
 // Design 1.10 + 1.11: quyền của MỘT tài khoản — cấp/thu hồi, thu hồi phải xác nhận, lưu rồi mới có hiệu lực.
 export default function PermissionMatrix({ accountId }: { accountId: string }) {
+  useScreenTranslation();
   const navigate = useNavigate();
   const toast = useToast();
 
@@ -182,7 +184,7 @@ export default function PermissionMatrix({ accountId }: { accountId: string }) {
               {account.fullName} · {tr(ROLE_LABEL[account.role])}
             </strong>
             <span>
-              {tr("Granted")}{" "}{padCount(on)} of {padCount(total)} {tr("· last change")}{" "}{account.permissionsChangedAt ? formatDate(account.permissionsChangedAt) : "—"}
+              {tr("Granted")}{" "}{tr("{{on}} of {{total}}", { on: padCount(on), total: padCount(total) })} {tr("· last change")}{" "}{account.permissionsChangedAt ? formatDate(account.permissionsChangedAt) : "—"}
             </span>
           </div>
         </div>
@@ -237,7 +239,7 @@ export default function PermissionMatrix({ accountId }: { accountId: string }) {
               <div>
                 <span>{tr("Granted")}</span>
                 <b className={styles.num}>
-                  {padCount(on)} of {padCount(total)}
+                  {tr("{{on}} of {{total}}", { on: padCount(on), total: padCount(total) })}
                 </b>
               </div>
               <div>

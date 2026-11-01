@@ -1,7 +1,8 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
-import { Button } from "@/shared/components/ui/Button";
+import styles from "./HerdHealthPage.module.css";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Segmented } from "@/shared/components/ui/Segmented";
@@ -12,11 +13,15 @@ import { Checkbox } from "@/shared/components/form/Checkbox";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { messageFor } from "@/shared/lib/messages";
 import { formatDate, formatDateTime, formatTime } from "@/shared/lib/format";
+import { HEALTH_STATUS } from "@/shared/lib/status";
+import type { HealthStatus } from "@/shared/types/enums";
 import { getStalls, getZones } from "@/features/stable/api";
 import type { Stall, Zone } from "@/features/stable/types";
 import { GridCell, ZoneGrid } from "@/features/stable/components/ZoneGrid";
 import { getHealthBoard, type HealthBoardHorse, type HealthBoardResponse } from "../api";
 import { Icon } from "@/shared/components/ui/Icon";
+import { Modal } from "@/shared/components/ui/Modal";
+import { DataTable, type Column } from "@/shared/components/ui/DataTable";
 
 import { tr } from "@/shared/i18n/tr";
 type Group = HealthBoardHorse["healthGroup"];
@@ -33,6 +38,7 @@ const REFRESH_MS = 60_000;
 
 /** SC-3.01 Sơ đồ sức khỏe đàn ngựa (P1-14): CM, HT, VET. Dữ liệu thật từ BE, lỗi thì hiện lỗi (không dùng dữ liệu giả). */
 export default function HerdHealthPage() {
+  useScreenTranslation();
   const user = useCurrentUser();
   const isVet = user.role === "VETERINARIAN";
 
@@ -48,6 +54,9 @@ export default function HerdHealthPage() {
   const [zones, setZones] = useState<Zone[]>([]);
   const [zoneId, setZoneId] = useState("");
   const [stalls, setStalls] = useState<Stall[]>([]);
+  const [zoneLoading, setZoneLoading] = useState(false);
+  const [zoneError, setZoneError] = useState("");
+  const [zoneRetry, setZoneRetry] = useState(0);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -73,20 +82,34 @@ export default function HerdHealthPage() {
   // Chế độ Theo chuồng: bắt buộc chọn 1 khu.
   useEffect(() => {
     if (view !== "stalls" || zones.length > 0) return;
+    let cancelled = false;
+    setZoneLoading(true);
+    setZoneError("");
     getZones()
       .then((z) => {
+        if (cancelled) return;
         setZones(z);
         setZoneId((cur) => cur || z[0]?.id || "");
+        if (z.length === 0) setZoneLoading(false);
       })
-      .catch((err) => setError(messageFor(err)));
-  }, [view, zones.length]);
+      .catch((err) => {
+        if (!cancelled) { setZoneError(messageFor(err)); setZoneLoading(false); }
+      });
+    return () => { cancelled = true; };
+  }, [view, zones.length, zoneRetry]);
 
   useEffect(() => {
     if (view !== "stalls" || !zoneId) return;
+    let cancelled = false;
+    setZoneLoading(true);
+    setZoneError("");
+    setStalls([]);
     getStalls({ zoneId })
-      .then(setStalls)
-      .catch((err) => setError(messageFor(err)));
-  }, [view, zoneId, updatedAt]);
+      .then((data) => { if (!cancelled) setStalls(data); })
+      .catch((err) => { if (!cancelled) setZoneError(messageFor(err)); })
+      .finally(() => { if (!cancelled) setZoneLoading(false); });
+    return () => { cancelled = true; };
+  }, [view, zoneId, updatedAt, zoneRetry]);
 
   const horses = useMemo(() => board?.data ?? [], [board]);
   const filtered = useMemo(() => {
@@ -145,82 +168,76 @@ export default function HerdHealthPage() {
       ]
     : [];
 
-  function horseCard(h: HealthBoardHorse) {
-    const g = GROUP[h.healthGroup];
-    return (
-      <button
-        key={h.id}
-        type="button"
-        onClick={() => setSelectedId(h.id)}
-        style={{
-          textAlign: "left",
-          padding: 12,
-          borderRadius: "var(--r-lg)",
-          background: "var(--surface)",
-          border: `${h.isMedicalLocked ? 2 : 1}px solid ${h.isMedicalLocked ? "var(--danger)" : "var(--border)"}`,
-          cursor: "pointer",
-          display: "grid",
-          gap: 4,
-          outline: h.id === selectedId ? "2px solid var(--brand)" : undefined,
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 6 }}>
+  // Danh sách dạng bảng 10 dòng/trang (thay cho lưới thẻ cuộn dài), xếp theo nhóm sức khỏe.
+  const rows = useMemo(
+    () => [...filtered].sort((x, y) => GROUP_ORDER.indexOf(x.healthGroup) - GROUP_ORDER.indexOf(y.healthGroup) || x.name.localeCompare(y.name)),
+    [filtered],
+  );
+  const columns: Column<HealthBoardHorse>[] = [
+    {
+      key: "horse",
+      header: tr("Horse"),
+      render: (h) => (
+        <span style={{ display: "grid", gap: 2 }}>
           <strong>{h.name}</strong>
-          <span>
-            {h.isMedicalLocked && (
-              <span title={tr("Training Lock")} style={{ color: "var(--danger)", display: "inline-flex" }}>
-                <Icon name="lock" size={16} />
-                <span className="sr-only">{tr("Training Lock")}</span>
-              </span>
-            )}
-            {h.hasOverduePreventive && (
-              <span title={tr("Preventive care overdue")} style={{ color: "var(--warn)", display: "inline-flex" }}>
-                <Icon name="bell" size={16} />
-                <span className="sr-only">{tr("Preventive care overdue")}</span>
-              </span>
-            )}
+          <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+            {h.horseCode ?? "—"} {tr("· Stall")} {h.stallCode ?? "—"}
           </span>
-        </div>
-        <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
-          {h.horseCode ?? "—"} {tr("· Stall")}{" "}{h.stallCode ?? "—"}
         </span>
-        <span style={{ fontSize: "var(--fs-caption)", background: g.bg, color: g.color, borderRadius: 999, padding: "1px 8px", justifySelf: "start" }}>
-          {g.label}
+      ),
+    },
+    {
+      key: "group",
+      header: tr("Health status"),
+      width: 150,
+      render: (h) => {
+        const g = GROUP[h.healthGroup];
+        return <span className={styles.horseStatus} style={{ background: g.bg, color: g.color }}>{tr(g.label)}</span>;
+      },
+    },
+    {
+      key: "flags",
+      header: tr("Training Lock"),
+      width: 150,
+      render: (h) => (
+        <span style={{ display: "inline-flex", gap: 6, alignItems: "center" }}>
+          {h.isMedicalLocked ? <Badge tone="danger" icon="lock">{tr("Locked")}</Badge> : <span style={{ color: "var(--text-muted)" }}>—</span>}
+          {h.hasOverduePreventive && (
+            <span title={tr("Preventive care overdue")} style={{ color: "var(--warn)", display: "inline-flex" }}>
+              <Icon name="bell" size={16} />
+              <span className="sr-only">{tr("Preventive care overdue")}</span>
+            </span>
+          )}
         </span>
-        <span style={{ fontSize: "var(--fs-caption)" }}>
-          {tr("Open injuries:")} {h.openInjuries.length} {tr("· Last exam:")}{" "}{h.latestRecord ? formatDate(h.latestRecord.examinationDate) : "—"}
-        </span>
-      </button>
-    );
-  }
+      ),
+    },
+    { key: "injuries", header: tr("Open injuries"), width: 120, align: "right", render: (h) => h.openInjuries.length },
+    { key: "exam", header: tr("Last exam"), width: 130, hideOnNarrow: true, render: (h) => (h.latestRecord ? formatDate(h.latestRecord.examinationDate) : "—") },
+  ];
 
   function panel(h: HealthBoardHorse) {
     const g = GROUP[h.healthGroup];
     return (
-      <aside
-        style={{
-          width: 340,
-          flexShrink: 0,
-          background: "var(--surface)",
-          border: "1px solid var(--border)",
-          borderRadius: "var(--r-lg)",
-          padding: 16,
-          display: "grid",
-          gap: 12,
-          alignContent: "start",
-        }}
+      <Modal
+        title={h.name}
+        subtitle={`${h.horseCode} ${tr("· Stall")} ${h.stallCode ?? "—"}`}
+        width={560}
+        onClose={() => setSelectedId(null)}
+        foot={
+          <>
+            <LinkButton to={`/medical/horses/${h.id}`} tone="secondary">{tr("Open medical profile")}</LinkButton>
+            {isVet &&
+              (h.isMedicalLocked ? (
+                <Badge tone="danger" icon="lock">{tr("Locked")}</Badge>
+              ) : (
+                <LinkButton to={`/medical/locks?horseId=${encodeURIComponent(h.id)}&action=place`} tone="primary">{tr("Place Training Lock")}</LinkButton>
+              ))}
+          </>
+        }
       >
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <div>
-            <h2 style={{ margin: 0, fontSize: "var(--fs-section)" }}>{h.name}</h2>
-            <span style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>
-              {h.horseCode} {tr("· Stall")}{" "}{h.stallCode ?? "—"}
-            </span>
-          </div>
-          <Button tone="ghost" size="sm" aria-label={tr("Close panel")} icon="x" onClick={() => setSelectedId(null)} />
-        </div>
-        <span style={{ background: g.bg, color: g.color, borderRadius: 999, padding: "2px 10px", justifySelf: "start" }}>
-          {g.label} · {h.status.replace("_", " ").toLowerCase()}
+      <div className={styles.panel}>
+        <span style={{ background: g.bg, color: g.color, borderRadius: "var(--r-sm)", padding: "2px 10px", justifySelf: "start" }}>
+          {[...new Set([tr(g.label), tr(HEALTH_STATUS[h.status as HealthStatus]?.label ?? h.status)])].join(" · ")}
         </span>
         <section>
           <strong>{tr("Training Lock")}</strong>
@@ -243,7 +260,7 @@ export default function HerdHealthPage() {
         <section>
           <strong>{tr("Open injuries")}</strong>
           <div style={{ fontSize: "var(--fs-body)" }}>
-            {h.openInjuries.length === 0 ? tr("None") : h.openInjuries.map((i) => `${i.zone} (${i.stage.toLowerCase()})`).join(", ")}
+            {h.openInjuries.length === 0 ? tr("None") : h.openInjuries.map((i) => `${i.zone} (${tr(i.stage.charAt(0) + i.stage.slice(1).toLowerCase())})`).join(", ")}
           </div>
         </section>
         <section>
@@ -267,18 +284,8 @@ export default function HerdHealthPage() {
               : tr("None")}
           </div>
         </section>
-        <Link to={`/medical/horses/${h.id}`}>
-          <Button tone="secondary" block>{tr("Open medical profile")}</Button>
-        </Link>
-        {isVet &&
-          (h.isMedicalLocked ? (
-            <Badge tone="danger" icon="lock">{tr("Locked")}</Badge>
-          ) : (
-            <Link to="/medical/locks">
-              <Button block>{tr("Place Training Lock")}</Button>
-            </Link>
-          ))}
-      </aside>
+      </div>
+      </Modal>
     );
   }
 
@@ -292,16 +299,14 @@ export default function HerdHealthPage() {
             <Segmented
               label={tr("View")}
               items={[
-                { id: "cards", label: tr("Cards") },
+                { id: "cards", label: tr("List") },
                 { id: "stalls", label: tr("By stall") },
               ]}
               active={view}
-              onChange={setView}
+              onChange={(next) => { if (next === view) return; if (next === "stalls") setZoneLoading(true); setView(next); }}
             />
             {isVet && (
-              <Link to="/medical/locks">
-                <Button tone="secondary">{tr("Training Locks")}</Button>
-              </Link>
+              <LinkButton to="/medical/locks" tone="secondary">{tr("Training Locks")}</LinkButton>
             )}
           </div>
         }
@@ -314,7 +319,7 @@ export default function HerdHealthPage() {
       )}
 
       {s && (
-        <div style={{ display: "flex", gap: 10, overflowX: "auto", paddingBottom: 4 }}>
+        <div className={styles.summary}>
           {cards.map((c) => (
             <button
               key={c.key}
@@ -331,14 +336,14 @@ export default function HerdHealthPage() {
                 cursor: "pointer",
               }}
             >
-              <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{c.label}</div>
+              <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr(c.label)}</div>
               <div style={{ fontSize: "var(--fs-kpi)", fontWeight: 700, color: c.color }}>{c.value}</div>
             </button>
           ))}
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+      <div className={styles.filters}>
         <div style={{ width: 240 }}>
           <Input placeholder={tr("Horse name or code")} aria-label={tr("Find a horse")} value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
@@ -359,7 +364,7 @@ export default function HerdHealthPage() {
             <Select
               aria-label={tr("Barn zone")}
               value={zoneId}
-              onChange={(e) => setZoneId(e.target.value)}
+              onChange={(e) => { setZoneLoading(true); setZoneId(e.target.value); }}
               options={zones.map((z) => ({ value: z.id, label: z.name }))}
             />
           </div>
@@ -370,33 +375,32 @@ export default function HerdHealthPage() {
         )}
       </div>
 
-      <div style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+      <div className={styles.board}>
         <div style={{ flex: 1, minWidth: 0 }}>
           {loading ? (
             <SkeletonCards count={4} />
-          ) : horses.length === 0 ? (
+          ) : !board && error ? null : horses.length === 0 ? (
             <div style={{ padding: 40, textAlign: "center", border: "2px dashed var(--border)", borderRadius: "var(--r-lg)" }}>{tr("No horses yet.")}</div>
           ) : filtered.length === 0 && view === "cards" ? (
             <div style={{ padding: 40, textAlign: "center", border: "2px dashed var(--border)", borderRadius: "var(--r-lg)" }}>
               {tr("No horse matches the filters.")}
             </div>
           ) : view === "cards" ? (
-            <div style={{ display: "grid", gap: 16 }}>
-              {GROUP_ORDER.map((g) => {
-                const list = filtered.filter((h) => h.healthGroup === g);
-                if (list.length === 0) return null;
-                return (
-                  <section key={g}>
-                    <h3 style={{ margin: "0 0 8px", color: GROUP[g].color, fontSize: "var(--fs-body-lg)" }}>
-                      {GROUP[g].label} ({list.length})
-                    </h3>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
-                      {list.map(horseCard)}
-                    </div>
-                  </section>
-                );
-              })}
-            </div>
+            <DataTable
+              caption={tr("Herd health")}
+              columns={columns}
+              rows={rows}
+              rowKey={(h) => h.id}
+              selectedKey={selectedId}
+              onRowClick={(h) => setSelectedId(h.id)}
+              noun="horses"
+            />
+          ) : zoneLoading ? (
+            <SkeletonCards count={4} />
+          ) : zoneError ? (
+            <Alert tone="danger" title={tr("Could not load data.")} action={<Button size="sm" onClick={() => setZoneRetry((value) => value + 1)}>{tr("Try again")}</Button>}>
+              {zoneError}
+            </Alert>
           ) : (
             (() => {
               const zone = zones.find((z) => z.id === zoneId);
@@ -406,13 +410,21 @@ export default function HerdHealthPage() {
                   zone={zone}
                   stalls={stalls}
                   renderCell={(st) => {
-                    const a = st.allocations[0];
+                    const a = st.allocations.find((allocation) => allocation.isActive);
                     const h = a ? byId.get(a.horse.id) : undefined;
                     if (!h) {
                       return (
                         <GridCell
                           code={st.code}
-                          look={st.status === "MAINTENANCE" ? { title: tr("Maintenance"), striped: true } : { title: tr("Empty"), dashed: true }}
+                          look={a
+                            ? { title: a.horse.name, subtitle: tr("Health status unavailable") }
+                            : st.status === "MAINTENANCE"
+                              ? { title: tr("Maintenance"), striped: true }
+                              : st.status === "INACTIVE"
+                                ? { title: tr("Inactive"), striped: true }
+                                : st.status === "OCCUPIED"
+                                  ? { title: tr("Occupied"), subtitle: tr("Health status unavailable") }
+                                  : { title: tr("Empty"), dashed: true }}
                         />
                       );
                     }
@@ -421,7 +433,7 @@ export default function HerdHealthPage() {
                       <GridCell
                         code={st.code}
                         selected={h.id === selectedId}
-                        look={{ title: h.name, subtitle: g.label, bg: g.bg, fg: g.color, locked: h.isMedicalLocked, dimmed: !visible.has(h.id) }}
+                        look={{ title: h.name, subtitle: tr(g.label), bg: g.bg, fg: g.color, locked: h.isMedicalLocked, dimmed: !visible.has(h.id) }}
                         onClick={() => setSelectedId(h.id)}
                       />
                     );

@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useTranslation as useScreenTranslation } from "react-i18next";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Badge } from "@/shared/components/ui/Badge";
+import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
+import { Pagination } from "@/shared/components/ui/Pagination";
 import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
 import { useAuth } from "@/shared/components/layout/AuthProvider";
@@ -14,16 +17,19 @@ import { capitalize, formatDate } from "@/shared/lib/format";
 import { tr } from "@/shared/i18n/tr";
 
 export default function RecordListPage() {
+  useScreenTranslation();
   const navigate = useNavigate();
   const { user } = useAuth();
 
   const [records, setRecords] = useState<MedicalRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState<string>("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const requestId = useRef(0);
 
   const isVet = user?.role === "VETERINARIAN";
 
@@ -35,36 +41,45 @@ export default function RecordListPage() {
     return () => clearTimeout(handler);
   }, [search]);
 
-  const statusOptions = useMemo(
-    () => [
+  const statusOptions = [
       { value: "", label: tr("All Statuses") },
       { value: "DRAFT", label: tr("Draft") },
       { value: "OPEN", label: tr("In Treatment (Open)") },
       { value: "CLOSED", label: tr("Closed") },
-    ],
-    []
-  );
+    ];
 
   const fetchRecords = useCallback(async () => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
+    setLoadError(false);
     try {
       const res = await listRecords({
         search: debouncedSearch.trim() || undefined,
         status: status || undefined,
         page,
-        limit: 15,
+        limit: 10,
       });
+      if (currentRequest !== requestId.current) return;
+      const lastPage = Math.max(1, Math.ceil(res.total / 10));
+      if (page > lastPage) {
+        setPage(lastPage);
+        return;
+      }
       setRecords(res.records);
       setTotal(res.total);
     } catch {
+      if (currentRequest !== requestId.current) return;
       setRecords([]);
+      setTotal(0);
+      setLoadError(true);
     } finally {
-      setLoading(false);
+      if (currentRequest === requestId.current) setLoading(false);
     }
   }, [debouncedSearch, status, page]);
 
   useEffect(() => {
     void fetchRecords();
+    return () => { requestId.current += 1; };
   }, [fetchRecords]);
 
   return (
@@ -89,8 +104,8 @@ export default function RecordListPage() {
         </div>
 
         {/* Search & Filter Bar */}
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-          <div style={{ flex: "1 1 240px" }}>
+        <div className={styles.recordFilters}>
+          <div className={styles.recordSearch}>
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -100,7 +115,7 @@ export default function RecordListPage() {
             />
           </div>
 
-          <div style={{ width: "200px" }}>
+          <div className={styles.recordStatus}>
             <Select
               aria-label={tr("Status")}
               options={statusOptions}
@@ -120,20 +135,26 @@ export default function RecordListPage() {
 
       {/* Main Records Table */}
       <div className={styles.sectionCard}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        {!loadError && !loading && <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ fontSize: "var(--fs-body)", fontWeight: 600, color: "var(--muted)" }}>
             {tr("Showing {{count}} of {{total}} records", { count: records.length, total })}
           </span>
-        </div>
+        </div>}
 
         {loading ? (
           <div style={{ textAlign: "center", padding: "40px", color: "var(--muted)" }}>
             {tr("Loading medical records…")}
           </div>
+        ) : loadError ? (
+          <Alert tone="danger" title={tr("Could not load medical records")}
+            action={<Button size="sm" tone="secondary" onClick={() => void fetchRecords()}>{tr("Try again")}</Button>}>
+            {tr("Check your connection and try again.")}
+          </Alert>
         ) : records.length === 0 ? (
           <EmptyState
             title={tr("No medical records found")}
-            description={tr("Try adjusting your search keywords or status filter.")}
+            description={tr(search.trim() || status ? "Try adjusting your search keywords or status filter." : "Medical records will appear here when they are created.")}
+            action={!search.trim() && !status && isVet ? <Button onClick={() => navigate("/medical/records/new")}>{tr("Create Medical Record")}</Button> : undefined}
           />
         ) : (
           <div className={styles.tableContainer}>
@@ -152,23 +173,25 @@ export default function RecordListPage() {
               </thead>
               <tbody>
                 {records.map((r) => (
-                  <tr key={r.id} onClick={() => navigate(`/medical/records/${r.id}`)}>
-                    <td className="num nowrap"><strong>{r.recordNumber}</strong></td>
+                  <tr key={r.id}>
+                    <td className="num nowrap"><Link className={styles.recordLink} to={`/medical/records/${r.id}`}>{r.recordNumber}</Link></td>
                     <td className="nowrap">{r.horseName || (r as any).horse?.name || '—'}{(r.horseCode || (r as any).horse?.horseCode) ? ` (${r.horseCode || (r as any).horse?.horseCode})` : ''}</td>
                     <td className="num nowrap">{formatDate(r.examinationDate)}</td>
-                    <td>{r.examinationType}</td>
+                    <td>{tr(r.examinationType)}</td>
                     <td>{r.diagnosis || tr("None recorded")}</td>
                     <td>
                       <Badge
                         tone={
-                          r.severity === "CRITICAL" || r.severity === "SEVERE"
+                          !r.severity
+                            ? "neutral"
+                            : r.severity === "CRITICAL" || r.severity === "SEVERE"
                             ? "danger"
                             : r.severity === "MODERATE"
                             ? "warn"
                             : "ok"
                         }
                       >
-                        {r.severity ? capitalize(r.severity) : "—"}
+                        {r.severity ? tr(capitalize(r.severity)) : "—"}
                       </Badge>
                     </td>
                     <td>
@@ -185,6 +208,7 @@ export default function RecordListPage() {
             </table>
           </div>
         )}
+        {!loading && total > 10 && <Pagination page={page} pageSize={10} total={total} noun="records" onPage={setPage} />}
       </div>
     </div>
   );

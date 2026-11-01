@@ -1,5 +1,7 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
+import styles from './InventoryPage.module.css';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
@@ -28,8 +30,10 @@ const CATEGORY_NAMES: Record<SupplyCategory, string> = {
 };
 
 export default function InventoryPage() {
+  useScreenTranslation();
   const currentUser = useCurrentUser();
   const isManager = currentUser.role === 'CLUB_MANAGER';
+  const canRestock = isManager || currentUser.role === 'GROOM' || currentUser.role === 'VETERINARIAN';
   const { isVietnamese } = useAppLanguage();
 
   const [zones, setZones] = useState<Zone[]>([]);
@@ -148,8 +152,8 @@ export default function InventoryPage() {
         width: '180px',
         render: (row) => (
           <div>
-            <strong style={{ color: 'var(--ink)' }}>{row.zoneName}</strong>
-            <div style={{ fontSize: '0.75rem', color: 'var(--muted)', fontFamily: 'monospace' }}>
+            <strong className={styles.itemName}>{row.zoneName}</strong>
+            <div className={styles.itemMeta}>
               {row.zoneCode}
             </div>
           </div>
@@ -162,8 +166,8 @@ export default function InventoryPage() {
           const catLabel = getFriendlyCategoryName(row.category);
           return (
             <div>
-              <div style={{ fontWeight: 600, color: 'var(--ink)' }}>{formatSupplyName(row.supplyName)}</div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+              <div className={styles.itemName}>{formatSupplyName(row.supplyName)}</div>
+              <div className={styles.itemMeta}>
                 {catLabel}
               </div>
             </div>
@@ -191,12 +195,12 @@ export default function InventoryPage() {
         key: 'lastInventory',
         header: tr('Last Inventory Check'),
         render: (row) => (
-          <div style={{ fontSize: '0.8125rem' }}>
+          <div>
             {row.lastInventoryDate ? (
               <>
-                <div>{new Date(row.lastInventoryDate).toLocaleDateString('vi-VN')}</div>
+                <div>{new Date(row.lastInventoryDate).toLocaleDateString(isVietnamese ? 'vi-VN' : 'en-GB')}</div>
                 {row.lastAdjustedBy && (
-                  <div style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>
+                  <div className={styles.itemMeta}>
                     {row.lastAdjustedBy.fullName}
                   </div>
                 )}
@@ -214,13 +218,15 @@ export default function InventoryPage() {
         align: 'right',
         render: (row) => (
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-            <Button
-              size="sm"
-              tone="secondary"
-              onClick={() => setRequestModalPrefill({ zoneId: row.zoneId, supplyId: row.supplyId })}
-            >
-              {tr('Request Restock')}
-            </Button>
+            {canRestock && (
+              <Button
+                size="sm"
+                tone="secondary"
+                onClick={() => setRequestModalPrefill({ zoneId: row.zoneId, supplyId: row.supplyId })}
+              >
+                {isManager ? tr('Restock directly') : tr('Request Restock')}
+              </Button>
+            )}
             {isManager && (
               <Button
                 size="sm"
@@ -234,7 +240,7 @@ export default function InventoryPage() {
         ),
       },
     ],
-    [isManager, isVietnamese],
+    [isManager, canRestock, isVietnamese],
   );
 
   return (
@@ -245,29 +251,29 @@ export default function InventoryPage() {
       />
 
       {/* KPI Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+      <div className={styles.metrics}>
         <Card pad={16}>
           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>{tr('Total Monitored Items')}</div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--ink)' }}>
-            {items.length}
+            {loading ? "—" : items.length}
           </div>
         </Card>
         <Card pad={16}>
           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>{tr('Sufficient Stock')}</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--color-ok)' }}>
-            {sufficientCount}
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--ok)' }}>
+            {loading ? "—" : sufficientCount}
           </div>
         </Card>
         <Card pad={16}>
           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>{tr('Low Stock Alerts')}</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--color-warn)' }}>
-            {lowStockCount}
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--warn)' }}>
+            {loading ? "—" : lowStockCount}
           </div>
         </Card>
         <Card pad={16}>
           <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)' }}>{tr('Out of Stock')}</div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--color-danger)' }}>
-            {outOfStockCount}
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.25rem', color: 'var(--danger)' }}>
+            {loading ? "—" : outOfStockCount}
           </div>
         </Card>
       </div>
@@ -276,9 +282,10 @@ export default function InventoryPage() {
 
       {/* Filters Toolbar */}
       <Card pad={16}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', alignItems: 'center' }}>
+        <div className={styles.filters}>
           <div style={{ minWidth: '180px', flex: '1 1 180px' }}>
             <Select
+              aria-label={tr('Stall zone')}
               options={zoneOptions}
               value={zoneFilter}
               onChange={(e) => setZoneFilter(e.target.value)}
@@ -287,6 +294,7 @@ export default function InventoryPage() {
 
           <div style={{ minWidth: '180px', flex: '1 1 180px' }}>
             <Select
+              aria-label={tr('Category')}
               options={categoryOptions}
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
@@ -295,6 +303,7 @@ export default function InventoryPage() {
 
           <div style={{ minWidth: '220px', flex: '2 1 220px' }}>
             <Input
+              aria-label={tr('Search by supply name...')}
               placeholder={tr('Search by supply name...')}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -335,6 +344,7 @@ export default function InventoryPage() {
             key={tab.key}
             size="sm"
             tone={categoryFilter === tab.key ? 'primary' : 'secondary'}
+            aria-pressed={categoryFilter === tab.key}
             onClick={() => setCategoryFilter(tab.key)}
           >
             {tab.label}
@@ -345,6 +355,8 @@ export default function InventoryPage() {
       {/* Main Stock Table */}
       <Card pad={0}>
         <DataTable
+          pageSize={10}
+          noun="stock items"
           columns={columns}
           rows={items}
           rowKey={(r) => r.id}
@@ -371,6 +383,7 @@ export default function InventoryPage() {
           supplies={supplies}
           defaultZoneId={requestModalPrefill.zoneId}
           defaultSupplyId={requestModalPrefill.supplyId}
+          direct={isManager}
           onClose={() => setRequestModalPrefill(null)}
           onSaved={fetchStock}
         />

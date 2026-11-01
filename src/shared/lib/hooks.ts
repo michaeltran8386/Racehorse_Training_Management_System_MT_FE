@@ -30,3 +30,18 @@ export function useToday(): Date | null {
   }, []);
   return today;
 }
+
+// Phân trang phía client cho danh sách đã tải trọn: trả về đúng trang đang xem, trang được giữ trong giới hạn khi lọc bớt.
+export function usePaged<T>(items: readonly T[], pageSize = 20) {
+  const [page, setPage] = useState(1);
+  const pageCount = Math.max(1, Math.ceil(items.length / pageSize));
+  const current = Math.min(page, pageCount);
+  return {
+    page: current,
+    setPage,
+    pageSize,
+    total: items.length,
+    paged: items.length > pageSize,
+    items: items.slice((current - 1) * pageSize, current * pageSize),
+  };
+}

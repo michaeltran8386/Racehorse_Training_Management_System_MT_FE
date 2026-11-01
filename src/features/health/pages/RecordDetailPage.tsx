@@ -1,7 +1,10 @@
-import { useCallback, useEffect, useState } from "react";
+import { useTranslation as useScreenTranslation } from "react-i18next";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Badge } from "@/shared/components/ui/Badge";
+import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
+import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Icon } from "@/shared/components/ui/Icon";
 import { Tabs } from "@/shared/components/ui/Tabs";
@@ -27,7 +30,9 @@ import { StopPrescriptionModal } from "../components/StopPrescriptionModal";
 import { VitalsDisplay } from "../components/VitalsDisplay";
 import type { MedicalRecord, PrescriptionItem } from "../types";
 import styles from "./MedicalRecordPage.module.css";
-import { formatDate, formatDateTime } from "@/shared/lib/format";
+import { capitalize, formatDate, formatDateTime } from "@/shared/lib/format";
+import { messageFor } from "@/shared/lib/messages";
+import { todayClub } from "@/features/training/api";
 
 import { tr } from "@/shared/i18n/tr";
 const RECORD_TABS = [
@@ -37,10 +42,17 @@ const RECORD_TABS = [
   { id: "followups", label: "Follow-ups" },
 ];
 
+function prescribedTotal(rx: PrescriptionItem): string {
+  const values = [rx.dosage, rx.frequencyPerDay, rx.daysCount];
+  if (values.some((value) => value == null || (typeof value === "string" && !value.trim()) || !Number.isFinite(Number(value)))) return "—";
+  return `${Number(rx.dosage) * rx.frequencyPerDay * rx.daysCount} ${tr(rx.unit)}`;
+}
+
 export default function RecordDetailPage() {
+  useScreenTranslation();
   const { id = "" } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get("tab") || "diagnosis";
+  const requestedTab = searchParams.get("tab");
   const navigate = useNavigate();
   const { user } = useAuth();
   const toast = useToast();
@@ -48,6 +60,7 @@ export default function RecordDetailPage() {
   const [record, setRecord] = useState<MedicalRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestId = useRef(0);
 
   // Modals state
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
@@ -56,37 +69,48 @@ export default function RecordDetailPage() {
   const [stoppingPrescription, setStoppingPrescription] = useState<PrescriptionItem | null>(null);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [showCloseModal, setShowCloseModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isVet = user?.role === "VETERINARIAN";
   const isOwner = user?.role === "HORSE_OWNER";
+  const availableTabs = isOwner ? RECORD_TABS.filter((tab) => tab.id !== "prescriptions") : RECORD_TABS;
+  const activeTab = availableTabs.some((tab) => tab.id === requestedTab) ? requestedTab! : "diagnosis";
 
   const fetchDetail = useCallback(async () => {
-    if (!id) return;
+    const currentRequest = ++requestId.current;
+    setError(null);
+    if (!id) { setRecord(null); setLoading(false); return; }
     setLoading(true);
     try {
       const res = await getRecordDetail(id);
+      if (currentRequest !== requestId.current) return;
       setRecord(res.record);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Unable to load medical record details.");
+      if (currentRequest !== requestId.current) return;
+      setRecord(null);
+      setError(messageFor(err));
     } finally {
-      setLoading(false);
+      if (currentRequest === requestId.current) setLoading(false);
     }
   }, [id]);
 
   useEffect(() => {
     void fetchDetail();
+    return () => { requestId.current += 1; };
   }, [fetchDetail]);
 
   async function handleDeleteDraft() {
-    if (!record || !window.confirm(`Delete draft medical record ${record.recordNumber}? This action cannot be undone.`)) {
-      return;
-    }
+    if (!record || deleting) return;
+    setDeleting(true);
     try {
       await deleteDraftRecord(record.id);
       toast.show(tr("Draft medical record deleted."), "ok");
       navigate(`/medical/horses/${record.horseId}`);
-    } catch {
-      toast.show(tr("Failed to delete draft record."), "danger");
+    } catch (err) {
+      toast.show(messageFor(err), "danger");
+    } finally {
+      setDeleting(false);
     }
   }
 
@@ -100,12 +124,24 @@ export default function RecordDetailPage() {
     );
   }
 
-  if (error || !record) {
+  if (error) {
+    return (
+      <div className={styles.container}>
+        <Alert tone="danger" title={tr("Unable to load medical record details.")}
+          action={<Button tone="secondary" onClick={() => void fetchDetail()}>{tr("Try again")}</Button>}>
+          {error}
+        </Alert>
+        <div><Button tone="ghost" onClick={() => navigate(-1)}>{tr("Go Back")}</Button></div>
+      </div>
+    );
+  }
+
+  if (!record) {
     return (
       <div className={styles.container}>
         <EmptyState
           title={tr("Medical record not found")}
-          description={error || tr("This record does not exist or you lack permission to view it.")}
+          description={tr("This record does not exist or you lack permission to view it.")}
           action={
             <Button tone="primary" onClick={() => navigate(-1)}>
               {tr("Go Back")}
@@ -144,7 +180,7 @@ export default function RecordDetailPage() {
                       : "ok"
                   }
                 >
-                  {tr("Severity:")}{" "}{tr(record.severity)}
+                  {tr("Severity:")}{" "}{tr(capitalize(record.severity))}
                 </Badge>
               )}
             </div>
@@ -152,7 +188,7 @@ export default function RecordDetailPage() {
             <div className={styles.horseMeta}>
               <span className={styles.metaItem}>
                 <Icon name="horse" size={14} /> {tr("Horse:")}{" "}
-                <Link to={`/medical/horses/${record.horseId}`} style={{ color: "var(--brand)", fontWeight: 600 }}>
+                <Link to={`/medical/horses/${record.horseId}`} style={{ color: "var(--brand-700)", fontWeight: 600 }}>
                   {record.horseName || record.horseId}
                 </Link>
               </span>
@@ -173,7 +209,7 @@ export default function RecordDetailPage() {
                 <Button tone="ghost" icon="edit" onClick={() => navigate(`/medical/records/${record.id}/edit`)}>
                   {tr("Edit Record")}
                 </Button>
-                <Button tone="danger" icon="trash" onClick={() => void handleDeleteDraft()}>
+                <Button tone="danger" icon="trash" onClick={() => setShowDeleteModal(true)}>
                   {tr("Delete Draft")}
                 </Button>
                 <Button tone="primary" icon="checkCircle" onClick={() => setShowFinalizeModal(true)}>
@@ -201,7 +237,7 @@ export default function RecordDetailPage() {
 
       {/* Tabs */}
       <Tabs
-        items={(isOwner ? RECORD_TABS.filter((t) => t.id !== "prescriptions") : RECORD_TABS).map((t) => ({
+        items={availableTabs.map((t) => ({
           ...t,
           label: tr(t.label),
         }))}
@@ -218,24 +254,24 @@ export default function RecordDetailPage() {
               <Icon name="clipboard" size={18} />
               {tr("Clinical Examination Information")}
             </h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14, fontSize: "var(--fs-body)" }}>
+            <div className={styles.examGrid}>
               <div>
-                <span style={{ color: "var(--muted)" }}>{tr("Exam Type:")}</span> <strong>{record.examinationType}</strong>
+                <span style={{ color: "var(--muted)" }}>{tr("Exam Type:")}</span> <strong>{tr(record.examinationType)}</strong>
               </div>
               <div>
                 <span style={{ color: "var(--muted)" }}>{tr("Discovery Source:")}</span>{" "}
-                <strong>{record.discoverySource || tr("VET Self-Discovered")}</strong>
+                <strong>{tr(record.discoverySource || "Not recorded")}</strong>
               </div>
               <div style={{ gridColumn: "1 / -1" }}>
                 <span style={{ color: "var(--muted)" }}>{tr("Reason for Examination:")}</span>{" "}
-                <div style={{ marginTop: 4, padding: "8px 12px", background: "var(--surface-2)", borderRadius: "var(--r-sm)" }}>
-                  {record.examinationReason}
+                <div className={styles.examNote}>
+                  {record.examinationReason || tr("Not recorded")}
                 </div>
               </div>
               {record.symptoms && (
                 <div style={{ gridColumn: "1 / -1" }}>
                   <span style={{ color: "var(--muted)" }}>{tr("Clinical Symptoms:")}</span>{" "}
-                  <div style={{ marginTop: 4, padding: "8px 12px", background: "var(--surface-2)", borderRadius: "var(--r-sm)" }}>
+                  <div className={styles.examNote}>
                     {record.symptoms}
                   </div>
                 </div>
@@ -265,13 +301,13 @@ export default function RecordDetailPage() {
                     <tr>
                       <th>{tr("Test Modality")}</th>
                       <th>{tr("Date Administered")}</th>
-                      <th>{tr("Findings & Findings")}</th>
+                      <th>{tr("Findings")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {record.labTests.map((t, idx) => (
                       <tr key={idx}>
-                        <td><strong>{t.testType}</strong></td>
+                        <td><strong>{tr(t.testType)}</strong></td>
                         <td>{formatDate(t.testDate)}</td>
                         <td>{t.result}</td>
                       </tr>
@@ -298,7 +334,7 @@ export default function RecordDetailPage() {
                   <strong style={{ color: "var(--ok)" }}>{tr("Treatment Conclusion:")}</strong> {record.conclusion}
                   {record.treatmentResult && (
                     <div style={{ marginTop: 6 }}>
-                      {tr("Outcome:")}{" "}<strong>{record.treatmentResult}</strong>
+                      {tr("Outcome:")}{" "}<strong>{tr(record.treatmentResult)}</strong>
                     </div>
                   )}
                 </div>
@@ -331,21 +367,32 @@ export default function RecordDetailPage() {
               />
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {record.treatmentPhases.map((phase, idx) => (
+                {record.treatmentPhases.map((phase, idx) => {
+                  // Giai đoạn đang áp dụng theo ngày CLB, để thấy ngay ngựa đang ở bước nào của phác đồ hồi phục.
+                  const today = todayClub();
+                  const isCurrent = record.status !== "CLOSED" && phase.startDate.slice(0, 10) <= today && today <= phase.endDate.slice(0, 10);
+                  return (
                   <div
                     key={idx}
                     style={{
                       border: "1px solid var(--border)",
+                      borderColor: isCurrent ? "var(--brand)" : "var(--border)",
                       borderRadius: "var(--r)",
                       padding: "16px",
-                      background: "var(--surface)",
+                      background: isCurrent ? "var(--brand-50)" : "var(--surface)",
                       display: "flex",
                       flexDirection: "column",
                       gap: 10,
                     }}
                   >
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <strong>{phase.phaseName}</strong>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                      <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)", textTransform: "uppercase", fontWeight: 700 }}>
+                          {tr("Phase {{index}}", { index: idx + 1 })}
+                        </span>
+                        <strong>{phase.phaseName}</strong>
+                        {isCurrent && <Badge tone="brand" dot>{tr("Current phase")}</Badge>}
+                      </span>
                       <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>
                         {formatDate(phase.startDate)} —{" "}
                         {formatDate(phase.endDate)}
@@ -375,7 +422,8 @@ export default function RecordDetailPage() {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -424,9 +472,9 @@ export default function RecordDetailPage() {
                         <td>{tr(rx.route)}</td>
                         <td>{rx.frequencyPerDay} {tr("times/day")}</td>
                         <td>{rx.daysCount} {tr("days")}</td>
-                        <td>{Number(rx.dosage || 0) * (rx.frequencyPerDay || 0) * (rx.daysCount || 0)} {tr(rx.unit)}</td>
+                        <td>{prescribedTotal(rx)}</td>
                         <td>
-                          {rx.withdrawalDays ? tr(`${rx.withdrawalDays} days`) : "—"}
+                          {rx.withdrawalDays == null ? "—" : tr(`${rx.withdrawalDays} days`)}
                         </td>
                         <td>
                           <Badge tone={rx.status === "ACTIVE" ? "info" : rx.status === "COMPLETED" ? "ok" : "neutral"} dot>
@@ -500,7 +548,7 @@ export default function RecordDetailPage() {
                     </div>
 
                     <div style={{ fontSize: "var(--fs-body)", color: "var(--text-2)" }}>
-                      {tr("Temperature:")}{" "}<strong>{fu.temperature}°C</strong> {tr("· Heart Rate:")}{" "}<strong>{fu.restingHeartRate} {tr("bpm")}</strong> {tr("· Respiratory Rate:")}{" "}<strong>{fu.respiratoryRate} {tr("breaths/min")}</strong>
+                      {tr("Temperature:")}{" "}<strong>{fu.temperature == null ? "—" : `${fu.temperature} °C`}</strong> {tr("· Heart Rate:")}{" "}<strong>{fu.restingHeartRate == null ? "—" : `${fu.restingHeartRate} ${tr("bpm")}`}</strong> {tr("· Respiratory Rate:")}{" "}<strong>{fu.respiratoryRate == null ? "—" : `${fu.respiratoryRate} ${tr("breaths/min")}`}</strong>
                     </div>
 
                     <div style={{ fontSize: "var(--fs-body)" }}>
@@ -508,7 +556,7 @@ export default function RecordDetailPage() {
                     </div>
 
                     {fu.adjustments && (
-                      <div style={{ fontSize: "var(--fs-body)", color: "var(--brand)" }}>
+                      <div style={{ fontSize: "var(--fs-body)", color: "var(--brand-700)" }}>
                         <strong>{tr("Protocol Adjustments:")}</strong> {fu.adjustments}
                       </div>
                     )}
@@ -521,6 +569,20 @@ export default function RecordDetailPage() {
       )}
 
       {/* Modals */}
+      {showDeleteModal && (
+        <ConfirmModal
+          title={tr("Delete Draft")}
+          tone="danger"
+          confirmLabel={tr("Delete Draft")}
+          cancelLabel={tr("Cancel")}
+          busy={deleting}
+          onConfirm={() => void handleDeleteDraft()}
+          onCancel={() => { if (!deleting) setShowDeleteModal(false); }}
+        >
+          {tr("Delete draft medical record {{recordNumber}}? This action cannot be undone.", { recordNumber: record.recordNumber })}
+        </ConfirmModal>
+      )}
+
       {showFinalizeModal && (
         <FinalizeRecordModal
           recordNumber={record.recordNumber}

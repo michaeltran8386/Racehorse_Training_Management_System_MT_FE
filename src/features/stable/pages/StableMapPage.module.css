@@ -1,0 +1,14 @@
+.panel { display: grid; gap: 12px; align-content: start; }
+.mapLayout { display: flex; gap: 16px; align-items: flex-start; }
+.summary { display: flex; gap: 0; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--border); }
+.summary > span { flex: 1 1 140px; padding: 16px 20px; color: var(--text-2); }
+.summary > span + span { border-left: 1px solid var(--border); }
+.summary strong { display: block; font: 800 30px/1.1 var(--font-display); color: var(--text); font-variant-numeric: tabular-nums; }
+.summary > label { margin: 16px; }
+.search { height: 44px; width: 220px; max-width: 100%; padding: 0 12px; background: var(--surface); color: var(--text); border: 1px solid var(--border-field); }
+.search:focus-visible, .suggestion:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.suggestions { position: absolute; top: calc(100% + 4px); right: 0; width: 260px; z-index: 30; background: var(--surface); border: 1px solid var(--border-strong); box-shadow: var(--shadow-pop); }
+.suggestion { display: block; width: 100%; text-align: left; padding: 10px 12px; border: 0; background: var(--surface); color: var(--text); cursor: pointer; }
+.suggestion:hover { background: var(--surface-2); }
+@media (max-width: 900px) { .mapLayout { flex-direction: column; } .mapLayout > div { width: 100%; } }
+@media (max-width: 520px) { .summary > span { flex-basis: 50%; padding: 12px; } .summary > span:nth-child(3) { border-left: 0; } }

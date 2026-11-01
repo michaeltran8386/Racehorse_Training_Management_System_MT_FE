@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TMEC — Quản lý huấn luyện & chuồng trại ngựa đua</title>
+<meta name="description" content="TMEC kết nối Chủ ngựa, Huấn luyện viên, Bác sĩ thú y, Nhân viên chăm sóc và Ban quản lý trang trại trên cùng một không gian số." />
+<link rel="icon" href="data:," />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=VT323&display=swap" rel="stylesheet" />
+<script>
+  // Theme set before paint so there is no flash.
+  try {
+    const saved = localStorage.getItem("equiflow-theme");
+    const dark = saved ? saved === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+  } catch { document.documentElement.dataset.theme = "light"; }
+</script>
+<style>
+  :root {
+    --bg: #f6f1e4; --bg-2: #ece4cf; --card: #fffdf7; --ink: #1d2a2e; --muted: #5b6b6e; --line: rgba(29, 42, 46, 0.14);
+    --bay: #1f6a96; --bay-2: #2f86b4; --bay-deep: #12405f; --foam: #e8f4f6;
+    --grass: #6ba34a; --grass-2: #4f8a3a; --dirt: #c79a5b; --dirt-2: #a87b42; --wood: #8a5a2b;
+    --sun: #f4b942; --sun-glow: rgba(244, 185, 66, 0.45);
+    --sky-top: #8fcbe8; --sky-bot: #f7e3b3;
+    --accent: #f4b942; --accent-ink: #1d2a2e;
+    --hero-ink: #f6f1e4; --hero-veil: rgba(10, 22, 28, 0.86);
+    --display: "Barlow Condensed", Impact, sans-serif;
+    --body: "Inter", Arial, sans-serif;
+    --pixel: "VT323", monospace;
+    --px: 2; --hs: 3;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1a20; --bg-2: #13232b; --card: #152830; --ink: #ede6d3; --muted: #9baaa8; --line: rgba(237, 230, 211, 0.14);
+    --bay: #0f3a57; --bay-2: #18506f; --bay-deep: #082436; --foam: #9cc3d0;
+    --grass: #2f5a2d; --grass-2: #244823; --dirt: #6e5233; --dirt-2: #57401f; --wood: #6a4522;
+    --sun: #f1e3b0; --sun-glow: rgba(241, 227, 176, 0.25);
+    --sky-top: #0b1a2c; --sky-bot: #2b3f5c;
+    --accent: #f4b942;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 400 16px/1.6 var(--body); transition: background 0.4s, color 0.4s; overflow-x: hidden; }
+  a { color: inherit; }
+  img { image-rendering: pixelated; }
+  .wrap { width: min(1200px, 100% - 32px); margin-inline: auto; }
+  .kicker { font: 700 13px/1 var(--body); letter-spacing: 0.16em; text-transform: uppercase; display: flex; gap: 10px; align-items: center; }
+  .kicker::before { content: ""; width: 28px; height: 2px; background: currentColor; opacity: 0.6; }
+  .display { font-family: var(--display); font-weight: 800; text-transform: uppercase; line-height: 0.92; letter-spacing: -0.01em; margin: 0; }
+  .btn { display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; font: 700 15px/1 var(--body); text-decoration: none; border: 2px solid currentColor; cursor: pointer; background: transparent; color: inherit; transition: transform 0.15s, background 0.15s; }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+
+  /* Header */
+  .top { position: fixed; inset: 0 0 auto; z-index: 50; color: var(--hero-ink); background: linear-gradient(rgba(8, 18, 24, 0.85), rgba(8, 18, 24, 0)); transition: background 0.3s; }
+  .top.solid { background: rgba(8, 18, 24, 0.94); backdrop-filter: blur(6px); }
+  .top .wrap { display: flex; align-items: center; gap: 20px; height: 64px; }
+  .logo { font: 800 24px/1 var(--display); letter-spacing: 0.02em; text-decoration: none; display: flex; align-items: center; gap: 10px; }
+  .logo small { font: 600 11px/1 var(--body); letter-spacing: 0.18em; opacity: 0.7; border-left: 1px solid currentColor; padding-left: 10px; }
+  .top nav { margin-left: auto; display: flex; gap: 22px; font: 700 12px/1 var(--body); letter-spacing: 0.14em; text-transform: uppercase; }
+  .top nav a { text-decoration: none; opacity: 0.85; }
+  .top nav a:hover { opacity: 1; }
+  .icon-btn { width: 40px; height: 40px; display: grid; place-items: center; border: 1px solid rgba(246, 241, 228, 0.35); background: transparent; color: inherit; cursor: pointer; font-size: 18px; }
+  .top .login { padding: 10px 16px; font-size: 13px; }
+
+  /* Hero */
+  .hero { position: relative; min-height: 100svh; color: var(--hero-ink); display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; background: #0a161c; }
+  .hero-bg { position: absolute; inset: 0; background: url("/images/landing/limbo-hero.jpg") 68% bottom / cover; transform: scale(1.08); animation: drift 30s ease-in-out infinite alternate; }
+  .hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, var(--hero-veil) 0%, rgba(10, 22, 28, 0.55) 55%, rgba(10, 22, 28, 0.15) 100%), linear-gradient(0deg, rgba(10, 22, 28, 0.95), transparent 40%); }
+  @keyframes drift { to { transform: scale(1.16) translate(-2%, -1%); } }
+  .hero-inner { position: relative; z-index: 2; padding: 120px 0 40px; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 32px; align-items: end; }
+  .hero h1 { font-size: clamp(64px, 11vw, 168px); }
+  .hero h1 span { color: var(--accent); }
+  .hero .sub { font: 700 clamp(20px, 2.3vw, 30px)/1.15 var(--display); text-transform: uppercase; margin: 14px 0 22px; max-width: 18em; }
+  .hero blockquote { margin: 0 0 26px; padding: 4px 0 4px 18px; border-left: 4px solid var(--accent); font-size: clamp(15px, 1.3vw, 18px); max-width: 36em; opacity: 0.92; }
+  .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; }
+  .stat { display: flex; align-items: center; gap: 12px; border: 1px solid rgba(246, 241, 228, 0.35); padding: 8px 16px; }
+  .stat b { font: 800 34px/1 var(--display); }
+  .stat span { font: 700 11px/1.3 var(--body); letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.75; }
+  .hero-foot { position: relative; z-index: 2; border-top: 1px solid rgba(246, 241, 228, 0.2); }
+  .hero-foot .wrap { display: flex; justify-content: space-between; padding: 16px 0; font: 700 12px/1 var(--body); letter-spacing: 0.16em; text-transform: uppercase; }
+  .hero-foot a { text-decoration: none; }
+
+
+  /* Story */
+  .story { padding: clamp(80px, 12vw, 150px) 0; }
+  .story-head { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 40px; align-items: end; margin-bottom: 56px; }
+  .story-head .kicker { color: var(--muted); margin-bottom: 18px; }
+  .story h2 { font-size: clamp(44px, 6.4vw, 92px); }
+  .story-head p { color: var(--muted); font-size: 17px; margin: 0; }
+  .versus { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .vcard { padding: clamp(24px, 3vw, 40px); border-top: 4px solid var(--line); background: var(--card); }
+  .vcard.dark { background: #13262d; color: #ede6d3; border-top-color: var(--accent); }
+  :root[data-theme="dark"] .vcard.dark { background: #1d3a44; }
+  .vcard header { display: flex; justify-content: space-between; font: 700 12px/1 var(--body); letter-spacing: 0.14em; text-transform: uppercase; opacity: 0.7; margin-bottom: 28px; }
+  .vcard h3 { font: 800 clamp(32px, 3.6vw, 48px)/0.95 var(--display); text-transform: uppercase; margin: 0 0 16px; }
+  .vcard p { margin: 0 0 12px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+  .chips span { font: 600 13px/1 var(--body); padding: 8px 12px; border: 1px solid currentColor; opacity: 0.85; }
+
+  /* Ride: vertical scroll drives a horizontal world */
+  .ride { position: relative; height: 600vh; }
+  .ride-sticky { position: sticky; top: 0; height: 100svh; overflow: hidden; background: #0a161c; }
+  .ride-bar { position: absolute; inset: 64px 0 auto; z-index: 20; background: rgba(8, 18, 24, 0.82); color: #f6f1e4; backdrop-filter: blur(6px); }
+  .ride-bar .wrap { display: flex; align-items: center; gap: 20px; height: 48px; font: 700 12px/1 var(--body); letter-spacing: 0.14em; text-transform: uppercase; }
+  .ride-bar strong { color: var(--accent); }
+  .ride-bar span { white-space: nowrap; }
+  .ride-bar nav { display: flex; gap: 6px; margin-inline: auto; }
+  .ride-bar nav button { width: 38px; height: 6px; border: 0; padding: 0; background: rgba(246, 241, 228, 0.3); cursor: pointer; transition: background 0.2s, width 0.2s; }
+  .ride-bar nav button[aria-current="step"] { background: #f6f1e4; width: 56px; }
+  .ride-fill { height: 3px; background: var(--accent); width: calc(var(--p, 0) * 100%); }
+  #scene { position: absolute; inset: 0; display: block; }
+  .panel { position: absolute; z-index: 10; right: max(16px, calc((100vw - 1200px) / 2)); top: 140px; width: min(440px, 100% - 32px); max-height: calc(100% - 300px); overflow: auto; background: var(--card); color: var(--ink); border: 3px solid var(--ink); box-shadow: 8px 8px 0 rgba(0, 0, 0, 0.25); padding: 24px 26px; transition: opacity 0.3s, transform 0.3s; }
+  .panel.swap { opacity: 0; transform: translateY(12px); }
+  .panel .meta { display: flex; justify-content: space-between; font: 700 12px/1 var(--body); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .panel h3 { font: 800 clamp(30px, 3.2vw, 42px)/0.95 var(--display); text-transform: uppercase; margin: 0 0 6px; }
+  .panel .en { font: 400 22px/1 var(--pixel); color: var(--muted); }
+  .panel .tagline { margin: 12px 0 14px; padding-left: 12px; border-left: 4px solid var(--accent); font-weight: 600; }
+  .panel ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; font-size: 14.5px; }
+  .panel li { padding-left: 18px; position: relative; }
+  .panel li::before { content: ""; position: absolute; left: 0; top: 8px; width: 8px; height: 8px; background: var(--grass-2); }
+  .panel li b { display: block; }
+  .ride-hint { position: absolute; left: 50%; bottom: 20px; transform: translateX(-50%); z-index: 6; font: 400 24px/1 var(--pixel); color: #fff; text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5); transition: opacity 0.3s; }
+
+  /* Experiences */
+  .exp { padding: clamp(80px, 12vw, 150px) 0; background: var(--bg-2); transition: background 0.4s; }
+  .exp h2 { font-size: clamp(44px, 6vw, 86px); margin: 18px 0 48px; max-width: 12em; }
+  .exp .kicker { color: var(--muted); }
+  .exp-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .ecard { background: var(--card); padding: 26px; border-top: 4px solid var(--accent); display: flex; flex-direction: column; gap: 10px; min-height: 260px; }
+  .ecard .num { font: 400 30px/1 var(--pixel); color: var(--muted); }
+  .ecard h3 { font: 800 30px/1 var(--display); text-transform: uppercase; margin: 0; }
+  .ecard p { margin: 0; color: var(--muted); font-size: 15px; }
+  .ecard .btn { margin-top: auto; align-self: flex-start; padding: 10px 14px; font-size: 13px; }
+
+  /* CTA */
+  .cta { position: relative; padding: clamp(90px, 14vw, 180px) 0; background: #0a161c; color: var(--hero-ink); overflow: hidden; }
+  .cta::before { content: ""; position: absolute; inset: 0; background: url("/images/landing/farm-ground.png") center / cover; image-rendering: pixelated; opacity: 0.18; }
+  .cta .wrap { position: relative; }
+  .cta h2 { font-size: clamp(54px, 9vw, 140px); max-width: 10em; margin: 18px 0 26px; }
+  .cta h2 span { color: var(--accent); }
+  .cta p { max-width: 38em; opacity: 0.85; font-size: 17px; margin: 0 0 30px; }
+  .cta .sign { margin-top: 56px; font: 400 26px/1.2 var(--pixel); opacity: 0.85; }
+  footer { background: #060e12; color: #9baaa8; font-size: 13px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 16px; padding: 22px 0; flex-wrap: wrap; }
+
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s, transform 0.7s; }
+  .reveal.in { opacity: 1; transform: none; }
+
+  @media (max-width: 900px) {
+    :root { --px: 1; --hs: 2; }
+    .top nav { display: none; }
+    .top .login { display: none; }
+    .top .wrap { justify-content: space-between; }
+    .hero-inner { grid-template-columns: 1fr; }
+    .story-head, .versus { grid-template-columns: 1fr; }
+    .exp-grid { grid-template-columns: 1fr 1fr; }
+    .ride-bar .label { display: none; }
+    .ride-bar nav { margin-inline: 0 auto; }
+    .ride-bar nav button { width: 24px; }
+    .ride-bar nav button[aria-current="step"] { width: 36px; }
+    .panel { top: auto; bottom: 12px; right: 12px; left: 12px; width: auto; max-height: 42%; padding: 16px 18px; }
+    .panel ul { font-size: 13.5px; }
+    .ride-hint { bottom: auto; top: 128px; }
+  }
+  @media (max-width: 520px) {
+    .exp-grid { grid-template-columns: 1fr; }
+    .ecard { min-height: 0; }
+    .logo small { display: none; }
+    #stepName { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .hero-bg { animation: none; }
+    .reveal { transform: none; }
+    .panel { transition: opacity 0.3s; transform: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top" id="top">
+  <div class="wrap">
+    <a class="logo" href="#">TMEC <small>TRANG TRẠI SỐ</small></a>
+    <nav aria-label="Mục chính">
+      <a href="#story">Câu chuyện</a>
+      <a href="#ride">Vai trò</a>
+      <a href="#exp">Trải nghiệm</a>
+    </nav>
+    <button class="icon-btn" id="themeBtn" type="button" aria-label="Đổi giao diện sáng/tối">☾</button>
+    <a class="btn login" href="/sign-up">Đăng ký</a>
+    <a class="btn btn-primary login" href="/login">Đăng nhập</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero" aria-label="Giới thiệu">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <div>
+        <p class="kicker">TMEC / Nền tảng ngựa đua thông minh</p>
+        <h1 class="display">TM<span>EC</span>.</h1>
+        <p class="sub">Nền tảng quản lý huấn luyện &amp; chuồng trại ngựa đua thông minh.</p>
+        <blockquote>“Mỗi chiến mã là một linh hồn kiêu hãnh trên đường đua. TMEC ra đời để cùng bạn chăm sóc, thấu hiểu và nâng niu từng bước chạy ấy bằng cả trái tim cùng sự hỗ trợ của công nghệ hiện đại.”</blockquote>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="#ride">Bắt đầu hành trình ↓</a>
+          <a class="btn" href="/sign-up">Đăng ký</a>
+          <div class="stat"><b>5</b><span>vai trò<br />một không gian số</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-foot">
+      <div class="wrap"><a href="#story">Cuộn để tiếp tục ↓</a><a href="#ride">Đến ngôi nhà đầu tiên →</a></div>
+    </div>
+  </section>
+
+  <section class="story" id="story">
+    <div class="wrap">
+      <div class="story-head reveal">
+        <div>
+          <p class="kicker">Câu chuyện / TMEC</p>
+          <h2 class="display">Không chỉ là kinh doanh. Đó là một hành trình gắn kết.</h2>
+        </div>
+        <p>Từ bữa ăn sáng giàu dinh dưỡng, bài tập chạy nước rút buổi sớm, cho đến từng vết sưng nhỏ ở cổ chân sau buổi tập đường cát — mọi chi tiết đều vô cùng quan trọng.</p>
+      </div>
+      <div class="versus">
+        <article class="vcard reveal">
+          <header><span>01 / Trước đây</span><span>Rời rạc</span></header>
+          <h3>Sổ sách rời rạc, tin tức đến muộn</h3>
+          <p>Việc quản lý trang trại ngựa thường gặp khó khăn vì sổ sách rời rạc, thông tin sức khỏe không đồng bộ.</p>
+          <p>Chủ ngựa ở xa không nắm bắt kịp thời tình hình của “đứa con cưng” của mình.</p>
+        </article>
+        <article class="vcard dark reveal">
+          <header><span>02 / Với TMEC</span><span>Một nhịp cầu</span></header>
+          <h3>Một không gian số, tràn ngập yêu thương</h3>
+          <p>TMEC ra đời như một nhịp cầu gắn kết mọi người quanh chú ngựa — trực quan, tiện lợi và tràn ngập tình yêu thương với loài ngựa.</p>
+          <div class="chips"><span>Chủ ngựa</span><span>Huấn luyện viên</span><span>Bác sĩ thú y</span><span>Nhân viên chăm sóc</span><span>Ban quản lý</span></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="ride" id="ride" aria-label="Năm ngôi nhà của TMEC">
+    <div class="ride-sticky" id="stage">
+      <div class="ride-bar">
+        <div class="wrap">
+          <span class="label">Ngôi nhà</span><span><strong id="stepNow">01</strong> / 05</span>
+          <nav id="dots" aria-label="Chuyển đến ngôi nhà"></nav>
+          <span id="stepName">Chủ ngựa</span>
+        </div>
+        <div class="ride-fill"></div>
+      </div>
+      <canvas id="scene" aria-hidden="true"></canvas>
+      <p class="ride-hint" id="hint">cuộn để phi nước đại →</p>
+      <article class="panel" id="panel" aria-live="polite"></article>
+    </div>
+  </section>
+
+  <section class="exp" id="exp">
+    <div class="wrap">
+      <p class="kicker reveal">Trải nghiệm nhỏ / ấm lòng</p>
+      <h2 class="display reveal">Những điều nhỏ nhưng rất “ấm lòng”.</h2>
+      <div class="exp-grid">
+        <article class="ecard reveal"><span class="num">01</span><h3>Song ngữ Việt – Anh</h3><p>Hỗ trợ Tiếng Việt và Tiếng Anh mượt mà, chuyển đổi nhanh chóng chỉ bằng một nút bấm.</p></article>
+        <article class="ecard reveal"><span class="num">02</span><h3>Sáng &amp; Tối</h3><p>Giao diện Sáng thanh lịch và giao diện Tối dịu mắt khi làm việc ban đêm.</p><button class="btn" type="button" data-theme-toggle>Thử ngay ☾</button></article>
+        <article class="ecard reveal"><span class="num">03</span><h3>Thông báo kịp thời</h3><p>Chuông nhắc ngay khi có kết quả bài tập mới, lịch khám sức khỏe hoặc hóa đơn được phát hành.</p></article>
+        <article class="ecard reveal"><span class="num">04</span><h3>An toàn &amp; riêng tư</h3><p>Mỗi người dùng có tài khoản và phân quyền rõ ràng; thông tin chiến mã luôn được bảo mật.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta" id="cta">
+    <div class="wrap reveal">
+      <p class="kicker">Bắt đầu / Hôm nay</p>
+      <h2 class="display">Sẵn sàng trải nghiệm cùng <span>TMEC!</span></h2>
+      <p>Trang web thân thiện, dễ nhìn và dễ sử dụng ngay cả với những ai không rành về máy tính. Hãy đăng nhập, khám phá những ô chuồng rợp bóng mát và gửi gắm tình yêu thương đến những chú chiến mã kiêu hùng.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="/login">Đăng nhập</a>
+        <a class="btn" href="/sign-up">Đăng ký tài khoản →</a>
+      </div>
+      <p class="sign">TMEC — Vì sức khỏe chiến mã, vì niềm tin của người đồng hành.</p>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap"><span>© 2026 TMEC · SWP391</span><span><a href="/terms.html">Điều khoản sử dụng</a> · <a href="/privacy.html">Quyền riêng tư</a> · <a href="#top">Lên đầu trang ↑</a></span></div></footer>
+
+<script>
+(() => {
+  const ROLES = [
+    { vi: "Chủ Ngựa", en: "Horse Owner", img: "groom-house", h: 144, row: 4, tagline: "An tâm tuyệt đối dù ở bất kỳ đâu.",
+      items: [["Theo dõi sức khỏe 24/7", "Cân nặng, nhiệt độ, lịch tiêm phòng và kết quả thăm khám định kỳ — minh bạch."],
+              ["Xem tiến trình tập luyện", "Hôm nay chạy bao nhiêu mét, đạt bao nhiêu km/h, phong độ ra sao."],
+              ["Giải đấu & vinh quang", "Kết quả từng giải, thứ hạng, thành tích thời gian và tiền thưởng."],
+              ["Hóa đơn rõ ràng", "Chi phí chuồng trại, thức ăn, y tế được tổng hợp chi tiết, công khai."]] },
+    { vi: "Huấn Luyện Viên Trưởng", en: "Head Trainer", img: "barn", h: 128, row: 1, tagline: "Bản lĩnh kiến tạo nhà vô địch.",
+      items: [["Lập giáo án thông minh", "Theo giai đoạn: thể lực cơ bản, tăng tốc, nước rút, thích nghi địa hình."],
+              ["Lịch tập trực quan", "Xếp lịch hàng ngày cho từng chú ngựa, giao việc cho từng nài ngựa."],
+              ["Mô phỏng đường chạy", "Digital Twin chạy thử trước buổi tập thật: gió, mặt sân cỏ/cát, nhịp tim."],
+              ["Cảnh báo an toàn tự động", "Ngựa đang theo dõi sức khỏe hay chấn thương sẽ bị chặn bài tập nặng."]] },
+    { vi: "Bác Sĩ Thú Y", en: "Veterinarian", img: "vet", h: 128, row: 2, tagline: "Lá chắn y tế vững chắc.",
+      items: [["Hồ sơ bệnh án điện tử", "Lịch sử thăm khám, đơn thuốc, chẩn đoán và ảnh siêu âm gân/cơ."],
+              ["Khóa Y Tế (Medical Lock)", "Một thao tác: báo khẩn đến HLV, Quản lý, Chủ ngựa và hoãn mọi buổi tập nặng đến khi bình phục."],
+              ["Lịch tiêm phòng & chăm sóc", "Nhắc vắc-xin cúm ngựa, tẩy giun sán, khám răng, cắt gọt móng."]] },
+    { vi: "Nhân Viên Chăm Sóc Chuồng", en: "Groom", img: "stable", h: 128, row: 3, tagline: "Người bạn gần gũi nhất mỗi ngày.",
+      items: [["Sổ tay công việc mỗi ngày", "Cho ăn yến mạch lúc mấy giờ, dọn rơm, chườm đá phục hồi chân, dắt ngựa dạo 15 phút."],
+              ["Ghi chú nhanh chóng", "Bấm hoàn thành ngay trên điện thoại; ghi lại khi ngựa ăn kém hoặc có biểu hiện lạ."]] },
+    { vi: "Ban Quản Lý Trang Trại", en: "Club Manager", img: "track", h: 184, row: 0, tagline: "Vận hành trơn tru, nắm trọn trong tay.",
+      items: [["Sơ đồ chuồng trại sinh động", "Khu A, B, C: ô nào có ngựa, ô nào trống, ô nào đang vệ sinh."],
+              ["Tổ chức giải đua", "Mở đăng ký, xếp bảng đấu, chốt kết quả và chia thưởng minh bạch."],
+              ["Quản lý kho vật tư", "Cỏ Timothy, cám yến mạch, thuốc men; duyệt nhập kho khi sắp hết."],
+              ["Báo cáo tài chính", "Hóa đơn dịch vụ, doanh thu và chi phí chỉ với vài cú nhấp chuột."]] },
+  ];
+  const N = ROLES.length;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const $ = (id) => document.getElementById(id);
+  const stage = $("stage"), panel = $("panel"), ride = $("ride");
+  const pad = (n) => String(n).padStart(2, "0");
+
+  // ===== Hoạt ảnh Limbo: chiến mã phi qua 5 trạm (thay bản đồ pixel cũ) =====
+// ---------- tiện ích ----------
+const TAU = Math.PI * 2, DEG = Math.PI / 180;
+const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+const smooth = t => (t = clamp(t, 0, 1), t * t * (3 - 2 * t));
+const fract = x => x - Math.floor(x);
+const hash = n => fract(Math.sin(n * 127.1 + 311.7) * 43758.5453);
+const rand = (a, b) => a + Math.random() * (b - a);
+const lerp2 = (p, q, t) => [lerp(p[0], q[0], t), lerp(p[1], q[1], t)];
+
+// ---------- 5 trạm: chỉ cần loại công trình; chữ của từng trạm nằm ở ROLES (panel) ----------
+const STATIONS = ['mansion', 'tower', 'clinic', 'barn', 'hq'].map((kind, i) => ({ no: pad(i + 1), kind }));
+const ST_X = [900, 3100, 5300, 7500, 9700];   // vị trí ngựa dừng (đơn vị thế giới)
+const END = 10400;
+const BUILD_OFF = 310;                          // công trình đặt trước mặt ngựa
+
+// ---------- bảng màu sáng / tối ----------
+const PALETTE = {
+  light: { sky0: '#f2cf8e', sky1: '#f8e4b8', sky2: '#fcf2dc', deep: '#3e5a26', ink: '#2b2116', fog: '#fbeccb',
+           sun: '#fff3c8', eye: '#f4b942', eyeCore: '#fffaf0', dust: '#c79a5b', win: '#f4b942', rim: '#000000', star: '#ffffff', fly: '#f4b942' },
+  dark:  { sky0: '#070b14', sky1: '#121b26', sky2: '#26332a', deep: '#080d08', ink: '#050604', fog: '#2e3b2c',
+           sun: '#f3e9cc', eye: '#ffc95e', eyeCore: '#fff8e2', dust: '#7d6a4c', win: '#ffb347', rim: '#c9a86a', star: '#f3ecd6', fly: '#dff27a' },
+};
+const hexRgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+const PL = {}, PD = {};
+for (const k in PALETTE.light) { PL[k] = hexRgb(PALETTE.light[k]); PD[k] = hexRgb(PALETTE.dark[k]); }
+const mix = (a, b, t) => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+const rgba = (c, a = 1) => `rgba(${c[0] | 0},${c[1] | 0},${c[2] | 0},${a})`;
+const C = {};
+let tm = 0, tmTarget = 0;   // 0 = sáng, 1 = tối
+function updatePalette() {
+  for (const k in PL) C[k] = mix(PL[k], PD[k], tm);
+  C.bldg = mix(mix(C.sky2, C.ink, .84), [92, 46, 30], .18 * (1 - tm));   // ánh đỏ gỗ chuồng
+  C.fence = mix(mix(C.sky2, C.ink, .7), [120, 84, 50], .25 * (1 - tm));
+  C.grass = mix(C.ink, C.deep, .4);
+  C.far = mix(C.ink, [122, 100, 80], lerp(.32, .22, tm));
+  C.inkHi = mix(C.ink, [92, 70, 52], lerp(.3, .18, tm));
+  C.hoof = mix(C.ink, [128, 104, 84], lerp(.55, .3, tm));
+}
+const layerCol = t => rgba(mix(C.sky2, C.deep, t));
+
+// ---------- canvas ----------
+const cv = document.getElementById('scene');
+const ctx = cv.getContext('2d');
+const hcv = document.createElement('canvas');   // lớp ngựa riêng để viền sáng 1 lần
+const hctx = hcv.getContext('2d');
+const HW = 540, HH = 380, OX = 270, OY = 330;
+let W = 0, H = 0, DPR = 1, S = 1, groundY = 0, grainPat = null;
+const anchor = .2;   // ngựa lệch trái để panel bên phải không che công trình
+
+function resize() {
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = stage.clientWidth; H = stage.clientHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  S = clamp(Math.min(H / 660, W / 1100), .5, 1.22);
+  groundY = Math.round(H * (W <= 900 ? .56 : .8));   // màn hẹp: panel nằm dưới nên nâng mặt đất lên
+  hcv.width = Math.ceil(HW * S * DPR); hcv.height = Math.ceil(HH * S * DPR);
+}
+function makeGrain() {
+  const g = document.createElement('canvas'); g.width = g.height = 160;
+  const gc = g.getContext('2d'), id = gc.createImageData(160, 160);
+  for (let i = 0; i < id.data.length; i += 4) {
+    const v = Math.random() * 255;
+    id.data[i] = id.data[i + 1] = id.data[i + 2] = v; id.data[i + 3] = Math.random() * 36;
+  }
+  gc.putImageData(id, 0, 0);
+  grainPat = ctx.createPattern(g, 'repeat');
+}
+
+let reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+matchMedia('(prefers-reduced-motion: reduce)').addEventListener?.('change', e => { reduced = e.matches; });
+
+// ---------- dáng chạy: walk / trot / canter / gallop ----------
+// off = pha chạm đất của [trước gần, trước xa, sau gần, sau xa]
+const GAITS = [
+  { name: 'Đi bộ',          v: 120, duty: .64, stride: 115, liftF: 15, liftH: 11, off: [.25, .75, 0, .5],
+    body: p => ({ bob: 1.4 * Math.cos(TAU * 2 * p), pitch: .006 * Math.sin(TAU * 2 * p), flex: 0, nod: .05 * Math.sin(TAU * 2 * p + 1) }) },
+  { name: 'Nước kiệu',      v: 300, duty: .45, stride: 190, liftF: 26, liftH: 20, off: [.5, 1, 0, .5],
+    body: p => ({ bob: 3.6 * Math.cos(TAU * 2 * (p - .225)), pitch: .008 * Math.sin(TAU * 2 * p), flex: .008 * Math.sin(TAU * 2 * p), nod: .035 * Math.sin(TAU * 2 * (p - .1)) }) },
+  { name: 'Nước kiệu nhanh', v: 540, duty: .38, stride: 265, liftF: 36, liftH: 28, off: [.3, .6, 0, .3],
+    body: p => ({ bob: 5.5 * Math.cos(TAU * (p - .45)), pitch: .05 * Math.sin(TAU * (p - .4)), flex: .045 * Math.sin(TAU * (p - .65)), nod: .08 * Math.sin(TAU * (p - .5)) }) },
+  { name: 'Phi nước đại',   v: 860, duty: .30, stride: 405, liftF: 58, liftH: 46, off: [.38, .5, 0, .12],
+    body: p => ({ bob: 7 * Math.cos(TAU * (p - .45)) - 8 * Math.max(0, -Math.cos(TAU * (p - .45))), pitch: .065 * Math.sin(TAU * (p - .4)), flex: .08 * Math.sin(TAU * (p - .62)), nod: .12 * Math.sin(TAU * (p - .5)) }) },
+];
+const LEGS = [
+  { front: true,  near: true,  root: [52, -98],   neut: 57,  a: 47, b: 39, p: 14, bend: -1 },
+  { front: true,  near: false, root: [46, -98],   neut: 50,  a: 47, b: 39, p: 14, bend: -1 },
+  { front: false, near: true,  root: [-71, -102], neut: -73, a: 50, b: 45, p: 14, bend: 1 },
+  { front: false, near: false, root: [-77, -102], neut: -80, a: 50, b: 45, p: 14, bend: 1 },
+];
+// thân ngựa: [x, y, thuộc nửa trước?, hệ số thở]
+const BODY = [
+  [30, -162, 1, 0], [12, -155, 1, 0], [-10, -152, 0, 0], [-36, -154, 0, 0], [-62, -159, 0, 0], [-88, -152, 0, 0],
+  [-103, -136, 0, 0], [-103, -113, 0, 0], [-93, -97, 0, 0], [-72, -89, 0, 0], [-48, -89, 0, 0], [-28, -91, 0, .6],
+  [-4, -87, 1, 1], [24, -85, 1, 1], [46, -89, 1, .4], [66, -99, 1, 0], [81, -117, 1, .3], [84, -134, 1, 0],
+  [75, -148, 1, 0], [52, -161, 1, 0],
+].map(([x, y, f, b]) => [x * 1.1 - 1, y, f, b]);   // kéo dài thân theo mẫu (dài ≈ 1.3 × cao vai)
+const C0 = [-8, -124];   // tâm xoay thân (pitch + uốn sống lưng)
+
+function gaitBlend(s) {
+  const w = [0, 0, 0, 0]; let amp = 1;
+  if (s <= GAITS[0].v) { w[0] = 1; amp = s / GAITS[0].v; }
+  else if (s >= GAITS[3].v) w[3] = 1;
+  else for (let i = 0; i < 3; i++) if (s < GAITS[i + 1].v) {
+    const t = smooth((s - GAITS[i].v) / (GAITS[i + 1].v - GAITS[i].v)); w[i] = 1 - t; w[i + 1] = t; break;
+  }
+  const b = { w, amp, duty: 0, stride: 0, liftF: 0, liftH: 0, off: [0, 0, 0, 0] };
+  for (let i = 0; i < 4; i++) {
+    if (!w[i]) continue; const g = GAITS[i];
+    b.duty += g.duty * w[i]; b.stride += g.stride * w[i]; b.liftF += g.liftF * w[i]; b.liftH += g.liftH * w[i];
+    for (let k = 0; k < 4; k++) b.off[k] += g.off[k] * w[i];
+  }
+  b.fast = w[1] * .25 + w[2] * .7 + w[3];
+  b.D = b.duty * b.stride * amp;
+  return b;
+}
+
+function ik(r, t, a, b, bend) {
+  const dx = t[0] - r[0], dy = t[1] - r[1];
+  const d = clamp(Math.hypot(dx, dy), Math.abs(a - b) + 1e-3, a + b - 1e-3);
+  const base = Math.atan2(dy, dx);
+  const A = Math.acos(clamp((a * a + d * d - b * b) / (2 * a * d), -1, 1));
+  const ang = base + bend * A;
+  return [[r[0] + Math.cos(ang) * a, r[1] + Math.sin(ang) * a], [r[0] + Math.cos(base) * d, r[1] + Math.sin(base) * d]];
+}
+
+// ---------- trạng thái ngựa ----------
+const horse = {
+  x: 0, v: 0, phi: 0, dir: 1, dirScale: 1, sinkY: 0, sinkV: 0, idle: 0, rest: 0, exert: 0,
+  blinkT: 0, nextBlink: 2.5, earT: 0, nextEar: 3, look: 0, stance: [true, true, true, true],
+};
+let tgt = 0, cam = 0, time = 0, pose = null, gaitIdx = -1;
+
+function updateHorse(dt) {
+  const dx = tgt - horse.x;
+  // bám theo cuộn: càng tụt xa càng phi nhanh, để ngựa tới trạm trước khi cuộn rời khỏi đoạn đường chạy
+  const vmax = Math.max(930, Math.abs(dx) * 2.2), acc = Math.max(1500, vmax * 2.5), dec = Math.max(950, vmax * 1.2);
+  const want = Math.sign(dx) * Math.min(vmax, Math.sqrt(2 * dec * Math.abs(dx)));
+  horse.v += clamp(want - horse.v, -acc * dt, acc * dt);
+  horse.x += horse.v * dt;
+  if (Math.abs(dx) < 2 && Math.abs(horse.v) < 30) { horse.x = tgt; horse.v = 0; }
+  if (horse.v < -70) horse.dir = -1; else if (horse.v > 70) horse.dir = 1;
+  horse.dirScale += (horse.dir - horse.dirScale) * Math.min(1, dt * 9);
+
+  const s = Math.abs(horse.v);
+  horse.exert += (Math.min(1, s / 860) - horse.exert) * dt * (s > 300 ? .5 : .12);
+  horse.idle = s < 4 ? horse.idle + dt : 0;
+  const rt = horse.idle > 2.5 ? 1 : 0;
+  horse.rest += (rt - horse.rest) * Math.min(1, dt * (rt ? 1.5 : 8));
+
+  // lò xo lún: chia bước nhỏ để không nổ khi khung hình tụt
+  for (let k = 0, n = Math.ceil(dt / .008), h = dt / n; k < n; k++) {
+    horse.sinkV += (-320 * horse.sinkY - 20 * horse.sinkV) * h;
+    horse.sinkY = clamp(horse.sinkY + horse.sinkV * h, -6, 10);
+  }
+
+  horse.nextBlink -= dt;
+  if (horse.nextBlink <= 0) { horse.blinkT = .16; horse.nextBlink = Math.random() < .2 ? .25 : rand(2, 6); }
+  horse.blinkT = Math.max(0, horse.blinkT - dt);
+  horse.nextEar -= dt;
+  if (horse.nextEar <= 0) { horse.earT = .45; horse.nextEar = rand(2, 6); }
+  horse.earT = Math.max(0, horse.earT - dt);
+
+  // nhìn về trạm phía trước khi đến gần
+  let look = 0;
+  for (const x of ST_X) {
+    const d = (x - horse.x) * horse.dir;
+    if (d > -60 && d < 900) look = Math.max(look, smooth(1 - Math.max(0, d) / 900));
+  }
+  horse.look += (look - horse.look) * Math.min(1, dt * 3);
+
+  pose = computePose(dt);
+}
+
+function computePose(dt) {
+  const s = Math.min(Math.abs(horse.v), 1000);   // dáng chạy giữ ở phi nước đại khi đang đuổi theo cuộn
+  const g = gaitBlend(s);
+  const freq = s <= GAITS[0].v ? (GAITS[0].v / GAITS[0].stride) * smooth(g.amp * 3) : s / g.stride;
+  horse.phi += dt * freq * (horse.v * horse.dir >= 0 ? 1 : -1);
+  const ph = fract(horse.phi);
+
+  let bob = 0, pitch = 0, flex = 0, nod = 0;
+  for (let i = 0; i < 4; i++) if (g.w[i]) {
+    const o = GAITS[i].body(ph); const k = g.w[i] * (i === 0 ? g.amp : 1);
+    bob += o.bob * k; pitch += o.pitch * k; flex += o.flex * k; nod += o.nod * k;
+  }
+  bob += horse.sinkY;
+  const fast = g.fast * Math.min(1, g.amp * 1.5);
+  const T = mkT(pitch, flex, bob);
+
+  const body = BODY.map(p => T([p[0], p[1]], p[2]));
+
+  // cổ & đầu
+  const nA = lerp(-57, -42, fast) * DEG + nod - horse.look * .1;
+  const hA = lerp(64, 52, fast) * DEG + nod * .5 - horse.look * .2;
+  const B = [64, -150], poll = [B[0] + Math.cos(nA) * 90, B[1] + Math.sin(nA) * 90];
+  const hd = [Math.cos(hA), Math.sin(hA)], hn = [-Math.sin(hA), Math.cos(hA)];
+  const Hf = (u, v) => [poll[0] + 1.04 * (u * hd[0] + v * hn[0]), poll[1] + 1.04 * (u * hd[1] + v * hn[1])];
+  const nTop = [36, -163], nBot = [90, -132];
+  const dl = Math.hypot(poll[0] - nTop[0], poll[1] - nTop[1]);
+  const dn = [(poll[0] - nTop[0]) / dl, (poll[1] - nTop[1]) / dl], perp = [dn[1], -dn[0]];
+  const crest = [(nTop[0] + poll[0]) / 2 + perp[0] * 22, (nTop[1] + poll[1]) / 2 + perp[1] * 22];
+  const throat = Hf(3, 18);
+  const under = [(nBot[0] + throat[0]) / 2 + perp[0] * 3, (nBot[1] + throat[1]) / 2 + perp[1] * 3];
+  const neckHead = [nTop, crest, Hf(-3, -3), Hf(14, -8), Hf(34, -6), Hf(50, -4), Hf(58, 1), Hf(59, 7), Hf(53, 10),
+    Hf(39, 10), Hf(22, 24), Hf(9, 24), throat, under, nBot, [66, -126], [38, -150]].map(p => T(p, 1));
+  const flick = horse.earT > 0 ? Math.sin(Math.PI * (1 - horse.earT / .45)) : 0;
+  const eb = clamp(fast * .65 + flick * .6, 0, 1);
+  const tu = lerp(-5, -17, eb), tv = lerp(-24, -11, eb);
+  const ears = [[Hf(-3, -3), Hf(4, -6), Hf(tu - 3, tv + 1)], [Hf(0, -5), Hf(7, -7), Hf(tu, tv)]].map(e => e.map(p => T(p, 1)));
+  const eye = T(Hf(17, -1), 1);
+  const muscles = [[T([-71, -127], 0), 34, 28], [T([55, -126], 1), 23, 30]];
+  const maneRoots = [];
+  const pTop = Hf(-3, -3);
+  for (let i = 0; i < mane.length; i++) {
+    const t = .03 + i / (mane.length - 1) * .95, u = 1 - t;
+    maneRoots.push(T([u * u * nTop[0] + 2 * u * t * crest[0] + t * t * pTop[0] - perp[0] * 2,
+                      u * u * nTop[1] + 2 * u * t * crest[1] + t * t * pTop[1] - perp[1] * 2], 1));
+  }
+
+  // chân: bàn chân bám đất trong pha chống, cung vung trong pha bay
+  const legs = LEGS.map((L, i) => {
+    const lp = fract(horse.phi - g.off[i]);
+    let hx, hy, ang, stance;
+    const neut = L.neut + (L.front ? 8 : 12) * fast;
+    const base = L.front ? -125 : -118;
+    if (lp < g.duty) {
+      stance = true;
+      const ts = lp / g.duty;
+      hx = neut + g.D * (.5 - ts); hy = 0;
+      ang = base - Math.sin(Math.PI * ts) * (8 + 16 * fast) * g.amp;      // khớp cổ chân lún khi chịu lực
+      if (ts > .85) ang = lerp(ang, -100, (ts - .85) / .15 * .6 * g.amp);
+    } else {
+      stance = false;
+      const tw = (lp - g.duty) / (1 - g.duty);
+      hx = neut + g.D * (-.5 + smooth(tw)) + (L.front
+        ? 30 * fast * Math.sin(Math.PI * Math.pow(tw, 1.6)) ** 2
+        : -22 * fast * Math.sin(Math.PI * Math.pow(tw, .45)) ** 2 + 10 * fast * Math.sin(Math.PI * Math.pow(tw, 1.8)));
+      hy = -(L.front ? g.liftF : g.liftH) * g.amp * Math.sin(Math.PI * Math.pow(tw, L.front ? .8 : .9));
+      const fold = Math.sin(Math.PI * Math.pow(tw, L.front ? .75 : .8)) * (L.front ? 1 : .7) * (.5 + .5 * fast) * Math.min(1, g.amp * 1.5);
+      ang = lerp(base, L.front ? 12 : -35, fold);
+    }
+    if (i === 2 && horse.rest > 0) {           // đứng nghỉ: chân sau gần gác mũi móng
+      hx += 7 * horse.rest; hy -= 3 * horse.rest; ang = lerp(ang, -78, horse.rest * .8);
+    }
+    if (stance && !horse.stance[i] && s > 60) strike(i, hx, fast, s);
+    horse.stance[i] = stance;
+    const pv = [Math.cos(ang * DEG) * L.p, Math.sin(ang * DEG) * L.p];
+    const root = T(L.root, L.front);
+    const [J, E] = ik(root, [hx + pv[0], hy + pv[1]], L.a, L.b, L.bend);
+    return { L, root, J, E, hoof: [E[0] - pv[0], E[1] - pv[1]], pvn: [pv[0] / L.p, pv[1] / L.p] };
+  });
+
+  // đuôi mọc thẳng từ mông; phi nhanh thì đuôi nâng lên bay ra sau
+  const ta = lerp(122, 172, fast) * DEG + fast * .06 * Math.sin(TAU * ph);
+  const tailRoot = T([-103, -143], 0);
+  const tailAng = ta + pitch - flex;
+
+  return { body, neckHead, ears, eye, muscles, maneRoots, tailRoot, tailAng, legs, fast, g };
+}
+
+function mkT(pitch, flex, bob) {
+  const cf = Math.cos(pitch + flex), sf = Math.sin(pitch + flex), cr = Math.cos(pitch - flex), sr = Math.sin(pitch - flex);
+  return (p, front) => {
+    const x = p[0] - C0[0], y = p[1] - C0[1];
+    return front ? [C0[0] + x * cf - y * sf, C0[1] + x * sf + y * cf + bob]
+                 : [C0[0] + x * cr - y * sr, C0[1] + x * sr + y * cr + bob];
+  };
+}
+
+// ---------- bờm & đuôi: chuỗi verlet trong toạ độ thế giới ----------
+function makeChain(n, len, stiff, damp) { return { n, len, stiff, damp, p: Array.from({ length: n }, () => ({ x: 0, y: 0, ox: 0, oy: 0 })), init: false, rx: 0, ry: 0 }; }
+const mane = Array.from({ length: 9 }, (_, i) => makeChain(6, 6 + Math.sin(i / 8 * Math.PI) * 6, .1, .95));
+// đuôi: một khối lông liền, mềm, rủ theo trọng lực và bay theo gió
+const tail = makeChain(14, 8.5, .14, .96);
+
+function simChain(c, rx, ry, rdx, rdy, dt, windX, windY) {
+  const P = c.p;
+  if (c.init && Math.hypot(rx - c.rx, ry - c.ry) > 80) c.init = false;   // gốc nhảy xa (tải lại, dịch cảnh) → dựng lại, tránh rối
+  if (!c.init) {
+    for (let i = 0; i < c.n; i++) { P[i].x = P[i].ox = rx + rdx * c.len * i; P[i].y = P[i].oy = ry + rdy * c.len * i; }
+    c.init = true; c.rx = rx; c.ry = ry;
+  }
+  const steps = Math.max(1, Math.ceil(dt * 120)), h = dt / steps;
+  for (let s = 1; s <= steps; s++) {
+    const t = s / steps, x0 = lerp(c.rx, rx, t), y0 = lerp(c.ry, ry, t);
+    P[0].x = P[0].ox = x0; P[0].y = P[0].oy = y0;
+    for (let i = 1; i < c.n; i++) {
+      const q = P[i], vx = (q.x - q.ox) * c.damp, vy = (q.y - q.oy) * c.damp;
+      q.ox = q.x; q.oy = q.y;
+      q.x += vx + windX * h * h; q.y += vy + (900 + windY) * h * h;
+    }
+    for (let i = 1; i < c.n; i++) {
+      const a = P[i - 1], q = P[i], k = c.stiff * (1 - i / c.n) ** 1.5;
+      q.x += (a.x + rdx * c.len - q.x) * k; q.y += (a.y + rdy * c.len - q.y) * k;
+      const dx = q.x - a.x, dy = q.y - a.y, d = Math.hypot(dx, dy) || 1, f = c.len / d;
+      q.x = a.x + dx * f; q.y = a.y + dy * f;
+    }
+  }
+  c.rx = rx; c.ry = ry;
+}
+function updateChains(dt) {
+  const ds = horse.dirScale, fast = pose.fast;
+  let mx = -ds * lerp(.55, .95, fast), my = lerp(.8, -.2, fast); let l = Math.hypot(mx, my); mx /= l; my /= l;
+  pose.maneRoots.forEach((r, i) => simChain(mane[i], horse.x + r[0] * ds, r[1], mx, my, dt,
+    Math.sin(time * 9 + i * 1.3) * 250 * fast, 0));
+  const r = pose.tailRoot;
+  simChain(tail, horse.x + r[0] * ds, r[1], Math.cos(pose.tailAng) * ds, Math.sin(pose.tailAng), dt,
+    Math.sin(time * 6) * 200 * fast, 0);
+}
+
+// ---------- hạt bụi ----------
+const dust = [];
+function strike(i, hx, fast, s) {
+  if (LEGS[i].front) horse.sinkV += 10 + 26 * fast;     // vó trước chạm đất: thân lún nhẹ
+  if (reduced || s < 140 || dust.length > 260) return;
+  const wx = horse.x + hx * horse.dirScale, pw = .4 + fast, hind = !LEGS[i].front;
+  const clouds = Math.round((hind ? 3 : 1.5) + 4 * fast), clods = Math.round((hind ? 2 : 1) * fast * 3);
+  for (let k = 0; k < clouds; k++) dust.push({         // đám bụi: to, bay chậm, nở ra rồi tan
+    x: wx + rand(-6, 6), y: -rand(1, 6), vx: -horse.dir * rand(30, 120) * pw + horse.v * .05, vy: -rand(15, 60) * pw,
+    life: 0, max: rand(.9, 1.6), r: rand(5, 11) * (.6 + .5 * fast), g: 40, drag: 2.2, clod: false,
+  });
+  for (let k = 0; k < clods; k++) dust.push({          // cục đất: nhỏ, đậm, văng cao rồi rơi
+    x: wx, y: -2, vx: -horse.dir * rand(80, 220) * pw, vy: -rand(90, 200) * pw,
+    life: 0, max: rand(.5, .9), r: rand(1.4, 2.6), g: 620, drag: .6, clod: true,
+  });
+}
+function updateDust(dt) {
+  for (let i = dust.length - 1; i >= 0; i--) {
+    const d = dust[i];
+    d.vy += d.g * dt; d.vx *= 1 - d.drag * dt; d.vy *= d.clod ? 1 : 1 - d.drag * dt; d.x += d.vx * dt; d.y += d.vy * dt;
+    if (d.y > 0) { d.y = 0; d.vy *= -.2; d.vx *= .5; }
+    d.life += dt; if (d.life > d.max) dust.splice(i, 1);
+  }
+}
+
+// ---------- vẽ hình cơ bản ----------
+function taper(c, p, q, w1, w2) {
+  const dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy) || 1, nx = -dy / L, ny = dx / L;
+  c.beginPath();
+  c.moveTo(p[0] + nx * w1 / 2, p[1] + ny * w1 / 2); c.lineTo(q[0] + nx * w2 / 2, q[1] + ny * w2 / 2);
+  c.lineTo(q[0] - nx * w2 / 2, q[1] - ny * w2 / 2); c.lineTo(p[0] - nx * w1 / 2, p[1] - ny * w1 / 2);
+  c.fill();
+  c.beginPath(); c.arc(p[0], p[1], w1 / 2, 0, TAU); c.fill();
+  c.beginPath(); c.arc(q[0], q[1], w2 / 2, 0, TAU); c.fill();
+}
+function smoothPath(c, pts, fill = true) {
+  const n = pts.length;
+  c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 0; i < n; i++) {
+    const p0 = pts[(i - 1 + n) % n], p1 = pts[i], p2 = pts[(i + 1) % n], p3 = pts[(i + 2) % n];
+    c.bezierCurveTo(p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6,
+                    p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6, p2[0], p2[1]);
+  }
+  c.closePath(); if (fill) c.fill();
+}
+// dải tóc: rộng ở gốc, nhọn ở ngọn; wf(t) = nửa bề rộng
+function ribbon(c, pts, wf) {
+  const L = [], R = [];
+  pts.forEach((p, i) => {
+    const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)];
+    const dx = b[0] - a[0], dy = b[1] - a[1], d = Math.hypot(dx, dy) || 1, w = wf(i / (pts.length - 1));
+    L.push([p[0] - dy / d * w, p[1] + dx / d * w]); R.push([p[0] + dy / d * w, p[1] - dx / d * w]);
+  });
+  smoothPath(c, [...L, ...R.reverse()]);
+}
+const chainPts = (ch, wave = 0, ph = 0) => ch.p.map((q, i) => [q.x - horse.x, q.y + Math.sin(i * .9 + ph) * wave * i / ch.n]);
+function poly(c, pts) { c.beginPath(); c.moveTo(pts[0][0], pts[0][1]); for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]); c.closePath(); c.fill(); }
+function circle(c, x, y, r) { c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill(); }
+function line(c, x1, y1, x2, y2) { c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); }
+
+function drawLeg(c, lg) {
+  const fr = lg.L.front;
+  taper(c, lg.root, lg.J, fr ? 19 : 27, fr ? 10.5 : 12);
+  if (fr) { const m = lerp2(lg.root, lg.J, .28); circle(c, m[0], m[1], 10.5); }
+  else { const m = lerp2(lg.root, lg.J, .35); circle(c, m[0] - 3, m[1], 12.5); circle(c, lg.J[0] - 4, lg.J[1] - 1, 4.8); }
+  taper(c, lg.J, lg.E, fr ? 8.5 : 9.5, 9);
+  circle(c, lg.E[0], lg.E[1], 5.4);
+  taper(c, lg.E, lg.hoof, 7.5, 7);
+  const h = lg.hoof, v = lg.pvn, keep = c.fillStyle;
+  c.fillStyle = rgba(C.hoof);
+  taper(c, [h[0] + v[0] * 7, h[1] + v[1] * 7], [h[0] + v[0] * 1.8, h[1] + v[1] * 1.8], 9, 11);
+  c.fillStyle = keep;
+}
+
+function strokeChain(c, ch, w0, w1) {
+  const P = ch.p;
+  for (let i = 1; i < ch.n; i++) {
+    c.lineWidth = lerp(w0, w1, (i - 1) / (ch.n - 2 || 1));
+    c.beginPath(); c.moveTo(P[i - 1].x - horse.x, P[i - 1].y); c.lineTo(P[i].x - horse.x, P[i].y); c.stroke();
+  }
+}
+
+// ---------- vẽ ngựa vào lớp riêng ----------
+function renderHorse() {
+  const c = hctx, k = S * DPR, ink = rgba(C.ink), ds = horse.dirScale;
+  c.setTransform(1, 0, 0, 1, 0, 0); c.clearRect(0, 0, hcv.width, hcv.height);
+  c.lineCap = 'round'; c.lineJoin = 'round';
+  c.setTransform(k * ds, 0, 0, k, OX * k, OY * k);
+  c.fillStyle = rgba(C.far);                                 // chân phía xa nhạt hơn để đọc được nhịp 4 vó
+  drawLeg(c, pose.legs[1]); drawLeg(c, pose.legs[3]);
+
+  c.setTransform(k, 0, 0, k, OX * k, OY * k);
+  c.strokeStyle = ink; c.fillStyle = ink;
+  // đuôi: một dải liền, gốc chìm vào mông, phình giữa, nhọn ở ngọn
+  ribbon(c, chainPts(tail), t => (9 + 9 * Math.sin(Math.PI * t)) * (1 - t) ** 1.1 + .5);
+
+  c.setTransform(k * ds, 0, 0, k, OX * k, OY * k);
+  c.fillStyle = ink;
+  smoothPath(c, pose.body);
+  smoothPath(c, pose.neckHead);
+  for (const e of pose.ears) poly(c, e);
+  c.save(); smoothPath(c, pose.body, false); c.clip();
+  for (const [p, rx, ry] of pose.muscles) {          // mảng cơ: sáng mềm ở mép trên-sau, tan dần
+    const gx = p[0] - rx * .3, gy = p[1] - ry * .35, g = c.createRadialGradient(gx, gy, 0, gx, gy, Math.max(rx, ry) * 1.1);
+    g.addColorStop(0, rgba(C.inkHi, .95)); g.addColorStop(.55, rgba(C.inkHi, .45)); g.addColorStop(1, rgba(C.inkHi, 0));
+    c.fillStyle = g; c.beginPath(); c.ellipse(p[0], p[1], rx * 1.2, ry * 1.2, 0, 0, TAU); c.fill();
+  }
+  c.restore(); c.fillStyle = ink;
+  drawLeg(c, pose.legs[2]); drawLeg(c, pose.legs[0]);
+
+  c.setTransform(k, 0, 0, k, OX * k, OY * k);
+  c.strokeStyle = ink;
+  c.fillStyle = ink;
+  mane.forEach(m => ribbon(c, chainPts(m), u => 6 * (1 - u) ** .9 + .3));
+}
+
+function drawEye(x, y, r, open, lookX, glow) {
+  ctx.save();
+  ctx.translate(x, y); ctx.scale(1, Math.max(.08, open));
+  const halo = ctx.createRadialGradient(0, 0, 0, 0, 0, r * lerp(4.5, 5.5, tm));
+  halo.addColorStop(0, rgba(C.eye, lerp(.28, .42, tm) * glow)); halo.addColorStop(1, rgba(C.eye, 0));
+  ctx.fillStyle = halo; ctx.beginPath(); ctx.arc(0, 0, r * 7, 0, TAU); ctx.fill();
+  ctx.shadowColor = rgba(C.eye, 1); ctx.shadowBlur = r * 4 * glow;
+  ctx.fillStyle = rgba(C.eye); ctx.beginPath(); ctx.ellipse(0, 0, r * 1.3, r, 0, 0, TAU); ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = rgba(C.eyeCore); ctx.beginPath(); ctx.ellipse(lookX * r * .4, -r * .1, r * .6, r * .55, 0, 0, TAU); ctx.fill();
+  ctx.restore();
+}
+
+// ---------- cảnh nền ----------
+const STARS = Array.from({ length: 90 }, (_, i) => ({ x: hash(i * 3.1), y: hash(i * 7.7) * .62, r: hash(i * 1.3) < .85 ? 1 : 2, f: 1 + hash(i) * 3, p: hash(i * 9) * TAU }));
+const MOTES = Array.from({ length: 48 }, (_, i) => ({ x: hash(i * 5.3), y: .3 + hash(i * 2.9) * .55, f: .3 + hash(i * 4.1) * .9, p: hash(i * 6.2) * TAU, r: 1 + hash(i * 8.8) * 1.8 }));
+const ridge = (x, seed, f) => Math.sin(x * f + seed) * .5 + Math.sin(x * f * 2.13 + seed * 1.7) * .3 + Math.sin(x * f * 4.7 + seed * 2.3) * .2;
+
+function drawSky() {
+  const g = ctx.createLinearGradient(0, 0, 0, groundY);
+  g.addColorStop(0, rgba(C.sky0)); g.addColorStop(.55, rgba(C.sky1)); g.addColorStop(1, rgba(C.sky2));
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, groundY + 2);
+  if (tm > .02) for (const s of STARS) {
+    const x = ((s.x * W - cam * S * .01) % W + W) % W;
+    ctx.fillStyle = rgba(C.star, tm * (.35 + .65 * (.5 + .5 * Math.sin(time * s.f + s.p))));
+    ctx.fillRect(x, s.y * groundY, s.r, s.r);
+  }
+  const R = Math.min(W, H) * .07, sx = W * .76 - cam * S * .012, sy = groundY * .34;
+  const halo = ctx.createRadialGradient(sx, sy, R * .5, sx, sy, R * 5.5);
+  halo.addColorStop(0, rgba(C.sun, lerp(.7, .3, tm))); halo.addColorStop(1, rgba(C.sun, 0));
+  ctx.fillStyle = halo; ctx.fillRect(sx - R * 6, sy - R * 6, R * 12, R * 12);
+  ctx.fillStyle = rgba(C.sun); circle(ctx, sx, sy, R);
+  if (tm > .02) {                                            // vết trên trăng
+    ctx.fillStyle = rgba(C.sky2, .16 * tm);
+    circle(ctx, sx - R * .3, sy - R * .2, R * .22); circle(ctx, sx + R * .25, sy + R * .3, R * .16); circle(ctx, sx + R * .35, sy - R * .35, R * .1);
+  }
+  if (tm < .98) {                                            // tia nắng
+    ctx.save(); ctx.globalAlpha = (1 - tm) * .09; ctx.fillStyle = '#ffffff';
+    for (let k = 0; k < 6; k++) {
+      const a = 1.95 + (k - 2.5) * .17 + Math.sin(time * .12 + k) * .02, L = H * 1.5, wd = .035;
+      ctx.beginPath(); ctx.moveTo(sx, sy);
+      ctx.lineTo(sx + Math.cos(a - wd) * L, sy + Math.sin(a - wd) * L); ctx.lineTo(sx + Math.cos(a + wd) * L, sy + Math.sin(a + wd) * L);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function drawHills(factor, h0, amp, f, seed, col) {
+  const off = cam * factor;
+  ctx.fillStyle = col; ctx.beginPath(); ctx.moveTo(-10, H);
+  for (let sx = -10; sx <= W + 20; sx += 12) ctx.lineTo(sx, groundY - (h0 + amp * ridge(sx / S + off, seed, f)) * S);
+  ctx.lineTo(W + 20, H); ctx.closePath(); ctx.fill();
+}
+function hillY(factor, h0, amp, f, seed, lx) { return groundY - (h0 + amp * ridge(lx, seed, f)) * S; }
+
+function tree(x, y, sz, type, seed) {
+  if (type === 0) {                                          // sồi tán tròn
+    poly(ctx, [[x - 5 * sz, y + 4 * sz], [x - 3 * sz, y - 52 * sz], [x + 3 * sz, y - 52 * sz], [x + 5 * sz, y + 4 * sz]]);
+    for (let j = 0; j < 7; j++) circle(ctx, x + (hash(seed + j) - .5) * 64 * sz, y - (62 + hash(seed + j * 3) * 38) * sz, (17 + hash(seed + j * 5) * 15) * sz);
+  } else if (type === 1) {                                   // bạch dương cao
+    poly(ctx, [[x - 3 * sz, y + 4 * sz], [x - 1.5 * sz, y - 30 * sz], [x + 1.5 * sz, y - 30 * sz], [x + 3 * sz, y + 4 * sz]]);
+    ctx.beginPath(); ctx.ellipse(x, y - 78 * sz, 15 * sz, 60 * sz, 0, 0, TAU); ctx.fill();
+  } else {                                                   // cây khẳng khiu kiểu Limbo
+    ctx.lineCap = 'round';
+    const br = (bx, by, a, len, w, d) => {
+      const ex = bx + Math.cos(a) * len, ey = by + Math.sin(a) * len;
+      ctx.lineWidth = w; line(ctx, bx, by, ex, ey);
+      if (d > 0) {
+        br(ex, ey, a - .45 - hash(seed + d) * .3, len * .68, w * .62, d - 1);
+        br(ex, ey, a + .35 + hash(seed + d * 2) * .3, len * .62, w * .62, d - 1);
+      }
+    };
+    br(x, y + 4 * sz, -Math.PI / 2 + (hash(seed) - .5) * .2, 70 * sz, 7 * sz, 4);
+  }
+}
+function windmill(x, y, sz) {
+  poly(ctx, [[x - 10 * sz, y + 3 * sz], [x - 5 * sz, y - 90 * sz], [x + 5 * sz, y - 90 * sz], [x + 10 * sz, y + 3 * sz]]);
+  circle(ctx, x, y - 92 * sz, 4 * sz);
+  ctx.lineWidth = 5 * sz;
+  for (let b = 0; b < 4; b++) { const a = time * .8 + b * Math.PI / 2; line(ctx, x, y - 92 * sz, x + Math.cos(a) * 48 * sz, y - 92 * sz + Math.sin(a) * 48 * sz); }
+}
+
+function drawLayer(factor, h0, amp, f, seed, t, spacing, sz, density) {
+  const col = layerCol(t);
+  drawHills(factor, h0, amp, f, seed, col);
+  ctx.fillStyle = col; ctx.strokeStyle = col;
+  const off = cam * factor, k0 = Math.floor((off - 200) / spacing), k1 = Math.ceil((off + W / S + 200) / spacing);
+  for (let k = k0; k <= k1; k++) {
+    const hs = hash(k * 13.7 + seed);
+    if (hs > density) continue;
+    const lx = k * spacing + hash(k * 3.3 + seed) * spacing * .7;
+    const x = (lx - off) * S, y = hillY(factor, h0, amp, f, seed, lx);
+    const s2 = sz * S * (.75 + hash(k * 1.9 + seed) * .5);
+    if (seed === 4 && hs < .1) windmill(x, y, s2 * 1.3);
+    else tree(x, y, s2, Math.floor(hash(k * 5.1 + seed) * 3), k * 31 + seed);
+  }
+}
+
+function drawFog(y0, y1, a) {
+  const g = ctx.createLinearGradient(0, y0, 0, y1);
+  g.addColorStop(0, rgba(C.fog, 0)); g.addColorStop(1, rgba(C.fog, a));
+  ctx.fillStyle = g; ctx.fillRect(0, y0, W, y1 - y0);
+}
+function drawWisps() {
+  if (tm < .05) return;
+  for (let i = 0; i < 4; i++) {
+    const x = ((i * .31 * W + time * (10 + i * 6) - cam * S * (.2 + i * .1)) % (W * 1.6) + W * 1.6) % (W * 1.6) - W * .3;
+    const y = groundY - (40 + i * 34) * S, rx = W * .35, ry = 24 * S;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, rx);
+    g.addColorStop(0, rgba(C.fog, .32 * tm)); g.addColorStop(1, rgba(C.fog, 0));
+    ctx.save(); ctx.translate(x, y); ctx.scale(1, ry / rx); ctx.translate(-x, -y);
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, rx, 0, TAU); ctx.fill(); ctx.restore();
+  }
+}
+
+// ---------- công trình 5 trạm ----------
+function lit(x, y, w, h, a) { ctx.fillStyle = rgba(C.win, a); ctx.fillRect(x, y, w, h); }
+function flag(x, y, w, h, ph) {
+  ctx.beginPath(); ctx.moveTo(x, y);
+  for (let k = 0; k <= 6; k++) { const u = k / 6; ctx.lineTo(x + u * w, y + Math.sin(time * 6 - u * 4 + ph) * 4 * u); }
+  for (let k = 6; k >= 0; k--) { const u = k / 6; ctx.lineTo(x + u * w, y + h + Math.sin(time * 6 - u * 4 + ph) * 4 * u); }
+  ctx.closePath(); ctx.fill();
+}
+const BUILD = {
+  mansion(a, ink) {
+    ctx.beginPath(); ctx.ellipse(-205, -72, 16, 72, 0, 0, TAU); ctx.fill(); ctx.fillRect(-207, -10, 4, 10);
+    ctx.beginPath(); ctx.ellipse(208, -62, 14, 62, 0, 0, TAU); ctx.fill();
+    ctx.fillRect(-150, -104, 300, 104);
+    poly(ctx, [[-164, -104], [-136, -138], [136, -138], [164, -104]]);
+    ctx.fillRect(-118, -160, 12, 26); ctx.fillRect(104, -160, 12, 26);
+    ctx.fillRect(-64, -142, 128, 142);
+    poly(ctx, [[-74, -140], [0, -186], [74, -140]]);
+    lit(-56, -128, 112, 104, a * .55);
+    ctx.fillStyle = ink;
+    for (let k = 0; k < 5; k++) ctx.fillRect(-56 + k * 26, -128, 8, 104);
+    for (const x of [-138, -114, -90, 76, 100, 124]) { lit(x, -92, 14, 22, a); lit(x, -48, 14, 22, a); }
+    ctx.fillStyle = rgba(C.win, a); circle(ctx, 0, -158, 7);
+  },
+  tower(a, ink) {
+    const xl = y => lerp(-44, -22, -y / 196), xr = y => -xl(y);
+    ctx.lineWidth = 7; line(ctx, -44, 0, -22, -196); line(ctx, 44, 0, 22, -196);
+    ctx.lineWidth = 3;
+    const lv = [0, -66, -132, -196];
+    for (let i = 0; i < 3; i++) { line(ctx, xl(lv[i]), lv[i], xr(lv[i + 1]), lv[i + 1]); line(ctx, xr(lv[i]), lv[i], xl(lv[i + 1]), lv[i + 1]); line(ctx, xl(lv[i + 1]), lv[i + 1], xr(lv[i + 1]), lv[i + 1]); }
+    ctx.fillRect(-42, -203, 84, 8);
+    ctx.fillRect(-34, -248, 68, 46); lit(-27, -240, 54, 18, a);
+    ctx.fillStyle = ink; poly(ctx, [[-44, -248], [0, -274], [44, -248]]);
+    ctx.lineWidth = 2.5; line(ctx, 0, -274, 0, -316);
+    flag(0, -316, 38, 16, 0);
+    for (let x = 70; x <= 190; x += 40) ctx.fillRect(x, -40, 4, 40);
+    ctx.fillRect(66, -36, 128, 4); ctx.fillRect(66, -22, 128, 4);
+  },
+  clinic(a, ink) {
+    ctx.fillRect(-124, -108, 248, 108); ctx.fillRect(-130, -118, 260, 12); ctx.fillRect(58, -146, 54, 30);
+    ctx.fillRect(-3, -150, 6, 34); circle(ctx, 0, -172, 24);
+    ctx.save(); ctx.shadowColor = rgba(C.win, .9 * tm); ctx.shadowBlur = 16 * tm;
+    lit(-5, -186, 10, 28, Math.min(1, a + .25)); lit(-14, -177, 28, 10, Math.min(1, a + .25)); ctx.restore();
+    for (const x of [-104, -70, 46, 80]) lit(x, -88, 24, 30, a);
+    lit(-18, -58, 36, 58, a * .8);
+    ctx.fillStyle = ink; ctx.fillRect(-30, -64, 60, 6);
+    for (let x = -200; x <= -140; x += 30) ctx.fillRect(x, -34, 4, 34);
+    ctx.fillRect(-204, -30, 68, 3); ctx.fillRect(-204, -18, 68, 3);
+  },
+  barn(a, ink) {
+    poly(ctx, [[-132, 0], [-132, -92], [-112, -146], [0, -188], [112, -146], [132, -92], [132, 0]]);
+    ctx.fillRect(-13, -208, 26, 24); poly(ctx, [[-19, -208], [0, -226], [19, -208]]);
+    ctx.lineWidth = 2; line(ctx, 0, -226, 0, -246); poly(ctx, [[0, -246], [14, -242], [0, -238]]);
+    lit(-46, -94, 92, 94, a * .4);
+    ctx.strokeStyle = ink; ctx.lineWidth = 5;
+    for (const x0 of [-46, 0]) { ctx.strokeRect(x0 + 2.5, -91.5, 41, 91); line(ctx, x0 + 3, -91, x0 + 43, 0); line(ctx, x0 + 43, -91, x0 + 3, 0); }
+    lit(-18, -152, 36, 34, a);
+    ctx.fillStyle = ink;
+    for (const [x, y, w, h] of [[146, -30, 46, 30], [194, -30, 46, 30], [170, -56, 46, 27]]) { ctx.beginPath(); ctx.roundRect(x, y, w, h, 6); ctx.fill(); }
+    ctx.lineWidth = 4; line(ctx, -168, 0, -168, -64);
+    ctx.save(); ctx.shadowColor = rgba(C.win, 1); ctx.shadowBlur = 14 + 10 * tm;
+    ctx.fillStyle = rgba(C.win, Math.min(1, a + .2)); circle(ctx, -168, -70, 6); ctx.restore();
+  },
+  hq(a, ink) {
+    ctx.fillRect(-96, -232, 192, 232); ctx.fillRect(-66, -262, 132, 32); ctx.fillRect(96, -96, 70, 96); ctx.fillRect(-164, -70, 68, 70);
+    ctx.lineWidth = 3; line(ctx, 0, -262, 0, -322);
+    ctx.save(); ctx.shadowColor = rgba(C.eye, 1); ctx.shadowBlur = 12;
+    ctx.fillStyle = rgba(C.eye, Math.sin(time * 3) > .4 ? 1 : .25); circle(ctx, 0, -325, 4); ctx.restore();
+    for (let r = 0; r < 8; r++) for (let cI = 0; cI < 7; cI++) lit(-84 + cI * 24, -220 + r * 24, 14, 14, a * (hash(r * 7 + cI) > .35 ? 1 : .22));
+    lit(-20, -46, 40, 46, a);
+    ctx.fillStyle = ink; ctx.fillRect(-44, -52, 88, 6);
+    ctx.lineWidth = 2.5; line(ctx, -200, 0, -200, -140); line(ctx, -184, 0, -184, -124);
+    flag(-200, -140, 34, 18, 0); flag(-184, -124, 30, 16, 1.4);
+  },
+};
+function drawStations() {
+  STATIONS.forEach((st, i) => {
+    const bx = ST_X[i] + BUILD_OFF, sx = (bx - cam) * S;
+    if (sx < -420 * S || sx > W + 420 * S) return;
+    const near = 1 - clamp(Math.abs(horse.x - ST_X[i]) / 900, 0, 1);
+    const a = clamp(lerp(.42, .72, tm) + .26 * near * (.85 + .15 * Math.sin(time * 2)), 0, 1);
+    const ink = rgba(C.bldg);
+    ctx.save(); ctx.translate(sx, groundY); ctx.scale(S, S);
+    ctx.fillStyle = ink; ctx.strokeStyle = ink; ctx.lineCap = 'butt';
+    BUILD[st.kind](a, ink);
+    ctx.restore();
+    // biển số trạm
+    ctx.save(); ctx.translate((ST_X[i] + 150 - cam) * S, groundY); ctx.scale(S, S);
+    ctx.fillStyle = ink; ctx.fillRect(-3, -80, 6, 80); ctx.fillRect(-30, -110, 60, 34);
+    ctx.fillStyle = rgba(C.sky2); ctx.font = '30px VT323, monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(st.no, 0, -92);
+    ctx.restore();
+  });
+  // cổng đích
+  const fx = (END - 120 - cam) * S;
+  if (fx > -200 && fx < W + 200) {
+    ctx.save(); ctx.translate(fx, groundY); ctx.scale(S, S);
+    ctx.fillStyle = rgba(C.bldg); ctx.fillRect(-3, -150, 6, 150);
+    for (let r = 0; r < 3; r++) for (let q = 0; q < 6; q++) {
+      ctx.fillStyle = (r + q) % 2 ? rgba(C.bldg) : rgba(C.sky2);
+      ctx.fillRect(3 + q * 9, -150 + r * 9 + Math.sin(time * 5 - q * .7) * q * .5, 9, 9);
+    }
+    ctx.restore();
+  }
+}
+
+function drawFence() {
+  ctx.save(); ctx.translate(0, groundY); ctx.scale(S, S);
+  ctx.fillStyle = rgba(C.fence);
+  const x0 = cam - 100, x1 = cam + W / S + 100;
+  ctx.fillRect(x0 - cam, -38, x1 - x0, 3.5); ctx.fillRect(x0 - cam, -22, x1 - x0, 3.5);
+  for (let x = Math.floor(x0 / 90) * 90; x < x1; x += 90) ctx.fillRect(x - cam - 2.5, -44, 5, 44);
+  ctx.restore();
+}
+function drawGround() {
+  ctx.fillStyle = rgba(C.ink); ctx.fillRect(0, groundY, W, H - groundY);
+  ctx.fillStyle = rgba(C.grass);
+  ctx.beginPath();
+  const step = 7, k0 = Math.floor(cam / step) - 1, k1 = Math.ceil((cam + W / S) / step) + 1;
+  for (let k = k0; k <= k1; k++) {
+    const x = (k * step - cam) * S, h = (1 + hash(k) * hash(k * .37) * 9) * S;
+    ctx.moveTo(x - 2.5 * S, groundY + 1); ctx.lineTo(x + (hash(k * 2.1) - .5) * 3 * S, groundY - h); ctx.lineTo(x + 2.5 * S, groundY + 1);
+  }
+  ctx.fill();
+}
+function drawForeground() {
+  ctx.strokeStyle = rgba(C.ink); ctx.lineCap = 'round';
+  const f = 1.45, sp = 820, off = cam * f, k0 = Math.floor((off - 300) / sp), k1 = Math.ceil((off + W / S + 300) / sp);
+  for (let k = k0; k <= k1; k++) {
+    if (hash(k * 4.4) > .55) continue;
+    const bx = (k * sp + hash(k * 9.1) * 300 - off) * S;
+    for (let j = 0; j < 9; j++) {
+      const h = (60 + hash(k * 7 + j) * 80) * S, x = bx + (j - 4) * 7 * S;
+      const sw = Math.sin(time * 1.6 + j * .7 + k) * 8 * S + (j - 4) * 4 * S;
+      ctx.lineWidth = (3.5 - j % 3 * .6) * S;
+      ctx.beginPath(); ctx.moveTo(x, H + 6); ctx.quadraticCurveTo(x + sw * .3, groundY - h * .4, x + sw, groundY - h); ctx.stroke();
+    }
+  }
+}
+function drawDust() {
+  if (!dust.length) return;
+  ctx.save();
+  for (const d of dust) {
+    const t = d.life / d.max;
+    if (d.clod) { ctx.fillStyle = rgba(C.ink, 1 - t * t); circle(ctx, (d.x - cam) * S, groundY + d.y * S, d.r * S); continue; }
+    ctx.fillStyle = rgba(C.dust, (1 - t) ** 1.6 * .32);
+    circle(ctx, (d.x - cam) * S, groundY + d.y * S, d.r * S * (1 + t * 2.2));
+  }
+  ctx.restore();
+}
+function drawMotes() {
+  if (tm < .05 || reduced) return;
+  ctx.save(); ctx.globalCompositeOperation = 'lighter';
+  for (const m of MOTES) {
+    const x = ((m.x * (W + 80) - cam * S * m.f + Math.sin(time * .3 + m.p) * 30) % (W + 80) + W + 80) % (W + 80) - 40;
+    const y = m.y * groundY + Math.sin(time * .7 + m.p * 1.3) * 14;
+    const a = tm * (.35 + .4 * Math.sin(time * 1.7 + m.p));
+    ctx.fillStyle = rgba(C.fly, a * .22); circle(ctx, x, y, m.r * 2.6);
+    ctx.fillStyle = rgba(C.fly, a); circle(ctx, x, y, m.r * .8);
+  }
+  ctx.restore();
+}
+function drawPost() {
+  const vg = ctx.createRadialGradient(W / 2, H * .45, Math.min(W, H) * .35, W / 2, H * .5, Math.max(W, H) * .78);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, `rgba(${lerp(29, 0, tm) | 0},${lerp(42, 0, tm) | 0},${lerp(46, 0, tm) | 0},${lerp(.2, .55, tm)})`);
+  ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
+  if (grainPat) {
+    ctx.save(); ctx.globalAlpha = lerp(.45, .6, tm);
+    const ox = reduced ? 0 : Math.random() * 160, oy = reduced ? 0 : Math.random() * 160;
+    ctx.translate(-ox, -oy); ctx.fillStyle = grainPat; ctx.fillRect(0, 0, W + 160, H + 160);
+    ctx.restore();
+  }
+}
+
+// ---------- vòng vẽ ----------
+function render() {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  drawSky();
+  drawLayer(.12, 130, 50, .0035, 1, .16, 230, .4, .55);
+  drawFog(groundY - 260 * S, groundY, lerp(.5, .35, tm));
+  drawLayer(.3, 62, 30, .006, 4, .32, 300, .62, .6);
+  drawWisps();
+  drawFog(groundY - 140 * S, groundY, lerp(.35, .25, tm));
+  drawLayer(.58, 16, 10, .011, 9, .55, 520, 1.05, .7);
+  drawStations();
+  drawFence();
+  drawGround();
+
+  renderHorse();
+  const hx = (horse.x - cam) * S;
+  ctx.save();
+  if (tm > .02) { ctx.shadowColor = rgba(C.rim, .6 * tm); ctx.shadowBlur = 6 * tm * DPR; }
+  ctx.drawImage(hcv, hx - OX * S, groundY - OY * S, HW * S, HH * S);
+  ctx.restore();
+
+  // mắt phát sáng (ngựa + kỵ sĩ)
+  const ds = horse.dirScale, sp = clamp(Math.abs(horse.v) / 860, 0, 1);
+  const open = horse.blinkT > 0 ? 1 - Math.sin(Math.PI * (1 - horse.blinkT / .16)) * .95 : 1;
+  const glow = .75 + .45 * sp + .25 * horse.look + (tm > .5 ? .2 : 0);
+  drawEye(hx + pose.eye[0] * S * ds, groundY + pose.eye[1] * S, 2.5 * S * (1 + .22 * sp), open, ds * (.4 + .6 * horse.look), glow);
+  drawDust();
+  drawForeground();
+  drawMotes();
+  drawPost();
+}
+
+  // Theme
+  const setTheme = (t) => {
+    document.documentElement.dataset.theme = t;
+    try { localStorage.setItem("equiflow-theme", t); } catch {}
+    $("themeBtn").textContent = t === "dark" ? "☀" : "☾";
+  };
+  const toggle = () => setTheme(document.documentElement.dataset.theme === "dark" ? "light" : "dark");
+  setTheme(document.documentElement.dataset.theme);
+  $("themeBtn").onclick = toggle;
+  document.querySelectorAll("[data-theme-toggle]").forEach((b) => (b.onclick = toggle));
+
+  // Header gets solid once past the hero
+  const top = $("top");
+  const onTop = () => top.classList.toggle("solid", scrollY > innerHeight * 0.6);
+
+  // Ride progress 0..1 across the sticky section; the horse runs to progress * END.
+  const progress = () => {
+    const r = ride.getBoundingClientRect();
+    return Math.min(1, Math.max(0, -r.top / (ride.offsetHeight - innerHeight)));
+  };
+  const scrollToStation = (i) => scrollTo({ top: ride.offsetTop + (ST_X[i] / END) * (ride.offsetHeight - innerHeight), behavior: reduce ? "auto" : "smooth" });
+
+  // Dots
+  const dots = ROLES.map((r, i) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.setAttribute("aria-label", `${i + 1}. ${r.vi}`);
+    b.onclick = () => scrollToStation(i);
+    $("dots").appendChild(b);
+    return b;
+  });
+
+  let active = -1;
+  const renderPanel = (i) => {
+    const r = ROLES[i];
+    panel.innerHTML = `<div class="meta"><span>${pad(i + 1)} / ${pad(N)}</span><span>Ngôi nhà ${pad(i + 1)}</span></div>
+      <h3>${r.vi}</h3><span class="en">${r.en}</span>
+      <p class="tagline">${r.tagline}</p>
+      <ul>${r.items.map(([b, t]) => `<li><b>${b}</b>${t}</li>`).join("")}</ul>`;
+  };
+  const setActive = (i) => {
+    if (i === active) return;
+    active = i;
+    dots.forEach((d, k) => (k === i ? d.setAttribute("aria-current", "step") : d.removeAttribute("aria-current")));
+    $("stepNow").textContent = pad(i + 1);
+    $("stepName").textContent = ROLES[i].vi;
+    panel.classList.add("swap");
+    setTimeout(() => { renderPanel(i); panel.classList.remove("swap"); }, reduce ? 0 : 180);
+  };
+
+  // Reveal on view
+  const io = new IntersectionObserver((es) => es.forEach((e) => e.isIntersecting && (e.target.classList.add("in"), io.unobserve(e.target))), { threshold: 0.15 });
+  document.querySelectorAll(".reveal").forEach((el) => io.observe(el));
+
+  // ---------- vòng lặp: chỉ vẽ khi khung đường chạy đang hiện trên màn hình ----------
+  const isDark = () => (document.documentElement.dataset.theme === "dark" ? 1 : 0);
+  const onScreen = () => { const r = stage.getBoundingClientRect(); return r.bottom > 0 && r.top < innerHeight; };
+  resize(); makeGrain();
+  tmTarget = tm = isDark(); updatePalette();
+  addEventListener("resize", resize);
+  addEventListener("scroll", onTop, { passive: true });
+  onTop();
+  tgt = progress() * END; horse.x = tgt;
+  updateHorse(0);
+  cam = horse.x - W * anchor / S;
+  renderPanel(0); setActive(0);
+  let last = performance.now(), shown = 0;
+  function frame(now) {
+    const dt = Math.min(.1, (now - last) / 1000); last = now;
+    if (onScreen()) {
+      time += dt; shown += dt;
+      tgt = progress() * END;
+      if (shown < .3) { horse.x = tgt; cam = horse.x - W * anchor / S; }   // tải lại giữa chừng: đặt ngựa đúng chỗ, không phi từ đầu
+      updateHorse(dt);
+      updateChains(dt);
+      updateDust(dt);
+      const want = horse.x - W * anchor / S + clamp(horse.v * .3, -240, 260);
+      cam += (want - cam) * (1 - Math.exp(-dt * (3.2 + Math.abs(horse.v) / 250)));
+      tmTarget = isDark();
+      tm = reduce ? tmTarget : tm + (tmTarget - tm) * Math.min(1, dt * 4);
+      updatePalette();
+      render();
+      stage.style.setProperty("--p", clamp(horse.x / END, 0, 1));
+      let best = 0;
+      ST_X.forEach((x, i) => { if (Math.abs(x - horse.x) < Math.abs(ST_X[best] - horse.x)) best = i; });
+      setActive(best);
+      $("hint").style.opacity = tgt < 60 ? 1 : 0;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

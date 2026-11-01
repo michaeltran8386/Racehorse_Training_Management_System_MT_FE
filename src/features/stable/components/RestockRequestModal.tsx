@@ -17,6 +17,8 @@ interface RestockRequestModalProps {
   supplies: Array<{ id: string; name: string; code: string; unit: string; category?: string }>;
   defaultZoneId?: string;
   defaultSupplyId?: string;
+  /** Quản lý CLB nhập bổ sung kho trực tiếp: phiếu tự động Đã duyệt, không cần tự duyệt */
+  direct?: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -26,6 +28,7 @@ export function RestockRequestModal({
   supplies,
   defaultZoneId,
   defaultSupplyId,
+  direct = false,
   onClose,
   onSaved,
 }: RestockRequestModalProps) {
@@ -48,10 +51,7 @@ export function RestockRequestModal({
     [zones],
   );
 
-  const supplyOptions = useMemo(
-    () => supplies.map((s) => ({ value: s.id, label: `${formatSupplyName(s.name)} (${formatSupplyUnit(s.unit)})` })),
-    [supplies],
-  );
+  const supplyOptions = supplies.map((s) => ({ value: s.id, label: `${formatSupplyName(s.name)} (${formatSupplyUnit(s.unit)})` }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,23 +63,29 @@ export function RestockRequestModal({
       return;
     }
 
-    if (!urgencyReason.trim()) {
+    if (!direct && !urgencyReason.trim()) {
       setError(tr('Please enter the urgency reason for this restock proposal.'));
       return;
     }
 
     setBusy(true);
     try {
-      await inventoryApi.createRequest({
+      const payload = {
         zoneId,
         supplyId,
         requestedQuantity: qty,
-        urgencyReason: urgencyReason.trim(),
-      });
-      toast.show(
-        tr('Restock proposal submitted successfully. Notification sent to Club Manager.'),
-        'ok',
-      );
+        urgencyReason: urgencyReason.trim() || undefined,
+      };
+      if (direct) {
+        await inventoryApi.createDirectRestock(payload);
+        toast.show(tr('Direct restock created and approved. Confirm receipt when the goods arrive.'), 'ok');
+      } else {
+        await inventoryApi.createRequest(payload);
+        toast.show(
+          tr('Restock proposal submitted successfully. Notification sent to Club Manager.'),
+          'ok',
+        );
+      }
       onSaved();
       onClose();
     } catch (err) {
@@ -91,14 +97,18 @@ export function RestockRequestModal({
 
   return (
     <Modal
-      title={tr('Propose Supply Restock')}
-      subtitle={tr('Submit replenishment proposal for stable staff and veterinarians.')}
+      title={direct ? tr('Direct stock replenishment') : tr('Propose Supply Restock')}
+      subtitle={
+        direct
+          ? tr('Created by the Club Manager and approved automatically. Only the receipt confirmation remains.')
+          : tr('Submit replenishment proposal for stable staff and veterinarians.')
+      }
       onClose={onClose}
     >
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {error && <Alert tone="danger">{error}</Alert>}
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
           <Field label={tr('Target Stall Zone')} required>
             <Select
               options={zoneOptions}
@@ -136,8 +146,8 @@ export function RestockRequestModal({
         </Field>
 
         <Field
-          label={tr('Urgency Reason & Operational Justification')}
-          required
+          label={direct ? tr('Note (optional)') : tr('Urgency Reason & Operational Justification')}
+          required={!direct}
           hint={tr('Detail why this restock is urgent (e.g. Running out of feed before tomorrow morning, critical medication).')}
         >
           <Textarea
@@ -146,16 +156,16 @@ export function RestockRequestModal({
             onChange={(e) => setUrgencyReason(e.target.value)}
             placeholder={tr('Describe urgency, anticipated shortage, or immediate needs...')}
             disabled={busy}
-            required
+            required={!direct}
           />
         </Field>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
           <Button type="button" tone="secondary" onClick={onClose} disabled={busy}>
             {tr('Cancel')}
           </Button>
           <Button type="submit" tone="primary" disabled={busy}>
-            {busy ? tr('Submitting...') : tr('Submit Restock Proposal')}
+            {busy ? tr('Submitting...') : direct ? tr('Create approved restock') : tr('Submit Restock Proposal')}
           </Button>
         </div>
       </form>

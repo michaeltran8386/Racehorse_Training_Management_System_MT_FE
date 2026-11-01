@@ -3,6 +3,7 @@ import { cx } from "@/shared/lib/cx";
 import type { HealthStatus } from "@/shared/types/enums";
 import { Icon } from "./Icon";
 import styles from "./StallGrid.module.css";
+import { tr } from "@/shared/i18n/tr";
 
 // Một ô chuồng có màu theo tình trạng sức khỏe của con ngựa bên trong, hoặc EMPTY khi chuồng trống.
 export type StallStatus = HealthStatus | "EMPTY";
@@ -42,7 +43,7 @@ export function StallCell({ code, horse, status = "EMPTY", task, selected, onCli
         <span className={styles.code}>{code}</span>
         {status !== "EMPTY" && <span className={styles.dot} />}
       </span>
-      <strong className={cx(styles.horse, status === "EMPTY" && styles.horseEmpty)}>{horse ?? "Empty"}</strong>
+      <strong className={cx(styles.horse, status === "EMPTY" && styles.horseEmpty)}>{horse ?? tr("Empty")}</strong>
       {task && (
         <span className={styles.task}>
           <Icon name="broom" size={11} />

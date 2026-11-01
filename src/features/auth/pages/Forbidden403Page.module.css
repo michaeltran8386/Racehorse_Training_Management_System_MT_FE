@@ -22,3 +22,11 @@
 .facts dt, .facts dd { margin: 0; }
 .facts dd { color: var(--text-2); font-weight: 600; }
 @media (max-width: 720px) { .title { font-size: var(--fs-kpi); } }
+.title { font-family: var(--font-display); font-size: 40px; line-height: 1; font-weight: 800; text-transform: uppercase; }
+.wrap { padding: 24px 0; gap: 20px; }
+.title { max-width: 24ch; text-wrap: balance; }
+.text { font-size: var(--fs-body); max-width: 54ch; }
+.facts { max-width: 100%; justify-content: flex-start; }
+.facts div { min-width: 0; flex-wrap: wrap; }
+.facts dd { overflow-wrap: anywhere; }
+@media (max-width: 520px) { .wrap { padding: 12px 0; } .title { font-size: 32px; } .actions { width: 100%; } .actions > * { flex: 1 1 100%; } .facts { width: 100%; gap: 8px; } .facts div { flex: 1 1 100%; } }

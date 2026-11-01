@@ -64,3 +64,9 @@
 .reason { font-size: var(--fs-caption); line-height: 18px; color: var(--muted); font-weight: 400; white-space: normal; }
 .off, .off:hover { color: var(--muted); cursor: not-allowed; height: auto; min-height: 36px; padding-top: 6px; padding-bottom: 6px; background: none; }
 .divider { height: 1px; background: var(--border-soft); margin: 6px 4px; }
+.item:focus-visible { outline: var(--focus-ring); outline-offset: -2px; }
+.menu { max-width: min(320px, calc(100vw - 24px)); }
+.menu { max-height: min(440px, 70dvh); overflow-y: auto; }
+.item { min-height: 40px; height: auto; padding-block: 8px; white-space: normal; overflow-wrap: anywhere; }
+.item > svg { flex-shrink: 0; }
+.dots:focus-visible, .button:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }

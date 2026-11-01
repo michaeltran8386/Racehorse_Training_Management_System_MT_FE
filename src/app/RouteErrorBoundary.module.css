@@ -1,0 +1,10 @@
+.page { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: var(--page); color: var(--text); }
+.panel { width: min(100%, 680px); padding: clamp(24px, 5vw, 48px); background: var(--surface); border: 1px solid var(--border); border-top: 5px solid var(--brand); box-shadow: var(--shadow-pop); }
+.eyebrow { margin: 0 0 16px; color: var(--brand-700); font-size: 12px; font-weight: 700; letter-spacing: .16em; }
+.panel h1 { margin: 0; font: 800 clamp(32px, 5vw, 48px)/1.05 var(--font-display); text-transform: uppercase; }
+.panel > p:not(.eyebrow) { margin: 16px 0 0; color: var(--text-muted); line-height: 1.6; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.actions button, .actions a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font: 700 14px var(--font); text-decoration: none; cursor: pointer; }
+.actions button { background: var(--brand); border-color: var(--brand); color: var(--text-on-brand); }
+.actions button:focus-visible, .actions a:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+@media (max-width: 480px) { .actions > * { flex: 1 1 100%; } }

@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -19,6 +20,7 @@ import { EMAIL_RE } from "@/shared/lib/email";
 // rồi sang /reset-password để đặt mật khẩu lần đầu — tài khoản chuyển INVITED → ACTIVE.
 // Link trong email có sẵn ?email=...; mở trang không có email thì hỏi email trước.
 export default function AcceptInvitePage() {
+  useScreenTranslation();
   const navigate = useNavigate();
   // useSearchParams (không dùng useQueryParams): cập nhật khi URL đổi ?email= mà vẫn ở trang này.
   const [params] = useSearchParams();
@@ -81,7 +83,7 @@ export default function AcceptInvitePage() {
         }}
         footer={
           <>
-            Wrong address? <Link to="/accept-invite">Enter a different email</Link>
+            {tr("Wrong address?")} <Link to="/accept-invite">{tr("Enter a different email")}</Link>
           </>
         }
       />

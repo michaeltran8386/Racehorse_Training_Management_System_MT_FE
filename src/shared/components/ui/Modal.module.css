@@ -71,3 +71,17 @@
     padding: 12px 16px;
   }
 }
+.title { font-family: var(--font-display); font-size: 26px; font-weight: 800; line-height: 1; text-transform: uppercase; }
+@media (max-width: 520px) { .foot { flex-wrap: wrap; } .foot > div { min-width: 0; flex-wrap: wrap; } .foot button { white-space: normal; height: auto; min-height: var(--control-h); } }
+.dialog { max-height: calc(100dvh - 48px); }
+.head { max-height: 40dvh; overflow-y: auto; }
+.title, .subtitle { overflow-wrap: anywhere; }
+.close { flex-shrink: 0; }
+.close:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+@media (max-width: 640px) { .dialog { max-height: calc(100dvh - 24px); } }
+/* Bật lên giữa màn hình: nền mờ dần, hộp phóng nhẹ từ 96% */
+.overlay { animation: modal-fade 160ms ease-out; }
+.dialog { animation: modal-pop 200ms cubic-bezier(.2, .9, .3, 1.15); }
+@keyframes modal-fade { from { opacity: 0; } }
+@keyframes modal-pop { from { opacity: 0; transform: translateY(8px) scale(.96); } }
+@media (prefers-reduced-motion: reduce) { .overlay, .dialog { animation: none; } }

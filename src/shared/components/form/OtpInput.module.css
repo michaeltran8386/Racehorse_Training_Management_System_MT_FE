@@ -17,3 +17,5 @@
 }
 .box:disabled { background: var(--surface-2); cursor: not-allowed; }
 .invalid { border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-bg); }
+.box:focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
+@media (max-width: 390px) { .row { gap: 6px; } .box { height: 46px; } }

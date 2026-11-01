@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthLayout } from "@/shared/components/layout/AuthLayout";
@@ -10,6 +11,7 @@ import { OtpVerifyForm } from "../components/OtpVerifyForm";
 import { tr } from "@/shared/i18n/tr";
 // Bước 2 quên mật khẩu (design 1.5, đã đổi từ "link" sang "mã OTP"): nhập mã nhận được qua email.
 export default function ResetOtpPage() {
+  useScreenTranslation();
   const navigate = useNavigate();
   const params = useQueryParams();
   const email = params?.get("email") ?? "";
@@ -36,7 +38,7 @@ export default function ResetOtpPage() {
         }}
         footer={
           <>
-            Wrong address? <Link to="/forgot-password">Enter a different email</Link>
+            {tr("Wrong address?")} <Link to="/forgot-password">{tr("Enter a different email")}</Link>
           </>
         }
       />

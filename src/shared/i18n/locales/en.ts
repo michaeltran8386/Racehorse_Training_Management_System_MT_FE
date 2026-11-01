@@ -32,7 +32,7 @@ export const en = {
     viewAll: "View all",
     clearAll: "Clear all",
     markAsRead: "Mark all as read",
-    confirmLogoutTitle: "Log out of EquiFlow?",
+    confirmLogoutTitle: "Log out of TMEC?",
     confirmLogoutSubtitle: "Unsaved changes on open forms are discarded.",
     staySignedIn: "Stay signed in",
   },
@@ -111,6 +111,7 @@ export const en = {
     sessionExpired: "Session expired",
     settings: "Settings",
     notifications: "Notifications",
+    assistant: "TMEC Assistant",
 
     // Specific nav keys to avoid collisions / role differences
     trainingOverview: "Training Overview",

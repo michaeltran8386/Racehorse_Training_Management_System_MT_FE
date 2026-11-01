@@ -1,6 +1,8 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
+import styles from "./HorseDetailPage.module.css";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { Card } from "@/shared/components/ui/Card";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -36,6 +38,7 @@ const STATUS_SOURCE_LABEL: Record<string, string> = {
 };
 
 export default function HorseDetailPage() {
+  useScreenTranslation();
   const { id } = useParams<{ id: string }>();
   const { isVietnamese: isVi } = useAppLanguage();
   const currentUser = useCurrentUser();
@@ -258,43 +261,14 @@ export default function HorseDetailPage() {
 
       {/* Athlete Header Card */}
       <Card pad={20}>
-        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: "1.5rem", alignItems: "center" }}>
+        <div className={styles.identity}>
           {/* Athlete Portrait Crest */}
-          <div
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: "var(--r-lg)",
-              backgroundColor: "var(--brand-surface)",
-              border: "1px solid var(--brand-border)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--brand)",
-              position: "relative",
-              flexShrink: 0,
-            }}
-          >
+          <div className={styles.crest} aria-hidden="true">
             <Icon name="horse" size={36} />
-            <span
-              style={{
-                position: "absolute",
-                bottom: -4,
-                right: -4,
-                backgroundColor: "var(--surface)",
-                borderRadius: "50%",
-                padding: "2px",
-                display: "flex",
-                color: "var(--brand)",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-              }}
-            >
-              <Icon name="checkCircle" size={14} />
-            </span>
           </div>
 
           {/* Identity & Identifiers */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
+          <div className={styles.identityInfo}>
             <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
               <Badge tone={statusCfg.tone} icon={"icon" in statusCfg ? statusCfg.icon : undefined}>
                 {statusCfg.label}
@@ -306,27 +280,17 @@ export default function HorseDetailPage() {
               )}
             </div>
 
-            <div style={{ fontSize: "var(--fs-body)", color: "var(--ink-secondary)" }}>
-              <span><strong>{horse.breed ? tr(horse.breed) : ""}</strong></span>
-              <span style={{ margin: "0 0.5rem", opacity: 0.5 }}>•</span>
-              <span>{horse.gender ? tr(horse.gender) : ""}</span>
-              <span style={{ margin: "0 0.5rem", opacity: 0.5 }}>•</span>
-              <span>{horse.color ? tr(horse.color) : ""}</span>
-              <span style={{ margin: "0 0.5rem", opacity: 0.5 }}>•</span>
-              <span>{ageText}</span>
-              {horse.weightKg ? (
-                <>
-                  <span style={{ margin: "0 0.5rem", opacity: 0.5 }}>•</span>
-                  <span><strong>{horse.weightKg} kg</strong></span>
-                </>
-              ) : null}
+            <div className={styles.identityMeta}>
+              {[horse.breed && tr(horse.breed), horse.gender && tr(horse.gender), horse.color && tr(horse.color), ageText, horse.weightKg && `${horse.weightKg} kg`].filter(Boolean).map((item, index) => (
+                <span key={index}>{item}</span>
+              ))}
             </div>
 
             {/* Microchip & RFID quick-copy pills */}
             <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginTop: "0.25rem", flexWrap: "wrap" }}>
               <div style={{ display: "inline-flex", alignItems: "center", gap: "0.35rem", fontSize: "var(--fs-body)" }}>
                 <span style={{ color: "var(--ink-muted)", fontSize: "var(--fs-caption)", fontWeight: 700 }}>{tr("Chip:")}</span>
-                <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, background: "var(--surface-subtle)", padding: "1px 6px", borderRadius: 4 }}>
+                <span style={{ fontVariantNumeric: "tabular-nums", fontWeight: 600, background: "var(--surface-subtle)", padding: "1px 6px" }}>
                   {displayMicrochip}
                 </span>
                 {horse.microchip && !isGroom && (
@@ -334,6 +298,7 @@ export default function HorseDetailPage() {
                     type="button"
                     onClick={() => copyToClipboard(horse.microchip!, "Microchip")}
                     title={tr("Copy Microchip")}
+                    aria-label={tr("Copy Microchip")}
                     style={{
                       background: "transparent",
                       border: "none",
@@ -365,7 +330,7 @@ export default function HorseDetailPage() {
             <div style={{ color: "var(--ink-muted)", fontSize: "var(--fs-caption)", fontWeight: 700 }}>
               {tr("Location & Care")}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontWeight: 600, color: "var(--brand)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontWeight: 600, color: "var(--brand-700)" }}>
               <Icon name="home" size={13} />
               <span>{horse.stallCode ? tr("Stall {{stall}}", { stall: horse.stallCode }) : tr("Unassigned Stall")}</span>
             </div>
@@ -393,7 +358,7 @@ export default function HorseDetailPage() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))",
               gap: "1.25rem",
               fontSize: "var(--fs-body)",
             }}
@@ -482,7 +447,7 @@ export default function HorseDetailPage() {
           <h3 style={{ margin: "0 0 1.25rem 0", fontSize: "var(--fs-section)", fontWeight: 700 }}>
             {tr("Stabling & Assigned Caretakers")}
           </h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem" }}>
+          <div className={styles.detailsGrid}>
             <div style={{ border: "1px solid var(--border)", borderRadius: "var(--r)", padding: 16 }}>
               <h4 style={{ margin: "0 0 0.75rem 0" }}>{tr("Current Stall Assignment")}</h4>
               <p style={{ margin: "0 0 0.5rem 0" }}>
@@ -552,7 +517,7 @@ export default function HorseDetailPage() {
             )}
           </div>
           {horse.owner ? (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+            <div className={styles.detailsGrid}>
               <div>
                 <strong>{tr("Horse Owner:")}</strong> {horse.owner.fullName}
               </div>

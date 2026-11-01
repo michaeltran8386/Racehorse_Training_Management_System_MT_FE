@@ -50,7 +50,7 @@ export function Button({
   const button = (
     <button
       type={type}
-      disabled={disabled && !blocked}
+      disabled={disabled}
       aria-disabled={off || undefined}
       onClick={handleClick}
       className={cx(styles.btn, styles[tone], styles[size], block && styles.block, off && styles.off, className)}

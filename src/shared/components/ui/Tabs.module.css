@@ -95,3 +95,13 @@
   box-shadow: 0 0 6px rgba(239, 68, 68, 0.6);
 }
 
+/* Editorial controls: selected tabs remain legible in both themes. */
+.tab, :global([data-theme="dark"]) .tab { border-radius: 0; background: var(--surface); border-color: var(--border-strong); color: var(--text-2); box-shadow: none; }
+.tab:hover, :global([data-theme="dark"]) .tab:hover { background: var(--surface-2); border-color: var(--border-field); color: var(--text); transform: none; }
+.on, :global([data-theme="dark"]) .on { background: var(--bg-inverse); border-color: var(--bg-inverse); color: #f6f1e4; box-shadow: none; }
+.on, :global([data-theme="dark"]) .on { border-bottom: 3px solid var(--brand); }
+.on:hover, :global([data-theme="dark"]) .on:hover { background: var(--bg-inverse); border-color: var(--bg-inverse); border-bottom-color: var(--brand); color: #f6f1e4; }
+.on .count { background: var(--brand); color: var(--text-on-brand); border-color: var(--brand); }
+.tab { flex: 0 0 auto; min-height: 40px; }
+.tab:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.tab:active { transform: none; }

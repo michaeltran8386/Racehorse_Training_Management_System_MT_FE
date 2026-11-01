@@ -62,6 +62,11 @@ export const inventoryApi = {
     return api<RestockRequestItem>('POST', '/inventory/requests', payload);
   },
 
+  /** Quản lý CLB nhập bổ sung kho trực tiếp — BE tạo phiếu APPROVED ngay */
+  async createDirectRestock(payload: CreateRestockRequestPayload): Promise<RestockRequestItem> {
+    return api<RestockRequestItem>('POST', '/inventory/requests/direct', payload);
+  },
+
   /** SC-4.07 Duyệt hoặc từ chối phiếu đề xuất (Club Manager) */
   async reviewRequest(id: string, payload: ReviewRestockRequestPayload): Promise<RestockRequestItem> {
     return api<RestockRequestItem>('POST', `/inventory/requests/${id}/review`, payload);

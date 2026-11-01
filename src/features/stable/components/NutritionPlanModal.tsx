@@ -3,6 +3,7 @@ import { Modal } from '@/shared/components/ui/Modal';
 import { Field } from '@/shared/components/form/Field';
 import { Input } from '@/shared/components/form/Input';
 import { Select } from '@/shared/components/form/Select';
+import { SearchSelect } from '@/shared/components/form/SearchSelect';
 import { Textarea } from '@/shared/components/form/Textarea';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
@@ -103,26 +104,29 @@ export function NutritionPlanModal({
   }, []);
 
   const selectedHorse = horses.find((h) => h.id === horseId);
-  const horseWeightKg = selectedHorse?.weightKg || (plan as any)?.horseWeightSnapshot || 500;
+  const weight = selectedHorse?.weightKg || (plan?.horseId === horseId ? plan.horseWeightSnapshot : undefined);
+  const horseWeightKg = weight && weight > 0 ? weight : null;
 
   // Tính toán trực tiếp tổng kg thức ăn và tỉ lệ %
-  const { totalKg, ratioPct, evaluation } = useMemo(() => {
+  const { totalKg, ratioPct, evaluation, incompatibleUnits } = useMemo(() => {
     let total = 0;
+    let incompatibleUnits = false;
     for (const m of meals) {
       for (const it of m.items) {
         const u = (it.unit || '').toUpperCase();
         if (u === 'KG') total += Number(it.amount) || 0;
         else if (u === 'G') total += (Number(it.amount) || 0) / 1000;
-        else if (u === 'LITER') total += Number(it.amount) || 0;
-        else if (u === 'ML') total += (Number(it.amount) || 0) / 1000;
+        else if (Number(it.amount) > 0) incompatibleUnits = true;
       }
     }
     const tKg = Math.round(total * 100) / 100;
+    if (incompatibleUnits) return { totalKg: null, ratioPct: null, evaluation: null, incompatibleUnits };
+    if (!horseWeightKg || horseWeightKg <= 0) return { totalKg: tKg, ratioPct: null, evaluation: null, incompatibleUnits };
     const rPct = Math.round((tKg / horseWeightKg) * 1000) / 10;
     let evalStatus: 'OPTIMAL' | 'UNDER' | 'OVER' = 'OPTIMAL';
     if (rPct < 1.5) evalStatus = 'UNDER';
     else if (rPct > 3.0) evalStatus = 'OVER';
-    return { totalKg: tKg, ratioPct: rPct, evaluation: evalStatus };
+    return { totalKg: tKg, ratioPct: rPct, evaluation: evalStatus, incompatibleUnits };
   }, [meals, horseWeightKg]);
 
   const handleAddItem = (mealIndex: number) => {
@@ -276,6 +280,17 @@ export function NutritionPlanModal({
       }
       onClose={onClose}
       width={780}
+      foot={
+        <>
+          <Button tone="ghost" onClick={onClose} disabled={busy}>{tr('Cancel')}</Button>
+          <Button tone="secondary" onClick={() => handleSave(false)} disabled={busy || loadingInitial}>
+            {busy ? tr('Saving...') : tr('Save Draft')}
+          </Button>
+          <Button tone="primary" onClick={() => handleSave(true)} disabled={busy || loadingInitial}>
+            {busy ? tr('Submitting...') : tr('Submit for Approval')}
+          </Button>
+        </>
+      }
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         {error && <Alert tone="danger">{error}</Alert>}
@@ -294,10 +309,10 @@ export function NutritionPlanModal({
         >
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
             <Field label={tr('Target Horse')}>
-              <Select
+              <SearchSelect
                 options={horseOptions}
                 value={horseId}
-                onChange={(e) => setHorseId(e.target.value)}
+                onChange={setHorseId}
                 disabled={isEditing || loadingInitial}
               />
             </Field>
@@ -306,7 +321,7 @@ export function NutritionPlanModal({
               <Input
                 type="text"
                 readOnly
-                value={`${horseWeightKg} kg (${tr('Standard baseline')})`}
+                value={horseWeightKg ? `${horseWeightKg} kg` : tr('Weight not recorded')}
                 style={{ background: 'var(--color-surface)', cursor: 'not-allowed' }}
               />
             </Field>
@@ -317,17 +332,21 @@ export function NutritionPlanModal({
         <div
           style={{
             background:
-              evaluation === 'OPTIMAL'
-                ? 'rgba(16, 185, 129, 0.08)'
+              evaluation === null
+                ? 'var(--surface-2)'
+                : evaluation === 'OPTIMAL'
+                ? 'var(--ok-bg)'
                 : evaluation === 'UNDER'
-                ? 'rgba(245, 158, 11, 0.08)'
-                : 'rgba(239, 68, 68, 0.08)',
+                ? 'var(--warn-bg)'
+                : 'var(--danger-bg)',
             border:
-              evaluation === 'OPTIMAL'
-                ? '1px solid rgba(16, 185, 129, 0.3)'
+              evaluation === null
+                ? '1px solid var(--border)'
+                : evaluation === 'OPTIMAL'
+                ? '1px solid var(--ok)'
                 : evaluation === 'UNDER'
-                ? '1px solid rgba(245, 158, 11, 0.3)'
-                : '1px solid rgba(239, 68, 68, 0.3)',
+                ? '1px solid var(--warn)'
+                : '1px solid var(--danger)',
             borderRadius: 'var(--radius-md)',
             padding: '1rem',
             display: 'flex',
@@ -342,10 +361,12 @@ export function NutritionPlanModal({
               </span>
               <Badge
                 tone={
-                  evaluation === 'OPTIMAL' ? 'ok' : evaluation === 'UNDER' ? 'warn' : 'danger'
+                  evaluation === null ? 'neutral' : evaluation === 'OPTIMAL' ? 'ok' : evaluation === 'UNDER' ? 'warn' : 'danger'
                 }
               >
-                {evaluation === 'OPTIMAL'
+                {evaluation === null
+                  ? tr(incompatibleUnits ? 'Cannot calculate from these units' : 'Weight not recorded')
+                  : evaluation === 'OPTIMAL'
                   ? tr('Optimal: 1.5% - 3.0%')
                   : evaluation === 'UNDER'
                   ? tr('Under 1.5% Body Weight')
@@ -354,13 +375,15 @@ export function NutritionPlanModal({
             </div>
             <div style={{ textAlign: 'right' }}>
               <span style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-primary)' }}>
-                {totalKg} kg
+                {totalKg === null ? '—' : `${totalKg} kg`}
               </span>
               <span style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginLeft: '6px' }}>
-                ({ratioPct}% {tr('of body weight')} · {horseWeightKg} kg)
+                {ratioPct !== null ? `(${ratioPct}% ${tr('of body weight')} · ${horseWeightKg} kg)` : ''}
               </span>
             </div>
           </div>
+
+          {incompatibleUnits && <span style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-caption)' }}>{tr('The ratio requires feed quantities in kg or g.')}</span>}
 
           {/* Progress Bar visual indicator */}
           <div
@@ -375,26 +398,26 @@ export function NutritionPlanModal({
           >
             <div
               style={{
-                width: `${Math.min(100, (ratioPct / 4.0) * 100)}%`,
+                width: `${ratioPct === null ? 0 : Math.min(100, (ratioPct / 4.0) * 100)}%`,
                 height: '100%',
                 background:
                   evaluation === 'OPTIMAL'
-                    ? '#10B981'
+                    ? 'var(--ok)'
                     : evaluation === 'UNDER'
-                    ? '#F59E0B'
-                    : '#EF4444',
+                    ? 'var(--warn)'
+                    : 'var(--danger)',
                 transition: 'width 0.3s ease, background-color 0.3s ease',
               }}
             />
           </div>
 
           {evaluation === 'UNDER' && (
-            <span style={{ fontSize: '0.8rem', color: '#D97706' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--warn)' }}>
               {tr('Feed ration is below 1.5% of body weight. The horse may experience caloric deficit.')}
             </span>
           )}
           {evaluation === 'OVER' && (
-            <span style={{ fontSize: '0.8rem', color: '#DC2626' }}>
+            <span style={{ fontSize: '0.8rem', color: 'var(--danger)' }}>
               {tr('Feed ration exceeds 3.0% of body weight. Colic and digestive overload risk.')}
             </span>
           )}
@@ -436,7 +459,7 @@ export function NutritionPlanModal({
                     type="time"
                     value={meal.time || ''}
                     onChange={(e) => handleMealTimeChange(mIdx, e.target.value)}
-                    style={{ width: '105px', padding: '0.2rem 0.4rem', fontSize: '0.85rem' }}
+                    style={{ width: '132px', padding: '0.2rem 0.4rem', fontSize: '0.85rem' }}
                   />
                   <Button
                     size="sm"
@@ -518,7 +541,7 @@ export function NutritionPlanModal({
                         size="sm"
                         tone="ghost"
                         onClick={() => handleRemoveItem(mIdx, itIdx)}
-                        style={{ color: '#EF4444', padding: '4px' }}
+                        style={{ color: 'var(--danger)', padding: '4px' }}
                         title={tr('Remove item')}
                       >
                         ✕
@@ -541,36 +564,6 @@ export function NutritionPlanModal({
           />
         </Field>
 
-        {/* Action Buttons */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-end',
-            gap: '0.75rem',
-            paddingTop: '0.5rem',
-            borderTop: '1px solid var(--color-border)',
-          }}
-        >
-          <Button tone="ghost" onClick={onClose} disabled={busy}>
-            {tr('Cancel')}
-          </Button>
-
-          <Button
-            tone="secondary"
-            onClick={() => handleSave(false)}
-            disabled={busy || loadingInitial}
-          >
-            {busy ? tr('Saving...') : tr('Save Draft')}
-          </Button>
-
-          <Button
-            tone="primary"
-            onClick={() => handleSave(true)}
-            disabled={busy || loadingInitial}
-          >
-            {busy ? tr('Submitting...') : tr('Submit for Approval')}
-          </Button>
-        </div>
       </div>
     </Modal>
   );

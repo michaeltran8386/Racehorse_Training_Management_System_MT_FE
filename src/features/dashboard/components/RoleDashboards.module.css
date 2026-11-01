@@ -1,0 +1,8 @@
+.kpi { display: flex; align-items: center; justify-content: space-between; min-width: 0; min-height: 120px; padding: 20px; background: var(--surface); border: 1px solid var(--border); color: var(--text); text-decoration: none; transition: border-color var(--dur-fast), background var(--dur-fast); }
+.kpi:hover { border-color: var(--brand); background: var(--surface-row-hover); color: var(--text); text-decoration: none; }
+.label { font-size: 11px; color: var(--text-2); font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+.value { margin: 4px 0; color: var(--text); font: 800 36px/1 var(--font-display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+@media (max-width: 520px) { .kpi { min-height: 104px; padding: 16px; } }
+.kpi:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; }
+.widgetTitle { margin: 0; color: var(--text); font: 800 24px/1.1 var(--font-display); text-transform: uppercase; overflow-wrap: anywhere; }
+.label { overflow-wrap: anywhere; }

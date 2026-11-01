@@ -26,3 +26,4 @@
 .row span { color: var(--text-2); min-width: 96px; flex-shrink: 0; }
 .row strong { color: var(--text); font-weight: 600; }
 .action { flex-shrink: 0; }
+@media (max-width: 520px) { .banner { flex-wrap: wrap; } .body { flex: 1 1 calc(100% - 48px); } .action { width: 100%; } .row { flex-wrap: wrap; } }

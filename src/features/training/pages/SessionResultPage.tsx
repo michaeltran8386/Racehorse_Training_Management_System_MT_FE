@@ -1,9 +1,12 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate, useParams, useBlocker } from "react-router-dom";
+import { useNavigate, useParams, useBlocker } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
-import { Button } from "@/shared/components/ui/Button";
+import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Card } from "@/shared/components/ui/Card";
+import styles from "./SessionResultPage.module.css";
+import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
@@ -14,6 +17,7 @@ import { useToast } from "@/shared/components/ui/Toast";
 import { formatDateTime } from "@/shared/lib/format";
 import { ApiError } from "@/shared/lib/api";
 import { messageFor } from "@/shared/lib/messages";
+import { simulatedWorkoutDraft } from "@/shared/lib/simulatedMeasurements";
 import { trainingApi } from "../api";
 import {
   ABNORMAL_SIGN_LABEL,
@@ -56,6 +60,7 @@ const EDIT_WINDOW_MS = 48 * 60 * 60 * 1000;
 
 /** SC-2.06 Kết quả buổi tập: HT ghi / sửa; CM, VET, OWNER, GROOM (buổi được giao, không thấy điểm) xem. */
 export default function SessionResultPage() {
+  useScreenTranslation();
   const { isVietnamese } = useAppLanguage();
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -82,6 +87,7 @@ export default function SessionResultPage() {
   const [simulationLoadError, setSimulationLoadError] = useState("");
   const [simulationImported, setSimulationImported] = useState(false);
   const [simulationLoading, setSimulationLoading] = useState(false);
+  const [simulationGenerated, setSimulationGenerated] = useState(false);
   const [score, setScore] = useState("");
   const [completion, setCompletion] = useState<CompletionLevel | "">("");
   const [comment, setComment] = useState("");
@@ -141,11 +147,24 @@ export default function SessionResultPage() {
     setDirty(false);
   }, []);
 
-  const importSimulationResult = useCallback(async (s: ExerciseSession) => {
+  // Bấm nút mà Simulator chưa chạy: tự sinh chỉ số theo bài tập thay vì báo 404.
+  const applyGeneratedResult = useCallback((s: ExerciseSession) => {
+    fill(s, simulatedWorkoutDraft(s));
+    setCompletion("ACHIEVED");
+    setSimulationAborted(false);
+    setSimulationGenerated(true);
+    setSimulationLoadError("");
+  }, [fill]);
+
+  const importSimulationResult = useCallback(async (s: ExerciseSession, generateIfMissing = false) => {
     setSimulationLoading(true);
     try {
       const simulation: WorkoutSimulationResult = await trainingApi.getLatestSimulationResult(s.id);
-      if (!simulation.resultDraft) return;
+      if (!simulation.resultDraft) {
+        if (generateIfMissing) applyGeneratedResult(s);
+        return;
+      }
+      setSimulationGenerated(false);
       fill(s, simulation.resultDraft);
       const plannedDistance = s.targetDistanceMeters;
       setCompletion(
@@ -160,11 +179,13 @@ export default function SessionResultPage() {
     } catch (err) {
       if (!(err instanceof ApiError && err.code === "SIMULATOR_RESULT_NOT_FOUND")) {
         setSimulationLoadError(messageFor(err));
+      } else if (generateIfMissing) {
+        applyGeneratedResult(s);
       }
     } finally {
       setSimulationLoading(false);
     }
-  }, [fill]);
+  }, [fill, applyGeneratedResult]);
 
   useEffect(() => {
     let mounted = true;
@@ -322,32 +343,17 @@ export default function SessionResultPage() {
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "1rem" }}>
-        <div>
-          <h1 style={{ margin: 0, fontSize: "var(--fs-kpi)" }}>{tr("Workout result")}</h1>
-          <p style={{ margin: "0.25rem 0 0", color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>
-            {tr("Record performance metrics, speed telemetry, and trainer observations.")}
-          </p>
-        </div>
-        <div style={{ display: "flex", gap: "0.5rem" }}>
-          {user.role !== "GROOM" && (
-            <Link to={`/horses/${session.horseId}/fitness`}><Button tone="secondary">{tr("Fitness chart")}</Button></Link>
-          )}
-          {user.role !== "GROOM" && user.role !== "HORSE_OWNER" && (
-            <Link to={`/training/plans/${session.planId}`}><Button tone="ghost">{tr("Open plan")}</Button></Link>
-          )}
-        </div>
-      </div>
+      <PageHeader title="Workout result" description="Record performance metrics, speed telemetry, and trainer observations." action={<>{user.role !== "GROOM" && <LinkButton to={`/horses/${session.horseId}/fitness`} tone="secondary">{tr("Fitness chart")}</LinkButton>}{user.role !== "GROOM" && user.role !== "HORSE_OWNER" && <LinkButton to={`/training/plans/${session.planId}`} tone="ghost">{tr("Open plan")}</LinkButton>}</>} />
 
       <Card pad={20}>
-        <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{tr("Workout")}</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.5rem", fontSize: "var(--fs-body)" }}>
+        <h2 className={styles.sectionTitle}>{tr("Workout")}</h2>
+        <div className={styles.summaryGrid}>
           <div>{tr("Horse:")}{" "}<strong>{session.horseName}</strong></div>
           <div>{tr("Date:")}{" "}<strong>{session.sessionDate} {session.startTime}</strong></div>
-          <div>{tr("Type:")}{" "}<strong>{EXERCISE_TYPE_LABEL[session.sessionType]}</strong> · {INTENSITY_LABEL[session.intensity]}</div>
+          <div>{tr("Type:")}{" "}<strong>{tr(EXERCISE_TYPE_LABEL[session.sessionType])}</strong> · {tr(INTENSITY_LABEL[session.intensity])}</div>
           <div>{tr("Planned:")}{" "}<strong>{session.targetDistanceMeters} m × {session.repetitions}</strong></div>
           <div>{tr("Target speed:")}{" "}<strong>{session.targetSpeedKmh ? tr(`${session.targetSpeedKmh} km/h`) : "—"}</strong></div>
-          <div>{tr("Surface:")}{" "}<strong>{TRACK_LABEL[session.trackType]}</strong></div>
+          <div>{tr("Surface:")}{" "}<strong>{tr(TRACK_LABEL[session.trackType])}</strong></div>
           <div>{tr("Jockey:")}{" "}<strong>{session.jockeyName || "—"}</strong></div>
           <div>{tr("Groom:")}{" "}<strong>{session.groomName || "—"}</strong></div>
           <div>{tr("Status:")}{" "}<Badge tone={SESSION_STATUS_TONE[session.status]}>{SESSION_STATUS_LABEL[session.status]}</Badge></div>
@@ -364,8 +370,8 @@ export default function SessionResultPage() {
 
       {!editing && r && (
         <Card pad={20}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-            <h2 style={{ margin: 0, fontSize: "var(--fs-body-lg)" }}>{tr("Result")}</h2>
+          <div className={styles.sectionHeading}>
+            <h2 className={styles.resultTitle}>{tr("Result")}</h2>
             {isTrainer && (
               <Button
                 tone="secondary"
@@ -378,7 +384,7 @@ export default function SessionResultPage() {
               </Button>
             )}
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "0.5rem", fontSize: "var(--fs-body)" }}>
+          <div className={styles.summaryGrid}>
             <div>{tr("Actual distance:")}{" "}<strong>{r.actualDistanceMeters ?? "—"} m</strong></div>
             <div>{tr("Time:")}{" "}<strong>{formatTime(r.actualDurationSeconds) || "—"}</strong></div>
             <div>{tr("Average speed:")}{" "}<strong>{r.avgSpeedKmh != null ? `${r.avgSpeedKmh} km/h` : "—"}</strong></div>
@@ -435,7 +441,7 @@ export default function SessionResultPage() {
                 size="sm"
                 tone="secondary"
                 disabled={simulationLoading || dirty}
-                onClick={() => void importSimulationResult(session)}
+                onClick={() => void importSimulationResult(session, true)}
               >
                 {simulationLoading
                   ? tr("Loading...")
@@ -445,10 +451,17 @@ export default function SessionResultPage() {
               </Button>
             </div>
           )}
+          {simulationGenerated && !simulationImported && (
+            <Alert tone="info" title={isVietnamese ? "Chỉ số mô phỏng giả lập" : "Simulated measurements"}>
+              {isVietnamese
+                ? "Đã tự động tạo chỉ số mô phỏng giả lập dựa trên bài tập. Bạn có thể chỉnh sửa trước khi lưu."
+                : "Simulated measurements were generated from the workout plan. You can edit them before saving."}
+            </Alert>
+          )}
           {simulationAborted && <Alert tone="warn" title={tr("Simulation ended due to injury")}>{tr("Review the imported measurements and record any abnormal signs before completing this workout.")}</Alert>}
           <Card pad={20}>
-            <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{tr("Actual figures")}</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+            <h2 className={styles.sectionTitle}>{tr("Actual figures")}</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "1rem" }}>
               <Field label={tr("Actual distance (m)")} required error={fieldErrors.distance} hint={tr("50 – 10 000, all reps")}>
                 <Input data-testid="result-distance" type="number" inputMode="numeric" value={distance} onChange={(e) => set(setDistance, "distance")(e.target.value)} />
               </Field>
@@ -493,8 +506,8 @@ export default function SessionResultPage() {
           </Card>
 
           <Card pad={20}>
-            <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{tr("Evaluation")}</h2>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "1rem" }}>
+            <h2 className={styles.sectionTitle}>{tr("Evaluation")}</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "1rem" }}>
               <Field label={tr("Performance score")} required error={fieldErrors.score}>
                 <Select
                   data-testid="result-performance-score"
@@ -524,21 +537,21 @@ export default function SessionResultPage() {
                 <button
                   type="button"
                   onClick={() => set(setComment, "comment")(tr("Hoàn thành tốt bài tập, sải bước đều và nhịp thở phục hồi ổn định."))}
-                  style={{ fontSize: "var(--fs-xs)", padding: "0.2rem 0.6rem", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", cursor: "pointer", color: "var(--ink)" }}
+                  className={styles.quickNote}
                 >
                   {tr("+ Hoàn thành tốt")}
                 </button>
                 <button
                   type="button"
                   onClick={() => set(setComment, "comment")(tr("Ngựa mệt mỏi nhẹ ở 200m cuối, cần theo dõi giảm tải buổi sau."))}
-                  style={{ fontSize: "var(--fs-xs)", padding: "0.2rem 0.6rem", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", cursor: "pointer", color: "var(--ink)" }}
+                  className={styles.quickNote}
                 >
                   {tr("+ Mệt mỏi nhẹ")}
                 </button>
                 <button
                   type="button"
                   onClick={() => set(setComment, "comment")(tr("Có dấu hiệu bất thường về vận động, đề nghị Bác sĩ thú y kiểm tra chuyên sâu."))}
-                  style={{ fontSize: "var(--fs-xs)", padding: "0.2rem 0.6rem", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", cursor: "pointer", color: "var(--ink)" }}
+                  className={styles.quickNote}
                 >
                   {tr("+ Bất thường cần khám")}
                 </button>
@@ -569,21 +582,21 @@ export default function SessionResultPage() {
                     <button
                       type="button"
                       onClick={() => set(setSignNotes)(tr("Khập khiễng nhẹ chân sau bên phải sau khi tăng tốc cự ly 800m."))}
-                      style={{ fontSize: "var(--fs-xs)", padding: "0.2rem 0.6rem", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", cursor: "pointer", color: "var(--ink)" }}
+                      className={styles.quickNote}
                     >
                       {tr("+ Khập khiễng chân sau")}
                     </button>
                     <button
                       type="button"
                       onClick={() => set(setSignNotes)(tr("Nhịp tim phục hồi chậm, thở dốc bất thường kéo dài hơn 10 phút sau bài tập."))}
-                      style={{ fontSize: "var(--fs-xs)", padding: "0.2rem 0.6rem", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", cursor: "pointer", color: "var(--ink)" }}
+                      className={styles.quickNote}
                     >
                       {tr("+ Thở dốc, tim chậm hồi")}
                     </button>
                     <button
                       type="button"
                       onClick={() => set(setSignNotes)(tr("Căng cứng cơ vai và lưng khi sải bước dài, có biểu hiện đau khi chạm vào."))}
-                      style={{ fontSize: "var(--fs-xs)", padding: "0.2rem 0.6rem", borderRadius: "12px", border: "1px solid var(--border)", background: "var(--surface)", cursor: "pointer", color: "var(--ink)" }}
+                      className={styles.quickNote}
                     >
                       {tr("+ Căng cứng cơ vai")}
                     </button>

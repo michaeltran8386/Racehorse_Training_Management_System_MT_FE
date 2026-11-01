@@ -28,29 +28,44 @@ const NOTIFICATIONS_EVENT = "equiflow:notifications_updated";
 
 let items: AppNotification[] = [];
 let pollTimer: number | undefined;
+let sessionVersion = 0;
 
 function apply(res: NotificationList): void {
+  if (!Array.isArray(res?.notifications) || !res.notifications.every((n) =>
+    n && typeof n.id === "string" && typeof n.title === "string" && typeof n.message === "string" &&
+    typeof n.category === "string" && typeof n.createdAt === "string" && typeof n.read === "boolean"
+  )) throw new Error("Invalid notification response");
   items = res.notifications;
   window.dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT));
 }
 
-export async function refreshNotifications(): Promise<void> {
+export async function refreshNotifications(): Promise<boolean> {
+  const version = sessionVersion;
   try {
-    apply(await api<NotificationList>("GET", "/notifications"));
+    const response = await api<NotificationList>("GET", "/notifications");
+    if (version !== sessionVersion) return false;
+    apply(response);
+    return true;
   } catch {
     // Lỗi mạng/hết phiên: giữ danh sách cũ, lần hỏi sau thử lại (401 đã được api.ts xử lý chung).
+    return false;
   }
 }
 
 // Gọi khi đã đăng nhập; trả về hàm dừng (gọi khi đăng xuất / rời app).
 export function startNotificationPolling(): () => void {
+  const version = ++sessionVersion;
   void refreshNotifications();
   window.clearInterval(pollTimer);
-  pollTimer = window.setInterval(() => void refreshNotifications(), POLL_MS);
+  const timer = window.setInterval(() => void refreshNotifications(), POLL_MS);
+  pollTimer = timer;
   return () => {
-    window.clearInterval(pollTimer);
-    pollTimer = undefined;
-    items = [];
+    window.clearInterval(timer);
+    if (version === sessionVersion) {
+      sessionVersion += 1;
+      pollTimer = undefined;
+      items = [];
+    }
   };
 }
 
@@ -64,12 +79,14 @@ export function getUnreadNotificationsCount(): number {
 
 export async function markNotificationsRead(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
+  const version = sessionVersion;
   items = items.map((n) => (ids.includes(n.id) ? { ...n, read: true } : n));
   window.dispatchEvent(new CustomEvent(NOTIFICATIONS_EVENT));
   try {
-    apply(await api<NotificationList>("POST", "/notifications/read", { ids }));
+    const response = await api<NotificationList>("POST", "/notifications/read", { ids });
+    if (version === sessionVersion) apply(response);
   } catch {
-    void refreshNotifications();
+    if (version === sessionVersion) void refreshNotifications();
   }
 }
 
@@ -78,18 +95,22 @@ export function markNotificationAsRead(id: string): Promise<void> {
 }
 
 export async function markAllNotificationsAsRead(): Promise<void> {
+  const version = sessionVersion;
   try {
-    apply(await api<NotificationList>("POST", "/notifications/read-all"));
+    const response = await api<NotificationList>("POST", "/notifications/read-all");
+    if (version === sessionVersion) apply(response);
   } catch {
-    void refreshNotifications();
+    if (version === sessionVersion) void refreshNotifications();
   }
 }
 
 export async function clearAllNotifications(): Promise<void> {
+  const version = sessionVersion;
   try {
-    apply(await api<NotificationList>("DELETE", "/notifications"));
+    const response = await api<NotificationList>("DELETE", "/notifications");
+    if (version === sessionVersion) apply(response);
   } catch {
-    void refreshNotifications();
+    if (version === sessionVersion) void refreshNotifications();
   }
 }
 
@@ -343,7 +364,7 @@ export function localizeNotification(n: AppNotification, isVi: boolean): Localiz
     } else if (/Track Sensor Station/i.test(senderName)) {
       senderName = "Trạm Cảm biến Đường đua";
     } else if (/EquiFlow Veterinary Station/i.test(senderName)) {
-      senderName = "Trạm Thú y EquiFlow";
+      senderName = "Trạm Thú y TMEC";
     } else if (/Dr\.\s*L[êe]\s*Minh\s*Ch[âa]u\s*\(Lead\s*Vet\)/i.test(senderName)) {
       senderName = "Dr. Lê Minh Châu (BSTY Trưởng)";
     } else if (/Phạm\s*Thị\s*Bình\s*\(Equine\s*Groom\)/i.test(senderName)) {

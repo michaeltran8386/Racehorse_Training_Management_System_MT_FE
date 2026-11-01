@@ -1,3 +1,4 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -19,6 +20,7 @@ import styles from "./NotificationSettingsPage.module.css";
 
 import { tr } from "@/shared/i18n/tr";
 export default function NotificationSettingsPage() {
+  useScreenTranslation();
   const { user } = useAuth();
   const toast = useToast();
 
@@ -125,7 +127,7 @@ export default function NotificationSettingsPage() {
       <div className={styles.noticeBanner}>
         <Icon name="info" size={18} style={{ color: "var(--info)", marginTop: 2 }} />
         <div>
-          {tr("EquiFlow may still send critical veterinary safety holds, horse emergency status updates, and essential security notices regardless of individual preference.")}
+          {tr("TMEC may still send critical veterinary safety holds, horse emergency status updates, and essential security notices regardless of individual preference.")}
         </div>
       </div>
 
@@ -400,7 +402,7 @@ export default function NotificationSettingsPage() {
                       <div>
                         <span className={styles.channelLabel}>{tr("Email Frequency")}</span>
                         <span className={styles.channelDesc}>
-                          {tr("Choose how often EquiFlow sends notification digests")}
+                          {tr("Choose how often TMEC sends notification digests")}
                         </span>
                       </div>
                       <select

@@ -1,0 +1,45 @@
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.metrics > div { background: var(--surface); border: 1px solid var(--border); }
+.liveGrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 20px; }
+.itemTitle, .tableCard h2 { margin: 0 0 12px; font: 800 26px/1 var(--font-display); text-transform: uppercase; overflow-wrap: anywhere; }
+.selector { width: min(280px, 100%); min-width: 0; }
+.tableCard > div { overflow-x: auto; }
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); text-align: left; }
+.table th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+.table tbody tr:hover { background: var(--surface-row-hover); }
+@media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .metrics { gap: 8px; } .selector { width: 100%; } }
+.fitnessMetrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.fitnessFilters { display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+.seriesSwatch { display: inline-block; width: 10px; height: 10px; flex: none; margin-right: 6px; border: 1px solid var(--surface); outline: 1px solid var(--border-strong); }
+.chartScroll { max-width: 100%; overflow-x: auto; }
+.chartScroll svg { display: block; min-width: 600px; }
+.chartHint { display: none; margin: 0 0 .5rem; color: var(--text-muted); font-size: var(--fs-caption); }
+@media (max-width: 700px) { .chartHint { display: block; } }
+.fitnessMetrics section > div > div:first-child { color: var(--text-2); font-size: 11px !important; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; }
+.fitnessMetrics section > div > div:nth-child(2) { font-family: var(--font-display); font-size: 32px !important; line-height: 1.1; }
+@media (max-width: 900px) { .fitnessMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .fitnessMetrics { gap: 8px; } }
+.planTitle { margin: 0; font: 800 clamp(32px, 3vw, 42px)/1 var(--font-display); text-transform: uppercase; overflow-wrap: anywhere; }
+.liveCard { display: flex; flex-direction: column; gap: 1.25rem; min-width: 0; padding: 1.5rem; background: var(--surface); border: 1px solid var(--border); border-top: 4px solid var(--brand); }
+.liveWarning { border-top-color: var(--warn); }
+.liveHeading { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: .75rem; }
+.liveHeading > div { min-width: 0; }
+.liveMetrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.liveMetric { min-width: 0; padding: .9rem; background: var(--surface-2); border-left: 2px solid var(--border-strong); }
+.metricWarning { background: var(--warn-bg); border-color: var(--warn); }
+.metricLabel { color: var(--text-muted); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.metricValue { display: block; margin-top: .35rem; color: var(--text); font: 700 28px/1.1 var(--font-display); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.metricWarning .metricValue { color: var(--warn); }
+.track { height: 8px; background: var(--surface-3); overflow: hidden; }
+.trackFill { height: 100%; }
+@media (max-width: 520px) { .liveCard { padding: 1rem; } .liveMetrics { gap: .5rem; } .liveMetric { padding: .75rem; } }
+.planFilters { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
+.planFilter { flex: 0 1 220px; min-width: 0; }
+.phaseCard { border-left: 3px solid var(--border-strong); padding-left: 1rem; line-height: 1.6; overflow-wrap: anywhere; }
+.currentPhase { border-left-color: var(--brand); }
+.phaseName { color: var(--text); font: 700 24px/1.1 var(--font-display); text-transform: uppercase; }
+@media (max-width: 520px) { .planFilter { flex-basis: 100%; } }
+.tableScroll { max-width: 100%; overflow-x: auto; }
+.chartGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 900px) { .chartGrid { grid-template-columns: minmax(0, 1fr); } }

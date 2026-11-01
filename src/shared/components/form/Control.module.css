@@ -44,3 +44,24 @@
 
 /* Ô nhập nhiều dòng: chỉ cho kéo giãn theo chiều dọc. */
 .textarea { resize: vertical; min-height: 88px; padding: 10px 12px; line-height: 22px; }
+
+/* Danh sách của SearchSelect: nổi trên cả Modal, cuộn được trong khi vẫn gõ tìm */
+.listbox {
+  position: fixed;
+  z-index: 75;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  max-height: min(320px, 50vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border: 1px solid var(--border-field);
+  border-radius: var(--r-field);
+  box-shadow: var(--shadow-lg);
+}
+.option { padding: 8px 10px; font-size: var(--fs-body); line-height: 20px; color: var(--text); cursor: pointer; border-radius: var(--r-sm); }
+.optionActive { background: var(--surface-3); }
+.option[aria-selected="true"] { font-weight: 700; box-shadow: inset 3px 0 0 var(--brand); }
+.option[aria-disabled="true"] { color: var(--muted-2); cursor: not-allowed; }
+.optionEmpty { padding: 8px 10px; font-size: var(--fs-body); color: var(--muted); }

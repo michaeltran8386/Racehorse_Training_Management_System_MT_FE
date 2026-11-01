@@ -114,3 +114,5 @@
   transform: scale(1.4);
   box-shadow: 0 0 0 2px var(--brand-500, #315D4B);
 }
+:global([data-theme="dark"]) .toggleBtn:hover { background: var(--surface-3); color: var(--text); border-color: var(--border); box-shadow: none; }
+.sunIcon, :global([data-theme="dark"]) .moonIcon { color: var(--text-2); filter: none; }

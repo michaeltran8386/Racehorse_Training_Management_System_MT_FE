@@ -1,6 +1,7 @@
 /* Lưới của My Profile (1.15) và Change Password (1.16). */
 .profileGrid { display: grid; grid-template-columns: 1fr 322px; gap: var(--gap-grid); align-items: start; }
 .twoCols { display: grid; grid-template-columns: 1fr 1fr; gap: 17px; }
+.twoCols > * { align-content: start; }
 .stack { display: flex; flex-direction: column; gap: 16px; }
 .rows { display: flex; flex-direction: column; gap: 11px; font-size: var(--fs-caption); }
 .rows > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
@@ -30,3 +31,19 @@
   .twoCols { grid-template-columns: 1fr; }
   .buttons { flex-direction: column; }
 }
+@media (max-width: 520px) { .profileGrid, .pwGrid, .twoCols { grid-template-columns: minmax(0, 1fr); } .rows > div { flex-wrap: wrap; } }
+.profileGrid, .pwGrid { gap: 24px; }
+.notify { padding: 12px 0; border-bottom: 1px solid var(--border-soft); }
+.notify:last-child { border-bottom: 0; }
+.identity { padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.rules li + li { margin-top: 8px; }
+@media (max-width: 720px) { .profileGrid, .pwGrid { gap: 16px; } }
+
+.identity > div { min-width: 0; }
+.identity strong, .identity span, .rows b, .notify strong, .notify span { overflow-wrap: anywhere; }
+.identity strong { font-family: var(--font-display); font-size: 24px; line-height: 1.1; text-transform: uppercase; }
+.rows > div { padding-bottom: .65rem; border-bottom: 1px solid var(--border-soft); }
+.rows > div:last-child { padding-bottom: 0; border-bottom: 0; }
+.notify { align-items: flex-start; }
+.notify strong { font-size: var(--fs-body); }
+@media (max-width: 520px) { .device { flex-wrap: wrap; } .identity { align-items: flex-start; } }

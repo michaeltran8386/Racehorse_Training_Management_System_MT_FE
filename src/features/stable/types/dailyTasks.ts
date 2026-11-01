@@ -42,6 +42,7 @@ export interface DailyCareTask {
   mealType?: string | null;
   scheduledTime: string;
   shiftId?: string;
+  shift?: { id: string; name: string; startTime: string; endTime: string; sortOrder: number } | null;
   nutritionPlanId?: string;
   isMedicalLocked: boolean;
   medicalLockNotes?: string;

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { MotionConfig, motion } from "motion/react";
 import { ThemeToggle } from "@/shared/components/ui/ThemeToggle";
 import { LanguageToggle } from "@/shared/components/ui/LanguageToggle";
 import { useAppLanguage } from "@/shared/lib/language";
@@ -31,9 +32,11 @@ interface AuthLayoutProps {
 // Khung 2 cột chuẩn của mọi màn public (design Phase 0 · 1a): cột form 660px + ảnh editorial.
 // Dưới 980px xếp dọc: dải ảnh 186px ở trên, form ở dưới.
 export function AuthLayout({ title, description, hero = HERO_DEFAULT, compact, children }: AuthLayoutProps) {
-  const { t, lang } = useAppLanguage();
+  const { t } = useAppLanguage();
 
   return (
+    // reducedMotion="user": người bật prefers-reduced-motion chỉ còn mờ dần, không trượt/nảy.
+    <MotionConfig reducedMotion="user">
     <div className={styles.page}>
       <section className={cx(styles.formPane, compact && styles.compact)}>
         <div className={styles.top}>
@@ -48,13 +51,18 @@ export function AuthLayout({ title, description, hero = HERO_DEFAULT, compact, c
           <ThemeToggle />
         </div>
 
-        <main className={styles.column}>
+        <motion.main
+          className={styles.column}
+          initial={{ opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+        >
           <h1 className={styles.title}>{title}</h1>
           {description && <p className={styles.description}>{description}</p>}
-          <div className={styles.body} key={lang}>
+          <div className={styles.body}>
             {children}
           </div>
-        </main>
+        </motion.main>
 
         <p className={styles.support}>
           {t("auth.support", "Support")}: {BRAND.supportEmail} · {BRAND.supportPhone}
@@ -85,5 +93,6 @@ export function AuthLayout({ title, description, hero = HERO_DEFAULT, compact, c
         </div>
       </aside>
     </div>
+    </MotionConfig>
   );
 }

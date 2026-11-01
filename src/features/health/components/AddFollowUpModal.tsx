@@ -14,10 +14,13 @@ interface AddFollowUpModalProps {
 }
 
 export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
-  const [followUpDate, setFollowUpDate] = useState(new Date().toISOString().slice(0, 16));
-  const [temperature, setTemperature] = useState(38.0);
-  const [restingHeartRate, setRestingHeartRate] = useState(36);
-  const [respiratoryRate, setRespiratoryRate] = useState(12);
+  const [followUpDate, setFollowUpDate] = useState(() => {
+    const now = new Date();
+    return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
+  });
+  const [temperature, setTemperature] = useState("");
+  const [restingHeartRate, setRestingHeartRate] = useState("");
+  const [respiratoryRate, setRespiratoryRate] = useState("");
   const [progressNotes, setProgressNotes] = useState("");
   const [adjustments, setAdjustments] = useState("");
   const [busy, setBusy] = useState(false);
@@ -54,22 +57,22 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
       title={tr("Add Follow-up Examination")}
       subtitle={tr("Record latest vital signs, evaluate clinical progression, and adjust treatment protocol.")}
       width={520}
-      onClose={onClose}
+      onClose={busy ? undefined : onClose}
       foot={
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, width: "100%" }}>
           <Button tone="ghost" onClick={onClose} disabled={busy}>
             Cancel
           </Button>
-          <Button tone="primary" onClick={handleSubmit} disabled={busy}>
+          <Button tone="primary" type="submit" form="follow-up-form" disabled={busy}>
             Save Follow-up
           </Button>
         </div>
       }
     >
-      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      <form id="follow-up-form" onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {error && (
-          <div style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "4px" }}>
-            {error}
+          <div role="alert" style={{ color: "var(--danger)", fontSize: "var(--fs-body)", padding: "8px", background: "var(--danger-bg)", borderRadius: "var(--r)" }}>
+            {tr(error)}
           </div>
         )}
 
@@ -90,7 +93,7 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
               min={35}
               max={43}
               value={temperature}
-              onChange={(e) => setTemperature(Number(e.target.value))}
+              onChange={(e) => setTemperature(e.target.value)}
               required
             />
           </Field>
@@ -100,7 +103,7 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
               min={20}
               max={120}
               value={restingHeartRate}
-              onChange={(e) => setRestingHeartRate(Number(e.target.value))}
+              onChange={(e) => setRestingHeartRate(e.target.value)}
               required
             />
           </Field>
@@ -110,7 +113,7 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
               min={4}
               max={60}
               value={respiratoryRate}
-              onChange={(e) => setRespiratoryRate(Number(e.target.value))}
+              onChange={(e) => setRespiratoryRate(e.target.value)}
               required
             />
           </Field>

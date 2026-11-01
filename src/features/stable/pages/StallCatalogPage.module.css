@@ -1,0 +1,10 @@
+.layout { display: grid; grid-template-columns: minmax(220px, 30%) minmax(0, 1fr); gap: 16px; align-items: start; }
+.layout > div:first-child > button { color: var(--text); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 800px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 520px) { .formGrid { grid-template-columns: minmax(0, 1fr); } }
+.zoneCard { min-width: 0; overflow-wrap: anywhere; }
+.zoneCard:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.notes { display: block; min-width: 160px; max-width: 320px; overflow-wrap: anywhere; line-height: 1.5; }
+@media (max-width: 520px) { .actions { width: 100%; } .actions > * { flex: 1 1 auto; } }

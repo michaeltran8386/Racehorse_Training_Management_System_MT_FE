@@ -1,0 +1,9 @@
+.secondaryAction { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font-weight: 600; }
+.secondaryAction:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+.toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--fs-body); }
+.table th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; }
+.table td:first-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.table tbody tr:hover { background: var(--surface-row-hover); }
+@media (max-width: 720px) { .toolbar { align-items: stretch; } .toolbar > * { max-width: 100%; } }
+.table tbody tr:focus-visible { outline: 2px solid var(--brand); outline-offset: -3px; }

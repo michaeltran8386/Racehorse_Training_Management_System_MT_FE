@@ -1,5 +1,8 @@
+import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
+import { Card } from "@/shared/components/ui/Card";
+import styles from './ShiftCatalogPage.module.css';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
 import { Alert } from '@/shared/components/ui/Alert';
@@ -14,6 +17,7 @@ import { ShiftModal } from '../components/ShiftModal';
 import type { ShiftCatalogItem } from '../types/supplies';
 
 export default function ShiftCatalogPage() {
+  useScreenTranslation();
   const currentUser = useCurrentUser();
   const toast = useToast();
   const isManager = currentUser.role === 'CLUB_MANAGER';
@@ -61,7 +65,7 @@ export default function ShiftCatalogPage() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div className={styles.page}>
       <PageHeader
         title={tr('Shift Catalog')}
         description={tr('Define standard shift hours for stable and horse care staff.')}
@@ -76,7 +80,18 @@ export default function ShiftCatalogPage() {
 
       {error && <Alert tone="danger">{error}</Alert>}
 
-      <DataTable<ShiftCatalogItem>
+      {!loading && !error && (
+        <div className={styles.summary}>
+          <div><span>{tr('All')}</span><strong>{shifts.length}</strong></div>
+          <div><span>{tr('Active')}</span><strong>{shifts.filter((shift) => shift.isActive).length}</strong></div>
+          <div><span>{tr('Overnight')}</span><strong>{shifts.filter((shift) => shift.isOvernight).length}</strong></div>
+        </div>
+      )}
+
+      <Card pad={0}>
+        <DataTable<ShiftCatalogItem>
+        pageSize={10}
+        noun="shifts"
         loading={loading}
         rows={shifts}
         rowKey={(s) => s.id}
@@ -85,16 +100,16 @@ export default function ShiftCatalogPage() {
           {
             key: 'code',
             header: tr('Code'),
-            render: (s) => <strong style={{ fontFamily: 'monospace' }}>{s.code}</strong>,
+            render: (s) => <strong className={styles.code}>{s.code}</strong>,
           },
           {
             key: 'name',
             header: tr('Shift Name'),
             render: (s) => (
               <div>
-                <div style={{ fontWeight: 600 }}>{s.name}</div>
+                <div className={styles.shiftName}>{s.name}</div>
                 {s.description && (
-                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{s.description}</div>
+                  <div className={styles.description}>{s.description}</div>
                 )}
               </div>
             ),
@@ -103,7 +118,7 @@ export default function ShiftCatalogPage() {
             key: 'hours',
             header: tr('Hours'),
             render: (s) => (
-              <span style={{ fontWeight: 500 }}>
+              <span className={styles.hours}>
                 {s.startTime} – {s.endTime}
               </span>
             ),
@@ -157,6 +172,7 @@ export default function ShiftCatalogPage() {
             : []),
         ]}
       />
+      </Card>
 
       {/* Dialog Thêm/Sửa */}
       {editingShift !== undefined && (

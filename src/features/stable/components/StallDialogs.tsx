@@ -4,6 +4,7 @@ import { Button } from "@/shared/components/ui/Button";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Field } from "@/shared/components/form/Field";
 import { Select } from "@/shared/components/form/Select";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useToast } from "@/shared/components/ui/Toast";
 import { messageFor } from "@/shared/lib/messages";
@@ -185,9 +186,9 @@ export function AssignStallDialog({ stall, horse, onClose, onDone }: AssignProps
         {error && <Alert tone="danger" title={error} />}
         {!horse && (
           <Field label={tr("Horse")} required hint={horses.length === 0 ? tr("Every active horse already has a stall.") : undefined}>
-            <Select
+            <SearchSelect
               value={horseId}
-              onChange={(e) => setHorseId(e.target.value)}
+              onChange={setHorseId}
               options={[
                 { value: "", label: tr("— Choose a horse —") },
                 ...horses.map((h) => ({ value: h.id, label: `${h.name} (${h.horseCode ?? "—"})` })),

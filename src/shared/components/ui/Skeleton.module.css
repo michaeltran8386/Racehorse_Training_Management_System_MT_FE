@@ -234,3 +234,7 @@
   flex-direction: column;
   gap: 20px;
 }
+.cardGrid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 290px), 1fr)); }
+.kpiGrid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+@media (max-width: 980px) { .workspaceSidebar { display: none; } .workspaceContent { padding: 24px; } }
+@media (max-width: 720px) { .workspaceTopbar { padding: 0 16px; } .workspaceContent { padding: 20px 16px; } .toolbar, .pageHeader { flex-wrap: wrap; } .tableHeader, .tableRow { min-width: 560px; } .tableContainer { overflow-x: auto; } }
