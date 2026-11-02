@@ -100,6 +100,22 @@ export default function RecordDetailPage() {
     return () => { requestId.current += 1; };
   }, [fetchDetail]);
 
+  // Đến từ nút "Save & Finalize" của form: mở ngay hộp thoại Chốt cho bản nháp vừa lưu.
+  const finalizeRequested = searchParams.get("finalize") === "1";
+  const lockRequested = searchParams.get("lock") === "1";
+  const finalizeOpen =
+    showFinalizeModal || (finalizeRequested && isVet && record?.status === "DRAFT");
+
+  function closeFinalizeModal() {
+    setShowFinalizeModal(false);
+    if (finalizeRequested) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("finalize");
+      next.delete("lock");
+      setSearchParams(next, { replace: true });
+    }
+  }
+
   async function handleDeleteDraft() {
     if (!record || deleting) return;
     setDeleting(true);
@@ -583,12 +599,12 @@ export default function RecordDetailPage() {
         </ConfirmModal>
       )}
 
-      {showFinalizeModal && (
+      {finalizeOpen && (
         <FinalizeRecordModal
           recordNumber={record.recordNumber}
           proposedStatus={record.proposedStatus}
-          initialProposeLock={record.proposeMedicalLock}
-          onClose={() => setShowFinalizeModal(false)}
+          initialProposeLock={record.proposeMedicalLock || lockRequested}
+          onClose={closeFinalizeModal}
           onFinalize={async (input) => {
             await finalizeRecord(record.id, input);
             toast.show(tr("Medical record finalized and transitioned to In Treatment status."), "ok");

@@ -276,6 +276,16 @@ export const updateRecord = async (recordId: string, input: UpdateMedicalRecordI
     };
   }
 
+  if (input.labTests) {
+    bePayload.labTests = input.labTests
+      .filter((t) => t.result && t.result.trim().length >= 5)
+      .map((t) => ({
+        testType: t.testType || "Blood Test",
+        datePerformed: t.testDate || new Date().toISOString().split("T")[0],
+        result: t.result.trim(),
+      }));
+  }
+
   const res = await api<any>("PUT", `/medical/records/${recordId}`, bePayload);
   if (res && res.record) return res as { record: MedicalRecord };
   if (res && (res.id || res.horseId)) return { record: res as MedicalRecord };

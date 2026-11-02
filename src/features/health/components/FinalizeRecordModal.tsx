@@ -6,6 +6,8 @@ import { Input } from "@/shared/components/form/Input";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { Button } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/ui/Modal";
+import { HEALTH_STATUS } from "@/shared/lib/status";
+import type { HealthStatus } from "@/shared/types/enums";
 import type { FinalizeRecordInput } from "../types";
 
 import { tr } from "@/shared/i18n/tr";
@@ -82,7 +84,10 @@ export function FinalizeRecordModal({
         )}
 
         {proposedStatus && (
-          <Field label={tr("Apply Proposed Status")} hint={tr(`Update horse health status to: ${proposedStatus}`)}>
+          <Field
+            label={tr("Apply Proposed Status")}
+            hint={`${tr("Update horse health status to:")} ${tr(HEALTH_STATUS[proposedStatus as HealthStatus]?.label ?? proposedStatus)}`}
+          >
             <Checkbox
               label={tr("Apply this status to horse profile immediately upon finalization")}
               checked={applyProposedStatus}
