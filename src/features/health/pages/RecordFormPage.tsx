@@ -56,8 +56,9 @@ const LAB_TYPE_OPTIONS = [
 const PROPOSED_STATUS_OPTIONS = [
   { value: "UNDER_OBSERVATION", label: "Under Observation" },
   { value: "INJURED", label: "Injured" },
-  { value: "QUARANTINED", label: "Quarantined" },
-  { value: "FIT", label: "Fit" },
+  // Giá trị phải là HorseStatus của BE: "Cách ly" = ISOLATED, "Khỏe" = ACTIVE (QUARANTINED/FIT bị BE bỏ qua).
+  { value: "ISOLATED", label: "Quarantined" },
+  { value: "ACTIVE", label: "Fit" },
 ];
 
 function getInitialExamDate(): string {
@@ -398,25 +399,23 @@ export default function RecordFormPage() {
       severity,
       proposedStatus,
       proposeMedicalLock,
-      saveAsDraft,
+      // "Save & Finalize" cũng lưu nháp trước, rồi mở hộp thoại Chốt ở trang chi tiết:
+      // ở đó bác sĩ xác nhận áp trạng thái đề xuất và đặt Khóa huấn luyện (nếu đề xuất).
+      saveAsDraft: true,
     };
+    const finalizeQuery = saveAsDraft ? "" : `?finalize=1${proposeMedicalLock ? "&lock=1" : ""}`;
 
     try {
       if (isEdit && id) {
         const updated = await updateRecord(id, payload);
         toast.show(tr("Medical record updated successfully."), "ok");
         setDirty(false);
-        navigate(`/medical/records/${updated.record.id}`);
+        navigate(`/medical/records/${updated.record.id}${finalizeQuery}`);
       } else {
         const created = await createRecord(payload);
-        toast.show(
-          saveAsDraft
-            ? tr("Draft medical record saved successfully.")
-            : tr("Medical record created and finalized."),
-          "ok",
-        );
+        toast.show(tr("Draft medical record saved successfully."), "ok");
         setDirty(false);
-        navigate(`/medical/records/${created.record.id}`);
+        navigate(`/medical/records/${created.record.id}${finalizeQuery}`);
       }
     } catch (err: unknown) {
       const parsed = parseMedicalErrors(err);
