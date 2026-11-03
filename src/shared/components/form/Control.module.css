@@ -38,6 +38,35 @@
 .numeric { font-family: var(--font-numeric); font-variant-numeric: tabular-nums; }
 .invalid, .invalid:hover { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); }
 
+/* Bộ chọn Ngày & Giờ (Date / Time Picker) */
+.pickerInput,
+.control[type="date"],
+.control[type="time"],
+.control[type="datetime-local"],
+.control[type="month"] {
+  cursor: pointer;
+  position: relative;
+}
+
+.control[type="date"]::-webkit-calendar-picker-indicator,
+.control[type="time"]::-webkit-calendar-picker-indicator,
+.control[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.control[type="month"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 4px;
+  margin-right: -2px;
+  border-radius: var(--r-sm, 4px);
+  transition: transform var(--dur-fast, 0.12s) var(--ease, ease), background-color var(--dur-fast, 0.12s) var(--ease, ease);
+}
+
+.control[type="date"]::-webkit-calendar-picker-indicator:hover,
+.control[type="time"]::-webkit-calendar-picker-indicator:hover,
+.control[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+.control[type="month"]::-webkit-calendar-picker-indicator:hover {
+  background-color: var(--surface-3, #E2E8F0);
+  transform: scale(1.1);
+}
+
 .select { appearance: none; padding-right: 36px; }
 .select option:disabled { color: var(--muted-2); }
 

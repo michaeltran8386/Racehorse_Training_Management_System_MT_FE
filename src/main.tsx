@@ -33,6 +33,27 @@ if (typeof Node === "function" && Node.prototype) {
   };
 }
 
+// Bấm vào bất kỳ đâu trên ô input date/time đều lập tức mở hộp thoại chọn lịch/đồng hồ chuẩn (showPicker)
+if (typeof document !== "undefined") {
+  document.addEventListener("click", (e) => {
+    const target = e.target as HTMLElement | null;
+    if (target && target.tagName === "INPUT") {
+      const input = target as HTMLInputElement;
+      if (
+        (input.type === "date" || input.type === "time" || input.type === "datetime-local" || input.type === "month") &&
+        !input.disabled &&
+        !input.readOnly
+      ) {
+        try {
+          input.showPicker?.();
+        } catch {
+          // Bỏ qua nếu đã mở hoặc trình duyệt không cho phép gọi lặp lại
+        }
+      }
+    }
+  });
+}
+
 // Điểm khởi động của ứng dụng: dựng React vào <div id="root"> trong index.html.
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

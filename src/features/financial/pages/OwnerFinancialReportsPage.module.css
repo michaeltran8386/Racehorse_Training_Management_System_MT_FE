@@ -1,6 +1,9 @@
+/* 4 → 2 → 1 cột: thẻ hẹp thì xuống hàng thay vì ngắt số tiền giữa chừng ("184.200.00 / 0"). */
 .metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 1280px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .metrics { grid-template-columns: minmax(0, 1fr); } }
 .metrics > div { background: var(--surface); border: 1px solid var(--border); }
-.metrics strong { overflow-wrap: anywhere; font-size: clamp(24px, 2vw, 38px); }
+.metrics strong { white-space: nowrap; font-size: clamp(24px, 2vw, 34px); }
 .billingFilter { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .filterLabel { color: var(--text); font-size: var(--fs-body); font-weight: 600; }
 .periodSelect { min-height: 40px; padding: .5rem .75rem; border: 1px solid var(--border-field); border-radius: 0; background: var(--surface); color: var(--text); font: 600 var(--fs-body) var(--font); }
@@ -10,7 +13,6 @@
 .table th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
 .table td:first-child { white-space: nowrap; }
 .table tbody tr:hover { background: var(--surface-row-hover); }
-@media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .metrics { gap: 8px; } }
 .formGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 520px) { .formGrid { grid-template-columns: minmax(0, 1fr); } }

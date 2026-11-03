@@ -169,11 +169,11 @@ export default function HorseFormPage() {
       errs.color = "Please select a coat color.";
     }
 
-    if (!weightKg.trim()) {
+    if (!weightKg.trim() && !isEdit) {
       errs.weightKg = "Cân nặng là bắt buộc.";
-    } else {
+    } else if (weightKg.trim()) {
       const numW = Number(weightKg);
-      if (isNaN(numW) || numW <= 0) {
+      if (!Number.isFinite(numW) || numW < 0.01) {
         errs.weightKg = "Cân nặng phải lớn hơn 0 kg.";
       }
     }
@@ -219,7 +219,7 @@ export default function HorseFormPage() {
           dob,
           gender,
           color,
-          weightKg: weightKg.trim() ? Number(weightKg) : undefined,
+          weightKg: Number(weightKg),
           microchip: finalMicrochip,
         };
         const saved = await createHorse(payload);
@@ -434,14 +434,14 @@ export default function HorseFormPage() {
             </Field>
 
             <Field
-              label={tr("Weight (kg) *")}
+              label={tr(isEdit ? "Weight (kg)" : "Weight (kg) *")}
               error={errors.weightKg}
               hint={tr("Enter horse body weight in kg (greater than 0)")}
             >
               <Input
                 type="number"
                 step="any"
-                min={1}
+                min={0.01}
                 placeholder={tr("e.g. 480")}
                 value={weightKg}
                 invalid={Boolean(errors.weightKg)}

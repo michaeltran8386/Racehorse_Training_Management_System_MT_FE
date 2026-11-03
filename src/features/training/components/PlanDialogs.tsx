@@ -107,11 +107,11 @@ export function ActivatePlanDialog({ plan, onClose, onDone }: DialogProps) {
           <div style={{ marginTop: "0.5rem", padding: "0.6rem 0.8rem", borderRadius: "var(--r)", background: "var(--surface-sunken)", border: "1px solid var(--border)", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
             {isVietnamese ? (
               <>
-                💡 <strong>Hướng dẫn:</strong> Giáo án cần có ít nhất 1 bài tập trước khi kích hoạt. Hãy đóng hộp thoại này, mở tab <strong>{tr("Workouts")}</strong> của giáo án và bấm <strong>{tr("+ Add workout")}</strong> để thêm bài tập (hoặc thêm một lượt chạy thử Trial run).
+                <Icon name="lightbulb" inline size={14} /> <strong>Hướng dẫn:</strong> Giáo án cần có ít nhất 1 bài tập trước khi kích hoạt. Hãy đóng hộp thoại này, mở tab <strong>{tr("Workouts")}</strong> của giáo án và bấm <strong>{tr("+ Add workout")}</strong> để thêm bài tập (hoặc thêm một lượt chạy thử Trial run).
               </>
             ) : (
               <>
-                💡 <strong>{tr("Tip:")}</strong> {tr("A training plan must have at least 1 workout before activation. Please close this dialog, switch to the")}{" "}<strong>{tr("Workouts")}</strong> {tr("tab and click")}{" "}<strong>{tr("+ Add workout")}</strong> {tr("to schedule a workout or trial run.")}
+                <Icon name="lightbulb" inline size={14} /> <strong>{tr("Tip:")}</strong> {tr("A training plan must have at least 1 workout before activation. Please close this dialog, switch to the")}{" "}<strong>{tr("Workouts")}</strong> {tr("tab and click")}{" "}<strong>{tr("+ Add workout")}</strong> {tr("to schedule a workout or trial run.")}
               </>
             )}
           </div>

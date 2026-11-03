@@ -14,3 +14,5 @@
 @media (max-width: 900px) { .taskMetrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .taskMetrics { gap: 8px; } }
 @media (max-width: 520px) { .searchFilters input, .searchFilters select { width: 100% !important; } }
+
+.taskUndoLocked { color: var(--muted); font-style: italic; }

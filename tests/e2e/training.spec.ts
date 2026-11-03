@@ -180,10 +180,16 @@ test.describe('TASK-019 / CR-028: Training & Workouts E2E Acceptance', () => {
       await page.goto('/training/calendar');
       await page.getByRole('button', { name: '+ Schedule Workout' }).click();
       const dialog = page.getByRole('dialog');
-      await dialog.getByLabel('Horse / plan').selectOption('plan-137dab4a-d971-47dd-9cb6-a435d92a623c-draft');
+      const targetPlan = await prisma.trainingPlan.findUniqueOrThrow({
+        where: { id: 'plan-137dab4a-d971-47dd-9cb6-a435d92a623c-draft' },
+        include: { horse: true },
+      });
+      await dialog.getByRole('combobox', { name: 'Horse / plan' }).click();
+      await page.getByRole('option', { name: `${targetPlan.horse.name} – ${targetPlan.name} (Draft)`, exact: true }).click();
       await dialog.getByLabel('Date').fill(tomorrowClub());
       await dialog.getByLabel('Start time').fill('09:00');
-      await dialog.getByLabel('Workout type').selectOption('WALK');
+      await dialog.getByRole('combobox', { name: 'Workout type' }).click();
+      await page.getByRole('option', { name: 'Walk', exact: true }).click();
       await dialog.getByLabel('Intensity').selectOption('LIGHT');
       await dialog.getByRole('button', { name: 'Save workout' }).click();
       await expect(page.getByText('Workout added.')).toBeVisible();

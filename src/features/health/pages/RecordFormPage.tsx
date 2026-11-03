@@ -1,10 +1,11 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams, useBlocker } from "react-router-dom";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
+import vitalsStyles from "../components/ExamVitals.module.css";
 import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { Alert } from "@/shared/components/ui/Alert";
@@ -13,10 +14,9 @@ import { Button } from "@/shared/components/ui/Button";
 import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useToast } from "@/shared/components/ui/Toast";
-import { getHorses } from "@/features/horses/api";
+import { getHorseById, getHorses } from "@/features/horses/api";
 import { tr } from "@/shared/i18n/tr";
 import { ApiError } from "@/shared/lib/api";
-import { simulatedExamVitals } from "@/shared/lib/simulatedMeasurements";
 import {
   createRecord,
   getLatestExamSimulation,
@@ -85,8 +85,10 @@ export default function RecordFormPage() {
 
   // Block 1: Exam info
   const [horseId, setHorseId] = useState(horseIdParam);
-  const [horseOptions, setHorseOptions] = useState<{ value: string; label: string }[]>([]);
+  const [horseOptions, setHorseOptions] = useState<{ value: string; label: string; weightKg?: number | null }[]>([]);
   const [loadingHorses, setLoadingHorses] = useState(true);
+  // Khai báo trước effect tải ngựa vì effect điền sẵn cân nặng hồ sơ.
+  const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     let active = true;
@@ -99,10 +101,25 @@ export default function RecordFormPage() {
             data.map((h: any) => ({
               value: h.id,
               label: `${h.name} (${h.horseCode || h.id})`,
+              weightKg: h.weightKg,
             }))
           );
-          if (!isEdit && (!horseIdParam || !data.some((h: any) => h.id === horseIdParam))) {
-            setHorseId("");
+          const paramHorse = data.find((h: any) => h.id === horseIdParam);
+          if (!isEdit && paramHorse) setWeightKg((current) => current ?? paramHorse.weightKg ?? undefined);
+          // Ngựa từ ?horseId có thể nằm ngoài 100 ngựa đầu: tải riêng theo ID thay vì bỏ chọn.
+          if (!isEdit && horseIdParam && !paramHorse) {
+            getHorseById(horseIdParam)
+              .then((h) => {
+                if (!active) return;
+                setHorseOptions((prev) => [
+                  { value: h.id, label: `${h.name} (${h.horseCode || h.id})`, weightKg: h.weightKg },
+                  ...prev,
+                ]);
+                setWeightKg((current) => current ?? h.weightKg ?? undefined);
+              })
+              .catch(() => {
+                if (active) setHorseId("");
+              });
           }
         } else {
           setHorseOptions([{ value: "", label: tr("-- No horses available --") }]);
@@ -129,7 +146,28 @@ export default function RecordFormPage() {
   const [temperature, setTemperature] = useState<number | undefined>(undefined);
   const [restingHeartRate, setRestingHeartRate] = useState<number | undefined>(undefined);
   const [respiratoryRate, setRespiratoryRate] = useState<number | undefined>(undefined);
-  const [weightKg, setWeightKg] = useState<number | undefined>(undefined);
+  const listedHorse = horseOptions.find((option) => option.value === horseId);
+  const [fetchedWeight, setFetchedWeight] = useState<{ horseId: string; weightKg: number | null } | null>(null);
+  // Cân nặng hồ sơ luôn theo đúng ID ngựa đang chọn, kể cả khi ngựa không có trong danh sách đã tải.
+  useEffect(() => {
+    if (!horseId || listedHorse) return;
+    let active = true;
+    getHorseById(horseId)
+      .then((h) => {
+        if (active) setFetchedWeight({ horseId, weightKg: h.weightKg ?? null });
+      })
+      .catch(() => {
+        if (active) setFetchedWeight(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [horseId, listedHorse]);
+  const profileWeight = listedHorse
+    ? listedHorse.weightKg
+    : fetchedWeight?.horseId === horseId
+      ? fetchedWeight.weightKg
+      : undefined;
   const [clinicalNotes, setClinicalNotes] = useState("");
 
   // Block 3: Diagnostics
@@ -451,39 +489,52 @@ export default function RecordFormPage() {
     }
   }
 
+  // Ngựa đang chọn khi phản hồi về: bỏ kết quả của ngựa cũ nếu người dùng đã đổi ngựa.
+  const currentHorseIdRef = useRef(horseId);
+  useEffect(() => {
+    currentHorseIdRef.current = horseId;
+  }, [horseId]);
+
+  function selectHorse(nextHorseId: string) {
+    if (nextHorseId !== horseId) {
+      // Số đo và nguồn thuộc ngựa trước, không mang sang ngựa mới.
+      setTemperature(undefined);
+      setRestingHeartRate(undefined);
+      setRespiratoryRate(undefined);
+      // Khám mới: điền sẵn cân nặng hồ sơ của ngựa mới; bác sĩ sửa nếu cân lại.
+      setWeightKg(horseOptions.find((option) => option.value === nextHorseId)?.weightKg ?? undefined);
+      setExamSource(null);
+    }
+    setHorseId(nextHorseId);
+    clearFieldError("horseId");
+  }
+
   const handleLoadExam = useCallback(
     async (silent = false) => {
       if (!horseId) return;
+      const requestedHorseId = horseId;
       if (!silent) setExamBusy(true);
-      // Bấm nút mà Simulator chưa khám: tự sinh sinh hiệu bình thường thay vì báo lỗi.
-      const generate = () => {
-        const v = simulatedExamVitals();
-        setTemperature(v.temperature);
-        setRestingHeartRate(v.restingHeartRate);
-        setRespiratoryRate(v.respiratoryRate);
-        setExamSource(tr("Simulated measurements (Simulator not run)"));
-        setDirty(true);
-        toast.show(tr("Simulated measurements were generated. You can edit them before saving."), "ok");
-      };
       try {
-        const response = await getLatestExamSimulation(horseId);
+        const response = await getLatestExamSimulation(requestedHorseId);
+        if (currentHorseIdRef.current !== requestedHorseId) return;
         const draft = response.resultDraft;
         if (!draft) {
-          if (!silent) generate();
+          if (!silent) toast.show(tr("No simulation examination result exists for this horse"), "info");
           return;
         }
-        setTemperature(draft.temperature);
-        setRestingHeartRate(draft.restingHeartRate);
-        setRespiratoryRate(draft.respiratoryRate);
-        setWeightKg(typeof draft.weightKg === "number" && !isNaN(draft.weightKg) ? draft.weightKg : undefined);
+        setTemperature(draft.temperature ?? undefined);
+        setRestingHeartRate(draft.restingHeartRate ?? undefined);
+        setRespiratoryRate(draft.respiratoryRate ?? undefined);
+        if (typeof draft.weightKg === "number" && Number.isFinite(draft.weightKg)) setWeightKg(draft.weightKg);
         setExamSource(`${draft.modelVersion} · ${new Date(draft.capturedAt).toLocaleString()}`);
         setDirty(true);
         if (!silent) {
           toast.show(tr("Simulator measurements loaded. Review them before saving."), "ok");
         }
       } catch (err: unknown) {
+        if (currentHorseIdRef.current !== requestedHorseId) return;
         if (!silent && err instanceof ApiError && err.code === "SIMULATOR_EXAM_RESULT_NOT_FOUND") {
-          generate();
+          toast.show(tr("No simulation examination result exists for this horse"), "info");
         } else if (!silent) {
           const parsed = parseMedicalErrors(err);
           setError(parsed.summary);
@@ -559,10 +610,7 @@ export default function RecordFormPage() {
             <SearchSelect
               options={isEdit ? horseOptions : [{ value: "", label: tr("— Choose a horse —") }, ...horseOptions]}
               value={horseId}
-              onChange={(v) => {
-                setHorseId(v);
-                clearFieldError("horseId");
-              }}
+              onChange={selectHorse}
               disabled={isEdit || loadingHorses}
             />
           </Field>
@@ -665,7 +713,7 @@ export default function RecordFormPage() {
           </Alert>
         )}
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 220px), 1fr))", gap: 14 }}>
+        <div className={vitalsStyles.grid}>
           <Field
             label={tr("Temperature (°C) *")}
             hint={tempWarn ? tr("Outside reference range (37.2 – 38.6 °C)!") : tr("Normal: 37.2 – 38.6 °C (Allowed: 35.0 – 43.0 °C)")}
@@ -735,7 +783,7 @@ export default function RecordFormPage() {
 
           <Field
             label={tr("Weight (kg)")}
-            hint={tr("Standard: 200 – 800 kg")}
+            hint={profileWeight == null ? tr("Standard: 200 – 800 kg") : `${tr("Horse profile")}: ${profileWeight} kg`}
             error={fieldErrors.weightKg}
           >
             <Input

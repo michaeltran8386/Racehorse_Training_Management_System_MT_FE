@@ -1,4 +1,5 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
+import { Icon } from "@/shared/components/ui/Icon";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import styles from "./RaceEntryPage.module.css";
@@ -458,7 +459,7 @@ export default function RaceEntryPage() {
                           fontSize: "var(--fs-xs)",
                         }}
                       >
-                        <div style={{ fontWeight: 700, color: "var(--brand-700)" }}>🏆 {tr("Official Results:")}</div>
+                        <div style={{ fontWeight: 700, color: "var(--brand-700)" }}><Icon name="trophy" inline size={14} /> {tr("Official Results:")}</div>
                         {tourney.registrations
                           .filter((r) => r.result)
                           .sort((a, b) => (a.result?.finalRank ?? 99) - (b.result?.finalRank ?? 99))
@@ -493,7 +494,7 @@ export default function RaceEntryPage() {
                           tone="primary"
                           onClick={() => setRegisteringTournament(tourney)}
                         >
-                          🏇 {tr("Register Horse")}
+                          <Icon name="horse" inline size={14} /> {tr("Register Horse")}
                         </Button>
                       )}
 
@@ -502,7 +503,7 @@ export default function RaceEntryPage() {
                           tone="secondary"
                           onClick={() => setRegisteringTournament(tourney)}
                         >
-                          🐎 {isVietnamese() ? "Quản lý danh sách / Rút ngựa" : tr("Manage Entries / Scratch")}
+                          <Icon name="horse" inline size={14} /> {isVietnamese() ? "Quản lý danh sách / Rút ngựa" : tr("Manage Entries / Scratch")}
                         </Button>
                       )}
 
@@ -512,14 +513,14 @@ export default function RaceEntryPage() {
                             tone="quiet"
                             onClick={() => setResultsTournament(tourney)}
                           >
-                            ⏱️ {tr("View Results")}
+                            <Icon name="clock" inline size={14} /> {tr("View Results")}
                           </Button>
                         ) : isClubManager && isClosedReg ? (
                           <Button
                             tone="quiet"
                             onClick={() => setResultsTournament(tourney)}
                           >
-                            ⏱️ {tr("Record Results")}
+                            <Icon name="clock" inline size={14} /> {tr("Record Results")}
                           </Button>
                         ) : null)}
                     </div>

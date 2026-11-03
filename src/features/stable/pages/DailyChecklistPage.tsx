@@ -1,4 +1,5 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
+import { Icon } from "@/shared/components/ui/Icon";
 import { useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
 import styles from './StableOperations.module.css';
@@ -25,6 +26,43 @@ import type { DailyCareTask, DailyTaskSummary, DailyTaskType } from '../types/da
 import type { Zone } from '../types';
 import type { IncidentReport } from '../types/incidents';
 
+function UndoTaskButton({
+  undoUntil,
+  isManager,
+  disabled,
+  onUndo,
+}: {
+  undoUntil?: string | null;
+  isManager: boolean;
+  disabled: boolean;
+  onUndo: () => void;
+}) {
+  const expiresAt = undoUntil ? new Date(undoUntil).getTime() || 0 : 0;
+  const [nowMs, setNowMs] = useState(Date.now);
+  useEffect(() => {
+    if (expiresAt <= Date.now()) return;
+    const timer = window.setInterval(() => {
+      const now = Date.now();
+      setNowMs(now);
+      if (expiresAt <= now) window.clearInterval(timer);
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [expiresAt]);
+
+  const remaining = Math.max(0, Math.ceil((expiresAt - nowMs) / 1000));
+  if (!remaining && !isManager) {
+    return <span className={styles.taskUndoLocked}>{tr('Locked (>15 mins)')}</span>;
+  }
+
+  const minutes = Math.floor(remaining / 60);
+  const seconds = String(remaining % 60).padStart(2, '0');
+  return (
+    <Button size="sm" tone="secondary" disabled={disabled} onClick={onUndo}>
+      {tr('Undo')} ({remaining ? `${minutes}:${seconds}` : tr('Manager')})
+    </Button>
+  );
+}
+
 export default function DailyChecklistPage() {
   useScreenTranslation();
   const user = useCurrentUser();
@@ -45,11 +83,10 @@ export default function DailyChecklistPage() {
   const [actionBusyId, setActionBusyId] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  // Clock tick to update the 15-minute undo timers every second
-  const [nowMs, setNowMs] = useState<number>(Date.now());
+  const [currentMinute, setCurrentMinute] = useState(() => new Date().toTimeString().slice(0, 5));
   useEffect(() => {
-    const timer = setInterval(() => setNowMs(Date.now()), 1000);
-    return () => clearInterval(timer);
+    const timer = window.setInterval(() => setCurrentMinute(new Date().toTimeString().slice(0, 5)), 1000);
+    return () => window.clearInterval(timer);
   }, []);
 
   // Incident Modal
@@ -183,13 +220,13 @@ export default function DailyChecklistPage() {
   // Tab đang chọn không còn trong ngày này thì mặc định mở ca đang diễn ra (nếu xem hôm nay), không thì ca đầu tiên.
   const activeShift = useMemo(() => {
     if (shiftOptions.some((o) => o.id === shiftTab)) return shiftTab;
-    const now = new Date(nowMs).toTimeString().slice(0, 5);
+    const now = currentMinute;
     const current =
       selectedDate === todayStr
         ? shiftOptions.find((o) => (o.start <= o.end ? now >= o.start && now < o.end : now >= o.start || now < o.end))
         : undefined;
     return (current ?? shiftOptions[0])?.id ?? '';
-  }, [shiftOptions, shiftTab, selectedDate, todayStr, nowMs]);
+  }, [shiftOptions, shiftTab, selectedDate, todayStr, currentMinute]);
 
   const shiftTasks = useMemo(
     () => (activeShift ? tasks.filter((t) => (t.shift?.id ?? 'NONE') === activeShift) : tasks),
@@ -257,16 +294,6 @@ export default function DailyChecklistPage() {
       default:
         return <Badge tone="neutral">{type}</Badge>;
     }
-  };
-
-  // Helper calculating remaining undo time
-  const getUndoRemaining = (undoUntil?: string | null) => {
-    if (!undoUntil) return null;
-    const diffMs = new Date(undoUntil).getTime() - nowMs;
-    if (diffMs <= 0) return null;
-    const mins = Math.floor(diffMs / 60000);
-    const secs = Math.floor((diffMs % 60000) / 1000);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const progressPercent =
@@ -342,7 +369,7 @@ export default function DailyChecklistPage() {
           {/* Date Selector */}
           <div className={styles.weekNavigation}>
             <Button tone="secondary" size="sm" onClick={() => changeDateBy(-1)} aria-label={tr('Previous Day')}>
-              ◀
+              <Icon name="chevronLeft" />
             </Button>
             <input
               type="date"
@@ -359,7 +386,7 @@ export default function DailyChecklistPage() {
               }}
             />
             <Button tone="secondary" size="sm" onClick={() => changeDateBy(1)} aria-label={tr('Next Day')}>
-              ▶
+              <Icon name="chevronRight" />
             </Button>
             <Button
               tone="secondary"
@@ -406,6 +433,7 @@ export default function DailyChecklistPage() {
                 color: 'var(--ink)',
                 cursor: 'pointer',
                 userSelect: 'none',
+                minHeight: 44,
                 padding: '0.375rem 0.75rem',
                 borderRadius: 'var(--r-sm)',
                 border: '1px solid var(--border)',
@@ -519,8 +547,6 @@ export default function DailyChecklistPage() {
                 {/* Tasks Checklist */}
                 <div>
                   {group.tasks.map((task, idx) => {
-                    const undoRemaining = getUndoRemaining(task.undoUntil);
-                    const canUndo = Boolean(undoRemaining) || user?.role === 'CLUB_MANAGER';
                     const isBusy = actionBusyId === task.id;
                     const isLast = idx === group.tasks.length - 1;
 
@@ -545,9 +571,9 @@ export default function DailyChecklistPage() {
                           aria-label={tr(task.isCompleted ? 'Completed' : 'Complete task')}
                           title={tr(task.isCompleted ? 'Completed' : 'Complete task')}
                           style={{
-                            width: '2.5rem',
-                            height: '2.5rem',
-                            minWidth: '2.5rem',
+                            width: 44,
+                            height: 44,
+                            minWidth: 44,
                             borderRadius: 'var(--r-sm)',
                             display: 'flex',
                             alignItems: 'center',
@@ -561,7 +587,7 @@ export default function DailyChecklistPage() {
                             transition: 'all 0.15s ease',
                           }}
                         >
-                          {task.isCompleted ? '✓' : null}
+                          {task.isCompleted ? <Icon name="check" size={14} /> : null}
                         </button>
 
                         {/* Task Content */}
@@ -600,24 +626,16 @@ export default function DailyChecklistPage() {
                           {task.isCompleted && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem', fontSize: '0.75rem' }}>
                               <span style={{ color: 'var(--color-ok)', fontWeight: 500 }}>
-                                ✓ {tr('Completed')} {task.completedAt ? new Date(task.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
+                                <Icon name="check" inline size={14} /> {tr('Completed')} {task.completedAt ? new Date(task.completedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                                 {task.completedBy ? ` ${tr('by')} ${task.completedBy.fullName}` : ''}
                               </span>
 
-                              {canUndo ? (
-                                <Button
-                                  size="sm"
-                                  tone="secondary"
-                                  disabled={isBusy}
-                                  onClick={() => handleUncomplete(task.id)}
-                                >
-                                  {tr('Undo')} {undoRemaining ? `(${undoRemaining})` : `(${tr('Manager')})`}
-                                </Button>
-                              ) : (
-                                <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>
-                                  {tr('Locked (>15 mins)')}
-                                </span>
-                              )}
+                              <UndoTaskButton
+                                undoUntil={task.undoUntil}
+                                isManager={user?.role === 'CLUB_MANAGER'}
+                                disabled={isBusy}
+                                onUndo={() => void handleUncomplete(task.id)}
+                              />
                             </div>
                           )}
                         </div>

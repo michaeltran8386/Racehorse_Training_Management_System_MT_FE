@@ -246,13 +246,13 @@ export default function ShiftRosterPage() {
         {/* Điều hướng tuần */}
         <div className={styles.weekNavigation}>
           <Button tone="ghost" size="sm" onClick={handlePrevWeek}>
-            {tr('◀ Previous week')}
+            <Icon name="chevronLeft" inline size={14} /> {tr('Previous week')}
           </Button>
           <Button tone="ghost" size="sm" onClick={handleCurrentWeek}>
             {tr('This week')}
           </Button>
           <Button tone="ghost" size="sm" onClick={handleNextWeek}>
-            {tr('Next week ▶')}
+            {tr('Next week')} <Icon name="chevronRight" inline size={14} />
           </Button>
           <span style={{ fontWeight: 600, fontSize: '0.9375rem', marginLeft: '0.5rem' }}>
             {targetWeekLabel}

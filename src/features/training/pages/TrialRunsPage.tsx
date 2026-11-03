@@ -13,14 +13,15 @@ import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { useToast } from "@/shared/components/ui/Toast";
 import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
-import { formatDateTime } from "@/shared/lib/format";
 import { todayClub, trainingApi } from "../api";
 import { SESSION_STATUS_LABEL, TRACK_LABEL } from "../types";
 import type { ExerciseSession, TrainingPlan } from "../types";
 import { WorkoutDialog } from "../components/WorkoutDialogs";
+import { sessionButtons } from "../components/sessionRules";
 
 import { tr } from "@/shared/i18n/tr";
 import styles from "./TrialRunsPage.module.css";
+import { Icon } from "@/shared/components/ui/Icon";
 function plusDays(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -116,11 +117,11 @@ export default function TrialRunsPage() {
       <div className={styles.notice}>
         {isVietnamese ? (
           <>
-            ⏱️ Giám sát các phiên chạy thử tốc độ cao. Đảm bảo giãn cách an toàn tối thiểu 15 phút giữa các lượt chạy cùng mặt sân.
+            <Icon name="clock" inline size={14} /> Giám sát các phiên chạy thử tốc độ cao. Đảm bảo giãn cách an toàn tối thiểu 15 phút giữa các lượt chạy cùng mặt sân.
           </>
         ) : (
           <>
-            ⏱️ Monitor high-speed trial runs. A 15-minute safety interval is enforced between runs on the same track.
+            <Icon name="clock" inline size={14} /> Monitor high-speed trial runs. A 15-minute safety interval is enforced between runs on the same track.
           </>
         )}
       </div>
@@ -170,69 +171,65 @@ export default function TrialRunsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
-                    <tr key={row.id} style={{ borderBottom: "1px solid var(--border)" }}>
-                      <td style={{ padding: "0.5rem 0.75rem", fontWeight: 700 }}>{row.startTime}</td>
-                      <td style={{ padding: "0.5rem 0.75rem" }}>
-                        <Link to={`/horses/${row.horseId}`}>{row.horseName}</Link>
-                      </td>
-                      <td style={{ padding: "0.5rem 0.75rem" }}>{row.jockeyName || (isVietnamese ? "Chưa giao" : "—")}</td>
-                      <td style={{ padding: "0.5rem 0.75rem" }}>
-                        {row.targetDistanceMeters}m{row.targetSpeedKmh ? tr(` · ${row.targetSpeedKmh} km/h`) : ""}
-                      </td>
-                      <td style={{ padding: "0.5rem 0.75rem" }}>
-                        <Badge tone={row.status === "BLOCKED" ? "danger" : row.status === "COMPLETED" ? "ok" : "info"}>
-                          {SESSION_STATUS_LABEL[row.status]}
-                        </Badge>
-                      </td>
-                      <td style={{ padding: "0.5rem 0.75rem", textAlign: "right" }}>
-                        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: "0.5rem" }}>
-                          {user.role === "HEAD_TRAINER" &&
-                            row.status === "SCHEDULED" &&
-                            plans.some((p) => p.id === row.planId) && (
-                              <div>
-                                <Button
-                                  size="sm"
-                                  tone="primary"
-                                  disabled={
-                                    launchingId === row.id ||
-                                    row.isHorseLocked ||
-                                    new Date(row.scheduledAt) > new Date()
-                                  }
-                                  title={
-                                    row.isHorseLocked
-                                      ? tr("The horse is still under a Training Lock.")
-                                      : new Date(row.scheduledAt) > new Date()
-                                        ? tr("The trial has not reached its scheduled start time.")
+                  {rows.map((row) => {
+                    const upcoming = row.status === "SCHEDULED" && Date.parse(row.scheduledAt) > Date.now();
+                    const actions = sessionButtons(row, user.role);
+                    return (
+                      <tr key={row.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                        <td style={{ padding: "0.5rem 0.75rem", fontWeight: 700 }}>{row.startTime}</td>
+                        <td style={{ padding: "0.5rem 0.75rem" }}>
+                          <Link to={`/horses/${row.horseId}`}>{row.horseName}</Link>
+                        </td>
+                        <td style={{ padding: "0.5rem 0.75rem" }}>{row.jockeyName || (isVietnamese ? "Chưa giao" : "—")}</td>
+                        <td style={{ padding: "0.5rem 0.75rem" }}>
+                          {row.targetDistanceMeters}m{row.targetSpeedKmh ? tr(` · ${row.targetSpeedKmh} km/h`) : ""}
+                        </td>
+                        <td style={{ padding: "0.5rem 0.75rem" }}>
+                          <Badge tone={row.status === "BLOCKED" ? "danger" : row.status === "COMPLETED" ? "ok" : "info"}>
+                            {upcoming ? (isVietnamese ? "Sắp tới" : "Upcoming") : tr(SESSION_STATUS_LABEL[row.status])}
+                          </Badge>
+                        </td>
+                        <td style={{ padding: "0.5rem 0.75rem", textAlign: "right" }}>
+                          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: "0.5rem" }}>
+                            {user.role === "HEAD_TRAINER" &&
+                              row.status === "SCHEDULED" &&
+                              !upcoming &&
+                              plans.some((p) => p.id === row.planId) && (
+                                <div>
+                                  <Button
+                                    size="sm"
+                                    tone="primary"
+                                    disabled={
+                                      launchingId === row.id ||
+                                      row.isHorseLocked
+                                    }
+                                    title={
+                                      row.isHorseLocked
+                                        ? tr("The horse is still under a Training Lock.")
                                         : undefined
-                                  }
-                                  onClick={() => void launchSimulation(row.id)}
-                                >
-                                  {launchingId === row.id
-                                    ? tr("Opening…")
-                                    : isVietnamese
-                                      ? "Chạy mô phỏng"
-                                      : tr("Run simulation")}
-                                </Button>
-                                {new Date(row.scheduledAt) > new Date() && (
-                                  <div
-                                    data-testid="trial-launch-timing"
-                                    style={{ marginTop: "0.25rem", fontSize: "var(--fs-xs)", color: "var(--text-muted)" }}
+                                    }
+                                    onClick={() => void launchSimulation(row.id)}
                                   >
-                                    {isVietnamese ? "Có thể chạy từ" : "Available from"} {formatDateTime(row.scheduledAt)}
-                                  </div>
-                                )}
-                              </div>
+                                    {launchingId === row.id
+                                      ? tr("Opening…")
+                                      : isVietnamese
+                                        ? "Chạy mô phỏng"
+                                        : tr("Run simulation")}
+                                  </Button>
+                                </div>
+                              )}
+                            {(actions.record || actions.viewResult) && (
+                              <LinkButton to={`/training/sessions/${row.id}/result`} size="sm" tone={row.status === "COMPLETED" ? "secondary" : "primary"}>
+                                {row.status === "COMPLETED"
+                                  ? (isVietnamese ? "Xem kết quả" : tr("View result"))
+                                  : (isVietnamese ? "Ghi kết quả" : tr("Record result"))}
+                              </LinkButton>
                             )}
-                          <LinkButton to={`/training/sessions/${row.id}/result`} size="sm" tone={row.status === "COMPLETED" ? "secondary" : "primary"}>
-                              {row.status === "COMPLETED"
-                                ? (isVietnamese ? "Xem kết quả" : tr("View result"))
-                                : (isVietnamese ? "Ghi kết quả" : tr("Record result"))}
-                          </LinkButton>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

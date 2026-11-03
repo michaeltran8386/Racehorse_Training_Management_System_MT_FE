@@ -6,6 +6,7 @@ import { Modal } from "@/shared/components/ui/Modal";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Select } from "@/shared/components/form/Select";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useToast } from "@/shared/components/ui/Toast";
@@ -231,9 +232,10 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
         )}
         {!fixedPlan && !editing && (
           <Field label={tr("Horse / plan")} required>
-            <Select
+            <SearchSelect
+              placeholder={tr("Horse / plan")}
               value={planId}
-              onChange={(e) => setPlanId(e.target.value)}
+              onChange={setPlanId}
               options={(plans ?? []).map((p) => ({
                 value: p.id,
                 label: `${p.horseName} – ${p.name} (${p.status === "ACTIVE" ? "Active" : "Draft"})${p.isLockedByMedical ? " · Training Lock" : ""}`,
@@ -248,7 +250,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
         )}
         {phases.length > 0 && (
           <Field label={tr("Phase")} required hint={phase ? `${phase.startDate} → ${phase.endDate}` : undefined}>
-            <Select value={phaseId} onChange={(e) => setPhaseId(e.target.value)} options={phases.map((p) => ({ value: p.id, label: p.name }))} />
+            <SearchSelect placeholder={tr("Phase")} value={phaseId} onChange={setPhaseId} options={phases.map((p) => ({ value: p.id, label: p.name }))} />
           </Field>
         )}
         <div className={formLayout.columns}>
@@ -261,9 +263,9 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
         </div>
         <div className={formLayout.columns}>
           <Field label={tr("Workout type")} required>
-            <Select
+            <SearchSelect
               value={type}
-              onChange={(e) => setType(e.target.value as ExerciseType)}
+              onChange={(value) => setType(value as ExerciseType)}
               options={(Object.keys(EXERCISE_TYPE_LABEL) as ExerciseType[]).map((t) => ({
                 value: t,
                 label: EXERCISE_TYPE_LABEL[t],
@@ -311,7 +313,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
           </Field>
         </div>
         <Field label={tr("Groom")} required>
-          <Select value={groomId} onChange={(e) => setGroomId(e.target.value)} options={grooms.map((g) => ({ value: g.id, label: g.fullName }))} />
+          <SearchSelect placeholder={tr("Groom")} value={groomId} onChange={setGroomId} options={grooms.map((g) => ({ value: g.id, label: g.fullName }))} />
         </Field>
         <Field label={tr("Instructions")} hint={tr("Up to 500 characters")}>
           <Textarea rows={2} maxLength={500} value={notes} onChange={(e) => setNotes(e.target.value)} />

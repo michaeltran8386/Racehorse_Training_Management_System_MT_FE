@@ -176,8 +176,8 @@
   --sidebar-w-md:224px;
   --topbar-h:64px;
   --topbar-h-sm:64px;
-  --content-max:1464px;      /* 1400 nội dung + 2 × 32 padding */
-  --content-pad:28px 32px 40px; /* @kind other */
+  --content-max:100%;        /* 100% chiều ngang chuẩn đồng bộ khung ứng dụng */
+  --content-pad:28px 32px 140px; /* @kind other - Thêm khoảng trống dư ở đáy trang tránh bị che khuất bởi Chat TMEC */
   --control-h:44px;          /* nút, input, tab */
   --control-h-sm:36px;       /* nút trong bảng, thanh lọc */
   --row-h:56px;              /* hàng bảng */
@@ -315,7 +315,7 @@
   --ok:#2f6b2a; --ok-bg:#e3efd9; --warn:#8a5300; --warn-bg:#fbecc8;
   --danger:#a8322a; --danger-bg:#f7dfdb; --info:#1f6a96; --info-bg:#dcebf3;
   --r-xs:0px; --r-sm:0px; --r:0px; --r-lg:0px; --r-xl:0px; --r-modal:0px; --r-btn:0px; --r-field:0px;
-  --content-max:1264px; --shadow-pop:8px 8px 0 rgba(10,22,28,.22); --shadow-lg:8px 8px 0 rgba(10,22,28,.3);
+  --content-max:100%; --shadow-pop:8px 8px 0 rgba(10,22,28,.22); --shadow-lg:8px 8px 0 rgba(10,22,28,.3);
 }
 [data-theme="dark"], .theme-dark {
   --bg-page:#0e1a20; --bg-surface:#152830; --bg-subtle:#13232b; --text-primary:#ede6d3; --text-muted:#b0bfba;

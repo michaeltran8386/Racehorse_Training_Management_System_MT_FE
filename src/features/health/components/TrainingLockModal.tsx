@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { Icon } from "@/shared/components/ui/Icon";
 import type { FormEvent } from "react";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
@@ -210,7 +211,8 @@ export function TrainingLockModal({
               }}
             >
               <div style={{ fontWeight: 600, color: "var(--danger)", display: "flex", alignItems: "center", gap: 6 }}>
-                <span>{tr("⚠️ Clinical Order Impact Assessment")}</span>
+                <Icon name="alert" size={16} />
+                <span>{tr("Clinical Order Impact Assessment")}</span>
               </div>
               <div style={{ color: "var(--text)", lineHeight: 1.5 }}>
                 • <strong>{tr("Health Status:")}</strong> {appliedStatus ? <>{tr("Transitions horse to")} <strong>{tr(APPLIED_STATUS_OPTIONS.find((option) => option.value === appliedStatus)?.label || appliedStatus)}</strong> {tr("immediately.")}</> : tr("Select a health status.")}<br/>

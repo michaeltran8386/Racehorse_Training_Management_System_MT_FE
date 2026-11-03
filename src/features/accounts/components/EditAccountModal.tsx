@@ -15,6 +15,7 @@ import type { AccountStatus, PublicAccount } from "@/shared/types/auth";
 import { updateAccount } from "../api";
 import styles from "./EditAccountModal.module.css";
 import { fullNameError } from "@/shared/lib/name";
+import { VN_PHONE_RE, normalizeVnPhone } from "@/shared/lib/phone";
 
 import { tr } from "@/shared/i18n/tr";
 // Chỉ xóa hẳn được tài khoản chưa từng hoạt động (khớp backend); tài khoản đã dùng thì vô hiệu hóa.
@@ -49,14 +50,12 @@ export function EditAccountModal({ account, isSelf, isLastManager, onClose, onSa
       ? (isVietnamese ? "Câu lạc bộ phải duy trì ít nhất một Quản trị viên hoạt động." : "The club must keep at least one active Club Manager.")
       : undefined;
 
-  const VN_PHONE_RE = /^0[35789]\d{8}$/;
-
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
     if (fullNameError(fullName)) return setErrors({ fullName: fullNameError(fullName) });
 
-    const cleanPhone = phone.replace(/[\s.-]/g, "").replace(/^\+84/, "0");
+    const cleanPhone = normalizeVnPhone(phone.trim());
     if (cleanPhone && !VN_PHONE_RE.test(cleanPhone)) {
       return setErrors({ phone: t("phoneValidation.error") });
     }
@@ -121,7 +120,7 @@ export function EditAccountModal({ account, isSelf, isLastManager, onClose, onSa
           <Input icon="user" value={fullName} data-autofocus onChange={(e) => setFullName(e.target.value)} />
         </Field>
         <Field label={isVietnamese ? "Số điện thoại" : tr("Phone")} error={errors.phone} hint={t("phoneValidation.hint")}>
-          <Input type="tel" autoComplete="off" maxLength={15} placeholder="0901 234 567" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          <Input type="tel" autoComplete="off" maxLength={15} placeholder="0901234567" value={phone} onChange={(e) => setPhone(e.target.value)} onBlur={() => setPhone((v) => normalizeVnPhone(v))} />
         </Field>
         <Field label={tr("Club email")} hint={tr("The email is the sign-in name, so it cannot be changed here.")}>
           <Input icon="mail" value={account.email} readOnly disabled />

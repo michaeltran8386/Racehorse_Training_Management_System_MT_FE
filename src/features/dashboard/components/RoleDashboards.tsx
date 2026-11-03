@@ -177,7 +177,7 @@ function UpcomingTournamentsWidget() {
     <Card pad={20}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "1.125rem" }}>🏆</span>
+          <Icon name="trophy" size={18} />
           <h3 className={styles.widgetTitle}>
             {isVi ? "Giải đua sắp diễn ra" : tr("Upcoming Tournaments")}
           </h3>
@@ -266,7 +266,7 @@ function UpcomingTournamentsWidget() {
                       {t.name}
                     </div>
                     <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", marginTop: "2px" }}>
-                      📍 {t.location}
+                      <Icon name="pin" inline size={12} /> {t.location}
                     </div>
                   </div>
                 </div>
@@ -437,7 +437,7 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
                           flexShrink: 0,
                         }}
                       >
-                        🐎
+                        <Icon name="horse" size={20} />
                       </div>
 
                       <div style={{ minWidth: 0 }}>
@@ -445,7 +445,7 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
                           {h.name} <span style={{ color: "var(--muted)", fontWeight: 400 }}>({h.stallCode || "STALL"})</span>
                         </div>
                         <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", marginTop: "2px" }}>
-                          📍 {h.isMedicalLocked ? (isVi ? "Khóa huấn luyện · Theo dõi" : "Medical Lock") : (h.latestRecord?.diagnosis || (isVi ? "Theo dõi sức khỏe" : "Under review"))}
+                          <Icon name="pin" inline size={12} /> {h.isMedicalLocked ? (isVi ? "Khóa huấn luyện · Theo dõi" : "Medical Lock") : (h.latestRecord?.diagnosis || (isVi ? "Theo dõi sức khỏe" : "Under review"))}
                         </div>
                       </div>
                     </div>
@@ -472,7 +472,7 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
         <Card pad={20}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "1.125rem" }}>📅</span>
+              <Icon name="calendar" size={18} />
               <h3 className={styles.widgetTitle}>
                 {isVi ? "Lịch tập hôm nay" : tr("Today's Workouts")}
               </h3>
@@ -488,7 +488,7 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
             <p role="alert" style={{ color: "var(--danger)" }}>{isVi ? "Không thể tải lịch tập." : "Could not load workouts."}</p>
           ) : (todaySessions.data ?? []).filter((s) => s.status !== "CANCELLED").length === 0 ? (
             <div style={{ padding: "24px 16px", textAlign: "center" }}>
-              <div style={{ fontSize: "36px", marginBottom: "8px" }}>🗓️</div>
+              <Icon name="calendar" size={36} style={{ margin: "0 auto 8px", color: "var(--muted)" }} />
               <p style={{ margin: 0, fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--ink)" }}>
                 {isVi ? "Hôm nay không có buổi tập nào." : tr("No workouts scheduled today.")}
               </p>
@@ -533,7 +533,7 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
         <Card pad={20}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "1.125rem" }}>🏠</span>
+              <Icon name="home" size={18} />
               <h3 className={styles.widgetTitle}>
                 {isVi ? "Sức chứa chuồng" : tr("Stall Capacity")}
               </h3>

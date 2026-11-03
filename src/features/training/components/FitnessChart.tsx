@@ -52,7 +52,7 @@ export function ChartCard({ title, subtitle, children }: { title: string; subtit
 
 function Tooltip({ leftPct, children }: { leftPct: number; children: ReactNode }) {
   return (
-    <div className={styles.tooltip} style={{ left: `${leftPct}%`, transform: `translateX(${leftPct > 60 ? "-100%" : "0"})` }} role="status">
+    <div className={styles.tooltip} style={{ left: `clamp(0px, calc(${leftPct}% - var(--chart-tip-width) / 2), calc(100% - var(--chart-tip-width)))` }} role="status">
       {children}
     </div>
   );

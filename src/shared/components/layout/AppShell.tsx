@@ -68,6 +68,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div key={pathname} className={styles.pageTransition}>
               {children}
             </div>
+            {/* Vùng đệm dư ở đáy trang tránh bị che khuất bởi Chat TMEC */}
+            <div className={styles.bottomSpacer} aria-hidden="true" />
           </main>
         </div>
       </div>

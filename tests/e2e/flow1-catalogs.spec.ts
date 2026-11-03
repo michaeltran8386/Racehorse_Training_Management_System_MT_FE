@@ -46,5 +46,15 @@ test.describe('Catalog RBAC Permissions', () => {
     await expect(page.getByRole('button', { name: /^Fit to work\s*\d+$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /^Training Lock\s*\d+$/ })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Add Horse' })).toHaveCount(0);
+
+    const fit = page.getByRole('button', { name: /^Fit to work\s*\d+$/ });
+    await fit.click();
+    await expect(page).toHaveURL(/status=QUALIFIED/);
+    await page.reload();
+    await expect(fit).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Clear filters' }).click();
+    await expect(page).not.toHaveURL(/status=QUALIFIED/);
+    await page.goBack();
+    await expect(fit).toHaveAttribute('aria-pressed', 'true');
   });
 });

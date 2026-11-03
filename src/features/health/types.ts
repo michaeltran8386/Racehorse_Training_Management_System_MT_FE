@@ -60,9 +60,9 @@ export interface PrescriptionItem {
 export interface FollowUpItem {
   id?: string;
   followUpDate: string;
-  temperature: number;
-  restingHeartRate: number;
-  respiratoryRate: number;
+  temperature: number | null;
+  restingHeartRate: number | null;
+  respiratoryRate: number | null;
   progressNotes: string;
   adjustments?: string;
   vetName?: string;
@@ -270,9 +270,9 @@ export interface StopPrescriptionInput {
 
 export interface FollowUpInput {
   followUpDate: string;
-  temperature: number;
-  restingHeartRate: number;
-  respiratoryRate: number;
+  temperature?: number;
+  restingHeartRate?: number;
+  respiratoryRate?: number;
   progressNotes: string;
   adjustments?: string;
 }
