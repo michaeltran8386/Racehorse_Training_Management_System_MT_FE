@@ -563,9 +563,12 @@ export default function RecordDetailPage() {
                       </span>
                     </div>
 
+                    {/* Tái khám không bắt buộc đo sinh hiệu (BUG-MAN-13): không đo thì ẩn cả dòng. */}
+                    {(fu.temperature != null || fu.restingHeartRate != null || fu.respiratoryRate != null) && (
                     <div style={{ fontSize: "var(--fs-body)", color: "var(--text-2)" }}>
                       {tr("Temperature:")}{" "}<strong>{fu.temperature == null ? "—" : `${fu.temperature} °C`}</strong> {tr("· Heart Rate:")}{" "}<strong>{fu.restingHeartRate == null ? "—" : `${fu.restingHeartRate} ${tr("bpm")}`}</strong> {tr("· Respiratory Rate:")}{" "}<strong>{fu.respiratoryRate == null ? "—" : `${fu.respiratoryRate} ${tr("breaths/min")}`}</strong>
                     </div>
+                    )}
 
                     <div style={{ fontSize: "var(--fs-body)" }}>
                       <strong>{tr("Clinical Progress:")}</strong> {fu.progressNotes}

@@ -60,8 +60,8 @@ export async function updateStall(id: string, dto: UpdateStallDto): Promise<Stal
   return api<Stall>("PUT", `/stalls/${id}`, dto);
 }
 
-export async function setStallStatus(id: string, status: SettableStallStatus): Promise<Stall> {
-  return api<Stall>("PATCH", `/stalls/${id}/status`, { status });
+export async function setStallStatus(id: string, status: SettableStallStatus, notes?: string): Promise<Stall> {
+  return api<Stall>("PATCH", `/stalls/${id}/status`, { status, ...(notes && { notes }) });
 }
 
 export async function assignHorse(

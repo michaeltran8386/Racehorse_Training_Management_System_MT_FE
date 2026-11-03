@@ -6,16 +6,20 @@ import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Modal } from "@/shared/components/ui/Modal";
+import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { HealthBadge } from "@/shared/components/ui/HealthBadge";
 import { Segmented } from "@/shared/components/ui/Segmented";
 import { Select } from "@/shared/components/form/Select";
 import { Checkbox } from "@/shared/components/form/Checkbox";
+import { Field } from "@/shared/components/form/Field";
+import { Textarea } from "@/shared/components/form/Textarea";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { messageFor } from "@/shared/lib/messages";
 import { formatDate, formatTime } from "@/shared/lib/format";
 import type { HealthStatus } from "@/shared/types/enums";
-import { getStalls, getZones } from "../api";
-import type { Stall, Zone } from "../types";
+import { getStalls, getZones, setStallStatus } from "../api";
+import type { SettableStallStatus, Stall, Zone } from "../types";
+import { STALL_STATUS_LABEL } from "../types";
 import { GridCell, ZoneGrid, type CellLook } from "../components/ZoneGrid";
 import { AssignStallDialog, ReturnStallDialog, TransferStallDialog } from "../components/StallDialogs";
 import { HEALTH_STATUS } from "@/shared/lib/status";
@@ -24,6 +28,8 @@ import { HORSE_STATUS_COLOR, allocationOf, useStallCounts } from "../stallUtils"
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 const REFRESH_MS = 60_000;
+const settableStatuses: SettableStallStatus[] = ["AVAILABLE", "MAINTENANCE", "INACTIVE"];
+const stallStatusOptions = settableStatuses.map((value) => ({ value, label: STALL_STATUS_LABEL[value] }));
 
 type Dialog = "assign" | "transfer" | "return" | null;
 
@@ -33,6 +39,7 @@ export default function StableMapPage() {
   useAppLanguage(); // subscribe to language changes so tr() placeholder re-renders
   const user = useCurrentUser();
   const canManage = user.role === "CLUB_MANAGER" || user.role === "HEAD_TRAINER";
+  const canSetStatus = user.role === "CLUB_MANAGER";
   const isGroom = user.role === "GROOM";
 
   const [zones, setZones] = useState<Zone[] | null>(null);
@@ -45,6 +52,10 @@ export default function StableMapPage() {
   const [onlyMine, setOnlyMine] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [statusChange, setStatusChange] = useState<(typeof stallStatusOptions)[number] | null>(null);
+  const [statusNote, setStatusNote] = useState("");
+  const [statusBusy, setStatusBusy] = useState(false);
+  const [statusError, setStatusError] = useState("");
   const [search, setSearch] = useState("");
   const [matches, setMatches] = useState<Stall[] | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
@@ -65,14 +76,14 @@ export default function StableMapPage() {
   const loadStalls = useCallback(() => {
     if (!zoneId) return;
     setError("");
-    getStalls({ zoneId })
+    getStalls({ zoneId, includeInactive: canSetStatus })
       .then((list) => {
         setStalls(list);
         setUpdatedAt(new Date());
       })
       .catch((err) => setError(messageFor(err)))
       .finally(() => setLoading(false));
-  }, [zoneId]);
+  }, [canSetStatus, zoneId]);
 
   useEffect(loadZones, [loadZones]);
   useEffect(() => {
@@ -134,6 +145,7 @@ export default function StableMapPage() {
         };
       }
       if (s.status === "MAINTENANCE") return { title: tr("Maintenance"), striped: true, dimmed: onlyMine, flash: flashId === s.id };
+      if (s.status === "INACTIVE") return { title: tr("Inactive"), striped: true, dimmed: onlyMine, flash: flashId === s.id };
       return { title: tr("Empty"), dashed: true, dimmed: onlyMine, flash: flashId === s.id };
     },
     [isMine, onlyMine, flashId],
@@ -144,6 +156,27 @@ export default function StableMapPage() {
   function closeDialog(changed: boolean) {
     setDialog(null);
     if (changed) loadStalls();
+  }
+
+  async function applyStatus() {
+    if (!selected || !statusChange || statusBusy) return;
+    // Bảo trì / ngừng dùng phải có lý do để HLV, Groom biết vì sao ô không nhận ngựa (BUG-MAN-09).
+    if (statusChange.value !== "AVAILABLE" && statusNote.trim().length < 5) {
+      setStatusError(tr("Enter a reason of at least 5 characters."));
+      return;
+    }
+    setStatusBusy(true);
+    setStatusError("");
+    try {
+      const updated = await setStallStatus(selected.id, statusChange.value, statusNote.trim() || undefined);
+      setStalls((rows) => rows.map((stall) => stall.id === updated.id ? updated : stall));
+      setStatusChange(null);
+      loadStalls();
+    } catch (err) {
+      setStatusError(messageFor(err));
+    } finally {
+      setStatusBusy(false);
+    }
   }
 
   function renderPanel(s: Stall) {
@@ -182,11 +215,26 @@ export default function StableMapPage() {
         ) : (
           <>
             <Badge tone={s.status === "MAINTENANCE" ? "warn" : "neutral"}>
-              {s.status === "MAINTENANCE" ? tr("Maintenance") : tr("Empty")}
+              {s.status === "MAINTENANCE" ? tr("Maintenance") : s.status === "INACTIVE" ? tr("Inactive") : tr("Empty")}
             </Badge>
             {s.notes && <p style={{ margin: 0, fontSize: "var(--fs-body)" }}>{s.notes}</p>}
             {canManage && s.status === "AVAILABLE" && (
               <Button block onClick={() => setDialog("assign")}>{tr("Assign a horse")}</Button>
+            )}
+            {canSetStatus && !alloc && (
+              <Select
+                aria-label={tr("Stall status")}
+                value=""
+                options={[
+                  { value: "", label: tr("Change status…") },
+                  ...stallStatusOptions.filter((option) => option.value !== s.status),
+                ]}
+                onChange={(event) => {
+                  setStatusError("");
+                  setStatusNote("");
+                  setStatusChange(stallStatusOptions.find((option) => option.value === event.target.value) ?? null);
+                }}
+              />
             )}
           </>
         )}
@@ -331,7 +379,7 @@ export default function StableMapPage() {
                       }}
                     >
                       <strong>{s.code}</strong>
-                      <span>{s.allocations[0]?.horse.name ?? (s.status === "MAINTENANCE" ? tr("Maintenance") : tr("Empty"))}</span>
+                      <span>{s.allocations[0]?.horse.name ?? (s.status === "MAINTENANCE" ? tr("Maintenance") : s.status === "INACTIVE" ? tr("Inactive") : tr("Empty"))}</span>
                     </button>
                   ))}
                 </div>
@@ -342,6 +390,35 @@ export default function StableMapPage() {
         </>
       )}
 
+      {selected && statusChange && (
+        <ConfirmModal
+          title={`${tr("Stall")} ${selected.code} · ${tr(statusChange.label)}`}
+          tone="warn"
+          busy={statusBusy}
+          confirmLabel={tr("Confirm")}
+          cancelLabel={tr("Cancel")}
+          onConfirm={() => void applyStatus()}
+          onCancel={() => setStatusChange(null)}
+        >
+          <div style={{ display: "grid", gap: 12 }}>
+            <p style={{ margin: 0, color: "var(--text-2)" }}>
+              {statusChange.value === "AVAILABLE"
+                ? tr("The stall can receive horses again after this change.")
+                : tr("The stall will not receive horses until it is set back to active.")}
+            </p>
+            <Field label={statusChange.value === "AVAILABLE" ? "Note" : "Reason and expected completion"} required={statusChange.value !== "AVAILABLE"}>
+              <Textarea
+                rows={3}
+                maxLength={500}
+                value={statusNote}
+                onChange={(e) => setStatusNote(e.target.value)}
+                placeholder={statusChange.value === "AVAILABLE" ? undefined : tr("E.g. Replace bedding and water valve, expected to finish 10/11.")}
+              />
+            </Field>
+            {statusError && <Alert tone="danger">{statusError}</Alert>}
+          </div>
+        </ConfirmModal>
+      )}
       {dialog === "assign" && selected && (
         <AssignStallDialog stall={selected} onClose={() => closeDialog(false)} onDone={() => closeDialog(true)} />
       )}

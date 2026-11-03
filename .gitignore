@@ -41,3 +41,5 @@ test-results/
 src/shared/components/testing/
 tests/e2e/veterinary-workflow.spec.ts
 ~$*
+
+scratch/

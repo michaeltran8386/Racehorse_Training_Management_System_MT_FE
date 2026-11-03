@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Select } from "@/shared/components/form/Select";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { Button } from "@/shared/components/ui/Button";
@@ -147,10 +148,9 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
         )}
 
         <Field label={tr("Medication Name *")} hint={tr("Select from standard pharmacy catalog or enter custom drug name")}>
-          <Select
+          <SearchSelect
             value={selectedMed}
-            onChange={(e) => handleMedChange(e.target.value)}
-            required
+            onChange={handleMedChange}
             options={[{ value: "", label: tr("Select medication"), disabled: true }, ...COMMON_EQUINE_MEDICATIONS.map((m) => ({ value: m.value, label: m.label }))]}
           />
         </Field>

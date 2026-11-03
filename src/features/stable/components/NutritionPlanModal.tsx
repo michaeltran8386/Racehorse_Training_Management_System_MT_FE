@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal } from '@/shared/components/ui/Modal';
+import { Icon } from '@/shared/components/ui/Icon';
 import { Field } from '@/shared/components/form/Field';
 import { Input } from '@/shared/components/form/Input';
 import { Select } from '@/shared/components/form/Select';
@@ -498,11 +499,13 @@ export function NutritionPlanModal({
                       }}
                     >
                       {/* Supply select */}
-                      <Select
+                      <SearchSelect
+                        aria-label={tr('Supply Item')}
+                        placeholder={tr('Supply Item')}
                         options={supplyOptions}
                         value={it.supplyId}
-                        onChange={(e) =>
-                          handleItemChange(mIdx, itIdx, 'supplyId', e.target.value)
+                        onChange={(value) =>
+                          handleItemChange(mIdx, itIdx, 'supplyId', value)
                         }
                       />
 
@@ -544,7 +547,7 @@ export function NutritionPlanModal({
                         style={{ color: 'var(--danger)', padding: '4px' }}
                         title={tr('Remove item')}
                       >
-                        ✕
+                        <Icon name="x" size={14} />
                       </Button>
                     </div>
                   ))

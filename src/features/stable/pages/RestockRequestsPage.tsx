@@ -1,4 +1,5 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
+import { Icon } from "@/shared/components/ui/Icon";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
 import { Card } from '@/shared/components/ui/Card';
@@ -174,7 +175,7 @@ export default function RestockRequestsPage() {
             </div>
             {row.approvedQuantity !== null && (
               <div style={{ fontSize: '0.75rem', color: 'var(--color-ok)', fontWeight: 600 }}>
-                ✓ {row.approvedQuantity} {formatSupplyUnit(row.supply.unit)} {tr('approved')}
+                <Icon name="check" inline size={14} /> {row.approvedQuantity} {formatSupplyUnit(row.supply.unit)} {tr('approved')}
               </div>
             )}
           </div>
@@ -241,7 +242,7 @@ export default function RestockRequestsPage() {
                 tone="secondary"
                 onClick={() => setDeliveringItem(row)}
               >
-                ✓ {tr('Confirm Receipt')}
+                <Icon name="check" inline size={14} /> {tr('Confirm Receipt')}
               </Button>
             )}
           </div>

@@ -49,6 +49,32 @@ textarea {
   letter-spacing: inherit;
 }
 
+/* Kiểu dáng bộ chọn ngày và giờ (Native Date & Time Picker) */
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"] {
+  cursor: pointer;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--r-sm, 4px);
+  transition: transform var(--dur-fast, 0.12s) var(--ease, ease), background-color var(--dur-fast, 0.12s) var(--ease, ease);
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator:hover,
+input[type="time"]::-webkit-calendar-picker-indicator:hover,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator:hover,
+input[type="month"]::-webkit-calendar-picker-indicator:hover {
+  background-color: var(--surface-3, #E2E8F0);
+  transform: scale(1.1);
+}
+
 /* Mã số (HR-, microchip, RFID, giờ, số đếm): chữ số đều để cột thẳng hàng. */
 .num {
   font-variant-numeric: tabular-nums;

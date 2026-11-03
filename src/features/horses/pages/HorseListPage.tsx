@@ -516,7 +516,7 @@ export default function HorseListPage() {
                     onClick={() => updateUrl({ breed: undefined, page: 1 })}
                     className={styles.chipCloseBtn}
                   >
-                    ✕
+                    <Icon name="x" size={12} />
                   </button>
                 </span>
               )}
@@ -530,7 +530,7 @@ export default function HorseListPage() {
                     onClick={() => updateUrl({ gender: undefined, page: 1 })}
                     className={styles.chipCloseBtn}
                   >
-                    ✕
+                    <Icon name="x" size={12} />
                   </button>
                 </span>
               )}
@@ -544,7 +544,7 @@ export default function HorseListPage() {
                     onClick={() => updateUrl({ lock: undefined, page: 1 })}
                     className={styles.chipCloseBtn}
                   >
-                    ✕
+                    <Icon name="x" size={12} />
                   </button>
                 </span>
               )}
@@ -558,7 +558,7 @@ export default function HorseListPage() {
                     onClick={() => updateUrl({ noStall: undefined, page: 1 })}
                     className={styles.chipCloseBtn}
                   >
-                    ✕
+                    <Icon name="x" size={12} />
                   </button>
                 </span>
               )}

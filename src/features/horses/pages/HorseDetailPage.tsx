@@ -25,11 +25,19 @@ import { LifecycleTimeline } from "../components/LifecycleTimeline";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useToast } from "@/shared/components/ui/Toast";
 import { AssignStallDialog, ReturnStallDialog, TransferStallDialog } from "@/features/stable/components/StallDialogs";
+import { IncidentDetailModal } from "@/features/stable/components/IncidentDetailModal";
+import { incidentsApi } from "@/features/stable/api/incidentsApi";
+import type { IncidentReport } from "@/features/stable/types/incidents";
+import { messageFor } from "@/shared/lib/messages";
 import { formatDate, formatDateTime } from "@/shared/lib/format";
 import { useAppLanguage } from "@/shared/lib/language";
 
 import { tr } from "@/shared/i18n/tr";
 /** Nguồn đổi trạng thái (Tab 4). */
+function historyStatus(status?: string | null) {
+  return status ? tr(HEALTH_STATUS[status as HealthStatus]?.label ?? status) : "—";
+}
+
 const STATUS_SOURCE_LABEL: Record<string, string> = {
   MANUAL: "Manual",
   MEDICAL_LOCK: "Training Lock",
@@ -53,6 +61,20 @@ export default function HorseDetailPage() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isRetireModalOpen, setIsRetireModalOpen] = useState(false);
   const [stallDialog, setStallDialog] = useState<"assign" | "transfer" | "return" | null>(null);
+  const [selectedIncident, setSelectedIncident] = useState<IncidentReport | null>(null);
+  const [incidentLoading, setIncidentLoading] = useState(false);
+
+  async function openIncident(incidentId: string) {
+    if (incidentLoading) return;
+    setIncidentLoading(true);
+    try {
+      setSelectedIncident(await incidentsApi.getById(incidentId));
+    } catch (err) {
+      toast.show(messageFor(err), "danger");
+    } finally {
+      setIncidentLoading(false);
+    }
+  }
 
   const copyToClipboard = (text: string, label: string) => {
     if (navigator.clipboard) {
@@ -536,6 +558,47 @@ export default function HorseDetailPage() {
       {/* Tab 4: Status History */}
       {activeTab === "status-history" && (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          {!!history?.simulatorIncidents?.length && (
+            <Card pad={24}>
+              <h3 className={styles.incidentHeading}>{isVi ? "Sự cố từ mô phỏng" : "Simulator incidents"}</h3>
+              <DataTable
+                caption={isVi ? "Sự cố từ mô phỏng" : "Simulator incidents"}
+                rowKey={(incident) => incident.id}
+                rows={history.simulatorIncidents}
+                columns={[
+                  { key: "timestamp", header: "Timestamp", render: (incident) => formatDateTime(incident.createdAt) },
+                  { key: "incident", header: "Description", render: (incident) => (
+                    <div className={styles.incidentDescription}>
+                      {incident.incidentNumber && <strong>{incident.incidentNumber}</strong>}
+                      <div>{incident.description}</div>
+                    </div>
+                  ) },
+                  { key: "severity", header: "Severity", render: (incident) => (
+                    <Badge tone={incident.severity === "CRITICAL" ? "danger" : incident.severity === "MODERATE" ? "warn" : "ok"}>
+                      {tr({ MILD: "Mild", MODERATE: "Moderate", CRITICAL: "Critical" }[incident.severity])}
+                    </Badge>
+                  ) },
+                  { key: "status", header: "Status", render: (incident) => tr({
+                    REPORTED: "Reported", UNDER_REVIEW: "Under Review", RESOLVED: "Resolved", DISMISSED: "Dismissed",
+                  }[incident.status]) },
+                  ...(currentUser.role === "HORSE_OWNER" ? [] : [{
+                    key: "action", header: "", render: (incident: NonNullable<HorseHistoryResponse["simulatorIncidents"]>[number]) => (
+                      <Button tone="secondary" size="sm" disabled={incidentLoading} onClick={() => void openIncident(incident.id)}>
+                        {tr("Incident Details")}
+                      </Button>
+                    ),
+                  }]),
+                ]}
+              />
+            </Card>
+          )}
+          {selectedIncident && (
+            <IncidentDetailModal
+              incident={selectedIncident}
+              onClose={() => setSelectedIncident(null)}
+              onUpdated={() => { setSelectedIncident(null); refreshHorse(); }}
+            />
+          )}
           <Card pad={24}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
               <h3 style={{ margin: 0, fontSize: "var(--fs-section)", fontWeight: 700 }}>
@@ -559,14 +622,14 @@ export default function HorseDetailPage() {
                   {
                     key: "source",
                     header: "Source",
-                    render: (r) => STATUS_SOURCE_LABEL[r.source ?? "MANUAL"] ?? r.source,
+                    render: (r) => tr(STATUS_SOURCE_LABEL[r.source ?? "MANUAL"] ?? r.source ?? ""),
                   },
                   {
                     key: "transition",
                     header: "Transition",
                     render: (r) => (
                       <span>
-                        {r.oldStatus || "—"} → <Badge tone="info">{r.newStatus || "—"}</Badge>
+                        {historyStatus(r.oldStatus)} → <Badge tone="info">{historyStatus(r.newStatus)}</Badge>
                       </span>
                     ),
                   },

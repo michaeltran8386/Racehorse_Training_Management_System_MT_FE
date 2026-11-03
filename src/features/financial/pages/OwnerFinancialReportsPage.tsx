@@ -1,4 +1,5 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
+import { Icon } from "@/shared/components/ui/Icon";
 import { useState, useEffect } from "react";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import styles from "./OwnerFinancialReportsPage.module.css";
@@ -184,7 +185,7 @@ export default function OwnerFinancialReportsPage() {
       <Card pad={16}>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontWeight: 700, color: "var(--ink)", fontSize: "var(--fs-sm)" }}>
-            <span>💡</span>
+            <Icon name="lightbulb" size={16} />
             <span>{tr("How Monthly Settlement & Prize Credits Work")}</span>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "0.75rem", fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
@@ -339,7 +340,7 @@ export default function OwnerFinancialReportsPage() {
                           )}
                           {inv.status === "PAID" && (
                             <span style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)", fontWeight: 600 }}>
-                              ✓ {tr("Settled")}
+                              <Icon name="check" inline size={12} /> {tr("Settled")}
                             </span>
                           )}
                         </div>
@@ -431,7 +432,7 @@ export default function OwnerFinancialReportsPage() {
               }}
             >
               <strong style={{ color: "var(--ink)", fontSize: "var(--fs-sm)" }}>
-                📋 {tr("Monthly Statement Calculation Rule:")}
+                <Icon name="clipboard" inline size={14} /> {tr("Monthly Statement Calculation Rule:")}
               </strong>
               <div>
                 • <strong>{tr("Total Upkeep Expenses:")}</strong> {tr("Drafts start with boarding and training fees; medical fees start at zero.")}
@@ -460,6 +461,7 @@ export default function OwnerFinancialReportsPage() {
           foot={
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", width: "100%" }}>
               <Button tone="secondary" icon="file" onClick={() => printStatement([selectedInvoice], selectedInvoice.billingPeriod, selectedInvoice.owner.fullName)}>{tr("Export PDF")}</Button>
+              <Button tone="secondary" icon="download" onClick={() => exportStatementXlsx([selectedInvoice], selectedInvoice.billingPeriod)}>{tr("Export Excel")}</Button>
               <Button tone="secondary" onClick={() => setSelectedInvoice(null)}>{tr("Close")}</Button>
             </div>
           }

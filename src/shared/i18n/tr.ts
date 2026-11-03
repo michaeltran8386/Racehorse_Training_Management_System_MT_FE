@@ -43,7 +43,13 @@ function compilePatterns(): Pattern[] {
 }
 
 function fill(text: string, params: Params): string {
-  return text.replace(VAR, (_, name: string) => String(params[name] ?? `{{${name}}}`));
+  return text.replace(VAR, (_, name: string) => {
+    const val = params[name];
+    if (val !== undefined && val !== null && val !== "") return String(val);
+    if (name === "reviewer") return isVietnamese() ? "Quản lý CLB" : "Club Manager";
+    if (name === "time") return isVietnamese() ? "vừa xong" : "just now";
+    return `{{${name}}}`;
+  });
 }
 
 export function isVietnamese(): boolean {
@@ -55,17 +61,22 @@ export function tr(text: string, params?: Params): string {
   const exact = VI_TEXT[text];
   if (exact !== undefined) return params ? fill(exact, params) : exact;
   const trimmed = text.trim();
-  if (trimmed !== text && VI_TEXT[trimmed] !== undefined) return text.replace(trimmed, VI_TEXT[trimmed]);
-  patterns ??= compilePatterns();
-  for (const p of patterns) {
-    const m = p.re.exec(text);
-    if (m) {
-      const values: Params = {};
-      p.names.forEach((n, i) => {
-        // Giá trị bắt được cũng có thể là câu cần dịch (VD tên trạng thái).
-        values[n] = tr(m[i + 1]);
-      });
-      return fill(p.vi, values);
+  if (trimmed !== text && VI_TEXT[trimmed] !== undefined) {
+    const translated = text.replace(trimmed, () => VI_TEXT[trimmed]);
+    return params ? fill(translated, params) : translated;
+  }
+  // Nếu chuỗi truyền vào đã chứa {{ mà không có trong từ điển, không dùng compilePatterns để tránh khớp bậy mẫu khác
+  if (!text.includes("{{")) {
+    patterns ??= compilePatterns();
+    for (const p of patterns) {
+      const m = p.re.exec(text);
+      if (m) {
+        const values: Params = {};
+        p.names.forEach((n, i) => {
+          values[n] = tr(m[i + 1]);
+        });
+        return fill(p.vi, { ...params, ...values });
+      }
     }
   }
   return params ? fill(text, params) : text;

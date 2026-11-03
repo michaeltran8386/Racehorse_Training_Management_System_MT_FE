@@ -3,7 +3,6 @@ import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Field } from "@/shared/components/form/Field";
-import { Select } from "@/shared/components/form/Select";
 import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useToast } from "@/shared/components/ui/Toast";
@@ -64,16 +63,16 @@ function useZoneStallPicker(excludeStallId?: string) {
   const fields = (
     <>
       <Field label={tr("Barn zone")} required>
-        <Select
+        <SearchSelect
           value={zoneId}
-          onChange={(e) => setZoneId(e.target.value)}
+          onChange={setZoneId}
           options={zones.map((z) => ({ value: z.id, label: z.name }))}
         />
       </Field>
       <Field label={tr("Stall")} required hint={zoneId && stalls.length === 0 ? tr("This zone has no free stall.") : undefined}>
-        <Select
+        <SearchSelect
           value={stallId}
-          onChange={(e) => setStallId(e.target.value)}
+          onChange={setStallId}
           options={[
             { value: "", label: stalls.length ? "— Choose a stall —" : "No free stall" },
             ...stalls.map((s) => ({ value: s.id, label: positionLabel(s) })),
@@ -94,9 +93,9 @@ function GroomField({ value, onChange }: { value: string; onChange: (v: string) 
   }, []);
   return (
     <Field label={tr("Groom (optional)")}>
-      <Select
+      <SearchSelect
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={onChange}
         options={[
           { value: "", label: "— No groom —" },
           ...grooms.map((g) => ({ value: g.id, label: `${g.fullName} · caring for ${g.horseCount} horse(s)` })),

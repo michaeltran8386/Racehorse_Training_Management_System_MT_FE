@@ -56,7 +56,7 @@ function distanceOf(s: ExerciseSession): number {
 /** SC-2.04 Chi tiết giáo án. HT thao tác; CM, VET, OWNER chỉ xem. */
 export default function PlanDetailPage() {
   useScreenTranslation();
-  useAppLanguage();
+  const { isVietnamese } = useAppLanguage();
   const { id = "" } = useParams();
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
@@ -95,6 +95,9 @@ export default function PlanDetailPage() {
   const today = todayClub();
   const sessions = useMemo(() => plan?.sessions ?? [], [plan]);
   const completed = sessions.filter((s) => s.status === "COMPLETED");
+  const missingResults = sessions.filter((s) =>
+    s.status !== "CANCELLED" && (s.status !== "COMPLETED" || !s.result?.recordedAt),
+  );
 
   if (error) {
     return (
@@ -151,7 +154,14 @@ export default function PlanDetailPage() {
               </Button>
             )}
             {isTrainer && plan.status === "ACTIVE" && (
-              <Button tone="accent" onClick={() => setDialog({ kind: "complete" })}>{tr("Complete")}</Button>
+              <Button
+                tone="accent"
+                disabled={missingResults.length > 0}
+                title={missingResults.length ? missingResults.map((s) => `${s.sessionDate} ${s.startTime}`).join(", ") : undefined}
+                onClick={() => setDialog({ kind: "complete" })}
+              >
+                {tr("Complete")}
+              </Button>
             )}
             {isTrainer && open && (
               <Button tone="danger" onClick={() => setDialog({ kind: "cancel" })}>{tr("Cancel plan")}</Button>
@@ -272,7 +282,7 @@ export default function PlanDetailPage() {
                           <Badge tone={SESSION_STATUS_TONE[s.status]}>{SESSION_STATUS_LABEL[s.status] ? tr(SESSION_STATUS_LABEL[s.status]) : s.status}</Badge>
                         </td>
                         <td style={{ padding: "0.6rem 0.75rem" }}>
-                          {s.result ? tr(`${s.result.performanceScore ?? "—"}/10 · ${s.result.avgSpeedKmh ?? "—"} km/h`) : "—"}
+                          {s.result ? tr(`${s.result.performanceScore ?? "—"}/10 · ${s.result.avgSpeedKmh ?? "—"} km/h`) : s.status === "CANCELLED" ? "—" : (isVietnamese ? "Chưa ghi kết quả" : "Result not recorded")}
                         </td>
                         <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>
                           <div style={{ display: "flex", gap: "0.35rem", justifyContent: "flex-end" }}>
@@ -288,7 +298,7 @@ export default function PlanDetailPage() {
                                 size="sm"
                                 tone="primary"
                                 disabled={Boolean(b.restoreBlockedReason)}
-                                title={b.restoreBlockedReason ?? ""}
+                                title={b.restoreBlockedReason ? tr(b.restoreBlockedReason) : undefined}
                                 onClick={() => setDialog({ kind: "restore", session: s })}
                               >
                                 {tr("Restore")}

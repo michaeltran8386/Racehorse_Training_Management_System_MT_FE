@@ -1,5 +1,6 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import styles from "./HerdHealthPage.module.css";
 import { Button, LinkButton } from "@/shared/components/ui/Button";
@@ -47,10 +48,19 @@ export default function HerdHealthPage() {
   const [loading, setLoading] = useState(true);
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null);
   const [view, setView] = useState<"cards" | "stalls">("cards");
-  const [search, setSearch] = useState("");
-  const [groups, setGroups] = useState<Group[]>([]);
-  const [lockFilter, setLockFilter] = useState("ALL");
-  const [overdueOnly, setOverdueOnly] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const search = params.get("search") ?? "";
+  const groups = useMemo(() => GROUP_ORDER.filter((group) => params.getAll("status").includes(group)), [params]);
+  const lock = params.get("lock");
+  const lockFilter = lock === "LOCKED" || lock === "UNLOCKED" ? lock : "ALL";
+  const overdueOnly = params.get("overdue") === "1";
+
+  function setFilter(key: string, value?: string, replace = false) {
+    const next = new URLSearchParams(params);
+    if (value) next.set(key, value);
+    else next.delete(key);
+    setParams(next, { replace });
+  }
   const [zones, setZones] = useState<Zone[]>([]);
   const [zoneId, setZoneId] = useState("");
   const [stalls, setStalls] = useState<Stall[]>([]);
@@ -128,14 +138,18 @@ export default function HerdHealthPage() {
   const filtersOn = groups.length > 0 || lockFilter !== "ALL" || overdueOnly || !!search;
 
   function clearFilters() {
-    setGroups([]);
-    setLockFilter("ALL");
-    setOverdueOnly(false);
-    setSearch("");
+    const next = new URLSearchParams(params);
+    for (const key of ["status", "lock", "overdue", "search"]) next.delete(key);
+    setParams(next);
   }
 
   function toggleGroup(g: Group) {
-    setGroups((cur) => (cur.includes(g) ? cur.filter((x) => x !== g) : [...cur, g]));
+    const next = new URLSearchParams(params);
+    next.delete("status");
+    for (const group of GROUP_ORDER) {
+      if (groups.includes(group) !== (group === g)) next.append("status", group);
+    }
+    setParams(next);
   }
 
   const s = board?.summary;
@@ -154,7 +168,7 @@ export default function HerdHealthPage() {
           label: "Training Lock",
           value: s.lockedCount,
           color: "var(--danger)",
-          onClick: () => setLockFilter((v) => (v === "LOCKED" ? "ALL" : "LOCKED")),
+          onClick: () => setFilter("lock", lockFilter === "LOCKED" ? undefined : "LOCKED"),
           on: lockFilter === "LOCKED",
         },
         {
@@ -162,7 +176,7 @@ export default function HerdHealthPage() {
           label: "Preventive care overdue",
           value: s.overdueCount,
           color: "var(--warn)",
-          onClick: () => setOverdueOnly((v) => !v),
+          onClick: () => setFilter("overdue", overdueOnly ? undefined : "1"),
           on: overdueOnly,
         },
       ]
@@ -345,13 +359,13 @@ export default function HerdHealthPage() {
 
       <div className={styles.filters}>
         <div style={{ width: 240 }}>
-          <Input placeholder={tr("Horse name or code")} aria-label={tr("Find a horse")} value={search} onChange={(e) => setSearch(e.target.value)} />
+          <Input placeholder={tr("Horse name or code")} aria-label={tr("Find a horse")} value={search} onChange={(e) => setFilter("search", e.target.value, true)} />
         </div>
         <div style={{ width: 170 }}>
           <Select
             aria-label={tr("Training Lock")}
             value={lockFilter}
-            onChange={(e) => setLockFilter(e.target.value)}
+            onChange={(e) => setFilter("lock", e.target.value === "ALL" ? undefined : e.target.value)}
             options={[
               { value: "ALL", label: tr("Lock: all") },
               { value: "LOCKED", label: tr("Locked") },
@@ -369,7 +383,7 @@ export default function HerdHealthPage() {
             />
           </div>
         )}
-        <Checkbox checked={overdueOnly} onChange={setOverdueOnly} label={tr("Preventive care overdue")} />
+        <Checkbox checked={overdueOnly} onChange={(checked) => setFilter("overdue", checked ? "1" : undefined)} label={tr("Preventive care overdue")} />
         {filtersOn && (
           <Button tone="ghost" size="sm" onClick={clearFilters}>{tr("Clear filters")}</Button>
         )}

@@ -16,7 +16,9 @@ import { googleFailure, loginFailure } from "@/shared/lib/messages";
 import type { LoginFailure } from "@/shared/lib/messages";
 import { EMAIL_MAX, EMAIL_RE } from "@/shared/lib/email";
 import { PASSWORD_MAX } from "@/shared/lib/password";
-import { safeNext } from "../flow";
+import { ApiError } from "@/shared/lib/api";
+import { registerWithGoogle } from "../api";
+import { safeNext, signupFlow } from "../flow";
 import styles from "./AuthPages.module.css";
 import { GoogleSignIn } from "../components/GoogleSignIn";
 import { PillButton } from "../components/PillButton";
@@ -158,7 +160,14 @@ export default function LoginPage() {
     setGoogleError(false);
     setIsTransitioning(true);
     try {
-      await signInWithGoogle(credential);
+      try {
+        await signInWithGoogle(credential);
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.code !== "GOOGLE_ACCOUNT_NOT_FOUND") throw error;
+        signupFlow.set(await registerWithGoogle(credential));
+        navigate("/sign-up/pending", { replace: true });
+        return;
+      }
       navigate(next, { replace: true });
     } catch (err) {
       setIsTransitioning(false);

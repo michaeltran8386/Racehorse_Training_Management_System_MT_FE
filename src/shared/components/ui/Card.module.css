@@ -6,7 +6,10 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  width: 100%;
+  max-width: 100%;
   min-width: 0;
+  box-sizing: border-box;
 }
 .head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px 20px 0; }
 .headText { min-width: 0; }

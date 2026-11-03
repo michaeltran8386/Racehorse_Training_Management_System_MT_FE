@@ -1,4 +1,5 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
+import { Icon } from "@/shared/components/ui/Icon";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
@@ -192,8 +193,8 @@ export default function WeeklyCalendarPage() {
             {isTrial && (isVietnamese ? " · Chạy thử" : tr(" · Trial Run"))}
           </div>
           <div>{s.targetDistanceMeters}m × {s.repetitions} · {tr(TRACK_LABEL[s.trackType])}</div>
-          <div>👤 {s.groomName ?? (isVietnamese ? "Chưa giao" : "—")}</div>
-          {overlapping.has(s.id) && <div className={styles.overlapAlert}>{isVietnamese ? "⚠️ Trùng giờ chăm sóc" : tr("⚠️ Groom overlap")}</div>}
+          <div><Icon name="user" inline size={12} /> {s.groomName ?? (isVietnamese ? "Chưa giao" : "—")}</div>
+          {overlapping.has(s.id) && <div className={styles.overlapAlert}><Icon name="alert" inline size={12} /> {isVietnamese ? "Trùng giờ chăm sóc" : tr("Groom overlap")}</div>}
         </div>
       </button>
     );
@@ -315,7 +316,7 @@ export default function WeeklyCalendarPage() {
               {b.record && <LinkButton to={`/training/sessions/${selected.id}/result`} size="sm" tone="secondary">{isVietnamese ? "Ghi kết quả" : tr("Record result")}</LinkButton>}
               {b.viewResult && <LinkButton to={`/training/sessions/${selected.id}/result`} size="sm" tone="secondary">{isVietnamese ? "Xem kết quả" : tr("View result")}</LinkButton>}
               {b.restore && (
-                <Button size="sm" tone="primary" disabled={Boolean(b.restoreBlockedReason)} title={b.restoreBlockedReason ?? ""} onClick={() => setDialog({ kind: "restore", session: selected })}>
+                <Button size="sm" tone="primary" disabled={Boolean(b.restoreBlockedReason)} title={b.restoreBlockedReason ? tr(b.restoreBlockedReason) : undefined} onClick={() => setDialog({ kind: "restore", session: selected })}>
                   {isVietnamese ? "Khôi phục" : tr("Restore")}
                 </Button>
               )}

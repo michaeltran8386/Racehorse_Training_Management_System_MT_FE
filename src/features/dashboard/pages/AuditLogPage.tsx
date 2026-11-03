@@ -1,4 +1,5 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
+import { Icon } from "@/shared/components/ui/Icon";
 import { useEffect, useState } from "react";
 import { Input } from "@/shared/components/form/Input";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -10,6 +11,7 @@ import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Modal } from "@/shared/components/ui/Modal";
 import { api } from "@/shared/lib/api";
 import { formatDateTime } from "@/shared/lib/format";
+import { messageFor } from "@/shared/lib/messages";
 import { useAppLanguage } from "@/shared/lib/language";
 import styles from "./AuditLogPage.module.css";
 
@@ -141,6 +143,15 @@ function parseAuditChanges(log: AuditLog, isVi: boolean): { summary: string; rec
 
 const emptyFilters = { actor: "", action: "", from: "", to: "" };
 
+function auditQuery(filters: typeof emptyFilters) {
+  const query = new URLSearchParams();
+  if (filters.actor.trim()) query.set("actor", filters.actor.trim());
+  if (filters.action.trim()) query.set("action", filters.action.trim());
+  if (filters.from) query.set("from", new Date(filters.from).toISOString());
+  if (filters.to) query.set("to", new Date(filters.to).toISOString());
+  return query;
+}
+
 export default function AuditLogPage() {
   useScreenTranslation();
   const { isVietnamese } = useAppLanguage();
@@ -153,20 +164,39 @@ export default function AuditLogPage() {
   const result = response && response.key === requestKey ? response.result : null;
   const error = response?.key === requestKey && response?.error;
   const [detail, setDetail] = useState<AuditLog | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState("");
   const invalidDates = Boolean(draft.from && draft.to && draft.from > draft.to);
 
   useEffect(() => {
     let active = true;
-    const query = new URLSearchParams({ page: String(page), pageSize: "10" });
-    if (filters.actor.trim()) query.set("actor", filters.actor.trim());
-    if (filters.action.trim()) query.set("action", filters.action.trim());
-    if (filters.from) query.set("from", new Date(filters.from).toISOString());
-    if (filters.to) query.set("to", new Date(filters.to).toISOString());
+    const query = auditQuery(filters);
+    query.set("page", String(page));
+    query.set("pageSize", "10");
     api<Result>("GET", `/audit-logs?${query}`).then(data => {
       if (active) setResponse({ key: requestKey, result: data, error: false });
     }).catch(() => { if (active) setResponse({ key: requestKey, result: null, error: true }); });
     return () => { active = false; };
   }, [filters, page, requestKey]);
+
+  async function exportCsv() {
+    if (exporting) return;
+    setExporting(true);
+    setExportError("");
+    try {
+      const { csv } = await api<{ csv: string }>("GET", `/audit-logs/export?${auditQuery(filters)}`);
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "equiflow-audit-log.csv";
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      setExportError(messageFor(err));
+    } finally {
+      setExporting(false);
+    }
+  }
 
   const columns: Column<AuditLog>[] = [
     { key: "time", header: isVietnamese ? "Thời gian" : "Time", render: row => formatDateTime(row.timestamp) },
@@ -195,7 +225,11 @@ export default function AuditLogPage() {
       title={isVietnamese ? "Nhật ký hệ thống" : tr("Audit Log")}
       description={isVietnamese ? "Theo dõi lịch sử hoạt động và các thay đổi trong hệ thống. Bộ lọc sử dụng múi giờ thiết bị của bạn." : tr("Review recorded activity and changes. Times and date filters use your local timezone.")}
       showDate
+      action={<Button icon="download" tone="secondary" disabled={exporting || !result?.total} onClick={() => void exportCsv()}>
+        {exporting ? (isVietnamese ? "Đang xuất…" : "Exporting…") : (isVietnamese ? "Xuất CSV" : "Export CSV")}
+      </Button>}
     />
+    {exportError && <Alert tone="danger" onDismiss={() => setExportError("")}>{exportError}</Alert>}
     <Card pad={0}>
       <form className={styles.filters} onSubmit={event => { event.preventDefault(); if (!invalidDates) { setFilters({ ...draft }); setPage(1); } }}>
         <label>{isVietnamese ? "Người thực hiện" : tr("Actor")}<Input value={draft.actor} maxLength={200} onChange={e => setDraft({ ...draft, actor: e.target.value })} placeholder={isVietnamese ? "Tìm kiếm tên người thực hiện" : tr("Search actor name")} /></label>
@@ -306,7 +340,7 @@ export default function AuditLogPage() {
                       <tr key={i}>
                         <td><strong>{c.field}</strong></td>
                         <td><span className={styles.valPillOld}>{c.before}</span></td>
-                        <td><span className={styles.valPillNew}>➔ {c.after}</span></td>
+                        <td><span className={styles.valPillNew}><Icon name="arrowRight" inline size={12} /> {c.after}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -314,7 +348,7 @@ export default function AuditLogPage() {
               </div>
             ) : (
               <div className={styles.actionCard}>
-                <div className={styles.actionIcon}>📝</div>
+                <div className={styles.actionIcon}><Icon name="edit" size={18} /></div>
                 <div className={styles.actionText}>
                   <strong>{summary}</strong>
                   <p>{recorded ?? (isVietnamese ? "Hành động đã được ghi nhận và áp dụng thành công trong hệ thống." : tr("Action was successfully executed and recorded in the audit log."))}</p>

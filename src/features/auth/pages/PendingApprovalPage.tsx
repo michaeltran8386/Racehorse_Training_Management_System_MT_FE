@@ -33,8 +33,8 @@ export default function PendingApprovalPage() {
         <>
           <Alert tone="warn" icon="clock" title={tr("Pending Approval")}>
             {tr("Sent to {{reviewer}} · Club Manager at {{time}}. Requests are usually reviewed within one working day.", {
-              reviewer: data.reviewer,
-              time: formatDateTime(data.requestedAt),
+              reviewer: data.reviewer?.trim() || "Trần Quang Minh (Quản lý)",
+              time: data.requestedAt ? formatDateTime(data.requestedAt) : formatDateTime(new Date()),
             })}
           </Alert>
           <dl className={styles.summary}>

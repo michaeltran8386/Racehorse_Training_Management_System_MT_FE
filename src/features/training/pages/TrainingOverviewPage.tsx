@@ -176,9 +176,9 @@ export default function TrainingOverviewPage() {
                   const trend =
                     r.latestScore != null && r.previousAvgScore != null
                       ? r.latestScore > r.previousAvgScore
-                        ? "▲"
+                        ? "up"
                         : r.latestScore < r.previousAvgScore
-                          ? "▼"
+                          ? "down"
                           : ""
                       : "";
                   return (
@@ -206,7 +206,9 @@ export default function TrainingOverviewPage() {
                         {r.latestScore != null ? (
                           <span>
                             {r.latestScore}/10{" "}
-                            <span style={{ color: trend === "▲" ? "var(--ok)" : "var(--danger)" }}>{trend}</span>
+                            {trend && (
+                              <Icon name={trend === "up" ? "trend" : "trendDown"} inline size={14} style={{ color: trend === "up" ? "var(--ok)" : "var(--danger)" }} />
+                            )}
                           </span>
                         ) : (
                           "—"

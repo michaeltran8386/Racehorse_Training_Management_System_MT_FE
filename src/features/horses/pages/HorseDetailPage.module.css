@@ -7,3 +7,8 @@
 .identityMeta span:not(:first-child)::before { content: "•"; margin: 0 .5rem; color: var(--border-strong); }
 .identity > :last-child { min-width: 0 !important; overflow-wrap: anywhere; }
 @media (max-width: 420px) { .crest { width: 56px; height: 56px; } }
+.incidentHeading {
+  margin: 0 0 16px;
+  font-size: var(--fs-section);
+}
+.incidentDescription { overflow-wrap: anywhere; }

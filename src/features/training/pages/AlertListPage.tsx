@@ -54,11 +54,11 @@ export default function AlertListPage() {
     if (!selected) return;
     setSubmitting(true);
     try {
-      await trainingApi.acknowledgeAlert(selected.id, vetNotes.trim());
+      const updated = await trainingApi.acknowledgeAlert(selected.id, vetNotes.trim());
+      setAlerts((current) => current.map((alert) => alert.id === updated.id ? updated : alert));
       toast.show("Alert acknowledged.", "ok");
       setSelected(null);
       setVetNotes("");
-      void loadAlerts();
     } catch (err) {
       toast.show(messageFor(err), "danger");
     } finally {

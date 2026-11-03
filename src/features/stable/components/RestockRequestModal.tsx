@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Field } from '@/shared/components/form/Field';
 import { Input } from '@/shared/components/form/Input';
-import { Select } from '@/shared/components/form/Select';
+import { SearchSelect } from '@/shared/components/form/SearchSelect';
 import { Textarea } from '@/shared/components/form/Textarea';
 import { Button } from '@/shared/components/ui/Button';
 import { Alert } from '@/shared/components/ui/Alert';
@@ -110,19 +110,21 @@ export function RestockRequestModal({
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '1rem' }}>
           <Field label={tr('Target Stall Zone')} required>
-            <Select
+            <SearchSelect
+              placeholder={tr('Target Stall Zone')}
               options={zoneOptions}
               value={zoneId}
-              onChange={(e) => setZoneId(e.target.value)}
+              onChange={setZoneId}
               disabled={busy}
             />
           </Field>
 
           <Field label={tr('Supply Item')} required>
-            <Select
+            <SearchSelect
+              placeholder={tr('Supply Item')}
               options={supplyOptions}
               value={supplyId}
-              onChange={(e) => setSupplyId(e.target.value)}
+              onChange={setSupplyId}
               disabled={busy}
             />
           </Field>

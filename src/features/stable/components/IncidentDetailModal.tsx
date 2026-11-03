@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from "@/shared/components/ui/Icon";
 import { useNavigate } from 'react-router-dom';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Field } from '@/shared/components/form/Field';
@@ -214,7 +215,7 @@ export function IncidentDetailModal({
                     navigate(`/locks?horseId=${incident.horseId}&action=place`);
                   }}
                 >
-                  🔒 {tr('Place Training Lock')}
+                  <Icon name="lock" inline size={14} /> {tr('Place Training Lock')}
                 </Button>
                 <Button
                   type="button"
@@ -226,7 +227,7 @@ export function IncidentDetailModal({
                     navigate(`/medical/records/new?horseId=${incident.horseId}`);
                   }}
                 >
-                  📋 {tr('Create Medical Record')}
+                  <Icon name="clipboard" inline size={14} /> {tr('Create Medical Record')}
                 </Button>
               </div>
             </div>

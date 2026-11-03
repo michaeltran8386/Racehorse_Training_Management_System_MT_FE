@@ -76,7 +76,7 @@ export interface CreateHorsePayload {
   dob: string;
   gender: string;
   color: string;
-  weightKg?: number | null;
+  weightKg: number;
   microchip: string;
   ownerId?: string;
   avatarUrl?: string;
@@ -96,6 +96,14 @@ export interface UpdateHorsePayload {
 }
 
 export interface HorseHistoryResponse {
+  simulatorIncidents?: Array<{
+    id: string;
+    incidentNumber: string | null;
+    description: string;
+    severity: "MILD" | "MODERATE" | "CRITICAL";
+    status: "REPORTED" | "UNDER_REVIEW" | "RESOLVED" | "DISMISSED";
+    createdAt: string;
+  }>;
   horse: Horse;
   statusHistory: Array<{
     id: string;

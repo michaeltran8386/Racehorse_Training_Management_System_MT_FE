@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -158,7 +159,7 @@ export function RecordResultsModal({
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
           <div>
             {isCompleted ? (
-              <Badge tone="ok">🏆 {tr("Official Results Locked")}</Badge>
+              <Badge tone="ok" icon="trophy">{tr("Official Results Locked")}</Badge>
             ) : canRecord ? (
               <Badge tone="warn">{tr("Club Manager: Authorized to Record & Lock")}</Badge>
             ) : !isClosedReg ? (
@@ -183,7 +184,7 @@ export function RecordResultsModal({
                   {loading ? tr("Saving...") : tr("Save Draft")}
                 </Button>
                 <Button tone="primary" onClick={() => handleSave(true)} disabled={loading || loadingDetail || rows.length === 0}>
-                  🔒 {loading ? tr("Locking...") : tr("Lock Official Results")}
+                  <Icon name="lock" inline size={14} /> {loading ? tr("Locking...") : tr("Lock Official Results")}
                 </Button>
               </>
             )}
@@ -218,7 +219,7 @@ export function RecordResultsModal({
               border: "1px solid var(--warn-border, #fcd34d)",
             }}
           >
-            ⚠️ {tr("Results can only be recorded or locked after registration closes.")}
+            <Icon name="alert" inline size={14} /> {tr("Results can only be recorded or locked after registration closes.")}
           </div>
         )}
 
@@ -233,7 +234,7 @@ export function RecordResultsModal({
               border: "1px solid var(--warn-border, #fcd34d)",
             }}
           >
-            ⏳ {tr("Official results can only be recorded on or after the race date:")} {new Date(currentTourney.raceDate).toLocaleString()}
+            <Icon name="clock" inline size={14} /> {tr("Official results can only be recorded on or after the race date:")} {new Date(currentTourney.raceDate).toLocaleString()}
           </div>
         )}
 
@@ -243,7 +244,7 @@ export function RecordResultsModal({
           </div>
         ) : rows.length === 0 ? (
           <div style={{ padding: "2.5rem 1rem", textAlign: "center", color: "var(--muted)", background: "var(--surface)", borderRadius: "var(--r-md)", border: "1px dashed var(--border)" }}>
-            <div style={{ fontSize: "2rem", marginBottom: "0.5rem" }}>🏁</div>
+            <Icon name="flag" size={32} style={{ margin: "0 auto 0.5rem" }} />
             <strong style={{ display: "block", color: "var(--ink)", fontSize: "var(--fs-body)", marginBottom: "0.25rem" }}>
               {tr("No results or entries for this tournament")}
             </strong>

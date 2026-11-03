@@ -1,4 +1,5 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
+import { Icon } from "@/shared/components/ui/Icon";
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams, useBlocker } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
@@ -193,7 +194,7 @@ export default function PlanWizardPage() {
   return (
     <div className={styles.page}>
       <PageHeader
-        title={editing ? tr("Edit {{code}}", { code: existing?.planCode ?? "plan" }) : "Create Training Plan"}
+        title={editing ? tr("Edit plan") : "Create Training Plan"}
         description="Set goals, dates, and periodization phases for the training plan."
       />
 
@@ -328,7 +329,7 @@ export default function PlanWizardPage() {
         </Button>
         {canActivateAfterSave && (
           <Button tone="primary" onClick={() => void save(true)} disabled={submitting || !horseId}>
-            {editing ? tr("Save and activate") : tr("Save Plan & Next: Add Workouts ➔")}
+            {editing ? tr("Save and activate") : <>{tr("Save Plan & Next: Add Workouts")} <Icon name="arrowRight" inline size={14} /></>}
           </Button>
         )}
       </div>

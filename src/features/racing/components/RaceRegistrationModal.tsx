@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
@@ -283,7 +284,7 @@ export function RaceRegistrationModal({
                             }}
                             disabled={scratchSubmitting}
                           >
-                            🚫 {isVietnamese() ? "Rút ngựa" : tr("Scratch")}
+                            <Icon name="ban" inline size={14} /> {isVietnamese() ? "Rút ngựa" : tr("Scratch")}
                           </Button>
                         )}
                       </div>
@@ -481,12 +482,12 @@ export function RaceRegistrationModal({
                           {h.ineligibleReasons && h.ineligibleReasons.length > 0 ? (
                             h.ineligibleReasons.map((r, rIdx) => (
                               <div key={rIdx} style={{ display: "flex", alignItems: "flex-start", gap: "4px" }}>
-                                <span style={{ flexShrink: 0 }}>⚠️</span>
+                                <Icon name="alert" size={14} style={{ marginTop: 2 }} />
                                 <span>{formatIneligibleReason(r, isVietnamese())}</span>
                               </div>
                             ))
                           ) : (
-                            <div>⚠️ {isVietnamese() ? "Không đáp ứng quy định thi đấu" : tr("Did not meet entry criteria")}</div>
+                            <div><Icon name="alert" inline size={14} /> {isVietnamese() ? "Không đáp ứng quy định thi đấu" : tr("Did not meet entry criteria")}</div>
                           )}
                         </div>
                       </div>

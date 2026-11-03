@@ -1,10 +1,29 @@
 /* Bảng theo DESIGN.md: tiêu đề 40px viết thường đầu câu, hàng 56px, hover nhẹ, không sọc. */
-.scroll { overflow-x: auto; }
+.scroll {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-field) transparent;
+}
+.scroll::-webkit-scrollbar {
+  height: 6px;
+}
+.scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll::-webkit-scrollbar-thumb {
+  background: var(--border-field);
+  border-radius: 3px;
+}
 .table { width: 100%; border-collapse: collapse; font-size: var(--fs-body); }
 .th {
   text-align: left;
   height: 40px;
-  padding: 0 16px;
+  padding: 0 10px;
   background: var(--surface-table-head);
   border-bottom: 1px solid var(--border);
   font-size: var(--fs-caption);
@@ -12,7 +31,7 @@
   color: var(--text-2);
   white-space: nowrap;
 }
-.td { height: var(--row-h); padding: 8px 16px; border-bottom: 1px solid var(--border-soft); color: var(--text); vertical-align: middle; }
+.td { height: var(--row-h); padding: 8px 10px; border-bottom: 1px solid var(--border-soft); color: var(--text); vertical-align: middle; }
 .row:last-child .td { border-bottom: 0; }
 .row { transition: background var(--dur-fast) var(--ease); }
 .row:hover { background: var(--surface-row-hover); }
@@ -77,3 +96,18 @@
 .scroll { max-width: 100%; background: var(--surface); }
 .clickable:focus-visible { outline: var(--focus-ring); outline-offset: -3px; }
 @media (prefers-reduced-motion: reduce) { .row { transition: none; } .skeleton::after { animation: none; } }
+
+.cellLabel { display: none; }
+.stackOnNarrow { container-type: inline-size; }
+@container (max-width: 900px) {
+  .stackOnNarrow { overflow: visible; }
+  .stackOnNarrow .table { table-layout: fixed; }
+  .stackOnNarrow .th, .stackOnNarrow .td { white-space: normal; overflow-wrap: anywhere; }
+  .stackOnNarrow :global(.nowrap) { white-space: normal; }
+  .stackOnNarrow .table, .stackOnNarrow tbody, .stackOnNarrow .row { display: block; width: 100%; }
+  .stackOnNarrow thead { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); }
+  .stackOnNarrow .row { border-bottom: 1px solid var(--border); padding-block: 8px; }
+  .stackOnNarrow .td { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; height: auto; border: 0; padding: 4px 12px; text-align: left; }
+  .cellLabel { display: inline-block; flex: 0 1 120px; color: var(--muted); font-size: var(--fs-caption); }
+  .stackOnNarrow .td > :not(.cellLabel) { min-width: 0; }
+}

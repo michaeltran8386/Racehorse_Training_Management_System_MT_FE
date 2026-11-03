@@ -29,7 +29,7 @@ export function SpringCheck({ checked, onChange, label, disabled, strike = "none
       >
         <svg viewBox="0 0 24 24" width={boxSize - 6} height={boxSize - 6} fill="none">
           <motion.path
-            d="M5 12.5l4.2 4.2L19 7"
+            d="M20 6 9 17l-5-5" // nét "check" của Lucide (lucide-icon font/icons/check.svg), vẽ dần để giữ hiệu ứng
             stroke="currentColor"
             strokeWidth={3}
             strokeLinecap="round"

@@ -119,24 +119,24 @@ export default function PlanListPage() {
       ) : !error && (
         <Card>
           {shown.length === 0 ? (
-          <EmptyState
-            title={plans.length === 0 ? tr("No training plans yet.") : tr("No plans match the filter.")}
-            action={isTrainer && plans.length === 0 ? <Button onClick={() => navigate("/training/plans/new")}>Create plan</Button> : undefined}
-          />
-        ) : (
-          <div style={{ overflowX: "auto" }}>
+            <EmptyState
+              title={plans.length === 0 ? tr("No training plans yet.") : tr("No plans match the filter.")}
+              action={isTrainer && plans.length === 0 ? <Button onClick={() => navigate("/training/plans/new")}>Create plan</Button> : undefined}
+            />
+          ) : (
+            <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
-                  <th style={{ padding: "0.75rem 1rem" }}>{tr("Code")}</th>
-                  <th style={{ padding: "0.75rem 1rem" }}>{tr("Plan")}</th>
-                  <th style={{ padding: "0.75rem 1rem" }}>{tr("Horse")}</th>
-                  <th style={{ padding: "0.75rem 1rem" }}>{tr("Dates")}</th>
-                  <th style={{ padding: "0.75rem 1rem" }}>{tr("Phases")}</th>
-                  <th style={{ padding: "0.75rem 1rem" }}>{tr("Progress")}</th>
-                  <th style={{ padding: "0.75rem 1rem" }}>{tr("Status")}</th>
-                  <th style={{ padding: "0.75rem 1rem" }}>{tr("Trainer")}</th>
-                  <th style={{ padding: "0.75rem 1rem", textAlign: "right" }}>{tr("Actions")}</th>
+                  <th className={styles.colCode}>{tr("Code")}</th>
+                  <th className={styles.colName}>{tr("Plan")}</th>
+                  <th className={styles.colHorse}>{tr("Horse")}</th>
+                  <th className={styles.colDates}>{tr("Dates")}</th>
+                  <th className={styles.colPhases}>{tr("Phases")}</th>
+                  <th className={styles.colProgress}>{tr("Progress")}</th>
+                  <th className={styles.colStatus}>{tr("Status")}</th>
+                  <th className={styles.colTrainer}>{tr("Trainer")}</th>
+                  <th className={styles.colActions}>{tr("Actions")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -153,28 +153,30 @@ export default function PlanListPage() {
                     }}
                     onClick={() => navigate(`/training/plans/${plan.id}`)}
                   >
-                    <td style={{ padding: "0.75rem 1rem", fontWeight: 600 }}>{plan.planCode}</td>
-                    <td style={{ padding: "0.75rem 1rem", fontWeight: 600 }}>{plan.name}</td>
-                    <td style={{ padding: "0.75rem 1rem" }}>
-                      {plan.horseName}
-                      {plan.isLockedByMedical && (
-                    <Badge tone="danger" icon="lock">
-                      {tr("Training Lock")}
-                    </Badge>
-                  )}
+                    <td className={styles.colCode} style={{ fontWeight: 600 }}>{plan.planCode}</td>
+                    <td className={styles.colName} style={{ fontWeight: 600 }}>{plan.name}</td>
+                    <td className={styles.colHorse}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                        <span>{plan.horseName}</span>
+                        {plan.isLockedByMedical && (
+                          <Badge tone="danger" icon="lock">
+                            {tr("Training Lock")}
+                          </Badge>
+                        )}
+                      </div>
                     </td>
-                    <td style={{ padding: "0.75rem 1rem", whiteSpace: "nowrap" }}>
+                    <td className={styles.colDates}>
                       {plan.startDate} – {plan.endDate}
                     </td>
-                    <td style={{ padding: "0.75rem 1rem" }}>{plan.phases.length}</td>
-                    <td style={{ padding: "0.75rem 1rem", minWidth: 140 }}>
+                    <td className={styles.colPhases}>{plan.phases.length}</td>
+                    <td className={styles.colProgress}>
                       <ProgressBar done={plan.progress.completed} total={plan.progress.due} />
                     </td>
-                    <td style={{ padding: "0.75rem 1rem" }}>
+                    <td className={styles.colStatus}>
                       <Badge tone={PLAN_STATUS_TONE[plan.status]}>{PLAN_STATUS_LABEL[plan.status]}</Badge>
                     </td>
-                    <td style={{ padding: "0.75rem 1rem" }}>{plan.headTrainerName}</td>
-                    <td style={{ padding: "0.75rem 1rem", textAlign: "right" }} onClick={(e) => e.stopPropagation()}>
+                    <td className={styles.colTrainer}>{plan.headTrainerName}</td>
+                    <td className={styles.colActions} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: "inline-flex", gap: "0.5rem" }}>
                         <LinkButton to={`/training/plans/${plan.id}`} tone="secondary" size="sm">{tr("View")}</LinkButton>
                         {isTrainer && (
@@ -186,9 +188,11 @@ export default function PlanListPage() {
                 ))}
               </tbody>
             </table>
-            {filtered.length > PAGE_SIZE && (
-              <Pagination page={page} pageSize={PAGE_SIZE} total={filtered.length} noun="plans" onPage={setPage} />
-            )}
+          </div>
+        )}
+        {filtered.length > 0 && (
+          <div style={{ padding: "0.75rem 1rem", borderTop: "1px solid var(--border)" }}>
+            <Pagination page={page} pageSize={PAGE_SIZE} total={filtered.length} noun="plans" onPage={setPage} />
           </div>
         )}
       </Card>

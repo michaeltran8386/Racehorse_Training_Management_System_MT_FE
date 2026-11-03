@@ -51,7 +51,7 @@ interface BeHorse {
   horseCode?: string | null;
   status?: string;
   isMedicalLocked?: boolean;
-  medicalLocks?: { lockedAt: string; lockReason: string }[];
+  medicalLocks?: { lockedAt?: string; lockReason?: string }[];
   stallAllocations?: { stall: { code: string } }[];
 }
 
@@ -165,7 +165,7 @@ export function toSession(w: BeWorkout, planPhases?: TrainingPhase[]): ExerciseS
     horseId: w.horseId,
     horseName: w.horse?.name ?? "—",
     horseCode: w.horse?.horseCode ?? undefined,
-    isHorseLocked: Boolean(w.horse?.isMedicalLocked),
+    isHorseLocked: Boolean(w.horse?.isMedicalLocked || w.horse?.medicalLocks?.length),
     scheduledAt: w.scheduledDate,
     sessionDate: date,
     startTime: time,

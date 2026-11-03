@@ -204,7 +204,6 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("stalls", "Stall Map", "grid"),
         item("stable/shifts", "Shift Roster", "calendar", { i18nKey: "shiftRoster" }),
         item("rations", "Meal Rations", "wheat", { i18nKey: "rations" }),
-        item("catalog", "Supplies Catalog", "package"),
       ],
     },
     {
@@ -378,6 +377,9 @@ export function navFor(role: Role, permissions: PermissionMap): NavGroup[] {
 }
 
 export function isNavItemActive(navItem: NavItem, pathname: string): boolean {
+  if (navItem.href === "/catalog") {
+    return pathname === "/catalog" || pathname === "/catalogs/supplies" || pathname.startsWith("/catalogs/supplies/");
+  }
   if (navItem.href === "/training") {
     return pathname === "/training";
   }

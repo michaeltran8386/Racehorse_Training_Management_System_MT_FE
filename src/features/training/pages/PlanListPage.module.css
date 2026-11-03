@@ -1,9 +1,59 @@
 .secondaryAction { display: inline-flex; min-height: 44px; align-items: center; justify-content: center; padding: 0 16px; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font-weight: 600; }
 .secondaryAction:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
 .toolbar { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
-.table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--fs-body); }
-.table th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); white-space: nowrap; }
-.table td:first-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.tableWrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-field) transparent;
+}
+.tableWrapper::-webkit-scrollbar {
+  height: 6px;
+}
+.tableWrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tableWrapper::-webkit-scrollbar-thumb {
+  background: var(--border-field);
+  border-radius: 3px;
+}
+
+.table {
+  width: 100%;
+  min-width: 1060px;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: var(--fs-body);
+}
+.table th {
+  padding: 0.75rem 1rem;
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.table td {
+  padding: 0.75rem 1rem;
+  vertical-align: middle;
+}
+.table td:first-child {
+  font-variant-numeric: tabular-nums;
+}
+
+.colCode { width: 110px; white-space: nowrap; }
+.colName { min-width: 250px; line-height: 1.45; word-break: break-word; }
+.colHorse { min-width: 170px; white-space: nowrap; }
+.colDates { min-width: 200px; white-space: nowrap; }
+.colPhases { width: 75px; text-align: center; white-space: nowrap; }
+.colProgress { min-width: 140px; white-space: nowrap; }
+.colStatus { width: 130px; white-space: nowrap; }
+.colTrainer { min-width: 170px; white-space: nowrap; }
+.colActions { width: 140px; text-align: right; white-space: nowrap; }
+
 .table tbody tr:hover { background: var(--surface-row-hover); }
-@media (max-width: 720px) { .toolbar { align-items: stretch; } .toolbar > * { max-width: 100%; } }
 .table tbody tr:focus-visible { outline: 2px solid var(--brand); outline-offset: -3px; }
+@media (max-width: 720px) { .toolbar { align-items: stretch; } .toolbar > * { max-width: 100%; } }
+

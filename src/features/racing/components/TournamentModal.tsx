@@ -1,4 +1,5 @@
 import formLayout from "@/shared/components/form/FormLayout.module.css";
+import { Icon } from "@/shared/components/ui/Icon";
 import { useState, useEffect } from "react";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
@@ -341,7 +342,7 @@ export function TournamentModal({
                   </select>
                   {isDeadlinePassed && (
                     <p style={{ margin: "0.375rem 0 0", fontSize: "0.75rem", color: "var(--warning-text, #d97706)" }}>
-                      ⚠️ {tr("Deadline has passed. Status cannot be Open for Registration.")}
+                      <Icon name="alert" inline size={12} /> {tr("Deadline has passed. Status cannot be Open for Registration.")}
                     </p>
                   )}
                 </>

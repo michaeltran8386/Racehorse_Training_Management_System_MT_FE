@@ -5,6 +5,7 @@ import { Input } from "@/shared/components/form/Input";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { Button } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/ui/Modal";
+import styles from "./ExamVitals.module.css";
 import type { FollowUpInput } from "../types";
 
 import { tr } from "@/shared/i18n/tr";
@@ -28,8 +29,8 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!progressNotes.trim()) {
-      setError("Please enter clinical progress notes.");
+    if (progressNotes.trim().length < 5) {
+      setError("Clinical progress notes must contain at least 5 characters.");
       return;
     }
 
@@ -38,9 +39,9 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
     try {
       await onSubmit({
         followUpDate: new Date(followUpDate).toISOString(),
-        temperature: Number(temperature),
-        restingHeartRate: Number(restingHeartRate),
-        respiratoryRate: Number(respiratoryRate),
+        temperature: temperature === "" ? undefined : Number(temperature),
+        restingHeartRate: restingHeartRate === "" ? undefined : Number(restingHeartRate),
+        respiratoryRate: respiratoryRate === "" ? undefined : Number(respiratoryRate),
         progressNotes: progressNotes.trim(),
         adjustments: adjustments.trim() || undefined,
       });
@@ -55,7 +56,7 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
   return (
     <Modal
       title={tr("Add Follow-up Examination")}
-      subtitle={tr("Record latest vital signs, evaluate clinical progression, and adjust treatment protocol.")}
+      subtitle={tr("Record clinical progress and any treatment adjustments.")}
       width={520}
       onClose={busy ? undefined : onClose}
       foot={
@@ -85,43 +86,44 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
           />
         </Field>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-          <Field label={tr("Temperature (°C) *")} hint={tr("Normal: 37.2 - 38.6")}>
-            <Input
-              type="number"
-              step="0.1"
-              min={35}
-              max={43}
-              value={temperature}
-              onChange={(e) => setTemperature(e.target.value)}
-              required
-            />
-          </Field>
-          <Field label={tr("Heart Rate (bpm) *")} hint={tr("Normal: 28 - 44")}>
-            <Input
-              type="number"
-              min={20}
-              max={120}
-              value={restingHeartRate}
-              onChange={(e) => setRestingHeartRate(e.target.value)}
-              required
-            />
-          </Field>
-          <Field label={tr("Respiratory Rate (breaths/min) *")} hint={tr("Normal: 8 - 16")}>
-            <Input
-              type="number"
-              min={4}
-              max={60}
-              value={respiratoryRate}
-              onChange={(e) => setRespiratoryRate(e.target.value)}
-              required
-            />
-          </Field>
-        </div>
+        <details>
+          <summary>{tr("Optional vital signs")}</summary>
+          <div className={styles.grid}>
+            <Field label={tr("Temperature (°C)")} hint={tr("Normal: 37.2 - 38.6")}>
+              <Input
+                type="number"
+                step="0.1"
+                min={35}
+                max={43}
+                value={temperature}
+                onChange={(e) => setTemperature(e.target.value)}
+              />
+            </Field>
+            <Field label={tr("Heart Rate (bpm)")} hint={tr("Normal: 28 - 44")}>
+              <Input
+                type="number"
+                min={20}
+                max={120}
+                value={restingHeartRate}
+                onChange={(e) => setRestingHeartRate(e.target.value)}
+              />
+            </Field>
+            <Field label={tr("Respiratory Rate (breaths/min)")} hint={tr("Normal: 8 - 16")}>
+              <Input
+                type="number"
+                min={4}
+                max={60}
+                value={respiratoryRate}
+                onChange={(e) => setRespiratoryRate(e.target.value)}
+              />
+            </Field>
+          </div>
+        </details>
 
         <Field label={tr("Clinical Progress *")} hint={tr("Evaluate horse response to current treatment")}>
           <Textarea
             rows={3}
+            maxLength={2000}
             value={progressNotes}
             onChange={(e) => setProgressNotes(e.target.value)}
             placeholder={tr("Describe swelling, heat, gait lameness score, appetite, and attitude...")}
@@ -132,6 +134,7 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
         <Field label={tr("Protocol Adjustments / Additional Notes")} hint={tr("Changes to exercise restrictions or medication")}>
           <Textarea
             rows={2}
+            maxLength={1000}
             value={adjustments}
             onChange={(e) => setAdjustments(e.target.value)}
             placeholder={tr("e.g., Transition to 15-min hand walking, continue cold hosing for 3 more days...")}

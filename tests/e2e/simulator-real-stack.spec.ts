@@ -235,10 +235,9 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
       const dateCard = page.locator('div', { has: page.locator('h3', { hasText: scheduledDate }) });
       const createdRow = dateCard.locator('tr', { hasText: 'QA T013 Trial Horse' }).filter({ hasText: '19:45' });
       await expect(createdRow).toBeVisible({ timeout: 15000 });
-      await expect(createdRow.getByRole('button', { name: /Chạy mô phỏng|Run simulation/i })).toBeDisabled();
-      await expect(createdRow.locator('[data-testid="trial-launch-timing"]')).toContainText(
-        /Có thể chạy từ|Available from/i,
-      );
+      await expect(createdRow.getByRole('button', { name: /Chạy mô phỏng|Run simulation/i })).toHaveCount(0);
+      await expect(createdRow.getByRole('link', { name: /Ghi kết quả|Record result/i })).toHaveCount(0);
+      await expect(createdRow.getByText(/Sắp tới|Upcoming/i)).toBeVisible();
     } finally {
       const created = await prisma.workoutSession.findMany({
         where: {
@@ -2187,11 +2186,10 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
       await expect(modal).toBeVisible({ timeout: 5000 });
 
       // Fill proposal form
-      const zoneSelect = modal.locator('select').first();
-      await zoneSelect.selectOption(targetZoneId);
-
-      const supplySelect = modal.locator('select').nth(1);
-      await supplySelect.selectOption(targetSupplyId);
+      await modal.getByRole('combobox').first().click();
+      await page.getByRole('option', { name: `${zoneA.code} - ${zoneA.name}`, exact: true }).click();
+      await modal.getByRole('combobox').nth(1).click();
+      await page.getByRole('option', { name: /oats|yến mạch/i }).click();
 
       const qtyInput = modal.locator('input[type="number"]');
       await qtyInput.fill(String(requestedQty));
@@ -2343,8 +2341,10 @@ test.describe.serial('TASK-013: Real-stack Head Trainer & Veterinarian Simulator
       const fbModal = page.locator('div[role="dialog"]');
       await expect(fbModal).toBeVisible({ timeout: 5000 });
 
-      await fbModal.locator('select').first().selectOption(targetZoneId);
-      await fbModal.locator('select').nth(1).selectOption(targetSupplyId);
+      await fbModal.getByRole('combobox').first().click();
+      await page.getByRole('option', { name: `${zoneA.code} - ${zoneA.name}`, exact: true }).click();
+      await fbModal.getByRole('combobox').nth(1).click();
+      await page.getByRole('option', { name: /oats|yến mạch/i }).click();
       await fbModal.locator('input[type="number"]').fill(String(fallbackQty));
       await fbModal.locator('textarea').fill(`Fallback watchdog test [${FALLBACK_MARKER}]`);
       await fbModal.locator('button[type="submit"]').click();

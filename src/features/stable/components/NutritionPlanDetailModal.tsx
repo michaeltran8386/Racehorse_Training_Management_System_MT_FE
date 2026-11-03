@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from '@/shared/components/ui/Modal';
 import { Button } from '@/shared/components/ui/Button';
 import { Badge } from '@/shared/components/ui/Badge';
@@ -134,9 +135,9 @@ export function NutritionPlanDetailModal({
   };
 
   const mealIcons: Record<string, string> = {
-    MORNING: '☀️',
-    NOON: '🌤️',
-    EVENING: '🌙',
+    MORNING: 'sun',
+    NOON: 'cloudSun',
+    EVENING: 'moon',
   };
 
   const mealNames: Record<string, string> = {
@@ -338,7 +339,7 @@ export function NutritionPlanDetailModal({
                 }}
               >
                 <span>
-                  {mealIcons[meal.mealType] ? `${mealIcons[meal.mealType]} ` : ''}
+                  {mealIcons[meal.mealType] && <><Icon name={mealIcons[meal.mealType]} inline size={14} />{' '}</>}
                   {mealNames[meal.mealType] || meal.mealType}
                 </span>
                 {meal.time && (

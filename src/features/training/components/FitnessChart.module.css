@@ -26,7 +26,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 140px;
+  --chart-tip-width: min(240px, 100%);
+  width: var(--chart-tip-width);
+  box-sizing: border-box;
   padding: var(--sp-2) var(--sp-3);
   border: 1px solid var(--border);
   background: var(--surface);
@@ -34,7 +36,7 @@
   color: var(--text);
   font-size: var(--fs-caption);
   pointer-events: none;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .tipRow { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); }
 .tipRow b { color: var(--text-strong); font-variant-numeric: tabular-nums; }

@@ -8,6 +8,7 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { Alert } from '@/shared/components/ui/Alert';
 import { DataTable, type Column } from '@/shared/components/ui/DataTable';
 import { Input } from '@/shared/components/form/Input';
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Select } from '@/shared/components/form/Select';
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
 import { useAppLanguage } from '@/shared/lib/language';
@@ -26,7 +27,7 @@ const CATEGORY_NAMES: Record<SupplyCategory, string> = {
   FEED: 'Feed & Forage',
   MEDICINE: 'Medications & Vaccines',
   CARE: 'Daily Care & Supplements',
-  EQUIPMENT: 'Grooming & Equipment',
+  EQUIPMENT: 'Equipment & Tools',
 };
 
 export default function InventoryPage() {
@@ -107,9 +108,7 @@ export default function InventoryPage() {
   const categoryOptions = useMemo(() => {
     return [
       { value: 'ALL', label: tr('All Categories') },
-      { value: 'FEED', label: tr('Feed & Forage') },
-      { value: 'MEDICINE', label: tr('Medications & Vaccines') },
-      { value: 'EQUIPMENT', label: tr('Equipment & Tools') },
+      ...Object.entries(CATEGORY_NAMES).map(([value, label]) => ({ value, label: tr(label) })),
     ];
   }, [isVietnamese]);
 
@@ -149,7 +148,7 @@ export default function InventoryPage() {
       {
         key: 'zone',
         header: tr('Stall Zone'),
-        width: '180px',
+        width: '140px',
         render: (row) => (
           <div>
             <strong className={styles.itemName}>{row.zoneName}</strong>
@@ -178,17 +177,14 @@ export default function InventoryPage() {
         key: 'status',
         header: tr('Stock Health & Balance'),
         width: '210px',
-        render: (row) => getStatusBadge(row.status, row.quantity, row.unit),
-      },
-      {
-        key: 'minThreshold',
-        header: tr('Min Alert Threshold'),
-        width: '140px',
-        align: 'right',
+        // Ngưỡng nằm ngay dưới tồn kho để so sánh tại chỗ, bớt một cột cho bảng không tràn khi có cột thao tác.
         render: (row) => (
-          <span>
-            {row.minThreshold} {formatSupplyUnit(row.unit)}
-          </span>
+          <div>
+            {getStatusBadge(row.status, row.quantity, row.unit)}
+            <div className={styles.itemMeta}>
+              {tr('Min threshold')}: {row.minThreshold} {formatSupplyUnit(row.unit)}
+            </div>
+          </div>
         ),
       },
       {
@@ -211,12 +207,12 @@ export default function InventoryPage() {
           </div>
         ),
       },
-      {
+      ...(canRestock ? [{
         key: 'actions',
         header: tr('Actions'),
         width: '230px',
-        align: 'right',
-        render: (row) => (
+        align: 'right' as const,
+        render: (row: StockItemRow) => (
           <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
             {canRestock && (
               <Button
@@ -238,7 +234,7 @@ export default function InventoryPage() {
             )}
           </div>
         ),
-      },
+      }] : []),
     ],
     [isManager, canRestock, isVietnamese],
   );
@@ -247,7 +243,7 @@ export default function InventoryPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       <PageHeader
         title={tr('Zone Supply Inventory')}
-        description={tr('Track real-time stock levels, health status, and physical counts across stall zones.')}
+        description={tr(isManager ? 'Review shortages and adjust stock across stall zones.' : canRestock ? 'Check availability by stall zone and request supplies when needed.' : 'Check supply availability by stall zone before planning work.')}
       />
 
       {/* KPI Summary Cards */}
@@ -283,12 +279,12 @@ export default function InventoryPage() {
       {/* Filters Toolbar */}
       <Card pad={16}>
         <div className={styles.filters}>
-          <div style={{ minWidth: '180px', flex: '1 1 180px' }}>
-            <Select
+          <div style={{ minWidth: '200px', flex: '1 1 200px' }}>
+            <SearchSelect
               aria-label={tr('Stall zone')}
               options={zoneOptions}
               value={zoneFilter}
-              onChange={(e) => setZoneFilter(e.target.value)}
+              onChange={setZoneFilter}
             />
           </div>
 
@@ -332,26 +328,6 @@ export default function InventoryPage() {
         </div>
       </Card>
 
-      {/* Category Tabs for fast category switching */}
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        {[
-          { key: 'ALL', label: tr('All Categories') },
-          { key: 'FEED', label: tr('Feed & Forage') },
-          { key: 'MEDICINE', label: tr('Medications & Vaccines') },
-          { key: 'EQUIPMENT', label: tr('Equipment & Tools') },
-        ].map((tab) => (
-          <Button
-            key={tab.key}
-            size="sm"
-            tone={categoryFilter === tab.key ? 'primary' : 'secondary'}
-            aria-pressed={categoryFilter === tab.key}
-            onClick={() => setCategoryFilter(tab.key)}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
-
       {/* Main Stock Table */}
       <Card pad={0}>
         <DataTable
@@ -361,6 +337,7 @@ export default function InventoryPage() {
           rows={items}
           rowKey={(r) => r.id}
           loading={loading}
+          stackOnNarrow
           caption="Stall Zone Supply Inventory Table"
         />
       </Card>

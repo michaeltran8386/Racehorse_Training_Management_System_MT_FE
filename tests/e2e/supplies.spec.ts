@@ -27,9 +27,7 @@ test.describe('TASK-006: Supply Catalog and Inventory RBAC (ADR-004 / CR-002)', 
     await expect(page.getByRole('button', { name: /Stop using/i })).toHaveCount(0);
 
     // Groom can filter by category
-    const feedTab = page.getByRole('button', { name: 'Feed & Forage' });
-    await expect(feedTab).toBeVisible();
-    await feedTab.click();
+    await page.getByRole('combobox', { name: 'Category' }).selectOption('FEED');
 
     // Groom can search by name
     const searchInput = page.getByPlaceholder(/Search by supply name/i);

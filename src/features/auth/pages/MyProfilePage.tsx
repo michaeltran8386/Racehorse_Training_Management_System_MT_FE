@@ -20,6 +20,7 @@ import { ACCOUNT_STATUS } from "@/shared/lib/status";
 import { updateNotification, updateProfile } from "../api";
 import styles from "./ProfilePages.module.css";
 import { fullNameError } from "@/shared/lib/name";
+import { VN_PHONE_RE, normalizeVnPhone } from "@/shared/lib/phone";
 
 import { tr } from "@/shared/i18n/tr";
 // Design 1.15: hồ sơ cá nhân — dùng chung cho cả 5 vai trò, mỗi người chỉ thấy hồ sơ của mình.
@@ -39,14 +40,13 @@ export default function MyProfilePage() {
 
   const granted = PERMISSIONS.filter((p) => user.permissions[p.key]).length;
   const status = ACCOUNT_STATUS[user.status];
-  const VN_PHONE_RE = /^0[35789]\d{8}$/;
 
   async function onSave() {
     if (fullNameError(fullName)) {
       setNameError(fullNameError(fullName));
       return;
     }
-    const cleanPhone = phone.replace(/[\s-]/g, "");
+    const cleanPhone = normalizeVnPhone(phone.trim());
     if (cleanPhone && !VN_PHONE_RE.test(cleanPhone)) {
       setPhoneError(t("phoneValidation.error"));
       return;
@@ -55,7 +55,7 @@ export default function MyProfilePage() {
     setNameError("");
     setPhoneError("");
     try {
-      const res = await updateProfile({ fullName: fullName.trim(), phone: phone.trim() });
+      const res = await updateProfile({ fullName: fullName.trim(), phone: cleanPhone });
       setUser(res.user);
       toast.show(isVietnamese ? "Đã lưu thông tin." : "Details saved.", "ok");
     } catch (err) {
@@ -99,14 +99,15 @@ export default function MyProfilePage() {
               </Field>
               <Field label={isVietnamese ? "Số điện thoại" : tr("Phone")} error={phoneError} hint={t("phoneValidation.hint")}>
                 <Input
-                  autoComplete="tel"
+                  type="tel" autoComplete="tel-national" inputMode="numeric"
                   maxLength={15}
-                  placeholder="0901 234 567"
+                  placeholder="0901234567"
                   value={phone}
                   onChange={(e) => {
                     setPhone(e.target.value);
                     setPhoneError("");
                   }}
+                  onBlur={() => setPhone((v) => normalizeVnPhone(v))}
                 />
               </Field>
               <Field label={tr("Club email")} hint={tr("The sign-in address is changed by the Club Manager")}>

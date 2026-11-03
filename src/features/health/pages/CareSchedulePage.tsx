@@ -10,6 +10,7 @@ import { Card } from "@/shared/components/ui/Card";
 import { DataTable, type Column } from "@/shared/components/ui/DataTable";
 import { Pagination } from "@/shared/components/ui/Pagination";
 import { Tabs } from "@/shared/components/ui/Tabs";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Select } from "@/shared/components/form/Select";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import styles from "./CareSchedulePage.module.css";
@@ -230,12 +231,19 @@ export default function CareSchedulePage() {
   const columns: Column<PreventiveCareItem>[] = [
     {
       key: "service",
-      header: "Care service",
-      render: (item) => <span className={styles.service}>{item.type}</span>,
+      header: tr("Care service"),
+      // Ghi chú gộp dưới tên dịch vụ, cắt 2 dòng + tooltip: cột ghi chú riêng làm bảng tràn và cắt mất cột Thao tác (BUG-MAN-08).
+      render: (item) => (
+        <div className={styles.service}>
+          {item.type}
+          {item.notes && <span className={styles.notes} title={item.notes}>{item.notes}</span>}
+        </div>
+      ),
     },
     {
       key: "horse",
-      header: "Horse",
+      header: tr("Horse"),
+      width: 125,
       render: (item) => (
         item.realHorseId ? <Link to={`/medical/horses/${item.realHorseId}`} className={styles.horse}>
           <strong>{item.horseName || item.horseId}</strong>
@@ -245,17 +253,19 @@ export default function CareSchedulePage() {
     },
     {
       key: "category",
-      header: "Category",
+      header: tr("Category"),
+      width: 105,
       render: (item) => <Badge tone="neutral">{CATEGORY_LABELS[item.category] || item.category}</Badge>,
     },
     {
       key: "last",
-      header: "Last given",
+      header: tr("Last given"),
+      width: 145,
       render: (item) => (
         <div style={{ display: "grid" }}>
           <span className="num nowrap">{item.lastAdministeredDate ? formatDate(item.lastAdministeredDate) : tr("Not recorded")}</span>
           {item.administeredBy && (
-            <span className="nowrap" style={{ fontSize: "var(--fs-caption)", lineHeight: "18px", color: "var(--muted)" }}>
+            <span className={styles.doctorText}>
               {item.administeredBy}
             </span>
           )}
@@ -264,7 +274,8 @@ export default function CareSchedulePage() {
     },
     {
       key: "due",
-      header: "Due",
+      header: tr("Due"),
+      width: 105,
       render: (item) => (
         <span className="num nowrap" style={{ color: item.status === "OVERDUE" ? "var(--danger)" : undefined, fontWeight: item.status === "OVERDUE" ? 600 : undefined }}>
           {formatDate(item.dueDate)}
@@ -273,7 +284,8 @@ export default function CareSchedulePage() {
     },
     {
       key: "status",
-      header: "Status",
+      header: tr("Status"),
+      width: 100,
       render: (item) => {
         const st = STATUS_BADGES[item.status] || STATUS_BADGES.NO_DATA;
         return (
@@ -283,24 +295,19 @@ export default function CareSchedulePage() {
         );
       },
     },
-    {
-      key: "notes",
-      header: "Notes",
-      hideOnNarrow: true,
-      render: (item) => (
-        <span className={styles.notes}>{item.notes || "—"}</span>
-      ),
-    },
     ...(isVet
       ? [
           {
             key: "actions",
-            header: "",
+            header: tr("Actions"),
+            width: 200,
             align: "right" as const,
             render: (item: PreventiveCareItem) => (
-              <Button tone="secondary" size="sm" icon="check" onClick={() => handleOpenCompleteModal(item)}>
-                {tr("Record completion")}
-              </Button>
+              <div className={styles.actionCell}>
+                <Button tone="secondary" size="sm" icon="check" onClick={() => handleOpenCompleteModal(item)}>
+                  {tr("Record completion")}
+                </Button>
+              </div>
             ),
           },
         ]
@@ -308,7 +315,7 @@ export default function CareSchedulePage() {
   ];
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div className={styles.page}>
       <PageHeader
         title={tr("Preventive care")}
         description={tr("Vaccinations, deworming, farrier, and dental schedules for all horses.")}
@@ -358,10 +365,11 @@ export default function CareSchedulePage() {
             />
           </div>
         </div>
-        <div style={{ borderTop: "1px solid var(--border)" }}>
+        <div style={{ borderTop: "1px solid var(--border)", width: "100%", maxWidth: "100%", minWidth: 0 }}>
           <DataTable
             caption={tr("Preventive care schedule")}
             columns={columns}
+            stackOnNarrow
             rows={visibleItems}
             rowKey={(item) => item.id}
             loading={loading}
@@ -373,7 +381,11 @@ export default function CareSchedulePage() {
               />
             }
           />
-          {!loading && filteredItems.length > pageSize && <Pagination page={currentPage} pageSize={pageSize} total={filteredItems.length} noun="care items" onPage={setPage} />}
+          {!loading && filteredItems.length > 0 && (
+            <div style={{ borderTop: "1px solid var(--border)" }}>
+              <Pagination page={currentPage} pageSize={pageSize} total={filteredItems.length} noun="care items" onPage={setPage} />
+            </div>
+          )}
         </div>
         </>}
       </Card>
@@ -485,9 +497,9 @@ export default function CareSchedulePage() {
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             <Field label={tr("Select Horse *")}>
-              <Select
+              <SearchSelect
                 value={createHorseId}
-                onChange={(e) => setCreateHorseId(e.target.value)}
+                onChange={setCreateHorseId}
                 options={[
                   { value: "", label: tr("— Select a horse —") },
                   ...horseList.map((h) => ({

@@ -27,6 +27,7 @@ interface DataTableProps<T> {
   onRowClick?: (row: T) => void;
   // Phân trang phía client cho danh sách tải trọn một lần (tránh trang cuộn dài vô tận).
   pageSize?: number;
+  stackOnNarrow?: boolean;
   noun?: string; // danh từ số nhiều cho chân bảng, vd "items"
 }
 
@@ -34,7 +35,7 @@ const SKELETON_ROWS = 5;
 
 // Bảng dữ liệu dùng chung. Tự lo 3 trạng thái: đang tải (skeleton) · rỗng · có dữ liệu.
 // (Trạng thái lỗi do trang quyết định vì cần nút "Try again" riêng.)
-export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, selectedKey, onRowClick, pageSize, noun = "items" }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, selectedKey, onRowClick, pageSize, stackOnNarrow, noun = "items" }: DataTableProps<T>) {
   const pager = usePaged(rows, pageSize ?? 10);
 
   if (!loading && rows.length === 0) {
@@ -44,7 +45,7 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
 
   return (
     <>
-    <div className={styles.scroll}>
+    <div className={cx(styles.scroll, stackOnNarrow && styles.stackOnNarrow)}>
       <table className={styles.table} aria-busy={loading || undefined}>
         <caption className="sr-only">{trNode(caption)}</caption>
         <thead>
@@ -106,6 +107,7 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
                   >
                     {columns.map((c) => (
                       <td key={c.key} className={cx(styles.td, c.align === "right" && styles.right)}>
+                        {stackOnNarrow && c.header && <span className={styles.cellLabel} aria-hidden="true">{trNode(c.header)}</span>}
                         {c.render(row)}
                       </td>
                     ))}

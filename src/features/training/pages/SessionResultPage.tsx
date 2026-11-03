@@ -17,7 +17,6 @@ import { useToast } from "@/shared/components/ui/Toast";
 import { formatDateTime } from "@/shared/lib/format";
 import { ApiError } from "@/shared/lib/api";
 import { messageFor } from "@/shared/lib/messages";
-import { simulatedWorkoutDraft } from "@/shared/lib/simulatedMeasurements";
 import { trainingApi } from "../api";
 import {
   ABNORMAL_SIGN_LABEL,
@@ -87,7 +86,7 @@ export default function SessionResultPage() {
   const [simulationLoadError, setSimulationLoadError] = useState("");
   const [simulationImported, setSimulationImported] = useState(false);
   const [simulationLoading, setSimulationLoading] = useState(false);
-  const [simulationGenerated, setSimulationGenerated] = useState(false);
+  const [simulationRunning, setSimulationRunning] = useState(false);
   const [score, setScore] = useState("");
   const [completion, setCompletion] = useState<CompletionLevel | "">("");
   const [comment, setComment] = useState("");
@@ -147,24 +146,13 @@ export default function SessionResultPage() {
     setDirty(false);
   }, []);
 
-  // Bấm nút mà Simulator chưa chạy: tự sinh chỉ số theo bài tập thay vì báo 404.
-  const applyGeneratedResult = useCallback((s: ExerciseSession) => {
-    fill(s, simulatedWorkoutDraft(s));
-    setCompletion("ACHIEVED");
-    setSimulationAborted(false);
-    setSimulationGenerated(true);
-    setSimulationLoadError("");
-  }, [fill]);
-
-  const importSimulationResult = useCallback(async (s: ExerciseSession, generateIfMissing = false) => {
+  // Trả về true khi đã nạp số đo của phiên Simulator; không bao giờ tự sinh số đo.
+  const importSimulationResult = useCallback(async (s: ExerciseSession): Promise<boolean> => {
     setSimulationLoading(true);
     try {
       const simulation: WorkoutSimulationResult = await trainingApi.getLatestSimulationResult(s.id);
-      if (!simulation.resultDraft) {
-        if (generateIfMissing) applyGeneratedResult(s);
-        return;
-      }
-      setSimulationGenerated(false);
+      if (!simulation.resultDraft) return false;
+      setSimulationRunning(false);
       fill(s, simulation.resultDraft);
       const plannedDistance = s.targetDistanceMeters;
       setCompletion(
@@ -176,16 +164,41 @@ export default function SessionResultPage() {
       setSimulationAborted(simulation.status === "ABORTED_INJURY");
       setSimulationImported(true);
       setSimulationLoadError("");
+      return true;
     } catch (err) {
       if (!(err instanceof ApiError && err.code === "SIMULATOR_RESULT_NOT_FOUND")) {
         setSimulationLoadError(messageFor(err));
-      } else if (generateIfMissing) {
-        applyGeneratedResult(s);
       }
+      return false;
     } finally {
       setSimulationLoading(false);
     }
-  }, [fill, applyGeneratedResult]);
+  }, [fill]);
+
+  // Chưa có phiên: mở Simulator chạy ẩn. Engine tính đủ bài và 10 phút hồi phục rồi gửi kết quả theo đúng session ID.
+  async function loadOrRunSimulation(s: ExerciseSession) {
+    const popup = window.open("about:blank", "_blank");
+    if (!popup) {
+      toast.show(tr("Please allow pop-ups to open the simulation."), "danger");
+      return;
+    }
+    popup.opener = null;
+    if (await importSimulationResult(s)) {
+      popup.close();
+      return;
+    }
+    setSimulationLoading(true);
+    try {
+      const { launchUrl } = await trainingApi.startSimulation(s.id);
+      popup.location.replace(`${launchUrl}&autorun=1`);
+      setSimulationRunning(true);
+    } catch (err) {
+      popup.close();
+      setSimulationLoadError(messageFor(err));
+    } finally {
+      setSimulationLoading(false);
+    }
+  }
 
   useEffect(() => {
     let mounted = true;
@@ -428,9 +441,10 @@ export default function SessionResultPage() {
                   </Button>
                 }
               >
+                {!recoveryHr && (isVietnamese ? "Nhịp tim hồi phục chưa có dữ liệu. " : "Recovery heart rate is unavailable. ")}
                 {isVietnamese
-                  ? "Nhịp tim hồi phục chưa có dữ liệu. Điểm hiệu suất, nhận xét và dấu hiệu bất thường vẫn cần Head Trainer nhập."
-                  : "Recovery heart rate is unavailable. Performance score, comments, and abnormal signs still require Head Trainer input."}
+                  ? "Điểm hiệu suất, nhận xét và dấu hiệu bất thường vẫn cần Head Trainer nhập."
+                  : "Performance score, comments, and abnormal signs still require Head Trainer input."}
               </Alert>
             </div>
           )}
@@ -441,7 +455,7 @@ export default function SessionResultPage() {
                 size="sm"
                 tone="secondary"
                 disabled={simulationLoading || dirty}
-                onClick={() => void importSimulationResult(session, true)}
+                onClick={() => void loadOrRunSimulation(session)}
               >
                 {simulationLoading
                   ? tr("Loading...")
@@ -451,11 +465,11 @@ export default function SessionResultPage() {
               </Button>
             </div>
           )}
-          {simulationGenerated && !simulationImported && (
-            <Alert tone="info" title={isVietnamese ? "Chỉ số mô phỏng giả lập" : "Simulated measurements"}>
+          {simulationRunning && !simulationImported && (
+            <Alert tone="info" title={isVietnamese ? "Simulator đang tính kết quả" : "Simulator is computing the result"}>
               {isVietnamese
-                ? "Đã tự động tạo chỉ số mô phỏng giả lập dựa trên bài tập. Bạn có thể chỉnh sửa trước khi lưu."
-                : "Simulated measurements were generated from the workout plan. You can edit them before saving."}
+                ? "Simulator chạy ẩn ở tab mới, gồm cả 10 phút đi bộ hồi phục. Quay lại trang này, chỉ số sẽ tự nạp."
+                : "The Simulator runs headless in a new tab, including the 10-minute recovery walk. Return to this page and the measurements load automatically."}
             </Alert>
           )}
           {simulationAborted && <Alert tone="warn" title={tr("Simulation ended due to injury")}>{tr("Review the imported measurements and record any abnormal signs before completing this workout.")}</Alert>}

@@ -12,11 +12,23 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   numeric?: boolean;
 }
 
-export function Input({ icon, invalid, numeric, className, id, type, placeholder, ...rest }: InputProps) {
+export function Input({ icon, invalid, numeric, className, id, type, placeholder, onClick, ...rest }: InputProps) {
   const field = useFieldControl();
   const isInvalid = invalid ?? field?.invalid ?? false;
   const isPassword = type === "password";
   const [visible, setVisible] = useState(false);
+  const isPickerType = type === "date" || type === "time" || type === "datetime-local" || type === "month";
+
+  const handleClick = (e: React.MouseEvent<HTMLInputElement>) => {
+    if (isPickerType && !rest.disabled && !rest.readOnly) {
+      try {
+        e.currentTarget.showPicker?.();
+      } catch {
+        // Safe ignore if unsupported or already visible
+      }
+    }
+    onClick?.(e);
+  };
 
   const input = (
     <input
@@ -30,9 +42,11 @@ export function Input({ icon, invalid, numeric, className, id, type, placeholder
         isPassword && styles.withToggle,
         numeric && styles.numeric,
         isInvalid && styles.invalid,
+        isPickerType && styles.pickerInput,
         className,
       )}
       placeholder={placeholder === undefined ? undefined : tr(placeholder)}
+      onClick={handleClick}
       {...rest}
     />
   );

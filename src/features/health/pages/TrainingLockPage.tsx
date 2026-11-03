@@ -122,78 +122,82 @@ export default function TrainingLockPage() {
 
   const columns: Column<TrainingLockHistoryItem>[] = [
     {
-      key: "code",
-      header: "Lock code",
-      render: (lock) => (
-        <span className="num nowrap" style={{ fontWeight: 600 }}>
-          {lock.lockCode}
-        </span>
-      ),
-    },
-    {
       key: "horse",
       header: tr("Horse"),
       render: (lock) => (
-        <div style={{ display: "grid" }}>
+        <div style={{ display: "grid", whiteSpace: "nowrap" }}>
           <Link to={`/medical/horses/${lock.horseId}`} className="nowrap" style={{ fontWeight: 600, color: "var(--text)" }}>
             {lock.horseName || lock.horseId}
           </Link>
           <span className="num nowrap" style={{ fontSize: "var(--fs-caption)", lineHeight: "18px", color: "var(--muted)" }}>
             {lock.horseCode || lock.horseId}
           </span>
+          {/* Mã khóa thành dòng phụ thay vì một cột riêng để bảng vừa khung cùng cột Thao tác. */}
+          <span className="num nowrap" style={{ fontSize: "var(--fs-caption)", lineHeight: "18px", color: "var(--muted)" }}>
+            {tr("Lock code")} {lock.lockCode}
+          </span>
         </div>
       ),
     },
     {
-      key: "applied",
-      header: tr("Applied status"),
-      render: (lock) =>
-        lock.appliedMedicalStatus in HEALTH_STATUS ? (
-          <HealthBadge status={lock.appliedMedicalStatus as HealthStatus} />
-        ) : (
-          <Badge tone="danger">{lock.appliedMedicalStatus}</Badge>
-        ),
-    },
-    {
       key: "reason",
       header: tr("Reason"),
-      width: "26%",
+      // Không đặt % cho cột: tổng % + cột Thao tác 200px vượt 100% làm cột Lý do co còn ~57px, chữ vỡ từng ký tự (BUG-MAN-12).
       render: (lock) => (
         <div className={styles.reason}>
-          <span>{lock.lockReason}</span>
-          <span className="nowrap" style={{ fontSize: "var(--fs-caption)", lineHeight: "18px", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span className={styles.reasonText} title={lock.lockReason}>{lock.lockReason}</span>
+          <span style={{ fontSize: "var(--fs-caption)", lineHeight: "16px", color: "var(--muted)", wordBreak: "break-word" }}>
             {tr("Vet:")} {lock.lockedBy}
           </span>
         </div>
       ),
     },
-    { key: "locked", header: tr("Locked"), hideOnNarrow: true, render: (lock) => <span className="num nowrap">{formatDate(lock.lockedAt)}</span> },
-    { key: "review", header: tr("Review by"), render: (lock) => <span className="num nowrap">{formatDate(lock.reviewDate)}</span> },
+    {
+      key: "period",
+      header: tr("Review by"),
+      render: (lock) => (
+        <div style={{ display: "grid" }}>
+          <span className="num nowrap">{formatDate(lock.reviewDate)}</span>
+          <span className="num nowrap" style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>
+            {tr("Locked")} {formatDate(lock.lockedAt)}
+          </span>
+        </div>
+      ),
+    },
     {
       key: "status",
       header: tr("Status"),
-      render: (lock) =>
-        lock.status === "ACTIVE" ? (
-          <Badge tone="danger" icon="lock">
-            {tr("Active")}
-          </Badge>
-        ) : (
-          <Badge tone="neutral" icon="unlock">
-            {tr("Released")}
-          </Badge>
-        ),
+      // Trạng thái khóa + trạng thái y tế áp dụng chung một ô (bớt cột để Thao tác không bị cắt).
+      render: (lock) => (
+        <div style={{ display: "grid", gap: 6, justifyItems: "start" }}>
+          {lock.status === "ACTIVE" ? (
+            <Badge tone="danger" icon="lock">
+              {tr("Active")}
+            </Badge>
+          ) : (
+            <Badge tone="neutral" icon="unlock">
+              {tr("Released")}
+            </Badge>
+          )}
+          {lock.appliedMedicalStatus in HEALTH_STATUS ? (
+            <HealthBadge status={lock.appliedMedicalStatus as HealthStatus} />
+          ) : (
+            <Badge tone="danger">{lock.appliedMedicalStatus}</Badge>
+          )}
+        </div>
+      ),
     },
     ...(isVet
       ? [
         {
           key: "actions",
-          header: "",
+          header: tr("Actions"),
           align: "right" as const,
           render: (lock: TrainingLockHistoryItem) =>
             lock.status === "ACTIVE" ? (
               <div className={styles.rowActions}>
                 <Button
-                  tone="ghost"
+                  tone="secondary"
                   size="sm"
                   onClick={() => {
                     setSelectedLock(lock);
@@ -226,7 +230,7 @@ export default function TrainingLockPage() {
   ];
 
   return (
-    <div style={{ display: "grid", gap: 20 }}>
+    <div className={styles.page}>
       <PageHeader
         title={tr("Training Locks")}
         description={tr("Heavy workouts and trial runs are blocked while a horse has an active medical lock.")}
@@ -280,6 +284,7 @@ export default function TrainingLockPage() {
         <DataTable
           caption={tr("Training locks")}
           columns={columns}
+          stackOnNarrow
           rows={visibleLocks}
           rowKey={(lock) => lock.id || lock.lockCode}
           loading={loading}
@@ -295,7 +300,11 @@ export default function TrainingLockPage() {
             />
           }
         />
-        {!loading && filteredLocks.length > pageSize && <Pagination page={currentPage} pageSize={pageSize} total={filteredLocks.length} noun="locks" onPage={setPage} />}
+        {!loading && filteredLocks.length > 0 && (
+          <div style={{ borderTop: "1px solid var(--border)" }}>
+            <Pagination page={currentPage} pageSize={pageSize} total={filteredLocks.length} noun="locks" onPage={setPage} />
+          </div>
+        )}
         </>}
       </Card>
 

@@ -17,13 +17,15 @@ import { tr } from '@/shared/i18n/tr';
 import { getSupplies, setSupplyActive } from '../api/suppliesApi';
 import { SupplyModal } from '../components/SupplyModal';
 import {
-  SUPPLY_CATEGORY_LABELS,
   SUPPLY_UNIT_LABELS,
   formatSupplyName,
   getFriendlyCategoryName,
   type SupplyCatalogItem,
   type SupplyCategory,
 } from '../types/supplies';
+
+// Chỉ thuốc, vắc-xin, thuốc tẩy giun có thời gian ngưng thuốc; thức ăn/dụng cụ thì cột này vô nghĩa.
+const WITHDRAWAL_CATEGORIES = new Set<string>(['MEDICINE', 'VACCINE', 'DEWORMER']);
 
 export default function SuppliesCatalogPage() {
   useScreenTranslation();
@@ -85,14 +87,13 @@ export default function SuppliesCatalogPage() {
 
   const categoryOptions = [
     { value: 'ALL', label: tr('All Categories') },
+    // Cùng bộ nhóm với Tồn kho khu chuồng (BE gom nhóm theo FEED/MEDICINE/CARE/EQUIPMENT).
     { value: 'FEED', label: tr('Feed & Forage') },
     { value: 'MEDICINE', label: tr('Medications & Vaccines') },
+    { value: 'CARE', label: tr('Daily Care & Supplements') },
     { value: 'EQUIPMENT', label: tr('Equipment & Tools') },
-    ...Object.entries(SUPPLY_CATEGORY_LABELS).map(([value, label]) => ({
-      value,
-      label: tr(label),
-    })),
   ];
+  const showWithdrawal = items.some((it) => WITHDRAWAL_CATEGORIES.has(it.category));
 
   const statusOptions = [
     { value: 'ACTIVE', label: tr('Active') },
@@ -104,11 +105,11 @@ export default function SuppliesCatalogPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <PageHeader
         title={tr('Supplies Catalog')}
-        description={tr('Manage feed, veterinary medicines, supplements and grooming equipment.')}
+        description={tr(isManager ? 'Manage supply details, prices and availability in the catalog.' : currentUser.role === 'VETERINARIAN' ? 'Look up medicines, units and withdrawal periods before treatment.' : 'Look up available feed, medicines and equipment.')}
         action={
           isManager ? (
-            <Button tone="primary" onClick={() => setEditingItem(null)}>
-              + {tr('Add Supply')}
+            <Button tone="primary" icon="plus" onClick={() => setEditingItem(null)}>
+              {tr('Add Supply')}
             </Button>
           ) : undefined
         }
@@ -159,26 +160,6 @@ export default function SuppliesCatalogPage() {
         )}
       </div>
 
-      {/* Category Tabs for fast category switching */}
-      <div className={styles.categoryTabs}>
-        {[
-          { key: 'ALL', label: tr('All Categories') },
-          { key: 'FEED', label: tr('Feed & Forage') },
-          { key: 'MEDICINE', label: tr('Medications & Vaccines') },
-          { key: 'EQUIPMENT', label: tr('Equipment & Tools') },
-        ].map((tab) => (
-          <Button
-            key={tab.key}
-            size="sm"
-            tone={categoryFilter === tab.key ? 'primary' : 'secondary'}
-            aria-pressed={categoryFilter === tab.key}
-            onClick={() => setCategoryFilter(tab.key)}
-          >
-            {tab.label}
-          </Button>
-        ))}
-      </div>
-
       {/* Bảng dữ liệu */}
       <Card pad={0}>
         <DataTable<SupplyCatalogItem>
@@ -223,14 +204,22 @@ export default function SuppliesCatalogPage() {
                 },
               ]
             : []),
-          {
-            key: 'withdrawalDays',
-            header: tr('Withdrawal'),
-            render: (it) =>
-              it.withdrawalDays !== null && it.withdrawalDays !== undefined
-                ? `${it.withdrawalDays} ${tr('days')}`
-                : '—',
-          },
+          ...(showWithdrawal
+            ? [
+                {
+                  key: 'withdrawalDays',
+                  header: tr('Withdrawal'),
+                  render: (it: SupplyCatalogItem) =>
+                    !WITHDRAWAL_CATEGORIES.has(it.category) ? (
+                      <span className={styles.supplyDescription}>{tr('Not applicable')}</span>
+                    ) : it.withdrawalDays !== null && it.withdrawalDays !== undefined ? (
+                      `${it.withdrawalDays} ${tr('days')}`
+                    ) : (
+                      '—'
+                    ),
+                },
+              ]
+            : []),
           {
             key: 'status',
             header: tr('Status'),

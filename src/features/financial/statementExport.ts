@@ -76,7 +76,7 @@ export function printStatement(invoices: FinancialInvoice[], periodLabel: string
   td.num { text-align: right; font-variant-numeric: tabular-nums; }
   .summary { width: 360px; margin-left: auto; }
   .summary tr:last-child td { font-weight: 700; }
-  @page { margin: 14mm; }
+  @page { size: A4; margin: 14mm; }
 </style></head><body>
 <h1>${esc(tr("Cost statement"))} — ${esc(periodLabel)}</h1>
 <p class="meta">${ownerName ? `${esc(tr("Owner"))}: ${esc(ownerName)} · ` : ""}${esc(tr("Exported at"))}: ${esc(new Date().toLocaleString("vi-VN"))}</p>
