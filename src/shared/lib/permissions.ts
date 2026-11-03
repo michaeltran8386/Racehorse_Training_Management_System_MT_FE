@@ -376,6 +376,51 @@ export function navFor(role: Role, permissions: PermissionMap): NavGroup[] {
     .filter((g) => g.items.length > 0);
 }
 
+const masterData = ["horses", "stalls", "rations", "stable/shifts"];
+const supply = ["supplies/inventory", "supplies/requests", "catalog"];
+const sidebarOrder: Record<Role, [string, string[]][]> = {
+  CLUB_MANAGER: [
+    ["WORKSPACE", ["dashboard", "assistant", "races"]],
+    ["ADMINISTRATION", ["accounts", "staff"]],
+    ["MASTER DATA", ["horses", "stalls", "stable/shifts"]],
+    ["SUPPLIES", supply],
+    ["REPORTS", ["performance", "financial-reports", "costs", "audit"]],
+  ],
+  HEAD_TRAINER: [
+    ["WORKSPACE", ["dashboard", "assistant", "races"]],
+    ["MASTER DATA", ["horses", "stalls", "stable/shifts", "rations"]],
+    ["TRAINING", ["training", "plans", "calendar", "trials", "metrics", "monitor", "alerts"]],
+  ],
+  VETERINARIAN: [
+    ["WORKSPACE", ["dashboard", "assistant"]],
+    ["MASTER DATA", masterData],
+    ["MEDICAL", ["herd", "records", "locks", "alerts", "vaccine", "incidents"]],
+    ["SUPPLIES", supply],
+  ],
+  GROOM: [
+    ["WORKSPACE", ["dashboard", "assistant"]],
+    ["MASTER DATA", masterData],
+    ["DAILY", ["tasks", "my-training", "incidents"]],
+    ["SUPPLIES", supply],
+  ],
+  HORSE_OWNER: [
+    ["WORKSPACE", ["dashboard", "assistant", "my-horses"]],
+    ["MONITORING", ["progress", "health"]],
+    ["REPORTS", ["financial-reports", "costs", "race-record"]],
+  ],
+};
+
+export function sidebarNavFor(role: Role, permissions: PermissionMap): NavGroup[] {
+  const permitted = new Map(navFor(role, permissions).flatMap(({ items }) => items.map((entry) => [entry.id, entry] as const)));
+  return sidebarOrder[role].map(([label, ids]) => ({
+    label,
+    items: ids.flatMap((id) => {
+      const entry = permitted.get(id);
+      return entry ? [entry] : [];
+    }),
+  })).filter(({ items }) => items.length > 0);
+}
+
 export function isNavItemActive(navItem: NavItem, pathname: string): boolean {
   if (navItem.href === "/catalog") {
     return pathname === "/catalog" || pathname === "/catalogs/supplies" || pathname.startsWith("/catalogs/supplies/");

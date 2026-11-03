@@ -4,7 +4,7 @@ import { Icon } from "@/shared/components/ui/Icon";
 import { BRAND } from "@/shared/lib/brand";
 import { cx } from "@/shared/lib/cx";
 import { capitalize, initials } from "@/shared/lib/format";
-import { isNavItemActive, navFor, ROLE_LABEL } from "@/shared/lib/permissions";
+import { isNavItemActive, sidebarNavFor, ROLE_LABEL } from "@/shared/lib/permissions";
 import { useAppLanguage } from "@/shared/lib/language";
 import { healthApi } from "@/features/health/api";
 import { subscribeNotifications } from "@/shared/lib/notifications";
@@ -22,11 +22,12 @@ interface SidebarProps {
   onNavigate: () => void;
 }
 
-// Sidebar xây từ DANH SÁCH QUYỀN của tài khoản (navFor), không chỉ từ tên vai trò:
+// Sidebar xây từ danh sách quyền của tài khoản, không chỉ từ tên vai trò:
 // thu hồi quyền => mục tương ứng biến mất ở lần tải trang kế tiếp.
 export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate }: SidebarProps) {
   const { t, isVietnamese } = useAppLanguage();
-  const groups = navFor(user.role, user.permissions);
+  const groups = sidebarNavFor(user.role, user.permissions);
+  const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>({});
   const [hasActiveLocks, setHasActiveLocks] = useState(false);
   const canViewLocks = Boolean(user.permissions.viewMedical);
 
@@ -118,36 +119,54 @@ export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate 
           const rawKey = g.label.toLowerCase().replace(/\s+/g, "_");
           const isWorkspace = g.label === "WORKSPACE";
           const groupTitle = isWorkspace ? "" : t(`nav.group_${rawKey}`, t(`nav.${rawKey}`, capitalize(g.label)));
+          const groupKey = user.role + ":" + rawKey;
+          const groupId = "sidebar-group-" + rawKey;
+          const expanded = !closedGroups[groupKey];
           return (
             <div key={g.label} className={styles.group}>
-              {groupTitle ? <p className={styles.groupLabel}>{groupTitle}</p> : null}
-            {g.items.map((it) => {
-              const active = isNavItemActive(it, pathname);
-              const isClicked = clickedId === it.id;
-              const showAlertDot =
-                (it.id === "locks" && hasActiveLocks) || (it.id === "accounts" && accountsAlert) || Boolean(it.alert);
-              const itemKey = it.i18nKey || it.id;
-              const itemLabel = isVietnamese ? t(`nav.${itemKey}`, it.label) : it.label;
-              return (
-                <Link
-                  key={it.id}
-                  to={it.href}
-                  onClick={() => handleItemClick(it.id)}
-                  aria-current={active ? "page" : undefined}
-                  className={cx(styles.item, active && styles.active, isClicked && styles.itemClicked)}
-                  title={itemLabel}
+              {groupTitle && (
+                <button
+                  type="button"
+                  className={styles.groupToggle}
+                  aria-expanded={expanded}
+                  aria-controls={groupId}
+                  onClick={() => setClosedGroups((previous) => ({ ...previous, [groupKey]: !previous[groupKey] }))}
                 >
-                  {active && <span className={styles.activePill} aria-hidden="true" />}
-                  <span className={cx(styles.iconWrapper, isClicked && styles.iconBounce)}>
-                    <Icon name={it.icon} size={18} />
-                  </span>
-                  <span className={styles.itemLabel}>{itemLabel}</span>
-                  {showAlertDot && <span className={cx(styles.dot, styles.alertDot)} aria-label={tr("Action required")} />}
-                  {isClicked && <span className={styles.clickRipple} aria-hidden="true" />}
-                </Link>
-              );
-            })}
-          </div>
+                  <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="m6 4 4 4-4 4" />
+                  </svg>
+                  {groupTitle}
+                </button>
+              )}
+              <div id={groupId} className={cx(groupTitle && styles.groupItems, groupTitle && !expanded && styles.groupClosed)}>
+                {g.items.map((it) => {
+                  const active = isNavItemActive(it, pathname);
+                  const isClicked = clickedId === it.id;
+                  const showAlertDot =
+                    (it.id === "locks" && hasActiveLocks) || (it.id === "accounts" && accountsAlert) || Boolean(it.alert);
+                  const itemKey = it.i18nKey || it.id;
+                  const itemLabel = isVietnamese ? t(`nav.${itemKey}`, it.label) : it.label;
+                  return (
+                    <Link
+                      key={it.id}
+                      to={it.href}
+                      onClick={() => handleItemClick(it.id)}
+                      aria-current={active ? "page" : undefined}
+                      className={cx(styles.item, active && styles.active, isClicked && styles.itemClicked)}
+                      title={itemLabel}
+                    >
+                      {active && <span className={styles.activePill} aria-hidden="true" />}
+                      <span className={cx(styles.iconWrapper, isClicked && styles.iconBounce)}>
+                        <Icon name={it.icon} size={18} />
+                      </span>
+                      <span className={styles.itemLabel}>{itemLabel}</span>
+                      {showAlertDot && <span className={cx(styles.dot, styles.alertDot)} aria-label={tr("Action required")} />}
+                      {isClicked && <span className={styles.clickRipple} aria-hidden="true" />}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
       </div>
@@ -159,7 +178,7 @@ export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate 
         </Link>
       )}
 
-      <div className={styles.user} title={`${user.fullName} · ${t(`nav.role_${user.role}`, ROLE_LABEL[user.role])}`}>
+      <Link to="/profile" onClick={onNavigate} className={styles.user} title={`${user.fullName} · ${t(`nav.role_${user.role}`, ROLE_LABEL[user.role])}`}>
         <span className={styles.userAvatar} aria-hidden="true">
           {initials(user.fullName)}
         </span>
@@ -167,7 +186,7 @@ export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate 
           <strong>{user.fullName}</strong>
           <span>{t(`nav.role_${user.role}`, ROLE_LABEL[user.role])}</span>
         </div>
-      </div>
+      </Link>
     </nav>
   );
 }
