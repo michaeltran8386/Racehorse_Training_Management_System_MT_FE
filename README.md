@@ -1,132 +1,126 @@
-# EquiFlow - Racehorse Training & Stable Management System (Frontend)
+# 🐎 EquiFlow — Racehorse Training & Stable Management System (Frontend Web)
 
 [![Frontend CI / CD Pipeline](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/actions/workflows/ci.yml/badge.svg)](https://github.com/MichaelTran1226/Racehorse_Training_Management_System_MT_FE/actions)
 [![React](https://img.shields.io/badge/React-19.x-61DAFB?logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite)](https://vitejs.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8%2B-3178C6?logo=typescript)](https://www.typescriptlang.org/)
-[![Playwright](https://img.shields.io/badge/Playwright-E2E%20Tests-2EAD33?logo=playwright)](https://playwright.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-v4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+[![Port](https://img.shields.io/badge/Port-5173-blue.svg)](http://localhost:5173)
 
-Giao diện ứng dụng web Single Page Application (SPA) hiện đại dành cho Câu lạc bộ đua ngựa chuyên nghiệp EquiFlow (Đồ án SWP391 - FPT University).
-
----
-
-## 1. Điểm Mới & Các Phân Hệ Đã Hoàn Thiện (100% Full Flows)
-
-Frontend hiện tại đã hoàn thiện toàn diện **tất cả 6 luồng nghiệp vụ cốt lõi**, không còn bất kỳ thư mục rỗng nào:
-
-### 🏇 Flow 1: Quản lý Hồ sơ Ngựa & Chuồng trại (`/horses`, `/stalls`, `/stable-map`)
-* **Hồ sơ ngựa 6 tab chuyên sâu:** Thông tin chung, phả hệ, lịch sử cân nặng/chiều cao, theo dõi vị trí chuồng, nhật ký trạng thái và phân quyền chủ sở hữu.
-* **Danh mục & Quản trị vòng đời:** Tạo mới, chỉnh sửa thông tin chip RFID, gắn nhãn trạng thái (`ACTIVE`, `IN_TRAINING`, `INJURED`, `ISOLATED`, `RESTING`, `RETIRED`), lưu trữ mềm và phục hồi ngựa đã xóa.
-* **Sơ đồ chuồng trại 2D tương tác:** Bản đồ trực quan theo lưới cho 3 khu vực (Barn 1, Barn 2, Khu cách ly), gán chuồng, điều chuyển chuồng và theo dõi trạng thái bảo trì/ngừng sử dụng.
-
-### 📈 Flow 2: Lập Giáo án & Nhật ký Huấn luyện (`/training/*`)
-* **Quy trình lập giáo án thông minh (Plan Wizard):** Phân chia giai đoạn huấn luyện (Base, Speed, Tapering, Recovery), đặt mục tiêu cự ly, tốc độ tối đa theo mặt đường (Turf / Dirt).
-* **Lịch tập tuần (Weekly Calendar):** Kéo thả và theo dõi bài tập theo ngày, gán Groom/Jockey phụ trách.
-* **Chặn bài tập nặng tự động (RULE-MED-01):** Tự động phát hiện ngựa đang bị Khóa Y Tế để chặn các bài tập cường độ nặng, chỉ cho phép bài tập đi bộ nhẹ phục hồi.
-* **Giám sát thời gian thực & Biểu đồ thể lực (Fitness Chart):** Đo nhịp tim đỉnh, nhịp tim hồi phục, tốc độ trung bình và tính điểm rủi ro chấn thương.
-
-### 🩺 Flow 3: Y tế, Bệnh án & Khóa Huấn luyện (`/health/*`)
-* **Hồ sơ bệnh án điện tử:** Ghi nhận triệu chứng, chẩn đoán, phác đồ điều trị, đơn thuốc, chỉ định xét nghiệm và lịch hẹn tái khám.
-* **Bản đồ giải phẫu chấn thương 2D (Interactive Injury Map):** Đánh dấu chính xác vị trí tổn thương trên sơ đồ cơ bắp/xương ngựa (nhìn bên trái/phải), theo dõi tiến trình hồi phục qua từng giai đoạn (`ACUTE` -> `RECOVERING` -> `HEALED`).
-* **Lệnh Khóa Y Tế (Training Lock Modal):** Bác sĩ thú y ban hành lệnh cấm tập luyện với đánh giá tác động cảnh báo (`impact assessment`), thiết lập ngày xem xét và điều kiện giải tỏa khóa.
-* **Lịch chăm sóc định kỳ:** Theo dõi tiêm phòng vắc-xin, tẩy giun, mài răng, đóng móng định kỳ và cảnh báo quá hạn.
-
-### 👥 Flow 4: Tài khoản, Phân quyền & Nhật ký Kiểm toán (`/accounts`, `/audit-logs`)
-* **Phân quyền 5 vai trò (RBAC):** Club Manager, Head Trainer, Veterinarian, Groom, Horse Owner với điều hướng và quyền truy cập riêng biệt.
-* **Quy trình xét duyệt thành viên:** Duyệt đăng ký (`PENDING_APPROVAL`), mời nhân sự (`INVITED`), khóa/mở khóa tài khoản (`LOCKED`).
-* **Nhật ký kiểm toán (Audit Trail):** Truy vết toàn bộ thay đổi dữ liệu theo thời gian thực (ai làm gì, thời điểm nào, chi tiết thay đổi JSON diff).
-
-### 🌐 Song ngữ Toàn diện 100% (Bilingual VI / EN)
-* Chuyển đổi ngôn ngữ tức thì giữa **Tiếng Việt** và **Tiếng Anh** trên toàn bộ menu, thanh điều hướng, các form nhập liệu, bảng thống kê và thông báo.
-* Từ điển dịch thuật hơn **2.500 từ chuyên ngành** ([vi-text.ts](src/shared/i18n/vi-text.ts)) giữ văn phong tự nhiên, chuẩn y tế và thể thao đua ngựa.
+Giao diện ứng dụng web Single Page Application (SPA) hiện đại dành cho Câu lạc bộ đua ngựa chuyên nghiệp **EquiFlow (Thien Ma Equestrian Club - TMEC)** thuộc Đồ án SWP391 — Đại học FPT.
 
 ---
 
-## 2. Hướng dẫn Khởi động
+## 🚀 1. Khởi Động Nhanh (Quick Start)
 
-### 2.1. Cài đặt & Chạy thử
+### Yêu cầu tiên quyết:
+- **Node.js**: Phiên bản 22.x hoặc 24.x LTS (`node -v`)
+- **Backend API Server**: Đã chạy tại `http://localhost:3000` (xem [Backend README](../Racehorse_Training_Management_System_MT_BE/README.md))
+
+### Các bước cài đặt:
+
 ```bash
-# 1. Cài đặt thư viện dependencies
+# 1. Cài đặt các thư viện phụ thuộc
 npm install
 
-# 2. Cấu hình file môi trường
-Copy-Item .env.example .env.local    # macOS/Linux: cp .env.example .env.local
+# 2. Cấu hình biến môi trường
+# Trên Windows PowerShell:
+Copy-Item .env.example .env.local
+# Trên Linux / macOS:
+cp .env.example .env.local
 
-# 3. Khởi chạy chế độ phát triển
+# 3. Khởi chạy máy chủ phát triển Vite
 npm run dev
 ```
-Truy cập ứng dụng tại: **`http://localhost:5173`**
 
-### 2.2. Chuyển đổi Chế độ API Thật / Dữ liệu Giả (Mock)
-Mở file `.env.local`:
-* **Chạy với API Thật kết nối Backend NestJS (Khuyên dùng):**
-  ```env
-  VITE_USE_MOCK=false
-  VITE_API_URL=http://localhost:3000/api
-  ```
-* **Chạy độc lập Offline với dữ liệu giả trong trình duyệt:**
-  ```env
-  VITE_USE_MOCK=true
-  ```
+Ứng dụng web sẽ hoạt động tại: **`http://localhost:5173`**
 
 ---
 
-## 3. Tài khoản Đăng nhập Kiểm thử (Khi chạy với API Thật)
+## 🔑 2. Tài Khoản Đăng Nhập Dùng Thử
 
-Mật khẩu mặc định: **`EquiFlow@2026`**
+Toàn bộ tài khoản có mật khẩu chung: **`EquiFlow@2026`**
 
-| Email | Vai trò | Quyền hạn và Giao diện |
-| :--- | :--- | :--- |
-| `manager@gmail.com` | **Club Manager** | Toàn quyền quản trị tài khoản, duyệt thành viên, xem sơ đồ chuồng, nhật ký kiểm toán |
-| `trainer@gmail.com` | **Head Trainer** | Quản lý giáo án huấn luyện, xếp lịch tuần, theo dõi chỉ số thể lực |
-| `vet@gmail.com` | **Veterinarian** | Quản lý bệnh án, bản đồ chấn thương 2D, đặt và mở Khóa Y Tế |
-| `groom@gmail.com` | **Groom Hand 1** | Quản lý chuồng Barn 1 (STALL-A01 đến A04), xác nhận ca trực |
-| `groom2@gmail.com` | **Groom Hand 2** | Quản lý chuồng Barn 2 và Khu cách ly thú y |
-| `owner@gmail.com` | **Horse Owner 1** | Theo dõi ngựa sở hữu (Thunderbolt Swift, Pegasus Dream, Midnight Mirage) |
-| `owner2@gmail.com` | **Horse Owner 2** | Theo dõi ngựa sở hữu (Northern Dancer Legacy, Shadowfax Wonder) |
+| Vai Trò | Email Đăng Nhập | Mật Khẩu | Khu Vực Làm Việc |
+| :--- | :--- | :---: | :--- |
+| **Quản Lý (Club Manager)** | `manager@gmail.com` | `EquiFlow@2026` | Phê duyệt thành viên, cấu hình chuồng trại, phân quyền, xem Audit Log |
+| **HLV Trưởng (Head Trainer)** | `trainer@gmail.com` | `EquiFlow@2026` | Lập giáo án thông minh, theo dõi bài tập, giám sát nhịp tim và thể lực |
+| **Bác Sĩ Thú Y (Veterinarian)**| `vet@gmail.com` | `EquiFlow@2026` | Khám chữa bệnh, cấp Khóa Y Tế, sơ đồ chấn thương 2D, lịch tiêm phòng |
+| **Nhân Viên Chuồng (Groom)** | `groom@gmail.com` | `EquiFlow@2026` | Danh sách công việc hàng ngày, tiếp tế kho vật tư, phân bổ ca trực |
+| **Chủ Ngựa (Horse Owner)** | `owner@gmail.com` | `EquiFlow@2026` | Theo dõi sức khỏe ngựa sở hữu, xem hóa đơn & xuất báo cáo tài chính PDF |
 
 ---
 
-## 4. Danh mục Lệnh Phát Triển & Kiểm Thử (Quality Gates)
+## 🌟 3. Các Phân Hệ & Luồng Nghiệp Vụ Hoàn Chỉnh (Flow 1 — Flow 6)
 
-| Lệnh | Ý nghĩa |
-| :--- | :--- |
-| `npm run dev` | Khởi chạy Vite Dev Server có HMR (Hot Module Replacement) |
-| `npm run typecheck` | Kiểm tra lỗi kiểu dữ liệu TypeScript (`tsc --noEmit`) |
-| `npm run build` | Kiểm tra TypeScript và đóng gói ứng dụng sản phẩm vào thư mục `/dist` |
-| `npm run preview` | Khởi chạy bản preview gói build tĩnh |
-| `npm run lint` | Chạy bộ linter `oxlint` siêu tốc kiểm tra chất lượng mã nguồn |
-| `npm test` hoặc `npm run test:e2e` | Chạy toàn bộ bài test tự động E2E bằng Playwright |
+### 📋 Flow 1: Hồ Sơ Chiến Mã & Sơ Đồ Chuồng Trại 2D (`/horses`, `/stalls`, `/stable-map`)
+- **Hồ sơ ngựa 6 tab chuyên sâu:** Thông tin chung, gia phả 3 đời, theo dõi cân nặng (`weightKg`), lịch sử trạng thái, chỉ số thể lực và phân quyền chủ sở hữu.
+- **Sơ đồ chuồng trại 2D tương tác:** Bản đồ ô chuồng dạng lưới trực quan cho Barn 1, Barn 2 và Khu cách ly y tế. Hỗ trợ điều chuyển, bảo trì chuồng và hiển thị bong bóng ngựa nghỉ ngơi.
+
+### ⏱️ Flow 2: Lập Giáo Án & Giám Sát Huấn Luyện (`/training/*`)
+- **Thuật toán Plan Wizard:** Phân chia chu kỳ huấn luyện (Base, Speed, Tapering, Recovery), tự động gán bài tập theo từng cự ly và mặt đường đua (Cỏ Turf / Cát Dirt).
+- **Lịch tập tuần kéo thả (Weekly Calendar):** Quản lý bài tập theo ngày, gán nài ngựa và Groom hỗ trợ.
+- **Cơ chế Khóa Huấn Luyện An Toàn (`RULE-MED-01`):** Ngựa đang có Khóa Y Tế sẽ tự động bị chặn các bài tập nặng (`BREEZE`, `TRIAL_RUN`), chỉ cho phép phục hồi nhẹ.
+- **Biểu đồ thể lực (Fitness Chart):** Giám sát nhịp tim phục hồi, tốc độ tối đa và cảnh báo quá tải cơ bắp.
+
+### 🩺 Flow 3: Y Tế, Bệnh Án & Sơ Đồ Chấn Thương 2D (`/health/*`)
+- **Hồ sơ bệnh án điện tử:** Chẩn đoán lâm sàng, phác đồ điều trị, kê đơn thuốc và lịch hẹn tái khám rút gọn.
+- **Sơ đồ giải phẫu chấn thương 2D:** Đánh dấu chính xác vị trí tổn thương trên mô hình cơ/xương ngựa, theo dõi giai đoạn hồi phục (`ACUTE` $\to$ `RECOVERING` $\to$ `HEALED`).
+- **Lệnh Khóa Y Tế (Medical Lock Modal):** Ban hành lệnh cấm tập luyện/thi đấu đối với ngựa chấn thương, kèm đánh giá tác động và điều kiện gỡ khóa.
+- **Lịch tiêm phòng & chăm sóc định kỳ:** Quản lý tiêm vắc-xin, tẩy giun, mài răng, đóng móng định kỳ.
+
+### 📦 Flow 4: Vận Hành Chuồng Trại, Kho Vật Tư & Phân Ca (`/stable/*`)
+- **Danh sách công việc hàng ngày (Daily Checklist):** Danh mục nhiệm vụ theo ca trực với vùng bấm đạt chuẩn WCAG $\ge 44\text{ px}$.
+- **Kho vật tư & Yêu cầu tiếp tế:** Đặt mua cỏ khô, yến mạch, thuốc men với xe giao hàng thời gian thực từ Simulator.
+- **Lịch làm việc ca trực (Shift Roster):** Phân bổ ca sáng/chiều/tối cho nhân viên chăm sóc.
+
+### 🏆 Flow 5: Trường Đua, Giải Đấu & Báo Cáo Tài Chính (`/racing/*`, `/financial/*`)
+- **Đăng ký giải đấu & Phân làn thi đấu:** Kiểm tra điều kiện y tế trước khi cho phép ghi danh thi đấu.
+- **Kế toán & Báo cáo tài chính chủ ngựa:** Lập hóa đơn chi phí lưu chuồng, ăn uống, dịch vụ thú y; hỗ trợ **In / Xuất hóa đơn PDF & CSV**.
+
+### 🤖 Flow 6: Trợ Lý AI & Hệ Thống Đa Ngôn Ngữ
+- **Trợ lý AI Thông Minh:** Chatbot hỏi đáp kỹ thuật cưỡi ngựa và tra cứu thông tin theo tài liệu câu lạc bộ.
+- **Song ngữ Anh - Việt 100%:** Chuyển đổi ngôn ngữ linh hoạt với bộ từ điển chuẩn hóa toàn diện.
 
 ---
 
-## 5. Cấu trúc Thư mục Mã nguồn (Feature-Driven Architecture)
+## 🧪 4. Kiểm Thử & Kiểm Soát Chất Lượng
 
-```text
-Racehorse_Training_Management_System_MT_FE/
-├── src/
-│   ├── app/                 # Routing, RoleGuard, App Provider
-│   ├── features/            # Modules nghiệp vụ độc lập:
-│   │   ├── auth/            # Đăng nhập, đăng ký, xác minh OTP, hồ sơ cá nhân
-│   │   ├── accounts/        # Quản trị danh sách tài khoản, phê duyệt thành viên
-│   │   ├── dashboard/       # Dashboard tổng quan theo từng vai trò, Audit Logs, Thông báo
-│   │   ├── horses/          # Danh mục ngựa, hồ sơ chi tiết 6 tab, lưu trữ ngựa giải nghệ
-│   │   ├── stable/          # Sơ đồ chuồng 2D, gán chuồng, điều chuyển chuồng
-│   │   ├── training/        # Lập giáo án, lịch tập tuần, biểu đồ thể lực, cảnh báo
-│   │   └── health/          # Bệnh án, bản đồ chấn thương 2D, Khóa Y Tế, chăm sóc định kỳ
-│   └── shared/              # Thành phần dùng chung:
-│       ├── components/      # UI components (Button, Modal, DataTable, Card, Tabs, Select...)
-│       ├── i18n/            # Hệ thống song ngữ i18next & bộ từ điển vi-text.ts 2500+ từ
-│       ├── lib/             # API client, xử lý token, phân quyền, format ngày giờ
-│       └── mock/            # Mock Service Worker và bộ dữ liệu giả lập
-│
-└── tests/e2e/               # Kịch bản kiểm thử tự động Playwright:
-    ├── auth.spec.ts         # Kiểm thử đăng nhập, phân quyền 403
-    ├── horses.spec.ts       # Kiểm thử CRUD hồ sơ ngựa, chip RFID
-    ├── medical.spec.ts      # Kiểm thử quy trình Khóa Y Tế & cảnh báo chưa lưu
-    ├── training.spec.ts     # Kiểm thử lập giáo án & chặn bài tập nặng
-    ├── audit.spec.ts        # Kiểm thử truy vết lịch sử kiểm toán
-    ├── notifications.spec.ts# Kiểm thử gửi và đánh dấu đã đọc thông báo
-    └── i18n.spec.ts         # Kiểm thử chuyển đổi ngôn ngữ tức thì
+```bash
+# Kiểm tra TypeScript typecheck (0 lỗi)
+npm run typecheck
+
+# Kiểm tra ESLint
+npm run lint
+
+# Đóng gói bản phát hành sản phẩm (Production Build)
+npm run build
+
+# Chạy kiểm thử tự động Playwright E2E
+npx playwright test
+```
+
+---
+
+## 🏛️ 5. Cấu Trúc Thư Mục
+
+```
+src/
+├── features/
+│   ├── accounts/     # Quản lý người dùng, chỉnh sửa hồ sơ
+│   ├── auth/         # Màn hình đăng nhập, xác thực OTP, Google Sign-in
+│   ├── dashboard/    # Bảng điều khiển phân quyền theo 5 vai trò
+│   ├── financial/    # Quản lý hóa đơn, báo cáo tài chính chủ ngựa
+│   ├── health/       # Bệnh án y tế, khóa huấn luyện, sơ đồ chấn thương 2D
+│   ├── horses/       # Danh sách, chi tiết và danh mục ngựa đua
+│   ├── master-data/  # Danh mục giống, vật tư, ô chuồng
+│   ├── racing/       # Giải đấu, trường đua, kết quả thi đấu
+│   ├── stable/       # Vận hành chuồng trại, kho vật tư, phân ca trực
+│   └── training/     # Giáo án, lịch tập tuần, biểu đồ thể lực
+├── shared/
+│   ├── components/   # UI Kit dùng chung (Button, Card, DataTable, Combobox, Modal...)
+│   ├── i18n/         # Bộ từ điển song ngữ Anh - Việt
+│   ├── lib/          # API Client (Axios), phân quyền, helper định dạng (+84 phone...)
+│   └── styles/       # Design Tokens và Global CSS
+└── App.tsx           # Bộ định tuyến ứng dụng (React Router v7)
 ```
