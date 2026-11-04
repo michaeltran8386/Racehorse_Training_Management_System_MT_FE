@@ -1,6 +1,7 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import styles from "./OwnerFinancialReportsPage.module.css";
 import { Card } from "@/shared/components/ui/Card";
@@ -8,6 +9,9 @@ import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/ui/Modal";
+import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
+import { useToast } from "@/shared/components/ui/Toast";
 import { KpiTile } from "@/shared/components/ui/KpiTile";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Pagination } from "@/shared/components/ui/Pagination";
@@ -16,7 +20,7 @@ import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
-import { fetchOwnerSummary, changeInvoiceStatus, generateMonthlyInvoices } from "../api";
+import { fetchOwnerSummary, changeInvoiceStatus, generateMonthlyInvoices, payInvoice } from "../api";
 import type { FinancialInvoice, InvoiceStatus, OwnerSummaryResponse } from "../types";
 import { exportStatementXlsx, printStatement } from "../statementExport";
 
@@ -27,13 +31,20 @@ export default function OwnerFinancialReportsPage() {
   const { isVietnamese } = useAppLanguage();
   const locale = isVietnamese ? "vi-VN" : "en-US";
   const user = useCurrentUser();
+  const toast = useToast();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
   const isClubManager = user.role === "CLUB_MANAGER";
 
   const [summary, setSummary] = useState<OwnerSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [selectedPeriod, setSelectedPeriod] = useState<string>("ALL");
+  const [horseFilter, setHorseFilter] = useState("ALL");
+  const [ownerFilter, setOwnerFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "ALL">("ALL");
   const [page, setPage] = useState(1);
+  const [lastHighlightPage, setLastHighlightPage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
   const [updatingInvoice, setUpdatingInvoice] = useState<string | null>(null);
@@ -49,6 +60,7 @@ export default function OwnerFinancialReportsPage() {
 
   // Statement details modal state
   const [selectedInvoice, setSelectedInvoice] = useState<FinancialInvoice | null>(null);
+  const [confirmPayment, setConfirmPayment] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -85,6 +97,28 @@ export default function OwnerFinancialReportsPage() {
     }
   }
 
+  async function handlePayInvoice() {
+    if (!confirmPayment || !selectedInvoice || updatingInvoice || user.role !== "HORSE_OWNER" ||
+      selectedInvoice.ownerId !== user.id || selectedInvoice.netAmount <= 0 ||
+      (selectedInvoice.status !== "SENT" && selectedInvoice.status !== "OVERDUE")) return;
+    const id = selectedInvoice.id;
+    setUpdatingInvoice(id);
+    setActionError("");
+    setStatusMessage(null);
+    try {
+      const paid = await payInvoice(id, { paymentMethod: "BANK_TRANSFER" });
+      setSelectedInvoice((current) => current?.id === id ? { ...current, ...paid } : current);
+      setConfirmPayment(false);
+      toast.show(tr("Payment recorded successfully."), "ok");
+      setStatusMessage(tr("Payment recorded successfully."));
+      await loadData();
+    } catch (err) {
+      setActionError(messageFor(err));
+    } finally {
+      setUpdatingInvoice(null);
+    }
+  }
+
   function handleOpenGenerate() {
     setGenerateError(null);
     setIsGenerateOpen(true);
@@ -112,16 +146,46 @@ export default function OwnerFinancialReportsPage() {
   }
 
   function handleOpenStatement(invoice: FinancialInvoice) {
+    setActionError("");
+    setConfirmPayment(false);
     setSelectedInvoice(invoice);
   }
 
   const invoices = summary?.invoices ?? [];
   const periods = Array.from(new Set(invoices.map((i) => i.billingPeriod))).sort().reverse();
 
-  const filteredInvoices = invoices.filter((i) => {
-    if (selectedPeriod === "ALL") return true;
-    return i.billingPeriod === selectedPeriod;
-  });
+  const uniqueHorses = Array.from(new Map(invoices.map((i) => [i.horse.id, i.horse])).values());
+  const uniqueOwners = Array.from(new Map(invoices.filter((i) => i.owner).map((i) => [i.owner.id, i.owner])).values());
+  const horseOptions = [
+    { value: "ALL", label: tr("All Horses") },
+    ...uniqueHorses.map((h) => ({ value: h.id, label: `${h.name} (${h.horseCode || "—"})` })),
+  ];
+  const ownerOptions = [
+    { value: "ALL", label: tr("All Owners") },
+    ...uniqueOwners.map((o) => ({ value: o.id, label: `${o.fullName} (${o.email || ""})` })),
+  ];
+  const filteredInvoices = invoices.filter((i) =>
+    i.id === highlightId || ((selectedPeriod === "ALL" || i.billingPeriod === selectedPeriod) &&
+    (statusFilter === "ALL" || i.status === statusFilter) &&
+    (horseFilter === "ALL" || i.horseId === horseFilter) &&
+    (!isClubManager || ownerFilter === "ALL" || i.ownerId === ownerFilter)),
+  );
+  const highlightedIndex = highlightId ? filteredInvoices.findIndex((i) => i.id === highlightId) : -1;
+  const highlightPage = highlightedIndex < 0 ? null : Math.floor(highlightedIndex / PAGE_SIZE) + 1;
+  const highlightPageKey = highlightPage === null ? null : `${highlightId}:${highlightPage}`;
+  if (lastHighlightPage !== highlightPageKey) {
+    setLastHighlightPage(highlightPageKey);
+    if (highlightPage !== null) setPage(highlightPage);
+  }
+  const hasFilters = selectedPeriod !== "ALL" || statusFilter !== "ALL" || horseFilter !== "ALL" || (isClubManager && ownerFilter !== "ALL");
+
+  function resetFilters() {
+    setSelectedPeriod("ALL");
+    setStatusFilter("ALL");
+    setHorseFilter("ALL");
+    setOwnerFilter("ALL");
+    setPage(1);
+  }
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredInvoices.length / PAGE_SIZE)));
 
   const totalExpense = summary?.totalExpense ?? 0;
@@ -214,13 +278,35 @@ export default function OwnerFinancialReportsPage() {
       {/* Billing period filter */}
       <Card pad={16}>
         <div className={styles.billingFilter}>
+          <div className={styles.searchField}>
+            <label htmlFor="invoice-horse" className={styles.filterLabel}>{tr("Horse")}</label>
+            <SearchSelect id="invoice-horse" options={horseOptions} value={horseFilter}
+              onChange={(value) => { setHorseFilter(value); setPage(1); }} />
+          </div>
+          {isClubManager && (
+            <div className={styles.searchField}>
+              <label htmlFor="invoice-owner" className={styles.filterLabel}>{tr("Owner")}</label>
+              <SearchSelect id="invoice-owner" options={ownerOptions} value={ownerFilter}
+                onChange={(value) => { setOwnerFilter(value); setPage(1); }} />
+            </div>
+          )}
+          <div className={styles.filterField}>
+            <label htmlFor="invoice-status" className={styles.filterLabel}>{tr("Status")}</label>
+            <select id="invoice-status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as InvoiceStatus | "ALL"); setPage(1); }} className={styles.periodSelect}>
+              <option value="ALL">{tr("All statuses")}</option>
+              {(["DRAFT", "SENT", "PAID", "OVERDUE"] as const).map((status) => <option key={status} value={status}>{tr(status)}</option>)}
+            </select>
+          </div>
+          <div className={styles.filterField}>
           <label htmlFor="billing-period" className={styles.filterLabel}>{tr("Billing Period:")}</label>
           <select id="billing-period" value={summary ? selectedPeriod : "ALL"} disabled={!summary} onChange={(e) => { setSelectedPeriod(e.target.value); setPage(1); }} className={styles.periodSelect}>
             <option value="ALL">{tr("All Billing Periods")}</option>
             {periods.map((period) => <option key={period} value={period}>{period}</option>)}
           </select>
-          <span>{tr("The filter applies to the table; totals include all periods.")}</span>
+          </div>
+          {hasFilters && <Button tone="secondary" onClick={resetFilters}>{tr("Clear filters")}</Button>}
         </div>
+        <p className={styles.filterHelp}>{tr("Filters apply to the table and exports; totals include all statements.")}</p>
       </Card>
 
       {/* Invoices List Table */}
@@ -232,8 +318,8 @@ export default function OwnerFinancialReportsPage() {
         <Card pad={32}>
           <EmptyState
             title={tr("No Financial Statements Found")}
-            description={tr(selectedPeriod === "ALL" ? "Monthly billing statements and tournament earnings credits will appear here." : "No statements match the selected billing period.")}
-            action={selectedPeriod !== "ALL" ? <Button tone="secondary" onClick={() => { setSelectedPeriod("ALL"); setPage(1); }}>{tr("All Billing Periods")}</Button> : undefined}
+            description={tr(hasFilters ? "No statements match the current filters." : "Monthly billing statements and tournament earnings credits will appear here.")}
+            action={hasFilters ? <Button tone="secondary" onClick={resetFilters}>{tr("Clear filters")}</Button> : undefined}
           />
         </Card>
       ) : (
@@ -259,7 +345,7 @@ export default function OwnerFinancialReportsPage() {
                 {filteredInvoices.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((inv) => {
                   const isCredit = inv.netAmount < 0;
                   return (
-                    <tr key={inv.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <tr key={inv.id} data-highlight-id={inv.id} style={{ borderBottom: "1px solid var(--border)" }}>
                       <td style={{ padding: "0.75rem 0.5rem", fontWeight: 700, color: "var(--ink)" }}>
                         {inv.billingPeriod}
                       </td>
@@ -305,7 +391,7 @@ export default function OwnerFinancialReportsPage() {
                               : "neutral"
                           }
                         >
-                          {tr(inv.status)}
+                          {tr(user.role === "HORSE_OWNER" && inv.status === "DRAFT" ? "Draft — Not issued" : inv.status)}
                         </Badge>
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
@@ -449,7 +535,7 @@ export default function OwnerFinancialReportsPage() {
       )}
 
       {/* Statement details */}
-      {selectedInvoice && (
+      {selectedInvoice && !confirmPayment && (
         <Modal
           title={tr("Statement details")}
           subtitle={tr("Period {{period}} — Horse: {{horse}}", {
@@ -457,17 +543,18 @@ export default function OwnerFinancialReportsPage() {
             horse: selectedInvoice.horse.name,
           })}
           width={580}
-          onClose={() => setSelectedInvoice(null)}
+          onClose={updatingInvoice ? undefined : () => setSelectedInvoice(null)}
           foot={
             <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", width: "100%" }}>
               <Button tone="secondary" icon="file" onClick={() => printStatement([selectedInvoice], selectedInvoice.billingPeriod, selectedInvoice.owner.fullName)}>{tr("Export PDF")}</Button>
               <Button tone="secondary" icon="download" onClick={() => exportStatementXlsx([selectedInvoice], selectedInvoice.billingPeriod)}>{tr("Export Excel")}</Button>
-              <Button tone="secondary" onClick={() => setSelectedInvoice(null)}>{tr("Close")}</Button>
+              <Button tone="secondary" disabled={updatingInvoice !== null} onClick={() => setSelectedInvoice(null)}>{tr("Close")}</Button>
             </div>
           }
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            <div><Badge tone={selectedInvoice.status === "PAID" ? "ok" : selectedInvoice.status === "OVERDUE" ? "danger" : selectedInvoice.status === "SENT" ? "warn" : "neutral"}>{tr(selectedInvoice.status)}</Badge></div>
+            {actionError && <Alert tone="danger">{actionError}</Alert>}
+            <div><Badge tone={selectedInvoice.status === "PAID" ? "ok" : selectedInvoice.status === "OVERDUE" ? "danger" : selectedInvoice.status === "SENT" ? "warn" : "neutral"}>{tr(user.role === "HORSE_OWNER" && selectedInvoice.status === "DRAFT" ? "Draft — Not issued" : selectedInvoice.status)}</Badge></div>
             {isClubManager && <div>{tr("Owner")}: {selectedInvoice.owner?.fullName || "—"}</div>}
             {/* Bill Summary */}
             <div
@@ -519,14 +606,35 @@ export default function OwnerFinancialReportsPage() {
               </div>
             </div>
 
-            {(selectedInvoice.status === "SENT" || selectedInvoice.status === "OVERDUE") && selectedInvoice.netAmount > 0 && (
-              <p className={styles.paymentUnavailable} role="status">
-                {tr("Online payment information is not available yet.")}
-              </p>
+            {user.role === "HORSE_OWNER" && selectedInvoice.ownerId === user.id &&
+              (selectedInvoice.status === "SENT" || selectedInvoice.status === "OVERDUE") && selectedInvoice.netAmount > 0 && (
+              <div>
+                <p>{tr("Confirm only after you have transferred the invoice amount to the club. This records your bank transfer confirmation.")}</p>
+                <Button tone="primary" disabled={updatingInvoice !== null} onClick={() => { setActionError(""); setConfirmPayment(true); }}>
+                  {updatingInvoice === selectedInvoice.id ? tr("Processing...") : tr("Pay Invoice")}
+                </Button>
+              </div>
             )}
 
           </div>
         </Modal>
+      )}
+      {selectedInvoice && confirmPayment && (
+        <ConfirmModal title={tr("Confirm bank transfer")} tone="info"
+          subtitle={`${selectedInvoice.horse.name} · ${selectedInvoice.billingPeriod}`}
+          confirmLabel={tr("Confirm payment made")} cancelLabel={tr("Back")}
+          busy={updatingInvoice !== null} onConfirm={handlePayInvoice}
+          onCancel={() => { setActionError(""); setConfirmPayment(false); }}>
+          {actionError && <Alert tone="danger">{actionError}</Alert>}
+          <p><strong>{tr("Net Amount")}: {selectedInvoice.netAmount.toLocaleString(locale)} VND</strong></p>
+          <dl className={styles.paymentDetails}>
+            <dt>{tr("Bank (sample)")}</dt><dd>DEMO BANK</dd>
+            <dt>{tr("Account (sample)")}</dt><dd>DEMO — EQUIFLOW CLUB</dd>
+            <dt>{tr("Transfer reference")}</dt><dd>{selectedInvoice.id}</dd>
+          </dl>
+          <Alert tone="warn">{tr("Sample details only. Do not transfer money using these details. Contact the club for verified bank details.")}</Alert>
+          <p>{tr("Confirm only after you have transferred the invoice amount to the club. This records your bank transfer confirmation.")}</p>
+        </ConfirmModal>
       )}
     </div>
   );

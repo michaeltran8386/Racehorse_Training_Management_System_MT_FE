@@ -61,16 +61,6 @@ const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
 // ------------------------------------------------------------------
 // Interactive KPI Tile (Matches Image 2 Top Row)
 // ------------------------------------------------------------------
-const KPI_CUSTOM_ICONS: Record<string, string> = {
-  horse: "/images/icons/kpi-horse.png",
-  activity: "/images/icons/kpi-activity.png",
-  pulse: "/images/icons/kpi-activity.png",
-  heart: "/images/icons/kpi-medical.png",
-  medical: "/images/icons/kpi-medical.png",
-  home: "/images/icons/kpi-barn.png",
-  barn: "/images/icons/kpi-barn.png",
-};
-
 export function InteractiveKpiCard({
   icon,
   iconImg,
@@ -92,11 +82,8 @@ export function InteractiveKpiCard({
   progress?: number;
   to: string;
 }) {
-  const customImg = iconImg || (icon ? KPI_CUSTOM_ICONS[icon] : undefined);
-
   return (
-    <Link to={to} className={styles.kpi}
-    >
+    <Link to={to} className={styles.kpi}>
       <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 1, minWidth: 0 }}>
         <div
           style={{
@@ -110,12 +97,12 @@ export function InteractiveKpiCard({
             justifyContent: "center",
             flexShrink: 0,
             overflow: "hidden",
-            padding: customImg ? "6px" : undefined,
+            padding: iconImg ? "6px" : undefined,
           }}
         >
-          {customImg ? (
+          {iconImg ? (
             <img
-              src={customImg}
+              src={iconImg}
               alt=""
               style={{
                 width: "100%",
@@ -125,7 +112,7 @@ export function InteractiveKpiCard({
               }}
             />
           ) : (
-            <Icon name={icon || "info"} size={26} />
+            <Icon name={icon || "info"} size={26} strokeWidth={1.8} />
           )}
         </div>
 

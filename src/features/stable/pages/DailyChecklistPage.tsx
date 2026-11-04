@@ -1,6 +1,7 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
 import styles from './StableOperations.module.css';
 import { Card } from '@/shared/components/ui/Card';
@@ -64,6 +65,8 @@ function UndoTaskButton({
 }
 
 export default function DailyChecklistPage() {
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get('highlight');
   useScreenTranslation();
   const user = useCurrentUser();
   const toast = useToast();
@@ -72,6 +75,13 @@ export default function DailyChecklistPage() {
 
   const todayStr = useMemo(() => todayClub(), []);
   const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [lastDateTarget, setLastDateTarget] = useState<string | null>(null);
+  const targetDate = searchParams.get('date');
+  const dateTarget = highlightId && targetDate && /^\d{4}-\d{2}-\d{2}$/.test(targetDate) ? `${highlightId}:${targetDate}` : null;
+  if (lastDateTarget !== dateTarget) {
+    setLastDateTarget(dateTarget);
+    if (dateTarget && targetDate) setSelectedDate(targetDate);
+  }
   const [selectedZoneId, setSelectedZoneId] = useState<string>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'COMPLETED'>('ALL');
   const [onlyMyTasks, setOnlyMyTasks] = useState<boolean>(isGroom);
@@ -219,6 +229,8 @@ export default function DailyChecklistPage() {
 
   // Tab đang chọn không còn trong ngày này thì mặc định mở ca đang diễn ra (nếu xem hôm nay), không thì ca đầu tiên.
   const activeShift = useMemo(() => {
+    const target = highlightId ? tasks.find((task) => task.id === highlightId) : undefined;
+    if (target) return target.shift?.id ?? 'NONE';
     if (shiftOptions.some((o) => o.id === shiftTab)) return shiftTab;
     const now = currentMinute;
     const current =
@@ -226,7 +238,7 @@ export default function DailyChecklistPage() {
         ? shiftOptions.find((o) => (o.start <= o.end ? now >= o.start && now < o.end : now >= o.start || now < o.end))
         : undefined;
     return (current ?? shiftOptions[0])?.id ?? '';
-  }, [shiftOptions, shiftTab, selectedDate, todayStr, currentMinute]);
+  }, [shiftOptions, shiftTab, selectedDate, todayStr, currentMinute, highlightId, tasks]);
 
   const shiftTasks = useMemo(
     () => (activeShift ? tasks.filter((t) => (t.shift?.id ?? 'NONE') === activeShift) : tasks),
@@ -472,7 +484,7 @@ export default function DailyChecklistPage() {
               items={shiftOptions.map((o) => ({ id: o.id, label: o.label, count: o.count }))}
             />
           )}
-          <Paged items={horseGroups} noun="horses">{(pageGroups) => (
+          <Paged items={horseGroups} noun="horses" highlightIndex={highlightId ? horseGroups.findIndex((group) => group.tasks.some((task) => task.id === highlightId)) : -1}>{(pageGroups) => (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           {pageGroups.map((group) => {
             const horse = group.horse;
@@ -553,6 +565,8 @@ export default function DailyChecklistPage() {
                     return (
                       <div
                         key={task.id}
+                        data-highlight-id={task.id}
+                        data-highlight-kind="task"
                         style={{
                           padding: '0.875rem 1.25rem',
                           display: 'flex',

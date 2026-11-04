@@ -1,0 +1,279 @@
+/* EquiFlow Custom DatePicker Styles */
+.wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.inputBtn {
+  width: 100%;
+  min-height: var(--control-h, 44px);
+  padding: 0 40px 0 12px;
+  border-radius: var(--r-field, 6px);
+  background: var(--surface, #FFFFFF);
+  border: 1px solid var(--border-field, #94A3B8);
+  font-family: var(--font, 'Inter', sans-serif);
+  font-size: var(--fs-body, 14px);
+  line-height: 22px;
+  color: var(--text, #0F172A);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color var(--dur-fast, 0.12s) var(--ease, ease), box-shadow var(--dur-fast, 0.12s) var(--ease, ease);
+}
+
+.inputBtn:hover:not(:disabled) {
+  border-color: var(--text-2, #475569);
+}
+
+.inputBtn:focus-visible {
+  border-color: var(--brand, #2563EB);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.inputBtn:disabled {
+  background: var(--surface-2, #F1F5F9);
+  cursor: not-allowed;
+  color: var(--muted, #475569);
+}
+
+.placeholder {
+  color: var(--muted, #475569);
+}
+
+.dateDisplay {
+  font-family: var(--font-numeric, inherit);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--text, #0F172A);
+}
+
+.iconCalendar {
+  position: absolute;
+  right: 12px;
+  color: var(--muted, #475569);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Popover Panel */
+.popover {
+  position: fixed;
+  z-index: 9999;
+  width: 310px;
+  background: var(--surface, #FFFFFF);
+  border: 1px solid var(--border, #E2E8F0);
+  border-radius: var(--r-inner, 10px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 14px;
+  user-select: none;
+  animation: dropIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header Month / Year */
+.popoverHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.monthLabel {
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text, #0F172A);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.navBtnGroup {
+  display: flex;
+  gap: 4px;
+}
+
+.navBtn {
+  background: transparent;
+  border: 1px solid var(--border-soft, #E2E8F0);
+  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text, #0F172A);
+  transition: all 0.12s ease;
+}
+
+.navBtn:hover {
+  background: var(--surface-2, #F1F5F9);
+  border-color: var(--border-strong, #CBD5E1);
+}
+
+/* Week Days Header */
+.weekHeader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+  margin-bottom: 6px;
+}
+
+.weekDay {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted, #475569);
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+
+/* Calendar Days Grid */
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+
+.dayCell {
+  aspect-ratio: 1;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text, #0F172A);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: all 0.12s ease;
+}
+
+.dayCell:hover:not(:disabled) {
+  background: var(--surface-2, #F1F5F9);
+}
+
+/* Ngày rỗng / tháng khác */
+.otherMonth {
+  color: var(--muted-2, #94A3B8);
+  opacity: 0.45;
+}
+
+/* Ngày hôm nay (Today) - Khung vàng / nền vàng EquiFlow */
+.today {
+  font-weight: 700;
+  color: var(--text, #0F172A);
+  position: relative;
+}
+
+.today::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--brand-primary, #F4B942);
+}
+
+/* Ngày đang chọn (Selected) - Đen / Khối nổi bật */
+.selected {
+  background: #18181B !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+}
+
+.selected::after {
+  background: #FFFFFF !important;
+}
+
+/* Ngày quá hạn (Overdue / Past today) - Highlight đỏ nhạt */
+.overdue:not(.selected) {
+  color: var(--danger, #B91C1C);
+  background: rgba(185, 28, 28, 0.05);
+}
+
+/* Ngày bị vô hiệu hóa (disabled ngoài khoảng min/max) */
+.disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: transparent !important;
+  text-decoration: line-through;
+}
+
+/* Footer Popover */
+.popoverFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft, #E2E8F0);
+}
+
+.footerBtn {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.12s ease;
+}
+
+.footerRight {
+  display: flex;
+  gap: 4px;
+}
+
+.btnClear {
+  color: var(--muted, #475569);
+}
+.btnClear:hover {
+  background: var(--surface-2, #F1F5F9);
+  color: var(--danger, #B91C1C);
+}
+
+.invalid,
+.invalid:hover,
+.invalid:focus-visible {
+  border-color: var(--danger, #B91C1C) !important;
+  box-shadow: 0 0 0 1px var(--danger, #B91C1C) !important;
+}
+
+.btnToday {
+  color: #B45309;
+}
+.btnToday:hover {
+  background: #FEF3C7;
+}
+
+.btnClose {
+  color: var(--muted, #475569);
+}
+.btnClose:hover {
+  background: var(--surface-2, #F1F5F9);
+  color: var(--text, #0F172A);
+}
+

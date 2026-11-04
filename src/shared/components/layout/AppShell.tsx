@@ -18,9 +18,11 @@ import { useSidebarInfo } from "./useSidebarInfo";
 import styles from "./AppShell.module.css";
 
 import { tr } from "@/shared/i18n/tr";
+import { useHighlightTarget } from "@/shared/lib/useHighlightTarget";
 // Khung chung của mọi trang sau đăng nhập: Sidebar 224px + Topbar 64px + vùng nội dung (DESIGN.md §5).
 // Chưa đăng nhập => chuyển về /login (kèm ?next= để quay lại sau khi đăng nhập).
 export function AppShell({ children }: { children: ReactNode }) {
+  const highlightedId = useHighlightTarget();
   const { status, user, expired, signOut, refresh } = useAuth();
   const { pathname } = useLocation();
   const { t } = useAppLanguage();
@@ -65,6 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             onLogout={() => setLogoutOpen(true)}
           />
           <main id="content" className={styles.content}>
+            <span className="sr-only" role="status">{highlightedId ? tr("Notification target highlighted.") : ""}</span>
             <div key={pathname} className={styles.pageTransition}>
               {children}
             </div>

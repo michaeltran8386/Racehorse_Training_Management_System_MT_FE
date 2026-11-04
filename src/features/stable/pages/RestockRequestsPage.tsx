@@ -1,6 +1,7 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
 import { Card } from '@/shared/components/ui/Card';
 import { Button } from '@/shared/components/ui/Button';
@@ -25,6 +26,9 @@ import type { Zone } from '../types';
 import { type SupplyCatalogItem, formatSupplyUnit, formatSupplyName, getFriendlyCategoryName } from '@/features/master-data/types/supplies';
 
 export default function RestockRequestsPage() {
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get('highlight');
+  const targetSearch = searchParams.get('search') ?? '';
   useScreenTranslation();
   const currentUser = useCurrentUser();
   const isManager = currentUser.role === 'CLUB_MANAGER';
@@ -42,6 +46,16 @@ export default function RestockRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [zoneFilter, setZoneFilter] = useState<string>('ALL');
   const [search, setSearch] = useState<string>('');
+  const [lastFilterTarget, setLastFilterTarget] = useState<string | null>(null);
+  const filterTarget = highlightId ? `${highlightId}:${targetSearch}` : null;
+  if (lastFilterTarget !== filterTarget) {
+    setLastFilterTarget(filterTarget);
+    if (highlightId) {
+      setStatusFilter('ALL');
+      setZoneFilter('ALL');
+      setSearch(targetSearch);
+    }
+  }
 
   // Modals state
   const [createModalOpen, setCreateModalOpen] = useState(false);

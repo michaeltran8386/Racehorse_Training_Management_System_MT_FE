@@ -62,7 +62,7 @@ export const inventoryApi = {
     return api<RestockRequestItem>('POST', '/inventory/requests', payload);
   },
 
-  /** Quản lý CLB nhập bổ sung kho trực tiếp — BE tạo phiếu APPROVED ngay */
+  /** Quản lý CLB nhập bổ sung kho trực tiếp — BE bắt đầu giao và tự động nhập kho khi hoàn tất. */
   async createDirectRestock(payload: CreateRestockRequestPayload): Promise<RestockRequestItem> {
     return api<RestockRequestItem>('POST', '/inventory/requests/direct', payload);
   },

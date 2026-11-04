@@ -17,7 +17,7 @@ interface RestockRequestModalProps {
   supplies: Array<{ id: string; name: string; code: string; unit: string; category?: string }>;
   defaultZoneId?: string;
   defaultSupplyId?: string;
-  /** Quản lý CLB nhập bổ sung kho trực tiếp: phiếu tự động Đã duyệt, không cần tự duyệt */
+  /** Quản lý CLB nhập bổ sung kho trực tiếp: bắt đầu giao và tự động nhập kho khi hoàn tất. */
   direct?: boolean;
   onClose: () => void;
   onSaved: () => void;
@@ -78,7 +78,7 @@ export function RestockRequestModal({
       };
       if (direct) {
         await inventoryApi.createDirectRestock(payload);
-        toast.show(tr('Direct restock created and approved. Confirm receipt when the goods arrive.'), 'ok');
+        toast.show(tr('Direct restock dispatched. Stock updates automatically when delivery completes.'), 'ok');
       } else {
         await inventoryApi.createRequest(payload);
         toast.show(
@@ -100,7 +100,7 @@ export function RestockRequestModal({
       title={direct ? tr('Direct stock replenishment') : tr('Propose Supply Restock')}
       subtitle={
         direct
-          ? tr('Created by the Club Manager and approved automatically. Only the receipt confirmation remains.')
+          ? tr('Created by the Club Manager and dispatched automatically. Stock updates when delivery completes.')
           : tr('Submit replenishment proposal for stable staff and veterinarians.')
       }
       onClose={onClose}
@@ -167,7 +167,7 @@ export function RestockRequestModal({
             {tr('Cancel')}
           </Button>
           <Button type="submit" tone="primary" disabled={busy}>
-            {busy ? tr('Submitting...') : direct ? tr('Create approved restock') : tr('Submit Restock Proposal')}
+            {busy ? tr('Submitting...') : direct ? tr('Create delivery') : tr('Submit Restock Proposal')}
           </Button>
         </div>
       </form>

@@ -8,6 +8,7 @@ import { Card } from "@/shared/components/ui/Card";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
+import { DatePicker } from "@/shared/components/form/DatePicker";
 import { Select } from "@/shared/components/form/Select";
 import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { Textarea } from "@/shared/components/form/Textarea";
@@ -64,7 +65,7 @@ function validate(name: string, objective: string, start: string, end: string, p
 /** SC-2.03 Tạo / Sửa giáo án (HT). Sửa được khi Nháp hoặc Đang áp dụng. */
 export default function PlanWizardPage() {
   useScreenTranslation();
-  useAppLanguage();
+  const { isVietnamese } = useAppLanguage();
   const { id } = useParams<{ id?: string }>();
   const editing = Boolean(id);
   const navigate = useNavigate();
@@ -136,6 +137,16 @@ export default function PlanWizardPage() {
   }, [blocker]);
 
   const horse = useMemo(() => horses.find((h) => h.id === horseId), [horses, horseId]);
+
+  const planDuration = useMemo(() => {
+    if (!startDate || !endDate || endDate < startDate) return null;
+    const s = new Date(`${startDate}T00:00:00Z`).getTime();
+    const e = new Date(`${endDate}T00:00:00Z`).getTime();
+    const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
+    const weeks = Math.floor(diffDays / 7);
+    const extraDays = diffDays % 7;
+    return { diffDays, weeks, extraDays };
+  }, [startDate, endDate]);
   const change =
     <T,>(setter: (v: T) => void) =>
     (v: T) => {
@@ -211,45 +222,97 @@ export default function PlanWizardPage() {
       {error && <Alert tone="danger" title={tr("Cannot save")}>{error}</Alert>}
 
       <Card pad={24}>
-        <h2 className={styles.sectionTitle}>{tr("General information")}</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 260px), 1fr))", gap: "1rem" }}>
-          <Field label={tr("Horse")} required>
-            <SearchSelect
-              value={horseId}
-              disabled={editing}
-              onChange={change(setHorseId)}
-              options={horses.map((h) => ({ value: h.id, label: `${h.name} (${h.horseCode ?? ""})${h.isMedicalLocked ? " · Training Lock" : ""}` }))}
-            />
-          </Field>
-          <Field label={tr("Plan name")} required hint={tr("3-150 characters")}>
-            <Input value={name} maxLength={150} onChange={(e) => change(setName)(e.target.value)} />
-          </Field>
-          <Field label={tr("Start date")} required hint={editing ? undefined : tr("No earlier than 7 days ago")}>
-            <Input type="date" value={startDate} onChange={(e) => change(setStartDate)(e.target.value)} />
-          </Field>
-          <Field label={tr("End date")} required hint={tr("At most 52 weeks")}>
-            <Input type="date" min={startDate} value={endDate} onChange={(e) => change(setEndDate)(e.target.value)} />
-          </Field>
+        <div className={styles.sectionHeaderWrap}>
+          <h2 className={styles.sectionTitle}>{tr("General information")}</h2>
+          {planDuration && (
+            <span className={styles.durationBadge}>
+              <Icon name="calendar" size={14} />
+              {isVietnamese
+                ? `Thời lượng: ${planDuration.weeks > 0 ? `${planDuration.weeks} tuần ` : ""}${planDuration.extraDays > 0 ? `${planDuration.extraDays} ngày` : ""}`
+                : `Duration: ${planDuration.weeks > 0 ? `${planDuration.weeks}w ` : ""}${planDuration.extraDays > 0 ? `${planDuration.extraDays}d` : ""}`}
+              {` (${planDuration.diffDays} ${isVietnamese ? "ngày" : "days"})`}
+            </span>
+          )}
         </div>
-        {horse?.isMedicalLocked && (
-          <div style={{ marginTop: "1rem" }}>
-            <Alert tone="danger" title={tr("Training Lock")}>
-              {tr("The horse is under a Training Lock. You can prepare a draft, but it cannot be activated yet.")}
-            </Alert>
+
+        <div className={styles.formContainer}>
+          {/* Nhóm 1: Đối tượng & Tên giáo án */}
+          <div className={styles.formSection}>
+            <div className={styles.formSectionHeader}>
+              <span className={styles.sectionNumber}>01</span>
+              <div>
+                <h3 className={styles.sectionSubtitle}>{isVietnamese ? "Đối tượng & Tên giáo án" : "Horse & Plan Identification"}</h3>
+                <p className={styles.sectionDesc}>{isVietnamese ? "Chọn ngựa áp dụng và đặt tên giáo án huấn luyện" : "Select target horse and name the training plan"}</p>
+              </div>
+            </div>
+            <div className={styles.twoCol}>
+              <Field label={tr("Horse")} required>
+                <SearchSelect
+                  value={horseId}
+                  disabled={editing}
+                  onChange={change(setHorseId)}
+                  options={horses.map((h) => ({ value: h.id, label: `${h.name} (${h.horseCode ?? ""})${h.isMedicalLocked ? " · Training Lock" : ""}` }))}
+                />
+              </Field>
+              <Field label={tr("Plan name")} required hint={tr("3-150 characters")}>
+                <Input value={name} maxLength={150} onChange={(e) => change(setName)(e.target.value)} />
+              </Field>
+            </div>
+            {horse?.isMedicalLocked && (
+              <div style={{ marginTop: "0.75rem" }}>
+                <Alert tone="danger" title={tr("Training Lock")}>
+                  {tr("The horse is under a Training Lock. You can prepare a draft, but it cannot be activated yet.")}
+                </Alert>
+              </div>
+            )}
+            {horse && !horse.isMedicalLocked && MEDICAL.includes(horse.status) && (
+              <div style={{ marginTop: "0.75rem" }}>
+                <Alert tone="warn" title={tr("Medical status")}>{tr("The horse is in status {{status}}.", { status: horse.status })}</Alert>
+              </div>
+            )}
           </div>
-        )}
-        {horse && !horse.isMedicalLocked && MEDICAL.includes(horse.status) && (
-          <div style={{ marginTop: "1rem" }}>
-            <Alert tone="warn" title={tr("Medical status")}>{tr("The horse is in status {{status}}.", { status: horse.status })}</Alert>
+
+          <div className={styles.sectionDivider} />
+
+          {/* Nhóm 2: Khung thời gian thực hiện */}
+          <div className={styles.formSection}>
+            <div className={styles.formSectionHeader}>
+              <span className={styles.sectionNumber}>02</span>
+              <div>
+                <h3 className={styles.sectionSubtitle}>{isVietnamese ? "Thời gian áp dụng" : "Training Schedule & Duration"}</h3>
+                <p className={styles.sectionDesc}>{isVietnamese ? "Xác định ngày bắt đầu và kết thúc (tối đa 52 tuần)" : "Define plan duration boundaries (up to 52 weeks)"}</p>
+              </div>
+            </div>
+            <div className={styles.twoCol}>
+              <Field label={tr("Start date")} required hint={editing ? undefined : tr("No earlier than 7 days ago")}>
+                <DatePicker value={startDate} onChange={change(setStartDate)} />
+              </Field>
+              <Field label={tr("End date")} required hint={tr("At most 52 weeks")}>
+                <DatePicker min={startDate} value={endDate} onChange={change(setEndDate)} />
+              </Field>
+            </div>
           </div>
-        )}
-        <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
-          <Field label={tr("Objective")} required hint={tr("10-1000 characters")}>
-            <Textarea rows={2} maxLength={1000} value={objective} onChange={(e) => change(setObjective)(e.target.value)} />
-          </Field>
-          <Field label={tr("Notes")} hint={tr("Up to 1000 characters")}>
-            <Textarea rows={2} maxLength={1000} value={notes} onChange={(e) => change(setNotes)(e.target.value)} />
-          </Field>
+
+          <div className={styles.sectionDivider} />
+
+          {/* Nhóm 3: Mục tiêu & Ghi chú */}
+          <div className={styles.formSection}>
+            <div className={styles.formSectionHeader}>
+              <span className={styles.sectionNumber}>03</span>
+              <div>
+                <h3 className={styles.sectionSubtitle}>{isVietnamese ? "Mục tiêu & Hướng dẫn huấn luyện" : "Objectives & Instructions"}</h3>
+                <p className={styles.sectionDesc}>{isVietnamese ? "Mục tiêu thể lực/kỹ thuật và ghi chú cụ thể cho nhân viên" : "Fitness targets, tactical goals, and groom instructions"}</p>
+              </div>
+            </div>
+            <div className={styles.twoCol}>
+              <Field label={tr("Objective")} required hint={tr("10-1000 characters")}>
+                <Textarea rows={3} maxLength={1000} value={objective} onChange={(e) => change(setObjective)(e.target.value)} />
+              </Field>
+              <Field label={tr("Notes")} hint={tr("Up to 1000 characters")}>
+                <Textarea rows={3} maxLength={1000} value={notes} onChange={(e) => change(setNotes)(e.target.value)} />
+              </Field>
+            </div>
+          </div>
         </div>
       </Card>
 
@@ -278,10 +341,10 @@ export default function PlanWizardPage() {
               />
             </Field>
             <Field label={tr("From")} required>
-              <Input type="date" min={startDate} max={endDate} value={ph.startDate} onChange={(e) => updatePhase(i, { startDate: e.target.value })} />
+              <DatePicker min={startDate} max={endDate} value={ph.startDate} onChange={(val) => updatePhase(i, { startDate: val })} />
             </Field>
             <Field label={tr("To")} required>
-              <Input type="date" min={ph.startDate} max={endDate} value={ph.endDate} onChange={(e) => updatePhase(i, { endDate: e.target.value })} />
+              <DatePicker min={ph.startDate} max={endDate} value={ph.endDate} onChange={(val) => updatePhase(i, { endDate: val })} />
             </Field>
             <Field label={tr("Sessions per week")} required hint={tr("1 – 14")}>
               <Input type="number" min={1} max={14} value={ph.sessionsPerWeek} onChange={(e) => updatePhase(i, { sessionsPerWeek: Number(e.target.value) })} />
