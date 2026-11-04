@@ -470,7 +470,8 @@
 .groupToggle svg { flex: none; transition: transform 200ms ease; }
 .groupToggle[aria-expanded="true"] svg { transform: rotate(90deg); }
 .groupItems { padding-inline-start: 28px; }
-.groupClosed { display: none; }
+.groupClosed { display: none !important; }
+.collapsed .groupIsClosed { display: none !important; }
 .groupItems .item { overflow: visible; margin-bottom: 0; min-height: 44px; }
 .groupItems .item::before,
 .groupItems .item::after {
@@ -494,7 +495,10 @@
   .collapsed .groupToggle,
   .collapsed .groupItems .item::before,
   .collapsed .groupItems .item::after { display: none; }
-  .collapsed .groupItems { display: block; padding-inline-start: 0; }
+  .collapsed .groupItems { padding-inline-start: 0; }
+  .collapsed .groupItems:not(.groupClosed) { display: block; }
+  .collapsed .groupClosed,
+  .collapsed .groupIsClosed { display: none !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   .groupToggle svg { transition: none; }

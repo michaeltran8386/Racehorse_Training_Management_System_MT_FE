@@ -27,7 +27,26 @@ interface SidebarProps {
 export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate }: SidebarProps) {
   const { t, isVietnamese } = useAppLanguage();
   const groups = sidebarNavFor(user.role, user.permissions);
-  const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>({});
+  const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>(() => {
+    try {
+      const saved = localStorage.getItem("equiflow_sidebar_closed_groups");
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const toggleGroup = (groupKey: string) => {
+    setClosedGroups((previous) => {
+      const next = { ...previous, [groupKey]: !previous[groupKey] };
+      try {
+        localStorage.setItem("equiflow_sidebar_closed_groups", JSON.stringify(next));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
   const [hasActiveLocks, setHasActiveLocks] = useState(false);
   const canViewLocks = Boolean(user.permissions.viewMedical);
 
@@ -122,15 +141,16 @@ export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate 
           const groupKey = user.role + ":" + rawKey;
           const groupId = "sidebar-group-" + rawKey;
           const expanded = !closedGroups[groupKey];
+          const isGroupClosed = Boolean(groupTitle && !expanded);
           return (
-            <div key={g.label} className={styles.group}>
+            <div key={g.label} className={cx(styles.group, isGroupClosed && styles.groupIsClosed)}>
               {groupTitle && (
                 <button
                   type="button"
                   className={styles.groupToggle}
                   aria-expanded={expanded}
                   aria-controls={groupId}
-                  onClick={() => setClosedGroups((previous) => ({ ...previous, [groupKey]: !previous[groupKey] }))}
+                  onClick={() => toggleGroup(groupKey)}
                 >
                   <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <path d="m6 4 4 4-4 4" />
@@ -138,7 +158,7 @@ export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate 
                   {groupTitle}
                 </button>
               )}
-              <div id={groupId} className={cx(groupTitle && styles.groupItems, groupTitle && !expanded && styles.groupClosed)}>
+              <div id={groupId} className={cx(groupTitle && styles.groupItems, isGroupClosed && styles.groupClosed)}>
                 {g.items.map((it) => {
                   const active = isNavItemActive(it, pathname);
                   const isClicked = clickedId === it.id;
