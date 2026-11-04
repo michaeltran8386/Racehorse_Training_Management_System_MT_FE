@@ -71,11 +71,6 @@ function ageOf(dob?: string): string {
   return `${num} ${isVietnamese() ? "tuổi" : "y"}`;
 }
 
-/** Mã 15 số tách nhóm 3 cho dễ đọc: 985 141 002 341 001. */
-function groupDigits(code: string): string {
-  return /^\d{15}$/.test(code) ? code.replace(/(\d{3})(?=\d)/g, "$1 ") : code;
-}
-
 export default function HorseListPage() {
   useScreenTranslation();
   const currentUser = useCurrentUser();
@@ -218,19 +213,17 @@ export default function HorseListPage() {
             {h.name}
           </Link>
           <span className="num nowrap" style={{ fontSize: "var(--fs-caption)", lineHeight: "18px", color: "var(--muted)" }}>
-            {h.horseCode ? `${h.horseCode} · ` : ""}
-            {h.breed}
+            {h.horseCode}
           </span>
         </div>
       ),
     },
     {
       key: "sex",
-      header: tr("Sex · Age"),
+      header: isVietnamese() ? "Tuổi · Giống" : tr("Age · Breed"),
       render: (h) => (
         <span className="num nowrap">
-          {h.gender ? tr(h.gender) : "—"} · {ageOf(h.dob)}
-          {h.weightKg ? ` · ${h.weightKg} kg` : ""}
+          {ageOf(h.dob)} · {h.breed || "—"}
         </span>
       ),
     },
@@ -285,20 +278,6 @@ export default function HorseListPage() {
             —
           </span>
         ),
-    },
-    {
-      key: "chip",
-      header: tr("Microchip"),
-      hideOnNarrow: true,
-      render: (h) => {
-        let chip = h.microchip || h.microchipRfid || "—";
-        if (isGroom && chip !== "—" && chip.length > 4) chip = "*".repeat(chip.length - 4) + chip.slice(-4);
-        return (
-          <span className="num nowrap" style={{ color: "var(--text-2)" }}>
-            {groupDigits(chip)}
-          </span>
-        );
-      },
     },
     {
       key: "actions",

@@ -2,6 +2,7 @@ import { Button } from "./Button";
 import styles from "./Pagination.module.css";
 import { tr } from "@/shared/i18n/tr";
 import { Fragment, type ReactNode } from "react";
+import { useState } from "react";
 import { usePaged } from "@/shared/lib/hooks";
 
 interface PaginationProps {
@@ -67,8 +68,14 @@ export function Pagination({ page, pageSize, total, noun, onPage }: PaginationPr
 }
 
 // Bọc một danh sách đã tải trọn: children nhận đúng các mục của trang hiện tại, chân phân trang hiện khi vượt pageSize.
-export function Paged<T>({ items, pageSize = 10, noun, children }: { items: readonly T[]; pageSize?: number; noun: string; children: (pageItems: T[]) => ReactNode }) {
+export function Paged<T>({ items, pageSize = 10, noun, children, highlightIndex = -1 }: { items: readonly T[]; pageSize?: number; noun: string; children: (pageItems: T[]) => ReactNode; highlightIndex?: number }) {
   const pager = usePaged(items, pageSize);
+  const [lastTargetPage, setLastTargetPage] = useState<number | null>(null);
+  const targetPage = highlightIndex < 0 ? null : Math.floor(highlightIndex / pageSize) + 1;
+  if (lastTargetPage !== targetPage) {
+    setLastTargetPage(targetPage);
+    if (targetPage !== null) pager.setPage(targetPage);
+  }
   return (
     <>
       {children(pager.items)}

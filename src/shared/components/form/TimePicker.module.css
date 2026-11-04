@@ -1,0 +1,276 @@
+/* EquiFlow Custom TimePicker Styles */
+.wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.inputBtn {
+  width: 100%;
+  min-height: var(--control-h, 44px);
+  padding: 0 40px 0 12px;
+  border-radius: var(--r-field, 6px);
+  background: var(--surface, #FFFFFF);
+  border: 1px solid var(--border-field, #94A3B8);
+  font-family: var(--font, 'Inter', sans-serif);
+  font-size: var(--fs-body, 14px);
+  line-height: 22px;
+  color: var(--text, #0F172A);
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color var(--dur-fast, 0.12s) var(--ease, ease), box-shadow var(--dur-fast, 0.12s) var(--ease, ease);
+}
+
+.inputBtn:hover:not(:disabled) {
+  border-color: var(--text-2, #475569);
+}
+
+.inputBtn:focus-visible {
+  border-color: var(--brand, #2563EB);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+.inputBtn:disabled {
+  background: var(--surface-2, #F1F5F9);
+  cursor: not-allowed;
+  color: var(--muted, #475569);
+}
+
+.placeholder {
+  color: var(--muted, #475569);
+}
+
+.timeDisplay {
+  font-family: var(--font-numeric, inherit);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text, #0F172A);
+}
+
+.iconClock {
+  position: absolute;
+  right: 12px;
+  color: var(--muted, #475569);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Popover Panel */
+.popover {
+  position: fixed;
+  z-index: 9999;
+  width: 280px;
+  background: var(--surface, #FFFFFF);
+  border: 1px solid var(--border, #E2E8F0);
+  border-radius: var(--r-inner, 10px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  padding: 14px;
+  user-select: none;
+  animation: dropIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.popoverHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-soft, #E2E8F0);
+}
+
+.headerTitle {
+  font-family: var(--font-display, 'Barlow Condensed', sans-serif);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--text, #0F172A);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.currentTimePreview {
+  font-family: var(--font-numeric, inherit);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brand-700, #1D4ED8);
+  background: var(--brand-50, #EFF6FF);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+/* Time Columns (Giờ & Phút) */
+.timeColumns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.columnBlock {
+  display: flex;
+  flex-direction: column;
+}
+
+.columnLabel {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--muted, #475569);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  text-align: center;
+}
+
+.columnList {
+  height: 180px;
+  overflow-y: auto;
+  border: 1px solid var(--border-soft, #E2E8F0);
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  scrollbar-width: thin;
+}
+
+.columnList::-webkit-scrollbar {
+  width: 4px;
+}
+.columnList::-webkit-scrollbar-thumb {
+  background: var(--border-field, #94A3B8);
+  border-radius: 2px;
+}
+
+.timeItem {
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  font-size: 13.5px;
+  font-family: var(--font-numeric, inherit);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--text, #0F172A);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.1s ease;
+}
+
+.timeItem:hover:not(:disabled) {
+  background: var(--surface-2, #F1F5F9);
+}
+
+.timeItemSelected {
+  background: #18181B !important;
+  color: #FFFFFF !important;
+  font-weight: 700;
+}
+
+.timeItemDisabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Presets */
+.presetsRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.presetBtn {
+  background: var(--surface-2, #F1F5F9);
+  border: 1px solid var(--border-soft, #E2E8F0);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-numeric, inherit);
+  padding: 2px 6px;
+  cursor: pointer;
+  color: var(--text, #0F172A);
+  transition: all 0.12s ease;
+}
+
+.presetBtn:hover {
+  background: #18181B;
+  color: #FFFFFF;
+  border-color: #18181B;
+}
+
+/* Footer */
+.popoverFooter {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-soft, #E2E8F0);
+}
+
+.footerBtn {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.12s ease;
+}
+
+.footerRight {
+  display: flex;
+  gap: 4px;
+}
+
+.btnClear {
+  color: var(--muted, #475569);
+}
+.btnClear:hover {
+  background: var(--surface-2, #F1F5F9);
+  color: var(--danger, #B91C1C);
+}
+
+.invalid,
+.invalid:hover,
+.invalid:focus-visible {
+  border-color: var(--danger, #B91C1C) !important;
+  box-shadow: 0 0 0 1px var(--danger, #B91C1C) !important;
+}
+
+.btnNow {
+  color: #B45309;
+}
+.btnNow:hover {
+  background: #FEF3C7;
+}
+
+.btnClose {
+  color: var(--muted, #475569);
+}
+.btnClose:hover {
+  background: var(--surface-2, #F1F5F9);
+  color: var(--text, #0F172A);
+}

@@ -4,7 +4,13 @@
 @media (max-width: 560px) { .metrics { grid-template-columns: minmax(0, 1fr); } }
 .metrics > div { background: var(--surface); border: 1px solid var(--border); }
 .metrics strong { white-space: nowrap; font-size: clamp(24px, 2vw, 34px); }
-.billingFilter { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.billingFilter { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+.filterField, .searchField { display: grid; gap: 6px; min-width: 0; }
+.searchField { flex: 1 1 280px; }
+.filterField { flex: 0 1 220px; }
+.filterHelp { margin: 12px 0 0; color: var(--muted); font-size: var(--fs-caption); }
+.paymentDetails { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: 8px 12px; }
+.paymentDetails dd { margin: 0; overflow-wrap: anywhere; font-weight: 600; }
 .filterLabel { color: var(--text); font-size: var(--fs-body); font-weight: 600; }
 .periodSelect { min-height: 40px; padding: .5rem .75rem; border: 1px solid var(--border-field); border-radius: 0; background: var(--surface); color: var(--text); font: 600 var(--fs-body) var(--font); }
 .periodSelect:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }

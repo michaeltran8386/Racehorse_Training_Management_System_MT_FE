@@ -192,7 +192,6 @@ export default function AccountListPage() {
     {
       key: "account",
       header: tr("Account"),
-      width: 290,
       render: (r) => (
         <CellPrimary
           title={r.id === me.id ? tr(`${r.fullName} (you)`) : r.fullName}
@@ -278,6 +277,7 @@ export default function AccountListPage() {
     {
       key: "actions",
       header: tr("Actions"),
+      width: 160,
       align: "right",
       render: (r) => (
         // Một hành động chính theo trạng thái để ngoài; các hành động khác trong menu "⋯" (DESIGN.md: một menu mỗi hàng).

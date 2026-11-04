@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { usePaged } from "@/shared/lib/hooks";
 import { cx } from "@/shared/lib/cx";
 import { EmptyState } from "./EmptyState";
@@ -37,6 +39,16 @@ const SKELETON_ROWS = 5;
 // (Trạng thái lỗi do trang quyết định vì cần nút "Try again" riêng.)
 export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, selectedKey, onRowClick, pageSize, stackOnNarrow, noun = "items" }: DataTableProps<T>) {
   const pager = usePaged(rows, pageSize ?? 10);
+  const [lastTarget, setLastTarget] = useState<string | null>(null);
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
+  const targetIndex = highlightId ? rows.findIndex((row) => String(rowKey(row)) === highlightId) : -1;
+  const targetPage = targetIndex < 0 ? null : Math.floor(targetIndex / pager.pageSize) + 1;
+  const targetKey = targetPage === null ? null : `${highlightId}:${targetPage}`;
+  if (lastTarget !== targetKey) {
+    setLastTarget(targetKey);
+    if (targetPage !== null) pager.setPage(targetPage);
+  }
 
   if (!loading && rows.length === 0) {
     if (typeof empty === "string") return <EmptyState title={empty} />;
@@ -91,6 +103,7 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
                 return (
                   <tr
                     key={rowKey(row)}
+                    data-highlight-id={rowKey(row)}
                     className={cx(styles.row, onRowClick && styles.clickable, isSelected && styles.selected)}
                     tabIndex={onRowClick ? 0 : undefined}
                     aria-selected={onRowClick && selectedKey !== undefined ? isSelected : undefined}

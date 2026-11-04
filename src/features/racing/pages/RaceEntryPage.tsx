@@ -261,8 +261,8 @@ export default function RaceEntryPage() {
           <div>
             <strong style={{ color: "var(--brand-700)" }}>• {isVietnamese() ? "Đang mở đăng ký (Open for Registration):" : "Open for Registration:"}</strong>{" "}
             {isVietnamese()
-              ? "Cổng nộp hồ sơ đang mở. Chủ ngựa và HLV có thể bấm 'Đăng ký ngựa thi đấu' để đưa chiến mã đủ điều kiện tham gia tranh tài."
-              : tr("Registration is actively open. Horse Owners and Trainers can enroll eligible horses.")}
+              ? "Cổng nộp hồ sơ đang mở để tiếp nhận chiến mã đủ điều kiện tham gia tranh tài."
+              : tr("Registration is open for eligible horses to enter the event.")}
           </div>
           <div>
             <strong style={{ color: "var(--text-muted)" }}>• {isVietnamese() ? "Đã hoàn thành (Completed):" : "Completed:"}</strong>{" "}
@@ -368,7 +368,7 @@ export default function RaceEntryPage() {
                   <div>
                     {/* Header */}
                     <div className={styles.eventHeading}>
-                      <div>
+                      <div className={styles.eventTitle}>
                         <h3 style={{ margin: 0, fontSize: "var(--fs-kpi, 1.125rem)", fontWeight: 700, color: "var(--ink)" }}>
                           {tourney.name}
                         </h3>
@@ -376,6 +376,16 @@ export default function RaceEntryPage() {
                           {tourney.location}
                         </p>
                       </div>
+                      {isClubManager && tourney.status !== "CANCELLED" && !isCompleted && (
+                        <Button
+                          tone="secondary"
+                          icon="edit"
+                          aria-label={tr("Edit")}
+                          title={tr("Edit")}
+                          className={styles.eventEdit}
+                          onClick={() => setEditingTournament(tourney)}
+                        />
+                      )}
                       <Badge
                         tone={
                           isOpenReg
@@ -477,24 +487,15 @@ export default function RaceEntryPage() {
                   </div>
 
                   {/* Actions Footer */}
-                  <div
-                    style={{
-                      borderTop: "1px solid var(--border)",
-                      paddingTop: "0.75rem",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      gap: "0.5rem",
-                      flexWrap: "wrap",
-                    }}
-                  >
-                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                      {canManage && isOpenReg && (
+                  <div className={styles.eventActions}>
+                    <div className={styles.eventActionGroup}>
+                      {isTrainer && isOpenReg && (
                         <Button
                           tone="primary"
+                          icon="horse"
                           onClick={() => setRegisteringTournament(tourney)}
                         >
-                          <Icon name="horse" inline size={14} /> {tr("Register Horse")}
+                          {tr("Register Horse")}
                         </Button>
                       )}
 
@@ -526,15 +527,7 @@ export default function RaceEntryPage() {
                     </div>
 
                     {isClubManager && (
-                      <div style={{ display: "flex", gap: "0.25rem", flexWrap: "wrap" }}>
-                        {tourney.status !== "CANCELLED" && !isCompleted && (
-                          <Button
-                            tone="secondary"
-                            onClick={() => setEditingTournament(tourney)}
-                          >
-                            {tr("Edit")}
-                          </Button>
-                        )}
+                      <div className={`${styles.eventActionGroup} ${styles.eventLifecycleActions}`}>
                         {tourney.status === "UPCOMING" && (
                           <Button
                             tone="primary"
