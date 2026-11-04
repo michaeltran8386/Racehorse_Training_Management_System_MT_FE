@@ -18,6 +18,7 @@ import {
   subscribeNotifications,
   clearAllNotifications,
   localizeNotification,
+  getNotificationTargetUrl,
 } from "@/shared/lib/notifications";
 
 import { tr } from "@/shared/i18n/tr";
@@ -77,12 +78,14 @@ export default function NotificationsPage() {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
             void markNotificationAsRead(n.id);
-            if (n.link) navigate(n.link);
+            const targetUrl = getNotificationTargetUrl(n);
+            if (targetUrl) navigate(targetUrl);
           }
         }}
         onClick={() => {
           void markNotificationAsRead(n.id);
-          if (n.link) navigate(n.link);
+          const targetUrl = getNotificationTargetUrl(n);
+          if (targetUrl) navigate(targetUrl);
         }}
         className={`${styles.notification} ${n.read ? "" : styles.unread}`}
       >

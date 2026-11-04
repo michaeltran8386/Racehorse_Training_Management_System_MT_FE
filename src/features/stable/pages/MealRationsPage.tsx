@@ -325,6 +325,8 @@ export default function MealRationsPage() {
                   return (
                     <tr
                       key={p.id}
+                      data-highlight-id={p.id}
+                      data-highlight-code={p.planCode}
                       style={{
                         borderBottom: '1px solid var(--color-border)',
                         transition: 'background-color 0.1s ease',
