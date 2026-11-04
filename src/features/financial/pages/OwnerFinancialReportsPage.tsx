@@ -172,11 +172,12 @@ export default function OwnerFinancialReportsPage() {
   );
   const highlightedIndex = highlightId ? filteredInvoices.findIndex((i) => i.id === highlightId) : -1;
   const highlightPage = highlightedIndex < 0 ? null : Math.floor(highlightedIndex / PAGE_SIZE) + 1;
-  const highlightPageKey = highlightPage === null ? null : `${highlightId}:${highlightPage}`;
-  if (lastHighlightPage !== highlightPageKey) {
-    setLastHighlightPage(highlightPageKey);
-    if (highlightPage !== null) setPage(highlightPage);
-  }
+
+  useEffect(() => {
+    if (highlightPage !== null && page !== highlightPage) {
+      setPage(highlightPage);
+    }
+  }, [highlightPage, page]);
   const hasFilters = selectedPeriod !== "ALL" || statusFilter !== "ALL" || horseFilter !== "ALL" || (isClubManager && ownerFilter !== "ALL");
 
   function resetFilters() {
@@ -345,7 +346,7 @@ export default function OwnerFinancialReportsPage() {
                 {filteredInvoices.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((inv) => {
                   const isCredit = inv.netAmount < 0;
                   return (
-                    <tr key={inv.id} data-highlight-id={inv.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                    <tr key={inv.id} data-highlight-id={inv.id} className={inv.id === highlightId ? "highlight-target-attention" : undefined} style={{ borderBottom: "1px solid var(--border)" }}>
                       <td style={{ padding: "0.75rem 0.5rem", fontWeight: 700, color: "var(--ink)" }}>
                         {inv.billingPeriod}
                       </td>

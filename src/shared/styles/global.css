@@ -1,12 +1,69 @@
 @keyframes attentionPulse {
-  0%, 100% { box-shadow: inset 0 0 0 0 transparent; background-color: transparent; }
-  35% { box-shadow: 0 2px 12px color-mix(in srgb, var(--brand) 18%, transparent), inset 0 0 0 2px var(--brand); background-color: color-mix(in srgb, var(--brand) 12%, transparent); }
-  65% { box-shadow: 0 2px 8px color-mix(in srgb, var(--brand) 10%, transparent), inset 0 0 0 1px color-mix(in srgb, var(--brand) 55%, transparent); background-color: color-mix(in srgb, var(--brand) 6%, transparent); }
+  0%, 100% {
+    box-shadow: 0 0 0 0 transparent;
+    outline: 2px solid transparent;
+  }
+  30% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand, #c27803) 40%, transparent), 0 4px 16px rgba(194, 120, 3, 0.25);
+    outline: 2px solid var(--brand, #c27803);
+    outline-offset: 2px;
+  }
+  65% {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand, #c27803) 25%, transparent), 0 2px 8px rgba(194, 120, 3, 0.15);
+    outline: 2px solid var(--brand, #c27803);
+    outline-offset: 2px;
+  }
 }
-.highlight-target-attention { animation: attentionPulse var(--attention-cycle, 1.9s) ease-in-out var(--attention-delay, 0ms) 2 both; position: relative; z-index: 5; }
-.highlight-target-attention[data-highlight-kind="task"]::after { content: ""; position: absolute; top: 8px; right: 8px; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px var(--ok-bg); }
+
+@keyframes attentionTableRowPulse {
+  0%, 100% {
+    background-color: transparent;
+  }
+  30% {
+    background-color: color-mix(in srgb, var(--brand, #c27803) 22%, var(--surface, #FFFFFF)) !important;
+  }
+  65% {
+    background-color: color-mix(in srgb, var(--brand, #c27803) 12%, var(--surface, #FFFFFF)) !important;
+  }
+}
+
+/* Cho hàng bảng: áp dụng màu nền nhấp nháy vào từng ô và vạch viền hổ phách vào ô đầu */
+tr.highlight-target-attention > td {
+  animation: attentionTableRowPulse var(--attention-cycle, 2s) ease-in-out var(--attention-delay, 0ms) 2 both !important;
+}
+
+tr.highlight-target-attention > td:first-child {
+  box-shadow: inset 4px 0 0 var(--brand, #c27803) !important;
+}
+
+/* Cho thẻ, hộp thông tin, phần tử độc lập */
+.highlight-target-attention:not(tr) {
+  animation: attentionPulse var(--attention-cycle, 2s) ease-in-out var(--attention-delay, 0ms) 2 both;
+  position: relative;
+  z-index: 5;
+  border-radius: var(--r-md, 8px);
+}
+.highlight-target-attention[data-highlight-kind="task"]::after {
+  content: "";
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 3px var(--ok-bg);
+}
 @media (prefers-reduced-motion: reduce) {
-  .highlight-target-attention { animation: none; outline: 2px solid var(--brand); outline-offset: -2px; }
+  .highlight-target-attention:not(tr) {
+    animation: none;
+    outline: 2px solid var(--brand);
+    outline-offset: -2px;
+  }
+  tr.highlight-target-attention > td {
+    animation: none;
+    background-color: color-mix(in srgb, var(--brand, #c27803) 16%, var(--surface, #FFFFFF)) !important;
+  }
 }
 
 /* Reset tối thiểu + nền tảng chữ/màu cho toàn app. Mọi giá trị lấy từ tokens.css. */

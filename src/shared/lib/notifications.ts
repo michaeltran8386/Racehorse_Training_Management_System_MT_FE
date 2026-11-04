@@ -5,6 +5,42 @@ import { formatShortDate } from "./format";
 
 // Thông báo trong ứng dụng (C-01): dữ liệu từ BE GET /notifications, giữ trong bộ nhớ và hỏi lại mỗi 30 giây.
 // Các màn hình đọc bản sao trong bộ nhớ (getNotifications) và đăng ký nghe thay đổi (subscribeNotifications).
+/**
+ * Trả về URL điều hướng đầy đủ kèm tham số ?highlight=<targetId>
+ * để trang đích tự động cuộn tới và "Gây chú ý" (Attention glow) đúng mục tiêu.
+ */
+export function getNotificationTargetUrl(n: AppNotification): string {
+  const baseLink = n.link || "/";
+
+  if (baseLink.includes("highlight=")) {
+    return baseLink;
+  }
+
+  const p = n.params || {};
+  const candidateId =
+    p.incidentId ||
+    p.requestId ||
+    p.invoiceId ||
+    p.lockId ||
+    p.horseId ||
+    p.userId ||
+    p.planId ||
+    p.workoutId ||
+    p.id ||
+    p.incidentNumber ||
+    p.requestNumber ||
+    p.requestCode ||
+    p.code ||
+    p.reference;
+
+  if (!candidateId) {
+    return baseLink;
+  }
+
+  const separator = baseLink.includes("?") ? "&" : "?";
+  return `${baseLink}${separator}highlight=${encodeURIComponent(String(candidateId))}`;
+}
+
 export interface AppNotification {
   id: string;
   type?: string; // mã sự kiện từ BE (VD LOCK_PLACED) — dùng để dịch

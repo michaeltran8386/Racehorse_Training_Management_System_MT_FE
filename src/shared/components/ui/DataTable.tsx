@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePaged } from "@/shared/lib/hooks";
 import { cx } from "@/shared/lib/cx";
@@ -39,16 +39,32 @@ const SKELETON_ROWS = 5;
 // (Trạng thái lỗi do trang quyết định vì cần nút "Try again" riêng.)
 export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, selectedKey, onRowClick, pageSize, stackOnNarrow, noun = "items" }: DataTableProps<T>) {
   const pager = usePaged(rows, pageSize ?? 10);
-  const [lastTarget, setLastTarget] = useState<string | null>(null);
   const [searchParams] = useSearchParams();
   const highlightId = searchParams.get("highlight");
-  const targetIndex = highlightId ? rows.findIndex((row) => String(rowKey(row)) === highlightId) : -1;
+
+  const targetIndex = useMemo(() => {
+    if (!highlightId) return -1;
+    return rows.findIndex((row) => {
+      const key = String(rowKey(row));
+      const anyRow = row as any;
+      return (
+        key === highlightId ||
+        anyRow?.id === highlightId ||
+        anyRow?.code === highlightId ||
+        anyRow?.lockCode === highlightId ||
+        anyRow?.requestNumber === highlightId ||
+        anyRow?.incidentNumber === highlightId
+      );
+    });
+  }, [rows, rowKey, highlightId]);
+
   const targetPage = targetIndex < 0 ? null : Math.floor(targetIndex / pager.pageSize) + 1;
-  const targetKey = targetPage === null ? null : `${highlightId}:${targetPage}`;
-  if (lastTarget !== targetKey) {
-    setLastTarget(targetKey);
-    if (targetPage !== null) pager.setPage(targetPage);
-  }
+
+  useEffect(() => {
+    if (targetPage !== null && pager.page !== targetPage) {
+      pager.setPage(targetPage);
+    }
+  }, [targetPage, pager.page, pager.setPage]);
 
   if (!loading && rows.length === 0) {
     if (typeof empty === "string") return <EmptyState title={empty} />;
@@ -100,11 +116,27 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
               })
             : pager.items.map((row) => {
                 const isSelected = selectedKey !== undefined && selectedKey !== null && rowKey(row) === selectedKey;
+                const anyRow = row as any;
+                const isHighlighted = Boolean(
+                  highlightId &&
+                    (String(rowKey(row)) === highlightId ||
+                      anyRow?.id === highlightId ||
+                      anyRow?.code === highlightId ||
+                      anyRow?.lockCode === highlightId ||
+                      anyRow?.requestNumber === highlightId ||
+                      anyRow?.incidentNumber === highlightId)
+                );
                 return (
                   <tr
                     key={rowKey(row)}
                     data-highlight-id={rowKey(row)}
-                    className={cx(styles.row, onRowClick && styles.clickable, isSelected && styles.selected)}
+                    data-highlight-code={anyRow?.code || anyRow?.lockCode || anyRow?.requestNumber || anyRow?.incidentNumber}
+                    className={cx(
+                      styles.row,
+                      onRowClick && styles.clickable,
+                      isSelected && styles.selected,
+                      isHighlighted && "highlight-target-attention"
+                    )}
                     tabIndex={onRowClick ? 0 : undefined}
                     aria-selected={onRowClick && selectedKey !== undefined ? isSelected : undefined}
                     onKeyDown={(event) => {

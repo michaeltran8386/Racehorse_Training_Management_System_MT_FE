@@ -8,6 +8,7 @@ import {
   markAllNotificationsAsRead,
   markNotificationAsRead,
   localizeNotification,
+  getNotificationTargetUrl,
 } from "@/shared/lib/notifications";
 
 import { tr } from "@/shared/i18n/tr";
@@ -92,7 +93,8 @@ export function NotificationPopover({
         key={n.id}
         onClick={() => {
           void markNotificationAsRead(n.id);
-          if (n.link) navigate(n.link);
+          const targetUrl = getNotificationTargetUrl(n);
+          if (targetUrl) navigate(targetUrl);
           onClose();
         }}
         style={{

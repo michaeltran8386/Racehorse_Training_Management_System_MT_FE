@@ -8,6 +8,7 @@ import {
   localizeNotification,
   markNotificationAsRead,
   subscribeNotifications,
+  getNotificationTargetUrl,
 } from "@/shared/lib/notifications";
 import { Icon } from "@/shared/components/ui/Icon";
 import styles from "./MascotAssistant.module.css";
@@ -38,7 +39,8 @@ export function AssistantInbox({ limit = 6, onNavigate }: { limit?: number; onNa
               onClick={() => {
                 void markNotificationAsRead(n.id);
                 onNavigate?.();
-                if (n.link) navigate(n.link);
+                const targetUrl = getNotificationTargetUrl(n);
+                if (targetUrl) navigate(targetUrl);
               }}
             >
               <span className={styles.inboxTitle}>{loc.title}</span>
