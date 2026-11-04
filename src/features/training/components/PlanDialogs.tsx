@@ -175,7 +175,7 @@ export function ClosePlanDialog({ kind, plan, onClose, onDone }: DialogProps & {
       <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         {kind === "complete" && (
           <p style={{ margin: 0, fontSize: "var(--fs-body)" }}>
-            {plan.progress.completed}/{plan.progress.due} {tr("due workouts completed.")}
+            {plan.progress.completed}/{plan.progress.total ?? plan.progress.due} {tr("workouts completed.")}
           </p>
         )}
         <p style={{ margin: 0, fontSize: "var(--fs-body)" }}>

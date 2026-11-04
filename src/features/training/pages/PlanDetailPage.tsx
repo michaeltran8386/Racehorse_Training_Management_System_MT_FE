@@ -130,7 +130,12 @@ export default function PlanDetailPage() {
             </div>
             {plan.objective && <div style={{ fontSize: "var(--fs-body)", marginTop: "0.25rem" }}>{tr("Objective:")} {plan.objective}</div>}
             <div style={{ maxWidth: 320, marginTop: "0.5rem" }}>
-              <ProgressBar done={plan.progress.completed} total={plan.progress.due} />
+              <ProgressBar
+                done={plan.progress.completed}
+                total={plan.progress.total ?? plan.progress.due}
+                due={plan.progress.due}
+                overdue={plan.progress.overdue}
+              />
             </div>
           </div>
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", alignItems: "flex-start" }}>

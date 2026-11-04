@@ -62,7 +62,7 @@ export interface BePlan {
   phaseName: string;
   objective?: string | null;
   notes?: string | null;
-  progress?: { completed: number; due: number };
+  progress?: { completed: number; total?: number; due: number; overdue?: number };
   phases?: unknown;
   targetSpeed?: number | null;
   targetDistance?: number | null;
@@ -129,7 +129,7 @@ export function toPlan(p: BePlan): TrainingPlan {
     name: p.phaseName,
     objective: p.objective,
     notes: p.notes,
-    progress: p.progress ?? { completed: 0, due: 0 },
+    progress: p.progress ?? { completed: 0, total: 0, due: 0, overdue: 0 },
     lockedSince: p.horse?.medicalLocks?.[0]?.lockedAt ?? null,
     horseId: p.horseId,
     horseName: p.horse?.name ?? "—",

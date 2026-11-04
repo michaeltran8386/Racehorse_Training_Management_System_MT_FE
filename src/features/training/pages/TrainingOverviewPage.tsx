@@ -62,7 +62,10 @@ export default function TrainingOverviewPage() {
   if (!data) return <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>{tr("Loading overview...")}</div>;
 
   const q = search.toLowerCase();
-  const pct = (r: OverviewRow) => (r.progress && r.progress.due ? r.progress.completed / r.progress.due : -1);
+  const pct = (r: OverviewRow) =>
+    r.progress && (r.progress.total || r.progress.due)
+      ? r.progress.completed / (r.progress.total || r.progress.due)
+      : -1;
   const rows = data.rows
     .filter(
       (r) =>
@@ -199,8 +202,17 @@ export default function TrainingOverviewPage() {
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.currentPhase ? tr(`${r.currentPhase.name} · week ${r.currentPhase.week}/${r.currentPhase.weeks}`) : "—"}
                       </td>
-                      <td style={{ padding: "0.6rem 0.75rem", minWidth: 130 }}>
-                        {r.progress ? <ProgressBar done={r.progress.completed} total={r.progress.due} /> : "—"}
+                      <td style={{ padding: "0.6rem 0.75rem", minWidth: 140 }}>
+                        {r.progress ? (
+                          <ProgressBar
+                            done={r.progress.completed}
+                            total={r.progress.total ?? r.progress.due}
+                            due={r.progress.due}
+                            overdue={r.progress.overdue}
+                          />
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.latestScore != null ? (

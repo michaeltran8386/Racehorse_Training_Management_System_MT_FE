@@ -170,7 +170,12 @@ export default function PlanListPage() {
                     </td>
                     <td className={styles.colPhases}>{plan.phases.length}</td>
                     <td className={styles.colProgress}>
-                      <ProgressBar done={plan.progress.completed} total={plan.progress.due} />
+                      <ProgressBar
+                        done={plan.progress.completed}
+                        total={plan.progress.total ?? plan.progress.due}
+                        due={plan.progress.due}
+                        overdue={plan.progress.overdue}
+                      />
                     </td>
                     <td className={styles.colStatus}>
                       <Badge tone={PLAN_STATUS_TONE[plan.status]}>{PLAN_STATUS_LABEL[plan.status]}</Badge>

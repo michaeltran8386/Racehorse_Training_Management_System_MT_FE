@@ -192,8 +192,8 @@ export interface TrainingPlan {
   phases: TrainingPhase[];
   headTrainerName: string;
   workoutCount: number;
-  /** Số buổi Hoàn thành / số buổi đã đến hạn. */
-  progress: { completed: number; due: number };
+  /** Tiến độ giáo án: completed, total, due, overdue (T1). */
+  progress: { completed: number; total?: number; due: number; overdue?: number };
   lockedSince?: string | null;
   cancelledReason?: string | null;
   completionSummary?: string | null;
@@ -320,7 +320,7 @@ export interface OverviewRow {
   horse: { id: string; name: string; horseCode?: string | null; status: string; isMedicalLocked: boolean };
   plan: { id: string; planCode?: string | null; name: string } | null;
   currentPhase: { name: string; week: number; weeks: number } | null;
-  progress: { completed: number; due: number } | null;
+  progress: { completed: number; total?: number; due: number; overdue?: number } | null;
   latestScore: number | null;
   previousAvgScore: number | null;
   load7d: number;
