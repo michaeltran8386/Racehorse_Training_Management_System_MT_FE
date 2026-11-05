@@ -329,6 +329,8 @@ export interface OverviewRow {
 }
 
 export interface TrainingOverview {
+  nextWorkout: NextWorkoutInfo | null;
+  latestPlan: LatestPlanInfo | null;
   kpis: {
     activePlans: number;
     managedHorses: number;
@@ -338,6 +340,31 @@ export interface TrainingOverview {
     loadSpikeHorses: number;
   };
   rows: OverviewRow[];
+}
+
+export interface NextWorkoutInfo {
+  id: string;
+  planId: string;
+  horseId: string;
+  horseName: string;
+  horseCode: string | null;
+  workoutType: string | null;
+  scheduledDate: string;
+  intensity: string | null;
+  surface: string | null;
+  status: SessionStatus;
+}
+
+export interface LatestPlanInfo {
+  id: string;
+  planCode: string | null;
+  name: string;
+  horseId: string;
+  horseName: string;
+  status: PlanStatus;
+  startDate: string;
+  endDate: string;
+  currentPhaseName: string | null;
 }
 
 /** Kết quả lặp hằng tuần (DL-2.01). */
