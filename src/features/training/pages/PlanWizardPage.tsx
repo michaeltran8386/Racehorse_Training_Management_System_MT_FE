@@ -196,6 +196,32 @@ function validatePlanForm(
   return errors;
 }
 
+function findFirstErrorElementId(errors: FormErrors, phases: TrainingPhase[]): string | null {
+  if (errors.horseId) return "field-horseId";
+  if (errors.name) return "field-name";
+  if (errors.startDate) return "field-startDate";
+  if (errors.endDate) return "field-endDate";
+  if (errors.objective) return "field-objective";
+  if (errors.notes) return "field-notes";
+
+  if (errors.phases) {
+    for (const ph of phases) {
+      const pErr = errors.phases[ph.id];
+      if (pErr) {
+        if (pErr.name) return `field-phase-${ph.id}-name`;
+        if (pErr.startDate) return `field-phase-${ph.id}-startDate`;
+        if (pErr.endDate) return `field-phase-${ph.id}-endDate`;
+        if (pErr.sessionsPerWeek) return `field-phase-${ph.id}-sessionsPerWeek`;
+        if (pErr.maxWeeklyDistance) return `field-phase-${ph.id}-maxWeeklyDistance`;
+        if (pErr.targetSpeedKmh) return `field-phase-${ph.id}-targetSpeedKmh`;
+        if (pErr.goal) return `field-phase-${ph.id}-goal`;
+      }
+    }
+  }
+
+  return null;
+}
+
 function hasErrors(errors: FormErrors): boolean {
   if (errors.horseId || errors.name || errors.startDate || errors.endDate || errors.objective || errors.notes || errors.general) {
     return true;
@@ -489,6 +515,23 @@ export default function PlanWizardPage() {
           ? "Vui lòng kiểm tra và sửa các thông tin chưa hợp lệ hiển thị bên dưới."
           : tr("Please check and correct the invalid fields below."),
       );
+
+      // Tự động cuộn màn hình đến ô lỗi đầu tiên
+      const targetId = findFirstErrorElementId(formErrors, phases);
+      setTimeout(() => {
+        let el = targetId ? document.getElementById(targetId) : null;
+        if (!el) {
+          el = document.querySelector<HTMLElement>(
+            '[aria-invalid="true"], [class*="_error_"], [class*="error"]'
+          );
+        }
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          const input = el.querySelector<HTMLElement>("input, textarea, select, button") || el;
+          input.focus({ preventScroll: true });
+        }
+      }, 60);
+
       return;
     }
     setSubmitting(true);
@@ -555,6 +598,7 @@ export default function PlanWizardPage() {
               </div>
             </div>
             <div className={styles.twoCol}>
+              <div id="field-horseId">
               <Field
                 label={tr("Horse")}
                 required
@@ -573,6 +617,8 @@ export default function PlanWizardPage() {
                   }))}
                 />
               </Field>
+              </div>
+              <div id="field-name">
               <Field
                 label={tr("Plan name")}
                 required
@@ -586,6 +632,7 @@ export default function PlanWizardPage() {
                   onBlur={() => markTouched("name")}
                 />
               </Field>
+              </div>
             </div>
             {horse?.isMedicalLocked && (
               <div style={{ marginTop: "0.75rem" }}>
@@ -619,6 +666,7 @@ export default function PlanWizardPage() {
               </div>
             </div>
             <div className={styles.twoCol}>
+              <div id="field-startDate">
               <Field
                 label={tr("Start date")}
                 required
@@ -627,6 +675,8 @@ export default function PlanWizardPage() {
               >
                 <DatePicker min={editing ? undefined : tomorrow} value={startDate} onChange={handleStartDateChange} />
               </Field>
+              </div>
+              <div id="field-endDate">
               <Field
                 label={tr("End date")}
                 required
@@ -635,6 +685,7 @@ export default function PlanWizardPage() {
               >
                 <DatePicker min={addDays(startDate, 7)} value={endDate} onChange={handleEndDateChange} />
               </Field>
+              </div>
             </div>
           </div>
 
@@ -650,6 +701,7 @@ export default function PlanWizardPage() {
               </div>
             </div>
             <div className={styles.twoCol}>
+              <div id="field-objective">
               <Field
                 label={tr("Objective")}
                 required
@@ -664,6 +716,8 @@ export default function PlanWizardPage() {
                   onBlur={() => markTouched("objective")}
                 />
               </Field>
+              </div>
+              <div id="field-notes">
               <Field
                 label={tr("Notes")}
                 hint={tr("Up to 1000 characters")}
@@ -677,6 +731,7 @@ export default function PlanWizardPage() {
                   onBlur={() => markTouched("notes")}
                 />
               </Field>
+              </div>
             </div>
           </div>
         </div>
@@ -794,6 +849,7 @@ export default function PlanWizardPage() {
             )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "1rem" }}>
+            <div id={`field-phase-${ph.id}-name`}>
             <Field
               label={tr("Phase name")}
               required
@@ -806,6 +862,7 @@ export default function PlanWizardPage() {
                 onBlur={() => markPhaseTouched(ph.id, "name")}
               />
             </Field>
+            </div>
             <Field label={tr("Phase type")} required>
               <Select
                 value={ph.type}
@@ -813,6 +870,7 @@ export default function PlanWizardPage() {
                 options={(Object.keys(PHASE_TYPE_LABEL) as PhaseType[]).map((t) => ({ value: t, label: tr(PHASE_TYPE_LABEL[t]) }))}
               />
             </Field>
+            <div id={`field-phase-${ph.id}-startDate`}>
             <Field
               label={tr("From")}
               required
@@ -828,6 +886,8 @@ export default function PlanWizardPage() {
                 }}
               />
             </Field>
+            </div>
+            <div id={`field-phase-${ph.id}-endDate`}>
             <Field
               label={tr("To")}
               required
@@ -843,6 +903,8 @@ export default function PlanWizardPage() {
                 }}
               />
             </Field>
+            </div>
+            <div id={`field-phase-${ph.id}-sessionsPerWeek`}>
             <Field
               label={tr("Sessions per week")}
               required
@@ -862,6 +924,8 @@ export default function PlanWizardPage() {
                 onBlur={() => markPhaseTouched(ph.id, "sessionsPerWeek")}
               />
             </Field>
+            </div>
+            <div id={`field-phase-${ph.id}-maxWeeklyDistance`}>
             <Field
               label={tr("Max distance per week (m)")}
               required
@@ -882,6 +946,7 @@ export default function PlanWizardPage() {
                 onBlur={() => markPhaseTouched(ph.id, "maxWeeklyDistance")}
               />
             </Field>
+            </div>
             <Field label={tr("Main surface")} required>
               <Select
                 value={ph.surface}
@@ -889,6 +954,7 @@ export default function PlanWizardPage() {
                 options={(Object.keys(SURFACE_LABEL) as PhaseSurface[]).map((s) => ({ value: s, label: tr(SURFACE_LABEL[s]) }))}
               />
             </Field>
+            <div id={`field-phase-${ph.id}-targetSpeedKmh`}>
             <Field
               label={tr("Target speed (km/h)")}
               hint={tr("10 – 70, optional")}
@@ -908,8 +974,10 @@ export default function PlanWizardPage() {
                 onBlur={() => markPhaseTouched(ph.id, "targetSpeedKmh")}
               />
             </Field>
+            </div>
           </div>
           <div style={{ marginTop: "1rem" }}>
+            <div id={`field-phase-${ph.id}-goal`}>
             <Field
               label={tr("Phase goal")}
               hint={tr("Up to 500 characters")}
@@ -923,6 +991,7 @@ export default function PlanWizardPage() {
                 onBlur={() => markPhaseTouched(ph.id, "goal")}
               />
             </Field>
+            </div>
           </div>
         </Card>
       ))}
