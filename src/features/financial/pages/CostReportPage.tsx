@@ -14,6 +14,7 @@ import { tr } from "@/shared/i18n/tr";
 import { messageFor } from "@/shared/lib/messages";
 import { useAppLanguage } from "@/shared/lib/language";
 import { fetchOwnerSummary } from "../api";
+import { invoiceStatusLabel } from "../invoiceStatus";
 import type { OwnerSummaryResponse } from "../types";
 import styles from "./CostReportPage.module.css";
 
@@ -89,7 +90,7 @@ export default function CostReportPage() {
                     <td>{row.billingPeriod}</td><td><strong>{row.horse.name}</strong><br /><span>{row.horse.horseCode || "—"}</span></td>
                     {user.role === "CLUB_MANAGER" && <td>{row.owner?.fullName || "—"}</td>}
                     <td>{row.boardingFee.toLocaleString(locale)} đ</td><td>{row.medicalFee.toLocaleString(locale)} đ</td><td>{row.trainingFee.toLocaleString(locale)} đ</td>
-                    <td><strong>{(row.boardingFee + row.medicalFee + row.trainingFee).toLocaleString(locale)} đ</strong></td><td><Badge tone={row.status === "PAID" ? "ok" : row.status === "SENT" ? "warn" : row.status === "OVERDUE" ? "danger" : "neutral"}>{tr(row.status)}</Badge></td>
+                    <td><strong>{(row.boardingFee + row.medicalFee + row.trainingFee).toLocaleString(locale)} đ</strong></td><td><Badge tone={row.status === "PAID" ? "ok" : row.status === "SENT" ? "warn" : row.status === "OVERDUE" ? "danger" : "neutral"}>{invoiceStatusLabel(row.status)}</Badge></td>
                   </tr>)}</tbody>
                 </table>
               </div>

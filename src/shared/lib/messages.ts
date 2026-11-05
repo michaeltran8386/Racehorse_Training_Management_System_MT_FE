@@ -12,6 +12,10 @@ export interface AlertSpec {
 }
 
 const GENERIC: Record<string, string> = {
+  INVALID_BILLING_PERIOD: "Use a valid billing month in YYYY-MM format.",
+  BILLING_PERIOD_NOT_CLOSED: "Only completed months can be billed.",
+  INVALID_STAY_INTERVAL: "The stall stay dates are invalid.",
+  BOARDING_FEE_READ_ONLY: "The boarding fee and period are fixed by the stay calculation.",
   NETWORK_ERROR: "The service did not answer. Check the connection and try again.",
   TIMEOUT: "The server took too long to answer. Try again.",
   SERVER_ERROR: "Something went wrong on our side. Try again in a moment.",
