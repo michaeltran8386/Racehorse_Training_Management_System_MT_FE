@@ -28,6 +28,7 @@ import type {
   Groom,
   SessionInput,
   TrackType,
+  TrainingPhase,
   TrainingPlan,
 } from "../types";
 import { hasCode } from "./PlanDialogs";
@@ -452,6 +453,231 @@ export function RestoreWorkoutDialog({ session, onClose, onDone }: { session: Ex
           <Field label={tr("Start time")} required hint="04:00 – 20:00">
             <Input type="time" min="04:00" max="20:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
           </Field>
+        </div>
+      </div>
+    </Modal>
+  );
+}
+
+/** T5: Sinh lịch đề xuất từ giai đoạn: chọn các thứ trong tuần, giờ, loại / cường độ mặc định. */
+export function GeneratePhaseScheduleDialog({
+  plan,
+  phase,
+  onClose,
+  onGenerated,
+}: {
+  plan: TrainingPlan;
+  phase: TrainingPhase;
+  onClose: () => void;
+  onGenerated: () => void;
+}) {
+  const { isVietnamese } = useAppLanguage();
+  const toast = useToast();
+
+  const defaultDays = useMemo(() => {
+    const n = phase.sessionsPerWeek || 5;
+    if (n === 1) return [1];
+    if (n === 2) return [1, 4];
+    if (n === 3) return [1, 3, 5];
+    if (n === 4) return [1, 2, 4, 5];
+    if (n === 5) return [1, 2, 3, 4, 5];
+    if (n === 6) return [1, 2, 3, 4, 5, 6];
+    return [1, 2, 3, 4, 5, 6, 7].slice(0, n);
+  }, [phase.sessionsPerWeek]);
+
+  const defaultType: ExerciseType = useMemo(() => {
+    if (phase.type === "BASE") return "CANTER";
+    if (phase.type === "BUILD") return "CANTER";
+    if (phase.type === "SPEED") return "BREEZE";
+    if (phase.type === "PRE_RACE") return "TRIAL";
+    if (phase.type === "RECOVERY") return "WALK";
+    return "CANTER";
+  }, [phase.type]);
+
+  const defaultIntensity: ExerciseIntensity = useMemo(() => {
+    if (phase.type === "RECOVERY") return "LIGHT";
+    if (phase.type === "BASE") return "MEDIUM";
+    return "HEAVY";
+  }, [phase.type]);
+
+  const [weekdays, setWeekdays] = useState<number[]>(defaultDays);
+  const [time, setTime] = useState("06:30");
+  const [type, setType] = useState<ExerciseType>(defaultType);
+  const [intensity, setIntensity] = useState<ExerciseIntensity>(defaultIntensity);
+  const [distance, setDistance] = useState(
+    String(Math.max(500, Math.round(phase.maxWeeklyDistance / (phase.sessionsPerWeek || 5)))),
+  );
+  const [repetitions, setRepetitions] = useState(1);
+  const [surface, setSurface] = useState<TrackType>((phase.surface as TrackType) || "TURF");
+  const [grooms, setGrooms] = useState<Groom[]>([]);
+  const [groomId, setGroomId] = useState("");
+  const [jockey, setJockey] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    trainingApi.getGrooms().then((g) => {
+      setGrooms(g);
+      if (g[0]) setGroomId(g[0].id);
+    });
+  }, []);
+
+  const toggleDay = (d: number) => {
+    setWeekdays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort((a, b) => a - b)));
+  };
+
+  const submit = async () => {
+    if (weekdays.length === 0) {
+      setError(isVietnamese ? "Vui lòng chọn ít nhất một thứ trong tuần." : tr("Please select at least one weekday."));
+      return;
+    }
+    const distNum = Number(distance);
+    if (!distNum || distNum < 200 || distNum > 10000) {
+      setError(isVietnamese ? "Cự ly phải từ 200 đến 10 000 m." : tr("Distance must be 200 to 10 000 m."));
+      return;
+    }
+    if (!groomId) {
+      setError(isVietnamese ? "Vui lòng chọn nhân viên chăm sóc." : tr("Please select an assigned groom."));
+      return;
+    }
+    if ((type === "BREEZE" || type === "TRIAL") && !jockey.trim()) {
+      setError(tr("Jockey name is required for breeze and trial runs."));
+      return;
+    }
+    setSubmitting(true);
+    setError("");
+    try {
+      const res = await trainingApi.createRepeatSessions(plan.id, {
+        phaseId: phase.id,
+        scheduledDate: `${phase.startDate}T${time}:00+07:00`,
+        until: phase.endDate,
+        weekdays,
+        workoutType: type,
+        intensity,
+        distanceMeters: distNum,
+        repetitions,
+        trackSurface: surface,
+        targetSpeedKmh: phase.targetSpeedKmh ?? undefined,
+        assignedStaffUserId: groomId,
+        jockeyName: jockey.trim() || undefined,
+        acknowledgeWarnings: true,
+      });
+      if (res.created > 0) {
+        toast.show(
+          isVietnamese
+            ? `Đã sinh thành công ${res.created} buổi tập!`
+            : tr("Generated {{count}} workouts successfully!", { count: res.created }),
+          "ok",
+        );
+      }
+      if (res.skipped.length > 0) {
+        toast.show(
+          isVietnamese
+            ? `Bỏ qua ${res.skipped.length} buổi do không hợp lệ hoặc đã qua.`
+            : tr("Skipped {{count}} dates due to conflicts.", { count: res.skipped.length }),
+          "warn",
+        );
+      }
+      onGenerated();
+      onClose();
+    } catch (err) {
+      setError(messageFor(err));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <Modal
+      title={isVietnamese ? `Sinh lịch đề xuất – Giai đoạn ${phase.name}` : tr("Generate Schedule – {{name}}", { name: phase.name })}
+      onClose={onClose}
+      foot={
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
+          <Button tone="ghost" onClick={onClose}>{tr("Cancel")}</Button>
+          <Button tone="primary" onClick={() => void submit()} disabled={submitting}>
+            {submitting ? tr("Generating...") : isVietnamese ? "Tạo lịch buổi tập" : tr("Generate workouts")}
+          </Button>
+        </div>
+      }
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {error && <Alert tone="danger" title={tr("Cannot generate")}>{error}</Alert>}
+        <p style={{ margin: 0, fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>
+          {isVietnamese
+            ? `Hệ thống sẽ rải lịch các buổi tập trong khung ngày ${phase.startDate} → ${phase.endDate} theo các thứ đã chọn.`
+            : tr("Workouts will be scheduled within {{start}} → {{end}} on selected days.", { start: phase.startDate, end: phase.endDate })}
+        </p>
+
+        <Field label={isVietnamese ? `Các thứ trong tuần (${weekdays.length}/${phase.sessionsPerWeek} buổi/tuần)` : tr("Days of the week")} required>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
+            {WEEKDAYS.map((w) => (
+              <Button
+                key={w.n}
+                type="button"
+                size="sm"
+                tone={weekdays.includes(w.n) ? "primary" : "secondary"}
+                onClick={() => toggleDay(w.n)}
+              >
+                {w.label}
+              </Button>
+            ))}
+          </div>
+        </Field>
+
+        <div className={formLayout.columns}>
+          <Field label={tr("Start time")} required hint="04:00 – 20:00">
+            <Input type="time" min="04:00" max="20:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
+          </Field>
+          <Field label={tr("Surface")} required>
+            <Select
+              value={surface}
+              onChange={(e) => setSurface(e.target.value as TrackType)}
+              options={(Object.keys(TRACK_LABEL) as TrackType[]).filter((x) => x !== "NONE").map((k) => ({ value: k, label: TRACK_LABEL[k] }))}
+            />
+          </Field>
+        </div>
+
+        <div className={formLayout.columns}>
+          <Field label={tr("Exercise type")} required>
+            <Select
+              value={type}
+              onChange={(e) => setType(e.target.value as ExerciseType)}
+              options={(Object.keys(EXERCISE_TYPE_LABEL) as ExerciseType[]).map((k) => ({ value: k, label: EXERCISE_TYPE_LABEL[k] }))}
+            />
+          </Field>
+          <Field label={tr("Intensity")} required>
+            <Select
+              value={intensity}
+              onChange={(e) => setIntensity(e.target.value as ExerciseIntensity)}
+              options={(Object.keys(INTENSITY_LABEL) as ExerciseIntensity[]).map((k) => ({ value: k, label: INTENSITY_LABEL[k] }))}
+            />
+          </Field>
+        </div>
+
+        <div className={formLayout.columns}>
+          <Field label={tr("Distance (m)")} required hint="200 – 10 000 m">
+            <Input type="number" min={200} max={10000} step={100} value={distance} onChange={(e) => setDistance(e.target.value)} />
+          </Field>
+          <Field label={tr("Repetitions")} required hint="1 – 10">
+            <Input type="number" min={1} max={10} value={repetitions} onChange={(e) => setRepetitions(Math.max(1, Number(e.target.value)))} />
+          </Field>
+        </div>
+
+        <div className={formLayout.columns}>
+          <Field label={tr("Assigned groom")} required>
+            <Select
+              value={groomId}
+              onChange={(e) => setGroomId(e.target.value)}
+              options={grooms.map((g) => ({ value: g.id, label: g.fullName }))}
+            />
+          </Field>
+          {(type === "BREEZE" || type === "TRIAL") ? (
+            <Field label={tr("Jockey name")} required>
+              <Input value={jockey} onChange={(e) => setJockey(e.target.value)} placeholder={tr("Jockey name")} />
+            </Field>
+          ) : (
+            <div />
+          )}
         </div>
       </div>
     </Modal>

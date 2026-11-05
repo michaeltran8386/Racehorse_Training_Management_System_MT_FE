@@ -90,7 +90,7 @@ export default function WeeklyCalendarPage() {
   const [horse, setHorse] = useState("ALL");
   const [groom, setGroom] = useState("ALL");
   const [surface, setSurface] = useState("ALL");
-  const [type, setType] = useState("ALL");
+  const [type, setType] = useState(params.get("type") ?? "ALL");
   const [status, setStatus] = useState(params.get("status") ?? "ALL");
   const [selected, setSelected] = useState<ExerciseSession | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -205,7 +205,27 @@ export default function WeeklyCalendarPage() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      <PageHeader title={t("calendar.title")} description={t("calendar.subtitle")} action={<><LinkButton to="/training/trials" tone="secondary">{t("calendar.trialRuns")}</LinkButton>{isTrainer && <Button tone="primary" onClick={() => setDialog({ kind: "add" })}>{t("calendar.scheduleWorkout")}</Button>}</>} />
+      <PageHeader
+        title={t("calendar.title")}
+        description={t("calendar.subtitle")}
+        action={
+          <>
+            <Button
+              tone={type === "TRIAL" ? "primary" : "secondary"}
+              onClick={() => setType(type === "TRIAL" ? "ALL" : "TRIAL")}
+            >
+              {type === "TRIAL"
+                ? (isVietnamese ? "✓ Đang xem chạy thử" : "✓ Showing Trial Runs")
+                : (isVietnamese ? "Lượt chạy thử" : t("calendar.trialRuns"))}
+            </Button>
+            {isTrainer && (
+              <Button tone="primary" onClick={() => setDialog({ kind: "add" })}>
+                {t("calendar.scheduleWorkout")}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Card pad={16}>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>

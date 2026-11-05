@@ -318,7 +318,7 @@ export interface FitnessData {
 /** SC-2.01 tổng quan huấn luyện. */
 export interface OverviewRow {
   horse: { id: string; name: string; horseCode?: string | null; status: string; isMedicalLocked: boolean };
-  plan: { id: string; planCode?: string | null; name: string } | null;
+  plan: { id: string; planCode?: string | null; name: string; status?: PlanStatus } | null;
   currentPhase: { name: string; week: number; weeks: number } | null;
   progress: { completed: number; total?: number; due: number; overdue?: number } | null;
   latestScore: number | null;

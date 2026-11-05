@@ -78,7 +78,7 @@ export const vi: TranslationResources = {
     trials: "Lượt chạy thử",
     metrics: "Chỉ số buổi tập",
     monitor: "Giám sát thời gian thực",
-    alerts: "Cảnh báo chỉ số",
+    alerts: "Cảnh báo sau buổi tập",
     races: "Giải đua & Lịch thi đấu",
     records: "Hồ sơ bệnh án",
     rx: "Kê đơn thuốc",

@@ -72,10 +72,7 @@ export default function PlanListPage() {
       <PageHeader
         title="Training Plans"
         description="Draft → Active → Completed / Cancelled. Open a plan to manage its phases and workouts."
-        action={<>
-          <Link className={styles.secondaryAction} to="/training/plans/history">{tr("History")}</Link>
-          {isTrainer && <Button tone="primary" onClick={() => navigate("/training/plans/new")}>{tr("+ Create New Plan")}</Button>}
-        </>}
+        action={isTrainer ? <Button tone="primary" onClick={() => navigate("/training/plans/new")}>{tr("+ Create New Plan")}</Button> : undefined}
       />
 
       <Card pad={16}>

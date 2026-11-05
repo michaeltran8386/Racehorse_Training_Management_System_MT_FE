@@ -49,7 +49,7 @@ export function breadcrumbFor(user: AuthUser, pathname: string, accountName?: st
   // 5. Trang lỗi hệ thống & Alerts
   if (pathname === "/forbidden") return [homeSegment, { label: i18n.t("nav.accessDenied", "Access denied") }];
   if (pathname === "/session-expired") return [homeSegment, { label: i18n.t("nav.sessionExpired", "Session expired") }];
-  if (pathname === "/alerts" || pathname === "/training/alerts") return [homeSegment, { label: i18n.t("nav.alerts", "Threshold Alerts") }];
+  if (pathname === "/alerts" || pathname === "/training/alerts") return [homeSegment, { label: i18n.t("nav.alerts", "Post-workout Alerts") }];
   if (pathname === "/monitor" || pathname === "/training/monitor") return [homeSegment, { label: i18n.t("nav.monitor", "Session Telemetry") }];
 
 

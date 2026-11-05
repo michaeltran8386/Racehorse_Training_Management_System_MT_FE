@@ -1,7 +1,7 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams, useBlocker } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams, useBlocker } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
 import { Card } from "@/shared/components/ui/Card";
@@ -81,6 +81,7 @@ export default function PlanWizardPage() {
   useScreenTranslation();
   const { isVietnamese } = useAppLanguage();
   const { id } = useParams<{ id?: string }>();
+  const [searchParams] = useSearchParams();
   const editing = Boolean(id);
   const navigate = useNavigate();
   const toast = useToast();
@@ -104,10 +105,17 @@ export default function PlanWizardPage() {
       .then((res) => {
         const usable = res.items.filter((h) => h.status !== "RETIRED");
         setHorses(usable);
-        if (!editing) setHorseId((cur) => cur || usable[0]?.id || "");
+        if (!editing) {
+          const preselected = searchParams.get("horseId");
+          if (preselected && usable.some((h) => h.id === preselected)) {
+            setHorseId(preselected);
+          } else {
+            setHorseId((cur) => cur || usable[0]?.id || "");
+          }
+        }
       })
       .catch((err) => toast.show(messageFor(err), "danger"));
-  }, [editing, toast]);
+  }, [editing, toast, searchParams]);
 
   useEffect(() => {
     if (!id) return;

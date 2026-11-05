@@ -29,7 +29,7 @@ type SortKey = "name" | "progress" | "score" | "load" | "next";
 /** SC-2.01 Tổng quan huấn luyện (CM, HT, VET). */
 export default function TrainingOverviewPage() {
   useScreenTranslation();
-  useAppLanguage();
+  const { isVietnamese } = useAppLanguage();
   const navigate = useNavigate();
   const user = useCurrentUser();
   const [data, setData] = useState<TrainingOverview | null>(null);
@@ -70,7 +70,10 @@ export default function TrainingOverviewPage() {
     .filter(
       (r) =>
         (r.horse.name.toLowerCase().includes(q) || (r.horse.horseCode ?? "").toLowerCase().includes(q)) &&
-        (planFilter === "ALL" || (planFilter === "WITH" ? r.plan : !r.plan)) &&
+        (planFilter === "ALL" ||
+          (planFilter === "ACTIVE" && r.plan?.status === "ACTIVE") ||
+          (planFilter === "DRAFT" && r.plan?.status === "DRAFT") ||
+          (planFilter === "NONE" && !r.plan)) &&
         (!spikeOnly || r.loadSpike),
     )
     .sort((a, b) => {
@@ -78,6 +81,13 @@ export default function TrainingOverviewPage() {
       if (sort === "score") return (b.latestScore ?? -1) - (a.latestScore ?? -1);
       if (sort === "load") return b.load7d - a.load7d;
       if (sort === "next") return (a.nextWorkout?.date ?? "9").localeCompare(b.nextWorkout?.date ?? "9");
+      const rank = (r: OverviewRow) => {
+        if (r.plan?.status === "ACTIVE") return 1;
+        if (r.plan?.status === "DRAFT") return 2;
+        return 3;
+      };
+      const diff = rank(a) - rank(b);
+      if (diff !== 0) return diff;
       return a.horse.name.localeCompare(b.horse.name);
     });
   const k = data.kpis;
@@ -134,8 +144,9 @@ export default function TrainingOverviewPage() {
               onChange={(e) => setPlanFilter(e.target.value)}
               options={[
                 { value: "ALL", label: tr("All horses") },
-                { value: "WITH", label: tr("With an active plan") },
-                { value: "WITHOUT", label: tr("Without an active plan") },
+                { value: "ACTIVE", label: isVietnamese ? "Có giáo án đang áp dụng" : tr("With an active plan") },
+                { value: "DRAFT", label: isVietnamese ? "Có giáo án nháp" : tr("With a draft plan") },
+                { value: "NONE", label: isVietnamese ? "Chưa có giáo án" : tr("Without training plan") },
               ]}
             />
           </div>
@@ -198,7 +209,27 @@ export default function TrainingOverviewPage() {
                           <Badge tone={st.tone as never}>{st.label}</Badge>
                         </div>
                       </td>
-                      <td style={{ padding: "0.6rem 0.75rem" }}>{r.plan ? `${r.plan.planCode ?? ""} ${r.plan.name}` : tr("None")}</td>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>
+                        {r.plan ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <span>
+                              {r.plan.planCode ? <strong>{r.plan.planCode} </strong> : null}
+                              {r.plan.name}
+                            </span>
+                            {r.plan.status === "DRAFT" && (
+                              <div>
+                                <Badge tone="neutral">
+                                  {isVietnamese ? "Nháp – chưa kích hoạt" : tr("Draft – not activated")}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ color: "var(--text-muted)" }}>
+                            {isVietnamese ? "Chưa có giáo án" : tr("None")}
+                          </span>
+                        )}
+                      </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.currentPhase ? tr(`${r.currentPhase.name} · week ${r.currentPhase.week}/${r.currentPhase.weeks}`) : "—"}
                       </td>
@@ -216,7 +247,14 @@ export default function TrainingOverviewPage() {
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.latestScore != null ? (
-                          <span>
+                          <span
+                            title={
+                              isVietnamese
+                                ? "So với trung bình 3 buổi trước"
+                                : tr("Compared to 3-session prior average")
+                            }
+                            style={{ cursor: "help" }}
+                          >
                             {r.latestScore}/10{" "}
                             {trend && (
                               <Icon name={trend === "up" ? "trend" : "trendDown"} inline size={14} style={{ color: trend === "up" ? "var(--ok)" : "var(--danger)" }} />
@@ -226,8 +264,26 @@ export default function TrainingOverviewPage() {
                           "—"
                         )}
                       </td>
-                      <td style={{ padding: "0.6rem 0.75rem", color: r.loadSpike ? "var(--warn)" : undefined }}>
-                        {r.load7d} {r.loadSpike && <Badge tone="warn">{tr("Sudden increase")}</Badge>}
+                      <td
+                        style={{
+                          padding: "0.6rem 0.75rem",
+                          color: r.loadSpike ? "var(--danger)" : undefined,
+                          fontWeight: r.loadSpike ? 600 : undefined,
+                        }}
+                        title={
+                          isVietnamese
+                            ? "Điểm tải = Cự ly (km) × Số hiệp × Hệ số cường độ (Nhẹ: 1, Vừa: 2, Nặng: 3)"
+                            : tr("Load score = Distance (km) × Repetitions × Intensity factor")
+                        }
+                      >
+                        <span style={{ cursor: "help" }}>
+                          {r.load7d} {isVietnamese ? "điểm" : tr("pts")}{" "}
+                          {r.loadSpike && (
+                            <Badge tone="danger">
+                              {isVietnamese ? "Tăng đột ngột (>130% TB 4 tuần)" : tr("Sudden increase")}
+                            </Badge>
+                          )}
+                        </span>
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.nextWorkout
@@ -236,9 +292,21 @@ export default function TrainingOverviewPage() {
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>
                         <div style={{ display: "flex", gap: "0.35rem" }}>
-                          <Button size="sm" tone="secondary" disabled={!r.plan} onClick={() => r.plan && navigate(`/training/plans/${r.plan.id}`)}>
-                            {tr("View plan")}
-                          </Button>
+                          {r.plan ? (
+                            <Button size="sm" tone="secondary" onClick={() => r.plan && navigate(`/training/plans/${r.plan.id}`)}>
+                              {tr("View plan")}
+                            </Button>
+                          ) : (
+                            user.role === "HEAD_TRAINER" && (
+                              <Button
+                                size="sm"
+                                tone="primary"
+                                onClick={() => navigate(`/training/plans/new?horseId=${r.horse.id}`)}
+                              >
+                                {isVietnamese ? "+ Tạo giáo án" : tr("+ Create plan")}
+                              </Button>
+                            )
+                          )}
                           <LinkButton to={`/horses/${r.horse.id}/fitness`} size="sm" tone="ghost">{tr("Chart")}</LinkButton>
                         </div>
                       </td>

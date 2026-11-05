@@ -16,7 +16,12 @@ import { todayClub, trainingApi } from "../api";
 import { ActivatePlanDialog, ClonePlanDialog, ClosePlanDialog } from "../components/PlanDialogs";
 import { ProgressBar } from "../components/ProgressBar";
 import { sessionButtons } from "../components/sessionRules";
-import { CancelWorkoutDialog, RestoreWorkoutDialog, WorkoutDialog } from "../components/WorkoutDialogs";
+import {
+  CancelWorkoutDialog,
+  GeneratePhaseScheduleDialog,
+  RestoreWorkoutDialog,
+  WorkoutDialog,
+} from "../components/WorkoutDialogs";
 import {
   ABNORMAL_SIGN_LABEL,
   EXERCISE_TYPE_LABEL,
@@ -37,6 +42,7 @@ type PlanWithSessions = TrainingPlan & { sessions: ExerciseSession[] };
 type Dialog =
   | { kind: "activate" | "complete" | "cancel" | "clone" }
   | { kind: "add" }
+  | { kind: "generateSchedule"; phase: TrainingPhase }
   | { kind: "edit" | "cancelWorkout" | "restore"; session: ExerciseSession }
   | null;
 
@@ -225,7 +231,14 @@ export default function PlanDetailPage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 280px), 1fr))", gap: "1rem" }}>
           {plan.phases.length === 0 && <EmptyState title={tr("No phases")} />}
           {plan.phases.map((ph) => (
-            <PhaseCard key={ph.id} phase={ph} sessions={sessions.filter((s) => s.phaseId === ph.id)} current={ph.startDate <= today && today <= ph.endDate} />
+            <PhaseCard
+              key={ph.id}
+              phase={ph}
+              sessions={sessions.filter((s) => s.phaseId === ph.id)}
+              current={ph.startDate <= today && today <= ph.endDate}
+              canEdit={isTrainer && open}
+              onGenerateSchedule={() => setDialog({ kind: "generateSchedule", phase: ph })}
+            />
           ))}
         </div>
       )}
@@ -377,6 +390,14 @@ export default function PlanDetailPage() {
           }}
         />
       )}
+      {dialog?.kind === "generateSchedule" && (
+        <GeneratePhaseScheduleDialog
+          plan={plan}
+          phase={dialog.phase}
+          onClose={() => setDialog(null)}
+          onGenerated={() => void load()}
+        />
+      )}
       {dialog?.kind === "cancelWorkout" && (
         <CancelWorkoutDialog session={dialog.session} onClose={() => setDialog(null)} onDone={() => void load()} />
       )}
@@ -387,24 +408,49 @@ export default function PlanDetailPage() {
   );
 }
 
-/** Một giai đoạn: định mức vs thực tế; tuần vượt cự ly định mức có nhãn cam. */
-function PhaseCard({ phase, sessions, current }: { phase: TrainingPhase; sessions: ExerciseSession[]; current: boolean }) {
+/** Một giai đoạn: định mức vs thực tế; tuần vượt cự ly định mức hoặc số buổi có cảnh báo. */
+function PhaseCard({
+  phase,
+  sessions,
+  current,
+  canEdit,
+  onGenerateSchedule,
+}: {
+  phase: TrainingPhase;
+  sessions: ExerciseSession[];
+  current: boolean;
+  canEdit?: boolean;
+  onGenerateSchedule?: () => void;
+}) {
+  const { isVietnamese } = useAppLanguage();
   const done = sessions.filter((s) => s.status === "COMPLETED");
   const run = done.reduce((sum, s) => sum + distanceOf(s), 0);
   const weekly = new Map<string, number>();
+  const weeklyCounts = new Map<string, number>();
   for (const s of sessions.filter((x) => x.status !== "CANCELLED")) {
     const key = mondayOf(s.sessionDate);
     weekly.set(key, (weekly.get(key) ?? 0) + distanceOf(s));
+    weeklyCounts.set(key, (weeklyCounts.get(key) ?? 0) + 1);
   }
   const overWeeks = [...weekly.entries()].filter(([, m]) => m > phase.maxWeeklyDistance).map(([w]) => w);
+  const overSessionWeeks = [...weeklyCounts.entries()]
+    .filter(([, count]) => count > phase.sessionsPerWeek)
+    .map(([w, count]) => ({ week: w, count }));
 
   return (
     <Card pad={16}>
       <div className={`${styles.phaseCard} ${current ? styles.currentPhase : ""}`}>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-          <strong className={styles.phaseName}>{phase.name}</strong>
-          <Badge tone="neutral">{PHASE_TYPE_LABEL[phase.type] ?? phase.type}</Badge>
-          {current && <Badge tone="info">{tr("Current")}</Badge>}
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            <strong className={styles.phaseName}>{phase.name}</strong>
+            <Badge tone="neutral">{PHASE_TYPE_LABEL[phase.type] ?? phase.type}</Badge>
+            {current && <Badge tone="info">{tr("Current")}</Badge>}
+          </div>
+          {canEdit && onGenerateSchedule && (
+            <Button size="sm" tone="primary" onClick={onGenerateSchedule}>
+              {isVietnamese ? "⚡ Sinh lịch" : tr("⚡ Generate")}
+            </Button>
+          )}
         </div>
         <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>
           {phase.startDate} → {phase.endDate}
@@ -420,6 +466,15 @@ function PhaseCard({ phase, sessions, current }: { phase: TrainingPhase; session
         {overWeeks.map((w) => (
           <div key={w} style={{ marginTop: "0.25rem" }}>
             <Badge tone="warn">{tr("Over quota – week of {{week}}", { week: w })}</Badge>
+          </div>
+        ))}
+        {overSessionWeeks.map(({ week, count }) => (
+          <div key={week} style={{ marginTop: "0.25rem" }}>
+            <Badge tone="warn">
+              {isVietnamese
+                ? `Cảnh báo BR-2.21: Tuần ${week} có ${count} buổi (vượt ${phase.sessionsPerWeek} buổi/tuần)`
+                : tr("BR-2.21: {{count}} workouts (exceeds {{quota}}/week)", { count, quota: phase.sessionsPerWeek })}
+            </Badge>
           </div>
         ))}
       </div>

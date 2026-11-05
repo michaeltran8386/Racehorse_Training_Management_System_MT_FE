@@ -212,13 +212,13 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("training", "Training Overview", "chart", { i18nKey: "trainingOverview" }),
         item("plans", "Training Plans", "clipboard", { i18nKey: "trainingPlans", requires: "createPlan" }),
         item("calendar", "Weekly Calendar", "calendar", { requires: "assignSchedule" }),
-        item("trials", "Trial Runs", "play", { requires: "assignSchedule" }),
-        item("metrics", "Session Metrics", "pulse", { requires: "recordMetrics" }),
+        item("performance", "Horse Performance", "pulse"),
+        item("alerts", "Post-workout Alerts", "alert", { alert: true }),
       ],
     },
     {
-      label: "MONITORING",
-      items: [item("monitor", "Session Telemetry", "activity"), item("alerts", "Threshold Alerts", "alert", { alert: true })],
+      label: "SIMULATION",
+      items: [item("monitor", "Live Simulator", "activity")],
     },
     { label: "RACING", items: [item("races", "Race Entries", "trophy")] },
     {
@@ -238,7 +238,6 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("catalog", "Supplies Catalog", "package"),
       ],
     },
-    { label: "REPORTS", items: [item("progress", "Training Progress", "chart")] },
     { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
   ],
   VETERINARIAN: [

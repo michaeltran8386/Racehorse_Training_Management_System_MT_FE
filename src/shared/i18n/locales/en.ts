@@ -76,7 +76,7 @@ export const en = {
     trials: "Trial Runs",
     metrics: "Session Metrics",
     monitor: "Session Telemetry",
-    alerts: "Threshold Alerts",
+    alerts: "Post-workout Alerts",
     races: "Race Entries",
     records: "Medical Records",
     rx: "Prescriptions",

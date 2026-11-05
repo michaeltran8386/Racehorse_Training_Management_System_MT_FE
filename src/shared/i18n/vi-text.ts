@@ -2,6 +2,20 @@
 // Khóa là đúng câu tiếng Anh trong code; {{ten}} là biến trong câu ghép.
 // Thêm câu mới: thêm một dòng "English": "Tiếng Việt". Câu không có ở đây sẽ hiện tiếng Anh.
 export const VI_TEXT: Record<string, string> = {
+  "View chart": "Xem biểu đồ",
+  "Switch horse": "Đổi ngựa",
+  "⚡ Sinh lịch": "⚡ Sinh lịch",
+  "Please select at least one weekday.": "Vui lòng chọn ít nhất một thứ trong tuần.",
+  "Distance must be 200 to 10 000 m.": "Cự ly phải từ 200 đến 10 000 m.",
+  "Draft – not activated": "Nháp – chưa kích hoạt",
+  "Compared to 3-session prior average": "So với trung bình 3 buổi trước",
+  "Load score = Distance (km) × Repetitions × Intensity factor": "Điểm tải = Cự ly (km) × Số hiệp × Hệ số cường độ (Nhẹ: 1, Vừa: 2, Nặng: 3)",
+  "Without training plan": "Chưa có giáo án",
+  "With active plan": "Có giáo án đang áp dụng",
+  "With draft plan": "Có giáo án nháp",
+  "pts": "điểm",
+  "Post-workout Alerts": "Cảnh báo sau buổi tập",
+  "Post-workout alerts": "Cảnh báo sau buổi tập",
   "Training plan must last at least 1 week (7 days) between start date and end date.": "Giáo án phải kéo dài ít nhất 1 tuần (7 ngày) giữa thời điểm bắt đầu và thời điểm kết thúc.",
   "Phase {{name}} ({{phaseStart}} → {{phaseEnd}}) must be within the plan dates ({{planStart}} → {{planEnd}}).": "Giai đoạn {{name}} ({{phaseStart}} → {{phaseEnd}}) phải nằm trong thời gian của giáo án ({{planStart}} → {{planEnd}}).",
   "At least 1 week, at most 52 weeks": "Tối thiểu 1 tuần, tối đa 52 tuần",
