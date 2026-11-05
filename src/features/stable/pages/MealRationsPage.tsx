@@ -74,8 +74,9 @@ export default function MealRationsPage() {
   const stats = useMemo(() => {
     const totalActive = plans.filter((p) => p.status === 'APPROVED').length;
     const pendingReview = plans.filter((p) => p.status === 'PENDING_APPROVAL').length;
+    const draftCount = plans.filter((p) => p.status === 'DRAFT').length;
     const attentionCount = plans.filter((p) => !p.isWithinSafeRange).length;
-    return { totalActive, pendingReview, attentionCount };
+    return { totalActive, pendingReview, draftCount, attentionCount };
   }, [plans]);
 
   const statusBadgeTone: Record<string, 'neutral' | 'warn' | 'ok' | 'danger'> = {
@@ -88,8 +89,8 @@ export default function MealRationsPage() {
 
   const statusLabels: Record<string, string> = {
     DRAFT: tr('Draft'),
-    PENDING_APPROVAL: tr('Pending Approval'),
-    APPROVED: tr('Approved & Active'),
+    PENDING_APPROVAL: tr('Chờ xử lý'),
+    APPROVED: tr('Currently Active'),
     REJECTED: tr('Rejected'),
     ARCHIVED: tr('Archived'),
   };
@@ -119,7 +120,7 @@ export default function MealRationsPage() {
       <PageHeader
         title={tr('Nutrition & Feed Management')}
         description={tr(
-          'Manage horse feed rations, scientific dietary limits (1.5% - 3.0%), and veterinarian review workflows.',
+          'Quản lý khẩu phần ăn của ngựa, định lượng theo tỷ lệ trọng lượng (1.5% - 3.0%) do Huấn luyện viên trưởng thiết lập và áp dụng.',
         )}
         action={
           canCreate ? (
@@ -148,21 +149,19 @@ export default function MealRationsPage() {
             {stats.totalActive}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-            {tr('Approved plans in daily operation')}
+            {tr('Active plans in daily operation')}
           </div>
         </Card>
 
         <Card pad={16}>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-            {tr('Awaiting Vet Approval')}
+            {tr('Draft Plans')}
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: stats.pendingReview > 0 ? 'var(--warn)' : 'var(--color-text-secondary)', marginTop: '4px' }}>
-            {stats.pendingReview}
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: stats.draftCount > 0 ? 'var(--warn)' : 'var(--color-text-secondary)', marginTop: '4px' }}>
+            {stats.draftCount}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-            {isVet && stats.pendingReview > 0
-              ? tr('Pending review by you')
-              : tr('Submitted by Head Trainer')}
+            {tr('Khẩu phần đang soạn thảo')}
           </div>
         </Card>
 
@@ -194,10 +193,9 @@ export default function MealRationsPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {[
               { id: 'ALL', label: tr('All Plans') },
-              { id: 'PENDING_APPROVAL', label: tr('Pending Approval'), badge: stats.pendingReview },
-              { id: 'APPROVED', label: tr('Approved & Active') },
-              { id: 'DRAFT', label: tr('Drafts') },
-              { id: 'REJECTED', label: tr('Rejected') },
+              { id: 'APPROVED', label: tr('Currently Active'), badge: stats.totalActive },
+              { id: 'DRAFT', label: tr('Drafts'), badge: stats.draftCount },
+              { id: 'ARCHIVED', label: tr('Archived') },
             ].map((tab) => {
               const active = statusFilter === tab.id;
               return (
@@ -297,7 +295,7 @@ export default function MealRationsPage() {
         ) : (
           <Paged items={filteredPlans} noun="plans">{(pagePlans) => (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem', tableLayout: 'fixed' }}>
               <thead>
                 <tr
                   style={{
@@ -306,14 +304,14 @@ export default function MealRationsPage() {
                     color: 'var(--color-text-secondary)',
                   }}
                 >
-                  <th style={{ padding: '0.75rem 1rem' }}>{tr('Plan Code')}</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>{tr('Horse')}</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>{tr('Stall / Zone')}</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>{tr('Daily Feed (kg)')}</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>{tr('Body Ratio (%BW)')}</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>{tr('Status')}</th>
-                  <th style={{ padding: '0.75rem 1rem' }}>{tr('Updated')}</th>
-                  <th style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>{tr('Actions')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '14%' }}>{tr('Plan Code')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '20%' }}>{tr('Horse')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '14%' }}>{tr('Stall / Zone')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '13%' }}>{tr('Daily Feed (kg)')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '15%' }}>{tr('Body Ratio (%BW)')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '12%' }}>{tr('Status')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '12%' }}>{tr('Updated')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '10%', textAlign: 'right' }}>{tr('Actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -416,9 +414,7 @@ export default function MealRationsPage() {
                             tone="secondary"
                             onClick={() => setDetailPlan(p)}
                           >
-                            {p.status === 'PENDING_APPROVAL' && isVet
-                              ? tr('Review')
-                              : tr('Details')}
+                            {tr('Details')}
                           </Button>
 
                           {canCreate && (p.status === 'DRAFT' || p.status === 'REJECTED') && (

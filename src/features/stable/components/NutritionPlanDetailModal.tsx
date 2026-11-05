@@ -90,7 +90,7 @@ export function NutritionPlanDetailModal({
     setError('');
     try {
       await nutritionApi.submitForApproval(plan.id);
-      toast.show(tr('Submitted for veterinarian review.'), 'ok');
+      toast.show(tr('Khẩu phần ăn đã được kích hoạt và áp dụng.'), 'ok');
       onRefresh();
       onClose();
     } catch (err) {
@@ -128,8 +128,8 @@ export function NutritionPlanDetailModal({
 
   const statusLabels: Record<string, string> = {
     DRAFT: tr('Draft'),
-    PENDING_APPROVAL: tr('Pending Approval'),
-    APPROVED: tr('Approved & Active'),
+    PENDING_APPROVAL: tr('Chờ xử lý'),
+    APPROVED: tr('Currently Active'),
     REJECTED: tr('Rejected'),
     ARCHIVED: tr('Archived'),
   };
@@ -487,7 +487,7 @@ export function NutritionPlanDetailModal({
                   {tr('Edit Plan')}
                 </Button>
                 <Button tone="primary" onClick={handleSubmitForApproval} disabled={busy}>
-                  {busy ? tr('Submitting...') : tr('Submit for Approval')}
+                  {busy ? tr('Applying...') : tr('Áp dụng khẩu phần')}
                 </Button>
               </>
             )}

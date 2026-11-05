@@ -248,11 +248,6 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("dashboard", "Dashboard", "home"),
         item("horses", "Horses", "horse", { requires: "viewHorses" }),
         item("stalls", "Stall Map", "grid"),
-        item("stable/shifts", "Shift Roster", "calendar", { i18nKey: "shiftRoster" }),
-        item("rations", "Meal Rations", "wheat", { i18nKey: "rations" }),
-        item("supplies/inventory", "Zone Inventory", "layers", { i18nKey: "zoneInventory" }),
-        item("supplies/requests", "Restock Requests", "clipboard", { i18nKey: "restockRequests" }),
-        item("catalog", "Supplies Catalog", "package"),
       ],
     },
     {
@@ -267,7 +262,6 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("incidents", "Incident Reports", "camera", { requires: "viewMedical" }),
       ],
     },
-    { label: "REPORTS", items: [item("health-report", "Health Reports", "chart", { requires: "viewMedical" })] },
     { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
   ],
   GROOM: [
@@ -393,9 +387,8 @@ const sidebarOrder: Record<Role, [string, string[]][]> = {
   ],
   VETERINARIAN: [
     ["WORKSPACE", ["dashboard", "assistant"]],
-    ["MASTER DATA", masterData],
+    ["MASTER DATA", ["horses", "stalls"]],
     ["MEDICAL", ["herd", "records", "locks", "alerts", "vaccine", "incidents"]],
-    ["SUPPLIES", supply],
   ],
   GROOM: [
     ["WORKSPACE", ["dashboard", "assistant"]],
