@@ -317,7 +317,17 @@ export interface FitnessData {
 
 /** SC-2.01 tổng quan huấn luyện. */
 export interface OverviewRow {
-  horse: { id: string; name: string; horseCode?: string | null; status: string; isMedicalLocked: boolean };
+  horse: {
+    id: string;
+    name: string;
+    horseCode?: string | null;
+    status: string;
+    isMedicalLocked: boolean;
+    avatarUrl?: string | null;
+    breed?: string | null;
+    gender?: string | null;
+    stallCode?: string | null;
+  };
   plan: { id: string; planCode?: string | null; name: string; status?: PlanStatus } | null;
   currentPhase: { name: string; week: number; weeks: number } | null;
   progress: { completed: number; total?: number; due: number; overdue?: number } | null;
@@ -336,6 +346,10 @@ export interface TrainingOverview {
     todayTotal: number;
     blockedNext7Days: number;
     loadSpikeHorses: number;
+    horsesInTraining?: number;
+    horsesWithoutPlan?: number;
+    horsesDraftPlan?: number;
+    horsesInjuredOrLocked?: number;
   };
   rows: OverviewRow[];
 }

@@ -1,6 +1,6 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button, LinkButton } from "@/shared/components/ui/Button";
@@ -31,6 +31,7 @@ export default function TrainingOverviewPage() {
   useScreenTranslation();
   const { isVietnamese } = useAppLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const user = useCurrentUser();
   const [data, setData] = useState<TrainingOverview | null>(null);
   const [error, setError] = useState("");
@@ -38,6 +39,16 @@ export default function TrainingOverviewPage() {
   const [planFilter, setPlanFilter] = useState("ALL");
   const [spikeOnly, setSpikeOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("name");
+
+  useEffect(() => {
+    const f = searchParams.get("filter") ?? searchParams.get("plan");
+    if (f === "ACTIVE" || f === "DRAFT" || f === "NONE" || f === "LOCKED") {
+      setPlanFilter(f);
+    }
+    if (f === "SPIKE") {
+      setSpikeOnly(true);
+    }
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     setError("");
@@ -73,7 +84,8 @@ export default function TrainingOverviewPage() {
         (planFilter === "ALL" ||
           (planFilter === "ACTIVE" && r.plan?.status === "ACTIVE") ||
           (planFilter === "DRAFT" && r.plan?.status === "DRAFT") ||
-          (planFilter === "NONE" && !r.plan)) &&
+          (planFilter === "NONE" && !r.plan) ||
+          (planFilter === "LOCKED" && (r.horse.isMedicalLocked || r.horse.status === "INJURED" || r.horse.status === "UNDER_OBSERVATION"))) &&
         (!spikeOnly || r.loadSpike),
     )
     .sort((a, b) => {
@@ -104,29 +116,72 @@ export default function TrainingOverviewPage() {
       />
 
       <div className={styles.metrics}>
-        <Link to="/training/plans?status=ACTIVE" style={{ color: "inherit", textDecoration: "none" }}>
-          <Card pad={16}>
+        <button
+          type="button"
+          onClick={() => { setPlanFilter(planFilter === "ACTIVE" ? "ALL" : "ACTIVE"); setSpikeOnly(false); }}
+          className={styles.metricButton}
+          title={isVietnamese ? "Lọc ngựa đang huấn luyện" : "Filter active plans"}
+        >
+          <Card pad={16} className={planFilter === "ACTIVE" ? styles.activeMetricCard : undefined}>
             <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Active plans")}</div>
-            <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700 }}>{k.activePlans} / {k.managedHorses}</div>
-            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr("horses managed")}</div>
+            <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700, color: planFilter === "ACTIVE" ? "var(--brand)" : undefined }}>
+              {k.activePlans} / {k.managedHorses}
+            </div>
+            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{isVietnamese ? "ngựa đang huấn luyện" : tr("horses managed")}</div>
           </Card>
-        </Link>
-        <Link to="/training/calendar" style={{ color: "inherit", textDecoration: "none" }}>
-          <Card pad={16}>
-            <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Workouts today")}</div>
-            <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700 }}>{k.todayCompleted}/{k.todayTotal}</div>
-            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr("completed")}</div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setPlanFilter(planFilter === "NONE" ? "ALL" : "NONE"); setSpikeOnly(false); }}
+          className={styles.metricButton}
+          title={isVietnamese ? "Lọc ngựa chưa có giáo án" : "Filter horses without plan"}
+        >
+          <Card pad={16} className={planFilter === "NONE" ? styles.activeMetricCard : undefined}>
+            <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>
+              {isVietnamese ? "Chưa có giáo án" : tr("Without plan")}
+            </div>
+            <div style={{
+              fontSize: "var(--fs-h1)",
+              fontWeight: 700,
+              color: (k.horsesWithoutPlan ?? 0) > 0 ? "#d97706" : undefined,
+            }}>
+              {k.horsesWithoutPlan ?? 0}
+            </div>
+            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+              {isVietnamese ? "ngựa cần lập kế hoạch" : tr("needs planning")}
+            </div>
           </Card>
-        </Link>
-        <Link to="/training/calendar?status=BLOCKED" style={{ color: "inherit", textDecoration: "none" }}>
-          <Card pad={16}>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setPlanFilter(planFilter === "LOCKED" ? "ALL" : "LOCKED"); setSpikeOnly(false); }}
+          className={styles.metricButton}
+          title={isVietnamese ? "Lọc ngựa bị khóa y tế / chấn thương" : "Filter locked horses"}
+        >
+          <Card pad={16} className={planFilter === "LOCKED" ? styles.activeMetricCard : undefined}>
             <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Blocked by Training Lock")}</div>
-            <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700, color: k.blockedNext7Days ? "var(--danger)" : undefined }}>{k.blockedNext7Days}</div>
-            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr("in the next 7 days")}</div>
+            <div style={{
+              fontSize: "var(--fs-h1)",
+              fontWeight: 700,
+              color: (k.horsesInjuredOrLocked ?? k.blockedNext7Days) ? "var(--danger)" : undefined,
+            }}>
+              {k.horsesInjuredOrLocked ?? k.blockedNext7Days}
+            </div>
+            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+              {isVietnamese ? "ngựa hạn chế bài tập" : tr("in the next 7 days")}
+            </div>
           </Card>
-        </Link>
-        <button type="button" onClick={() => setSpikeOnly(true)} className={styles.metricButton}>
-          <Card pad={16}>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setSpikeOnly(!spikeOnly); setPlanFilter("ALL"); }}
+          className={styles.metricButton}
+          title={isVietnamese ? "Lọc tải trọng tăng đột ngột" : "Filter load spike"}
+        >
+          <Card pad={16} className={spikeOnly ? styles.activeMetricCard : undefined}>
             <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Sudden load increase")}</div>
             <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700, color: k.loadSpikeHorses ? "var(--warn)" : undefined }}>{k.loadSpikeHorses}</div>
             <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr("horses above 130% of their 4-week average")}</div>
@@ -144,9 +199,10 @@ export default function TrainingOverviewPage() {
               onChange={(e) => setPlanFilter(e.target.value)}
               options={[
                 { value: "ALL", label: tr("All horses") },
-                { value: "ACTIVE", label: isVietnamese ? "Có giáo án đang áp dụng" : tr("With an active plan") },
+                { value: "ACTIVE", label: isVietnamese ? "Đang huấn luyện (Có giáo án)" : tr("With an active plan") },
+                { value: "NONE", label: isVietnamese ? "Chưa có giáo án (Cần xếp lịch)" : tr("Without training plan") },
                 { value: "DRAFT", label: isVietnamese ? "Có giáo án nháp" : tr("With a draft plan") },
-                { value: "NONE", label: isVietnamese ? "Chưa có giáo án" : tr("Without training plan") },
+                { value: "LOCKED", label: isVietnamese ? "Khóa y tế / Chấn thương" : tr("Medically locked / Injured") },
               ]}
             />
           </div>
@@ -204,8 +260,20 @@ export default function TrainingOverviewPage() {
                         <span className="sr-only">{tr("Training Lock")}</span>
                       </span>
                     )}
-                        <div style={{ display: "flex", gap: "0.35rem", alignItems: "center" }}>
+                        <div style={{ display: "flex", gap: "0.35rem", alignItems: "center", marginTop: "2px" }}>
                           <span style={{ color: "var(--text-muted)" }}>{r.horse.horseCode}</span>
+                          {r.horse.stallCode && (
+                            <span style={{
+                              fontSize: "10px",
+                              color: "var(--text)",
+                              background: "var(--surface-sunken)",
+                              padding: "1px 5px",
+                              borderRadius: "3px",
+                              fontWeight: 600,
+                            }}>
+                              {r.horse.stallCode}
+                            </span>
+                          )}
                           <Badge tone={st.tone as never}>{st.label}</Badge>
                         </div>
                       </td>

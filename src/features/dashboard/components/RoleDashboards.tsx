@@ -578,19 +578,70 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
 export function TrainerDashboard() {
   const { isVietnamese: isVi } = useAppLanguage();
   const overview = useLoaded(() => trainingApi.getOverview());
-  const k = overview.data?.kpis;
+  const data = overview.data;
+  const k = data?.kpis;
+  const rows = data?.rows ?? [];
+
+  const totalHorses = k?.managedHorses ?? rows.length;
+  const inTraining = k?.horsesInTraining ?? rows.filter((r) => r.plan?.status === "ACTIVE").length;
+  const withoutPlan = k?.horsesWithoutPlan ?? rows.filter((r) => !r.plan).length;
+  const draftPlan = k?.horsesDraftPlan ?? rows.filter((r) => r.plan?.status === "DRAFT").length;
+  const injuredOrLocked =
+    k?.horsesInjuredOrLocked ??
+    rows.filter((r) => r.horse.isMedicalLocked || r.horse.status === "INJURED" || r.horse.status === "UNDER_OBSERVATION").length;
+
+  const pctInTraining = totalHorses > 0 ? Math.round((inTraining / totalHorses) * 100) : 0;
+  const pctDraft = totalHorses > 0 ? Math.round((draftPlan / totalHorses) * 100) : 0;
+  const pctWithout = totalHorses > 0 ? Math.round((withoutPlan / totalHorses) * 100) : 0;
+  const pctLocked = totalHorses > 0 ? Math.round((injuredOrLocked / totalHorses) * 100) : 0;
+
+  // Ngựa cần phân bổ giáo án (chưa có giáo án hoặc đang ở bản nháp)
+  const unassignedHorses = rows.filter((r) => !r.plan || r.plan.status === "DRAFT");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      {/* 4 Thẻ KPI chính */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "16px" }}>
         <InteractiveKpiCard
           icon="activity"
           iconBg="var(--ok-bg)"
           iconColor="var(--ok)"
-          label={isVi ? "Giáo án đang hoạt động" : "Active training plans"}
-          value={k?.activePlans ?? "—"}
-          trend={<span>{isVi ? "Đang huấn luyện tích cực" : "Active coaching"}</span>}
-          to="/training/plans"
+          label={isVi ? "Đang huấn luyện" : "In training"}
+          value={overview.loading ? "—" : `${inTraining} / ${totalHorses}`}
+          trend={<span>{pctInTraining}% {isVi ? "đàn ngựa" : "of herd"}</span>}
+          to="/training?filter=ACTIVE"
+        />
+        <InteractiveKpiCard
+          icon="alert"
+          iconBg={withoutPlan > 0 ? "rgba(245, 158, 11, 0.15)" : "var(--surface-sunken)"}
+          iconColor={withoutPlan > 0 ? "#f59e0b" : "var(--muted)"}
+          label={isVi ? "Chưa có giáo án" : "Needs training plan"}
+          value={overview.loading ? "—" : withoutPlan}
+          trend={
+            withoutPlan > 0 ? (
+              <span style={{ color: "#d97706", fontWeight: 700 }}>
+                {isVi ? "⚠️ Cần lập kế hoạch" : "Action needed"}
+              </span>
+            ) : (
+              <span style={{ color: "var(--ok)", fontWeight: 600 }}>
+                {isVi ? "✓ Đã phân bổ 100%" : "✓ Fully assigned"}
+              </span>
+            )
+          }
+          to="/training?filter=NONE"
+        />
+        <InteractiveKpiCard
+          icon="lock"
+          iconBg={injuredOrLocked > 0 ? "var(--danger-bg)" : "var(--surface-sunken)"}
+          iconColor={injuredOrLocked > 0 ? "var(--danger)" : "var(--muted)"}
+          label={isVi ? "Khóa y tế / Chấn thương" : "Medical lock / Injured"}
+          value={overview.loading ? "—" : injuredOrLocked}
+          trend={
+            <span style={{ color: injuredOrLocked > 0 ? "var(--danger)" : "var(--muted)" }}>
+              {isVi ? "Cấm bài tập nặng" : "Heavy blocked"}
+            </span>
+          }
+          to="/locks"
         />
         <InteractiveKpiCard
           icon="calendar"
@@ -599,41 +650,280 @@ export function TrainerDashboard() {
           label={isVi ? "Buổi tập hôm nay" : tr("Today's workouts")}
           value={k ? `${k.todayCompleted}/${k.todayTotal}` : "—"}
           trend={<span>{isVi ? "Hoàn thành / Kế hoạch" : "Done / Planned"}</span>}
-          to="/training"
-        />
-        <InteractiveKpiCard
-          icon="lock"
-          iconBg="var(--danger-bg)"
-          iconColor="var(--danger)"
-          label={isVi ? "Bị khóa y tế (7 ngày tới)" : tr("Blocked (7 days)")}
-          value={k?.blockedNext7Days ?? "—"}
-          trend={<span style={{ color: "var(--danger)" }}>{isVi ? "Cấm bài tập nặng" : "Heavy blocked"}</span>}
-          to="/locks"
-        />
-        <InteractiveKpiCard
-          icon="alert"
-          iconBg="var(--warn-bg)"
-          iconColor="var(--warn)"
-          label={isVi ? "Tải trọng tăng đột ngột" : tr("Load spike")}
-          value={k?.loadSpikeHorses ?? "—"}
-          trend={<span style={{ color: "var(--warn)" }}>ACWR {">"} 1.3</span>}
-          to="/training"
+          to="/training/calendar"
         />
       </div>
 
+      {/* Thanh phân bổ tỷ lệ đàn ngựa */}
+      <Card pad={20}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+          <div>
+            <h3 className={styles.widgetTitle} style={{ fontSize: "1.1rem" }}>
+              {isVi ? "Tỷ lệ sẵn sàng huấn luyện của đàn ngựa" : "Herd Training Readiness Breakdown"}
+            </h3>
+            <p style={{ margin: "4px 0 0 0", color: "var(--muted)", fontSize: "var(--fs-xs)" }}>
+              {isVi
+                ? `Tổng số ${totalHorses} ngựa đang quản lý tại câu lạc bộ TMEC`
+                : `Total ${totalHorses} managed horses in TMEC club`}
+            </p>
+          </div>
+          <Link to="/training" style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)", fontWeight: 600 }}>
+            {isVi ? "Xem bảng tổng quan chi tiết →" : "View training overview →"}
+          </Link>
+        </div>
+
+        {/* Thanh Progress phân đoạn */}
+        <div style={{
+          display: "flex",
+          height: 12,
+          borderRadius: 6,
+          overflow: "hidden",
+          background: "var(--surface-sunken)",
+          marginBottom: "12px",
+        }}>
+          {pctInTraining > 0 && (
+            <div
+              title={`${isVi ? "Đang huấn luyện" : "In training"}: ${inTraining} (${pctInTraining}%)`}
+              style={{ width: `${pctInTraining}%`, background: "var(--ok)", transition: "width 0.3s" }}
+            />
+          )}
+          {pctDraft > 0 && (
+            <div
+              title={`${isVi ? "Bản nháp" : "Draft"}: ${draftPlan} (${pctDraft}%)`}
+              style={{ width: `${pctDraft}%`, background: "var(--info)", transition: "width 0.3s" }}
+            />
+          )}
+          {pctWithout > 0 && (
+            <div
+              title={`${isVi ? "Chưa có giáo án" : "Needs plan"}: ${withoutPlan} (${pctWithout}%)`}
+              style={{ width: `${pctWithout}%`, background: "#f59e0b", transition: "width 0.3s" }}
+            />
+          )}
+          {pctLocked > 0 && (
+            <div
+              title={`${isVi ? "Khóa y tế / Chấn thương" : "Medical lock"}: ${injuredOrLocked} (${pctLocked}%)`}
+              style={{ width: `${pctLocked}%`, background: "var(--danger)", transition: "width 0.3s" }}
+            />
+          )}
+        </div>
+
+        {/* Chú giải phân bổ */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", fontSize: "var(--fs-xs)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--ok)" }} />
+            <span>{isVi ? "Đang huấn luyện:" : "In training:"} <strong>{inTraining}</strong> ({pctInTraining}%)</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--info)" }} />
+            <span>{isVi ? "Giáo án nháp:" : "Draft plans:"} <strong>{draftPlan}</strong> ({pctDraft}%)</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
+            <span>{isVi ? "Chưa có giáo án:" : "Needs plan:"} <strong>{withoutPlan}</strong> ({pctWithout}%)</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--danger)" }} />
+            <span>{isVi ? "Khóa y tế / Chấn thương:" : "Medical lock:"} <strong>{injuredOrLocked}</strong> ({pctLocked}%)</span>
+          </div>
+        </div>
+      </Card>
+
+      {/* Widget trung tâm: Ngựa cần phân bổ giáo án & Lên lịch */}
+      <Card pad={20}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <h3 className={styles.widgetTitle} style={{ fontSize: "1.2rem" }}>
+              {isVi ? "Ngựa cần phân bổ giáo án & lên lịch" : "Horses Needing Training Plans"}
+            </h3>
+            {unassignedHorses.length > 0 && (
+              <Badge tone="warn">
+                {isVi ? `${unassignedHorses.length} ngựa cần xếp lịch` : `${unassignedHorses.length} pending`}
+              </Badge>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+            <LinkButton to="/training/plans/new" tone="primary" size="sm">
+              {isVi ? "+ Tạo giáo án mới" : "+ New Plan"}
+            </LinkButton>
+            <Link to="/training?filter=NONE" style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)" }}>
+              {isVi ? "Xem tất cả →" : "View all →"}
+            </Link>
+          </div>
+        </div>
+
+        {unassignedHorses.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              background: "var(--ok-bg)",
+              color: "var(--ok)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto 12px auto",
+            }}>
+              <Icon name="check" size={24} />
+            </div>
+            <h4 style={{ margin: "0 0 6px 0", fontSize: "var(--fs-body)", fontWeight: 700 }}>
+              {isVi ? "Toàn bộ ngựa đang quản lý đã có giáo án huấn luyện" : "All horses have assigned training plans"}
+            </h4>
+            <p style={{ margin: "0 0 16px 0", color: "var(--muted)", fontSize: "var(--fs-sm)" }}>
+              {isVi
+                ? "Không có ngựa nào chưa được xếp lịch tập hoặc bị tồn đọng. Đàn ngựa đang hoạt động đúng kế hoạch."
+                : "All managed horses are actively trained with no unassigned horses."}
+            </p>
+            <LinkButton to="/training" tone="secondary" size="sm">
+              {isVi ? "Xem tổng quan huấn luyện" : "View Training Overview"}
+            </LinkButton>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "var(--fs-sm)" }}>
+              <thead>
+                <tr style={{ borderBottom: "1px solid var(--border)", textAlign: "left", color: "var(--muted)" }}>
+                  <th style={{ padding: "8px 12px", fontWeight: 600 }}>{isVi ? "Ngựa" : "Horse"}</th>
+                  <th style={{ padding: "8px 12px", fontWeight: 600 }}>{isVi ? "Chuồng nuôi" : "Stall"}</th>
+                  <th style={{ padding: "8px 12px", fontWeight: 600 }}>{isVi ? "Tình trạng y tế" : "Medical Status"}</th>
+                  <th style={{ padding: "8px 12px", fontWeight: 600 }}>{isVi ? "Tình trạng giáo án" : "Plan Status"}</th>
+                  <th style={{ padding: "8px 12px", fontWeight: 600, textAlign: "right" }}>{isVi ? "Hành động" : "Action"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {unassignedHorses.map((r) => {
+                  const isLocked = r.horse.isMedicalLocked || r.horse.status === "INJURED";
+                  return (
+                    <tr key={r.horse.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                      <td style={{ padding: "10px 12px" }}>
+                        <Link to={`/horses/${r.horse.id}`} style={{ fontWeight: 700, color: "var(--text)" }}>
+                          {r.horse.name}
+                        </Link>
+                        <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
+                          {r.horse.horseCode ?? "—"} {r.horse.breed ? `· ${r.horse.breed}` : ""}
+                        </div>
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        {r.horse.stallCode ? (
+                          <span style={{
+                            fontSize: "var(--fs-xs)",
+                            background: "var(--surface-sunken)",
+                            padding: "2px 8px",
+                            borderRadius: 4,
+                            fontWeight: 600,
+                          }}>
+                            {r.horse.stallCode}
+                          </span>
+                        ) : (
+                          <span style={{ color: "var(--muted)", fontSize: "var(--fs-xs)" }}>
+                            {isVi ? "Chưa xếp chuồng" : "No stall"}
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        {isLocked ? (
+                          <Badge tone="danger">
+                            {isVi ? "Khóa y tế / Chấn thương" : "Medical Lock"}
+                          </Badge>
+                        ) : (
+                          <Badge tone="ok">
+                            {isVi ? "Khỏe mạnh" : "Healthy"}
+                          </Badge>
+                        )}
+                      </td>
+                      <td style={{ padding: "10px 12px" }}>
+                        {r.plan?.status === "DRAFT" ? (
+                          <Badge tone="info">
+                            {isVi ? `Bản nháp: ${r.plan.name}` : `Draft: ${r.plan.name}`}
+                          </Badge>
+                        ) : (
+                          <Badge tone="warn">
+                            {isVi ? "Chưa có giáo án" : "No training plan"}
+                          </Badge>
+                        )}
+                      </td>
+                      <td style={{ padding: "10px 12px", textAlign: "right" }}>
+                        {r.plan?.status === "DRAFT" ? (
+                          <LinkButton to={`/training/plans/${r.plan.id}`} tone="secondary" size="sm">
+                            {isVi ? "Xem & Kích hoạt" : "Review & Activate"}
+                          </LinkButton>
+                        ) : (
+                          <LinkButton
+                            to={`/training/plans/new?horseId=${r.horse.id}`}
+                            tone="primary"
+                            size="sm"
+                          >
+                            {isVi ? "+ Lập giáo án" : "+ Setup Plan"}
+                          </LinkButton>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      {/* Grid phụ bên dưới: Cảnh báo tải trọng & Lịch tập, Giải đấu sắp tới */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap: "20px" }}>
         <Card pad={20}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-            <h3 className={styles.widgetTitle}>
-              {isVi ? "Ngựa cần theo dõi phong độ" : tr("Horses to watch")}
+            <h3 className={styles.widgetTitle} style={{ fontSize: "1.1rem" }}>
+              {isVi ? "Tải trọng & Buổi tập cần chú ý" : "Load & Workout Alerts"}
             </h3>
-            <Link to="/training" style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)" }}>
-              {isVi ? "Xem tổng quan →" : tr("Overview →")}
+            <Link to="/training/alerts" style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)" }}>
+              {isVi ? "Cảnh báo sau buổi tập →" : "Alerts →"}
             </Link>
           </div>
-          <p style={{ margin: 0, color: "var(--muted)", fontSize: "var(--fs-sm)" }}>
-            {k ? (isVi ? `${k.loadSpikeHorses} ngựa có tải trọng tăng đột ngột.` : `${k.loadSpikeHorses} ${k.loadSpikeHorses === 1 ? "horse" : "horses"} with a load spike.`) : (isVi ? "Chưa có dữ liệu tải trọng." : "Training load data is unavailable.")}
-          </p>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 14px",
+              background: (k?.loadSpikeHorses ?? 0) > 0 ? "rgba(245, 158, 11, 0.1)" : "var(--surface-sunken)",
+              borderRadius: 6,
+            }}>
+              <div>
+                <strong style={{ display: "block", color: "var(--text)" }}>
+                  {isVi ? "Nguy cơ quá tải đột ngột (ACWR > 1.3)" : "Sudden load increase (ACWR > 1.3)"}
+                </strong>
+                <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
+                  {isVi ? "So sánh tải trọng 7 ngày với trung bình 4 tuần" : "7-day load compared to 4-week avg"}
+                </span>
+              </div>
+              <span style={{
+                fontSize: "1.2rem",
+                fontWeight: 700,
+                color: (k?.loadSpikeHorses ?? 0) > 0 ? "#d97706" : "var(--muted)",
+              }}>
+                {k?.loadSpikeHorses ?? 0} {isVi ? "ngựa" : "horses"}
+              </span>
+            </div>
+
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 14px",
+              background: "var(--surface-sunken)",
+              borderRadius: 6,
+            }}>
+              <div>
+                <strong style={{ display: "block", color: "var(--text)" }}>
+                  {isVi ? "Tiến độ buổi tập hôm nay" : "Today's workout progress"}
+                </strong>
+                <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
+                  {isVi ? "Theo lịch huấn luyện của câu lạc bộ" : "Per club training schedule"}
+                </span>
+              </div>
+              <LinkButton to="/training/calendar" tone="secondary" size="sm">
+                {isVi ? "Xem lịch tập" : "View calendar"}
+              </LinkButton>
+            </div>
+          </div>
         </Card>
 
         <UpcomingTournamentsWidget />

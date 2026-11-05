@@ -15,5 +15,6 @@
 .table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--fs-body); }
 .table th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
 .table tbody tr:hover { background: var(--surface-row-hover); }
+.activeMetricCard { border-color: var(--brand) !important; background: var(--surface-row-hover); box-shadow: 0 0 0 1px var(--brand); }
 @media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 520px) { .metrics { gap: 8px; } .metrics > a > section > div, .metrics > button > section > div { min-height: 104px; } .filter { flex: 1 1 100%; } .search { width: 100%; } }
