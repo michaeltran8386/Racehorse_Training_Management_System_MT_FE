@@ -6,6 +6,7 @@ import { Button } from '@/shared/components/ui/Button';
 import { Alert } from '@/shared/components/ui/Alert';
 import { Badge } from '@/shared/components/ui/Badge';
 import { useToast } from '@/shared/components/ui/Toast';
+import { useAppLanguage } from '@/shared/lib/language';
 import { messageFor } from '@/shared/lib/messages';
 import { tr } from '@/shared/i18n/tr';
 import { assignShiftSlot } from '../api/shiftRosterApi';
@@ -16,6 +17,11 @@ import type {
 } from '../types/shiftRoster';
 import type { ShiftCatalogItem } from '@/features/master-data/types/supplies';
 import type { Zone } from '../types';
+import {
+  getLocalizedShiftName,
+  getLocalizedZoneName,
+  parseGroomInfo,
+} from '../utils/shiftLocalization';
 
 interface ShiftRosterModalProps {
   date: string; // YYYY-MM-DD
@@ -41,6 +47,7 @@ export function ShiftRosterModal({
   onSaved,
 }: ShiftRosterModalProps) {
   const toast = useToast();
+  const { isVietnamese: isVi } = useAppLanguage();
   const initialGroomIds = currentRosters.map((r) => r.groomUserId);
   const [selectedGroomIds, setSelectedGroomIds] = useState<string[]>(initialGroomIds);
   const [applyScope, setApplyScope] = useState<ApplyScope>('ONLY_THIS_DAY');
@@ -122,17 +129,20 @@ export function ShiftRosterModal({
 
   return (
     <Modal
-      title={tr('Assign Shift: {{zone}} – {{shift}}', { zone: zone.name, shift: shift.name })}
+      title={tr('Assign Shift: {{zone}} – {{shift}}', {
+        zone: getLocalizedZoneName(zone, isVi),
+        shift: getLocalizedShiftName(shift, isVi),
+      })}
       onClose={handleClose}
     >
       <form onSubmit={handleSave} className="space-y-4">
         {error && <Alert tone="danger">{error}</Alert>}
 
-        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.5rem' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.875rem' }}>
             {tr('Duty Date:')} <strong>{formattedDate}</strong>
           </span>
-          <Badge tone="brand">{tr('Time slot:')} {shift.startTime} - {shift.endTime}</Badge>
+          <Badge tone="brand">{tr('Time slot:')} {shift.startTime} – {shift.endTime}</Badge>
           {shift.isOvernight && <Badge tone="warn">{tr('Overnight Shift')}</Badge>}
         </div>
 
@@ -142,7 +152,7 @@ export function ShiftRosterModal({
         >
           <div
             style={{
-              maxHeight: '220px',
+              maxHeight: '240px',
               overflowY: 'auto',
               border: '1px solid var(--border)',
               borderRadius: 'var(--r-sm)',
@@ -160,6 +170,7 @@ export function ShiftRosterModal({
               allGrooms.map((groom) => {
                 const checked = selectedGroomIds.includes(groom.id);
                 const shiftCount = groomWeeklyCounts[groom.id] || 0;
+                const groomInfo = parseGroomInfo(groom.fullName, isVi);
                 return (
                   <label
                     key={groom.id}
@@ -167,22 +178,53 @@ export function ShiftRosterModal({
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.4rem 0.6rem',
+                      padding: '0.45rem 0.65rem',
                       borderRadius: 'var(--r-xs)',
-                      background: checked ? 'var(--surface-muted)' : 'transparent',
+                      background: checked ? 'var(--brand-50)' : 'transparent',
+                      border: checked ? '1px solid var(--brand-100)' : '1px solid transparent',
                       cursor: 'pointer',
+                      transition: 'background var(--dur-fast) ease',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', minWidth: 0 }}>
                       <input
                         type="checkbox"
                         checked={checked}
                         onChange={() => toggleGroom(groom.id)}
                       />
-                      <span style={{ fontWeight: checked ? 600 : 400 }}>{groom.fullName}</span>
-                      <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
-                        ({groom.email})
-                      </span>
+                      <div
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: 'var(--r-pill)',
+                          background: checked ? 'var(--brand)' : 'var(--surface-3)',
+                          color: checked ? '#ffffff' : 'var(--text)',
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                        aria-hidden="true"
+                      >
+                        {groomInfo.initialsText}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem', flexWrap: 'wrap' }}>
+                          <span style={{ fontWeight: checked ? 600 : 500, fontSize: '0.875rem', color: 'var(--text)' }}>
+                            {groomInfo.cleanName}
+                          </span>
+                          {groomInfo.roleLabel && (
+                            <Badge tone={checked ? 'brand' : 'neutral'}>
+                              {groomInfo.roleLabel}
+                            </Badge>
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>
+                          {groom.email}
+                        </span>
+                      </div>
                     </div>
                     <Badge tone={shiftCount > 5 ? 'warn' : 'neutral'}>
                       {tr('{{count}} shifts/week', { count: shiftCount })}

@@ -29,6 +29,11 @@ import type {
 } from '../types/shiftRoster';
 import { ShiftRosterModal } from '../components/ShiftRosterModal';
 import { CopyWeekRosterModal } from '../components/CopyWeekRosterModal';
+import {
+  getLocalizedShiftName,
+  getLocalizedZoneName,
+  parseGroomInfo,
+} from '../utils/shiftLocalization';
 
 function formatYMD(d: Date): string {
   const y = d.getFullYear();
@@ -200,10 +205,10 @@ export default function ShiftRosterPage() {
     return myShifts.filter((s) => s.zone.id === selectedZoneId);
   }, [myShifts, selectedZoneId]);
 
-  const zoneOptions = [
+  const zoneOptions = useMemo(() => [
     { value: 'ALL', label: tr('All Zones') },
-    ...zones.map((z) => ({ value: z.id, label: z.name })),
-  ];
+    ...zones.map((z) => ({ value: z.id, label: getLocalizedZoneName(z, isVi) })),
+  ], [zones, isVi]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
@@ -367,14 +372,14 @@ export default function ShiftRosterPage() {
                               }}
                             >
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <Badge tone="brand">{ms.shift.name}</Badge>
+                                <Badge tone="brand">{getLocalizedShiftName(ms.shift, isVi)}</Badge>
                                 <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>
                                   {ms.shift.startTime} – {ms.shift.endTime}
                                 </span>
                               </div>
 
                               <div style={{ fontSize: '0.875rem' }}>
-                                <span style={{ color: 'var(--muted)' }}>{tr('Zone:')}</span> <strong>{ms.zone.name}</strong>
+                                <span style={{ color: 'var(--muted)' }}>{tr('Zone:')}</span> <strong>{getLocalizedZoneName(ms.zone, isVi)}</strong>
                               </div>
 
                               {ms.notes && (
@@ -513,12 +518,21 @@ export default function ShiftRosterPage() {
                           {/* Tên khu gộp cho mọi ca của khu */}
                           {isFirstShiftOfZone && (
                             <th scope="rowgroup" rowSpan={shifts.length} className={rosterStyles.zoneCell}>
-                              {zone.name}
+                              {getLocalizedZoneName(zone, isVi)}
                             </th>
                           )}
                           <td className={rosterStyles.shiftCell}>
-                            <div style={{ fontWeight: 600 }}>{shift.name}</div>
-                            <div className={rosterStyles.shiftTime}>{shift.startTime}–{shift.endTime}</div>
+                            <div className={rosterStyles.shiftName}>
+                              {getLocalizedShiftName(shift, isVi)}
+                            </div>
+                            <div className={rosterStyles.shiftTime}>
+                              {shift.startTime}–{shift.endTime}
+                            </div>
+                            {shift.isOvernight && (
+                              <div style={{ marginTop: '0.25rem' }}>
+                                <Badge tone="warn">{tr('Overnight')}</Badge>
+                              </div>
+                            )}
                           </td>
 
                           {/* 7 ô cho 7 ngày trong tuần */}
@@ -531,18 +545,20 @@ export default function ShiftRosterPage() {
                             );
 
                             const hasGroom = slotRosters.length > 0;
+                            const localizedZone = getLocalizedZoneName(zone, isVi);
+                            const localizedShift = getLocalizedShiftName(shift, isVi);
 
                             return (
                               <td
                                 key={day.dateStr}
                                 className={[
                                   rosterStyles.cell,
-                                  !hasGroom ? rosterStyles.cellEmpty : day.isToday ? rosterStyles.cellToday : '',
+                                  day.isToday ? rosterStyles.cellToday : '',
                                   dayIndex === mobileDayIdx ? rosterStyles.selectedDay : rosterStyles.otherDay,
-                                ].join(' ')}
+                                ].filter(Boolean).join(' ')}
                                 role={isManager ? 'button' : undefined}
                                 tabIndex={isManager ? 0 : undefined}
-                                aria-label={isManager ? [zone.name, shift.name, day.formattedDMY, hasGroom ? slotRosters.map((r) => r.groom.fullName).join(', ') : tr('No groom assigned')].join(' · ') : undefined}
+                                aria-label={isManager ? [localizedZone, localizedShift, day.formattedDMY, hasGroom ? slotRosters.map((r) => parseGroomInfo(r.groom.fullName, isVi).cleanName).join(', ') : tr('No groom assigned')].join(' · ') : undefined}
                                 onKeyDown={isManager ? (event) => {
                                   if (event.key === 'Enter' || event.key === ' ') {
                                     event.preventDefault();
@@ -562,17 +578,45 @@ export default function ShiftRosterPage() {
                                 }}
                               >
                                 {hasGroom ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                    {slotRosters.map((r) => (
-                                      <div key={r.id} className={rosterStyles.groomChip}>
-                                        {r.groom.fullName}
-                                      </div>
-                                    ))}
+                                  <div className={rosterStyles.groomList}>
+                                    {slotRosters.map((r) => {
+                                      const groomInfo = parseGroomInfo(r.groom.fullName, isVi);
+                                      return (
+                                        <div
+                                          key={r.id}
+                                          className={rosterStyles.groomCard}
+                                          title={r.notes ? `${groomInfo.cleanName} · ${groomInfo.roleLabel} (${r.notes})` : `${groomInfo.cleanName} · ${groomInfo.roleLabel}`}
+                                        >
+                                          <div className={rosterStyles.groomAvatar} aria-hidden="true">
+                                            {groomInfo.initialsText}
+                                          </div>
+                                          <div className={rosterStyles.groomMeta}>
+                                            <span className={rosterStyles.groomName}>{groomInfo.cleanName}</span>
+                                            {groomInfo.roleLabel && (
+                                              <span className={rosterStyles.groomRole}>{groomInfo.roleLabel}</span>
+                                            )}
+                                          </div>
+                                          {r.notes && (
+                                            <span className={rosterStyles.groomNoteBadge} title={r.notes}>
+                                              <Icon name="clipboard" size={11} />
+                                            </span>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : isManager ? (
+                                  <div className={rosterStyles.emptySlotAction}>
+                                    <div className={rosterStyles.emptySlotIcon} aria-hidden="true">
+                                      <Icon name="plus" size={12} />
+                                    </div>
+                                    <span className={rosterStyles.emptySlotTitle}>{tr('+ Assign')}</span>
+                                    <span className={rosterStyles.emptySlotSubtext}>{tr('No groom assigned')}</span>
                                   </div>
                                 ) : (
-                                  <div className={rosterStyles.emptyText}>
-                                    <Icon name="alert" size={13} />
-                                    {tr('No groom assigned')}
+                                  <div className={rosterStyles.emptySlotReadOnly}>
+                                    <span className={rosterStyles.emptyDot} />
+                                    <span>{tr('No groom assigned')}</span>
                                   </div>
                                 )}
                               </td>
