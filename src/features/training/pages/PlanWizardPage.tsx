@@ -51,12 +51,26 @@ function validate(name: string, objective: string, start: string, end: string, p
   if (name.trim().length < 3 || name.trim().length > 150) return tr("Plan name must be 3 to 150 characters.");
   if (objective.trim().length < 10 || objective.trim().length > 1000) return tr("Objective must be 10 to 1000 characters.");
   if (end < start) return tr("End date must be on or after the start date.");
+  const s = new Date(`${start}T00:00:00Z`).getTime();
+  const e = new Date(`${end}T00:00:00Z`).getTime();
+  const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24));
+  if (diffDays < 7) {
+    return tr("Training plan must last at least 1 week (7 days) between start date and end date.");
+  }
   if (phases.length === 0) return tr("A plan needs at least one phase.");
   const sorted = [...phases].sort((a, b) => a.startDate.localeCompare(b.startDate));
   for (const [i, p] of sorted.entries()) {
     if (p.name.trim().length < 2) return tr("Each phase needs a name (2-100 characters).");
     if (p.endDate < p.startDate) return tr("Phase {{name}}: end date must be on or after the start date.", { name: p.name });
-    if (p.startDate < start || p.endDate > end) return tr("Phase {{name}} must be within the plan dates.", { name: p.name });
+    if (p.startDate < start || p.endDate > end) {
+      return tr("Phase {{name}} ({{phaseStart}} → {{phaseEnd}}) must be within the plan dates ({{planStart}} → {{planEnd}}).", {
+        name: p.name,
+        phaseStart: p.startDate,
+        phaseEnd: p.endDate,
+        planStart: start,
+        planEnd: end,
+      });
+    }
     if (i > 0 && p.startDate <= sorted[i - 1].endDate) return tr("Phase {{name}} overlaps phase {{prev}}.", { name: p.name, prev: sorted[i - 1].name });
   }
   return "";
@@ -157,10 +171,57 @@ export default function PlanWizardPage() {
     setPhases((cur) => cur.map((p, i) => (i === index ? { ...p, ...patch } : p)));
     setDirty(true);
   };
+  const handleStartDateChange = (newStart: string) => {
+    setStartDate(newStart);
+    setDirty(true);
+    // Giáo án phải ít nhất 1 tuần (7 ngày)
+    const minEnd = addDays(newStart, 7);
+    let targetEnd = endDate;
+    if (endDate < minEnd) {
+      targetEnd = minEnd;
+      setEndDate(minEnd);
+    }
+    // Giai đoạn chỉ được nằm trong tổng thời gian của giáo án [newStart, targetEnd]
+    setPhases((cur) =>
+      cur.map((p) => {
+        let pStart = p.startDate < newStart ? newStart : p.startDate;
+        if (pStart > targetEnd) pStart = targetEnd;
+        let pEnd = p.endDate < pStart ? pStart : p.endDate;
+        if (pEnd > targetEnd) pEnd = targetEnd;
+        return { ...p, startDate: pStart, endDate: pEnd };
+      }),
+    );
+  };
+
+  const handleEndDateChange = (newEnd: string) => {
+    setEndDate(newEnd);
+    setDirty(true);
+    // Giai đoạn chỉ được nằm trong tổng thời gian của giáo án, không vượt quá newEnd
+    setPhases((cur) =>
+      cur.map((p) => {
+        let pEnd = p.endDate > newEnd ? newEnd : p.endDate;
+        let pStart = p.startDate > pEnd ? pEnd : p.startDate;
+        return { ...p, startDate: pStart, endDate: pEnd };
+      }),
+    );
+  };
+
+  const lastPhase = useMemo(
+    () => (phases.length > 0 ? [...phases].sort((a, b) => a.startDate.localeCompare(b.startDate)).at(-1) : null),
+    [phases],
+  );
+  const nextPhaseFrom = lastPhase ? addDays(lastPhase.endDate, 1) : startDate;
+  const isPlanFullyAllocated = Boolean(lastPhase && nextPhaseFrom > endDate);
+
   const addPhase = () => {
-    const last = [...phases].sort((a, b) => a.startDate.localeCompare(b.startDate)).at(-1);
-    const from = last ? addDays(last.endDate, 1) : startDate;
-    setPhases((cur) => [...cur, newPhase(from > endDate ? endDate : from, endDate, cur.length)]);
+    if (isPlanFullyAllocated) {
+      toast.show(
+        tr("Cannot add more phases: the entire plan period has already been allocated."),
+        "warn",
+      );
+      return;
+    }
+    setPhases((cur) => [...cur, newPhase(nextPhaseFrom, endDate, cur.length)]);
     setDirty(true);
   };
   const removePhase = (index: number) => {
@@ -215,7 +276,7 @@ export default function PlanWizardPage() {
             <li className={styles.currentStep} aria-current="step"><span>01</span>{tr("Step 1: Goals, Duration & Phases")}</li>
             <li className={styles.nextStep}><span>02</span>{tr("Step 2: Add Workouts & Calendar")}</li>
           </ol>
-          <p className={styles.hint}>{tr("Workouts are scheduled within phase date boundaries.")}</p>
+          <p className={styles.hint}>{tr("Phases must stay within the plan dates. Workouts are scheduled within phase date boundaries.")}</p>
         </div>
       </Card>
 
@@ -280,15 +341,19 @@ export default function PlanWizardPage() {
               <span className={styles.sectionNumber}>02</span>
               <div>
                 <h3 className={styles.sectionSubtitle}>{isVietnamese ? "Thời gian áp dụng" : "Training Schedule & Duration"}</h3>
-                <p className={styles.sectionDesc}>{isVietnamese ? "Xác định ngày bắt đầu và kết thúc (tối đa 52 tuần)" : "Define plan duration boundaries (up to 52 weeks)"}</p>
+                <p className={styles.sectionDesc}>
+                  {isVietnamese
+                    ? "Xác định ngày bắt đầu và kết thúc (tối thiểu 1 tuần, tối đa 52 tuần)"
+                    : "Define plan duration boundaries (at least 1 week, up to 52 weeks)"}
+                </p>
               </div>
             </div>
             <div className={styles.twoCol}>
               <Field label={tr("Start date")} required hint={editing ? undefined : tr("No earlier than 7 days ago")}>
-                <DatePicker value={startDate} onChange={change(setStartDate)} />
+                <DatePicker value={startDate} onChange={handleStartDateChange} />
               </Field>
-              <Field label={tr("End date")} required hint={tr("At most 52 weeks")}>
-                <DatePicker min={startDate} value={endDate} onChange={change(setEndDate)} />
+              <Field label={tr("End date")} required hint={tr("At least 1 week, at most 52 weeks")}>
+                <DatePicker min={addDays(startDate, 7)} value={endDate} onChange={handleEndDateChange} />
               </Field>
             </div>
           </div>
@@ -318,8 +383,17 @@ export default function PlanWizardPage() {
 
       <div className={styles.sectionHeader}>
         <h2 className={styles.phaseTitle}>{tr("Phases ({{count}}/12)", { count: phases.length })}</h2>
-        <Button tone="secondary" onClick={addPhase} disabled={phases.length >= 12}>{tr("+ Add phase")}</Button>
+        <Button tone="secondary" onClick={addPhase} disabled={phases.length >= 12 || isPlanFullyAllocated}>
+          {tr("+ Add phase")}
+        </Button>
       </div>
+      {isPlanFullyAllocated && (
+        <p className={styles.hint} style={{ color: "var(--color-warn-text, #b45309)", margin: "0 0 1rem" }}>
+          {isVietnamese
+            ? "Toàn bộ thời gian của giáo án đã được phân bổ cho các giai đoạn."
+            : tr("The entire plan duration has already been allocated to phases.")}
+        </p>
+      )}
 
       {phases.map((ph, i) => (
         <Card key={ph.id} pad={20}>

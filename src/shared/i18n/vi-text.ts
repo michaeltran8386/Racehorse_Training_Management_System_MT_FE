@@ -2,6 +2,12 @@
 // Khóa là đúng câu tiếng Anh trong code; {{ten}} là biến trong câu ghép.
 // Thêm câu mới: thêm một dòng "English": "Tiếng Việt". Câu không có ở đây sẽ hiện tiếng Anh.
 export const VI_TEXT: Record<string, string> = {
+  "Training plan must last at least 1 week (7 days) between start date and end date.": "Giáo án phải kéo dài ít nhất 1 tuần (7 ngày) giữa thời điểm bắt đầu và thời điểm kết thúc.",
+  "Phase {{name}} ({{phaseStart}} → {{phaseEnd}}) must be within the plan dates ({{planStart}} → {{planEnd}}).": "Giai đoạn {{name}} ({{phaseStart}} → {{phaseEnd}}) phải nằm trong thời gian của giáo án ({{planStart}} → {{planEnd}}).",
+  "At least 1 week, at most 52 weeks": "Tối thiểu 1 tuần, tối đa 52 tuần",
+  "Cannot add more phases: the entire plan period has already been allocated.": "Không thể thêm giai đoạn: Toàn bộ thời gian của giáo án đã được phân bổ.",
+  "The entire plan duration has already been allocated to phases.": "Toàn bộ thời gian của giáo án đã được phân bổ cho các giai đoạn.",
+  "Phases must stay within the plan dates. Workouts are scheduled within phase date boundaries.": "Mỗi giai đoạn phải nằm trong thời gian của giáo án. Các buổi tập được xếp trong giới hạn từng giai đoạn.",
   "Other medication name": "Tên thuốc khác",
   "Select medication": "Chọn thuốc",
   "Select unit": "Chọn đơn vị",
