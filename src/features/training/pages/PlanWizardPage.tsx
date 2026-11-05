@@ -33,10 +33,10 @@ function addDays(date: string, days: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function newPhase(startDate: string, endDate: string, index: number): TrainingPhase {
+function newPhase(startDate: string, endDate: string, index: number, isVi = false): TrainingPhase {
   return {
     id: `ph-${Date.now()}-${index}`,
-    name: `Phase ${index + 1}`,
+    name: isVi ? `Giai đoạn ${index + 1}` : `Phase ${index + 1}`,
     type: "BASE",
     startDate,
     endDate,
@@ -225,8 +225,27 @@ export default function PlanWizardPage() {
   const [notes, setNotes] = useState("");
   const tomorrow = addDays(todayClub(), 1);
   const [startDate, setStartDate] = useState(tomorrow);
-  const [endDate, setEndDate] = useState(addDays(tomorrow, 41));
-  const [phases, setPhases] = useState<TrainingPhase[]>(() => [newPhase(tomorrow, addDays(tomorrow, 41), 0)]);
+  const [endDate, setEndDate] = useState(() => addDays(tomorrow, 27));
+  const [phases, setPhases] = useState<TrainingPhase[]>(() => {
+    const list: TrainingPhase[] = [];
+    let cur = tomorrow;
+    for (let i = 0; i < 4; i++) {
+      const end = addDays(cur, 6);
+      list.push({
+        id: `ph-init-${i}`,
+        name: `Giai đoạn ${i + 1}`,
+        type: "BASE",
+        startDate: cur,
+        endDate: end,
+        sessionsPerWeek: 5,
+        maxWeeklyDistance: 9000,
+        surface: "TURF",
+      });
+      cur = addDays(end, 1);
+    }
+    return list;
+  });
+  const [autoPhaseCount, setAutoPhaseCount] = useState<number>(4);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -300,6 +319,7 @@ export default function PlanWizardPage() {
         setStartDate(p.startDate);
         setEndDate(p.endDate);
         setPhases(p.phases);
+        setAutoPhaseCount(p.phases.length || 4);
       })
       .catch((err) => setError(messageFor(err)));
   }, [id]);
@@ -394,15 +414,58 @@ export default function PlanWizardPage() {
   const nextPhaseFrom = lastPhase ? addDays(lastPhase.endDate, 1) : startDate;
   const isPlanFullyAllocated = Boolean(lastPhase && nextPhaseFrom > endDate);
 
+  const generateAutoPhases = (count: number) => {
+    if (count < 1 || count > 12) return;
+    if (phases.length > 0 && dirty) {
+      const confirmMsg = isVietnamese
+        ? `Tạo tự động ${count} giai đoạn (mỗi giai đoạn 1 tuần) sẽ thay thế các giai đoạn hiện tại. Bạn có muốn tiếp tục?`
+        : `Generating ${count} phases (1 week each) will replace existing phases. Continue?`;
+      if (!window.confirm(confirmMsg)) return;
+    }
+
+    const generated: TrainingPhase[] = [];
+    let curStart = startDate;
+
+    for (let i = 0; i < count; i++) {
+      const curEnd = addDays(curStart, 6);
+      generated.push({
+        id: `ph-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`,
+        name: isVietnamese ? `Giai đoạn ${i + 1}` : `Phase ${i + 1}`,
+        type: "BASE",
+        startDate: curStart,
+        endDate: curEnd,
+        sessionsPerWeek: 5,
+        maxWeeklyDistance: 9000,
+        surface: "TURF",
+      });
+      curStart = addDays(curEnd, 1);
+    }
+
+    const finalEndDate = generated[generated.length - 1].endDate;
+    setEndDate(finalEndDate);
+    setPhases(generated);
+    setDirty(true);
+    markTouched("endDate");
+    toast.show(
+      isVietnamese
+        ? `Đã tạo ${count} giai đoạn thành công (1 tuần/giai đoạn). Tổng thời gian giáo án: ${count} tuần.`
+        : `Generated ${count} phases successfully (1 week each). Total duration: ${count} weeks.`,
+      "ok",
+    );
+  };
+
   const addPhase = () => {
-    if (isPlanFullyAllocated) {
-      toast.show(
-        tr("Cannot add more phases: the entire plan period has already been allocated."),
-        "warn",
-      );
+    if (phases.length >= 12) {
+      toast.show(isVietnamese ? "Đã đạt tối đa 12 giai đoạn." : "Maximum 12 phases allowed.", "warn");
       return;
     }
-    setPhases((cur) => [...cur, newPhase(nextPhaseFrom, endDate, cur.length)]);
+    let pEnd = endDate;
+    if (isPlanFullyAllocated || nextPhaseFrom > endDate) {
+      pEnd = addDays(nextPhaseFrom, 6);
+      setEndDate(pEnd);
+      markTouched("endDate");
+    }
+    setPhases((cur) => [...cur, newPhase(nextPhaseFrom, pEnd, cur.length, isVietnamese)]);
     setDirty(true);
   };
   const removePhase = (index: number) => {
@@ -506,7 +569,7 @@ export default function PlanWizardPage() {
                   }}
                   options={horses.map((h) => ({
                     value: h.id,
-                    label: `${h.name} (${h.horseCode ?? ""})${h.isMedicalLocked ? " · Training Lock" : ""}`,
+                    label: `${h.name}${h.isMedicalLocked ? (isVietnamese ? " · Khóa y tế" : " · Training Lock") : ""}`,
                   }))}
                 />
               </Field>
@@ -620,18 +683,107 @@ export default function PlanWizardPage() {
       </Card>
 
       <div className={styles.sectionHeader}>
-        <h2 className={styles.phaseTitle}>{tr("Phases ({{count}}/12)", { count: phases.length })}</h2>
-        <Button tone="secondary" onClick={addPhase} disabled={phases.length >= 12 || isPlanFullyAllocated}>
+        <div>
+          <h2 className={styles.phaseTitle}>{tr("Phases ({{count}}/12)", { count: phases.length })}</h2>
+          <p style={{ margin: "4px 0 0", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+            {isVietnamese
+              ? "Thiết lập các giai đoạn huấn luyện (mỗi giai đoạn mặc định 1 tuần). Bạn có thể tự sinh nhanh hoặc tùy chỉnh ngày tháng từng giai đoạn."
+              : "Define training phases (1 week each by default). You can quick-generate or manually customize dates."}
+          </p>
+        </div>
+        <Button tone="secondary" onClick={addPhase} disabled={phases.length >= 12}>
           {tr("+ Add phase")}
         </Button>
       </div>
-      {isPlanFullyAllocated && (
-        <p className={styles.hint} style={{ color: "var(--color-warn-text, #b45309)", margin: "0 0 1rem" }}>
-          {isVietnamese
-            ? "Toàn bộ thời gian của giáo án đã được phân bổ cho các giai đoạn."
-            : tr("The entire plan duration has already been allocated to phases.")}
-        </p>
-      )}
+
+      <div style={{ marginBottom: "1.25rem" }}>
+        <Card pad={16}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "1rem" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "var(--fs-body)", display: "flex", alignItems: "center", gap: "6px", color: "var(--text)" }}>
+                <Icon name="sparkles" inline size={16} style={{ color: "var(--brand)" }} />
+                <span>{isVietnamese ? "Tự động chia giai đoạn (1 tuần / giai đoạn)" : "Auto-generate phases (1 week each)"}</span>
+              </div>
+              <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)", marginTop: "2px" }}>
+                {isVietnamese
+                  ? "Chọn số lượng giai đoạn muốn hoàn thành giáo án. Hệ thống tự động chia mỗi giai đoạn 7 ngày và đồng bộ ngày kết thúc giáo án."
+                  : "Select number of phases. Each phase defaults to 7 days and plan end date is automatically synchronized."}
+              </div>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: "0.6rem", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "var(--fs-sm)", fontWeight: 600 }}>
+                {isVietnamese ? "Số giai đoạn:" : "Phases:"}
+              </span>
+              <div style={{ display: "inline-flex", alignItems: "center", border: "1px solid var(--border)", borderRadius: "6px", background: "var(--surface)", overflow: "hidden" }}>
+                <button
+                  type="button"
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    padding: "0.4rem 0.65rem",
+                    cursor: autoPhaseCount <= 1 ? "not-allowed" : "pointer",
+                    color: autoPhaseCount <= 1 ? "var(--text-muted)" : "var(--text)",
+                    fontWeight: 700,
+                    fontSize: "14px",
+                  }}
+                  disabled={autoPhaseCount <= 1}
+                  onClick={() => setAutoPhaseCount((c) => Math.max(1, c - 1))}
+                  aria-label={isVietnamese ? "Giảm 1 giai đoạn" : "Decrease"}
+                >
+                  −
+                </button>
+                <input
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={autoPhaseCount}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val)) setAutoPhaseCount(Math.max(1, Math.min(12, val)));
+                  }}
+                  style={{
+                    width: "48px",
+                    textAlign: "center",
+                    border: "none",
+                    outline: "none",
+                    fontWeight: 700,
+                    fontSize: "var(--fs-body)",
+                    background: "transparent",
+                    color: "var(--text)",
+                  }}
+                  aria-label={isVietnamese ? "Số lượng giai đoạn" : "Phase count"}
+                />
+                <button
+                  type="button"
+                  style={{
+                    border: "none",
+                    background: "transparent",
+                    padding: "0.4rem 0.65rem",
+                    cursor: autoPhaseCount >= 12 ? "not-allowed" : "pointer",
+                    color: autoPhaseCount >= 12 ? "var(--text-muted)" : "var(--text)",
+                    fontWeight: 700,
+                    fontSize: "14px",
+                  }}
+                  disabled={autoPhaseCount >= 12}
+                  onClick={() => setAutoPhaseCount((c) => Math.min(12, c + 1))}
+                  aria-label={isVietnamese ? "Tăng 1 giai đoạn" : "Increase"}
+                >
+                  +
+                </button>
+              </div>
+              <Button
+                tone="primary"
+                type="button"
+                onClick={() => generateAutoPhases(autoPhaseCount)}
+              >
+                <Icon name="sparkles" inline size={14} />{" "}
+                {isVietnamese ? `Tạo ${autoPhaseCount} giai đoạn` : `Generate ${autoPhaseCount} phases`}
+              </Button>
+            </div>
+          </div>
+        </Card>
+      </div>
 
       {phases.map((ph, i) => (
         <Card key={ph.id} pad={20}>
