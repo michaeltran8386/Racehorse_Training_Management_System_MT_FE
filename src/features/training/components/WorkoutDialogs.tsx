@@ -277,7 +277,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
               }}
               options={(plans ?? []).map((p) => ({
                 value: p.id,
-                label: `${p.horseName} – ${p.name} (${p.status === "ACTIVE" ? "Active" : "Draft"})${p.isLockedByMedical ? " · Training Lock" : ""}`,
+                label: `${p.horseName} – ${p.name} (${p.status === "ACTIVE" ? (isVietnamese ? "Đang áp dụng" : "Active") : (isVietnamese ? "Chờ kích hoạt" : "Pending Activation")})${p.isLockedByMedical ? (isVietnamese ? " · Khóa y tế" : " · Training Lock") : ""}`,
               }))}
             />
           </Field>

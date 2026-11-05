@@ -526,8 +526,10 @@ export default function PlanWizardPage() {
             </div>
             {horse?.isMedicalLocked && (
               <div style={{ marginTop: "0.75rem" }}>
-                <Alert tone="danger" title={tr("Training Lock")}>
-                  {tr("The horse is under a Training Lock. You can prepare a draft, but it cannot be activated yet.")}
+                <Alert tone="danger" title={isVietnamese ? "Không thể tạo giáo án: Ngựa đang bị Khóa huấn luyện y tế" : tr("Training Lock")}>
+                  {isVietnamese
+                    ? "Ngựa đang chịu lệnh Khóa huấn luyện y tế do Bác sĩ thú y chỉ định. Theo quy chuẩn an toàn và phúc lợi ngựa, không thể tạo hoặc lưu giáo án cho ngựa này cho đến khi Bác sĩ thú y gỡ khóa trên Hồ sơ bệnh án."
+                    : tr("The horse is under a Training Lock. Plans cannot be created until cleared by a veterinarian.")}
                 </Alert>
               </div>
             )}
@@ -775,11 +777,11 @@ export default function PlanWizardPage() {
 
       <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", padding: "0.75rem 0" }}>
         <Button tone="ghost" onClick={cancel}>{tr("Cancel")}</Button>
-        <Button tone="secondary" onClick={() => void save(false)} disabled={submitting || !horseId}>
-          {editing ? (isVietnamese ? "Lưu thay đổi" : tr("Save draft changes")) : isVietnamese ? "Lưu bản chờ kích hoạt" : tr("Save Draft")}
+        <Button tone="secondary" onClick={() => void save(false)} disabled={submitting || !horseId || Boolean(horse?.isMedicalLocked)}>
+          {editing ? (isVietnamese ? "Lưu thay đổi" : tr("Save draft changes")) : isVietnamese ? "Lưu chờ kích hoạt" : tr("Save Draft")}
         </Button>
         {canActivateAfterSave && (
-          <Button tone="primary" onClick={() => void save(true)} disabled={submitting || !horseId}>
+          <Button tone="primary" onClick={() => void save(true)} disabled={submitting || !horseId || Boolean(horse?.isMedicalLocked)}>
             {editing
               ? isVietnamese ? "Lưu & kích hoạt" : tr("Save and activate")
               : <>{isVietnamese ? "Lưu giáo án & Tiếp theo: Xếp lịch tập" : tr("Save Plan & Next: Add Workouts")} <Icon name="arrowRight" inline size={14} /></>}

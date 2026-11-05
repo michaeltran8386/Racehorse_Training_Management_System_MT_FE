@@ -44,6 +44,12 @@ function formatWeekRange(startDateStr: string): string {
   const [ey, em, ed] = endDateStr.split("-").map(Number);
   return `${sd}/${sm}/${sy} – ${ed}/${em}/${ey}`;
 }
+function mondayOf(date: string): string {
+  const d = new Date(`${date}T00:00:00Z`);
+  const day = d.getUTCDay(); // 0: CN, 1: T2, ..., 6: T7
+  const diff = day === 0 ? -6 : 1 - day;
+  return shiftDay(date, diff);
+}
 function minutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return h * 60 + m;
@@ -81,7 +87,7 @@ export default function WeeklyCalendarPage() {
   const [params] = useSearchParams();
   const isTrainer = user.role === "HEAD_TRAINER";
 
-  const [date, setDate] = useState(todayClub());
+  const [date, setDate] = useState(() => mondayOf(todayClub()));
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,15 +101,15 @@ export default function WeeklyCalendarPage() {
   const [dialog, setDialog] = useState<Dialog>(null);
   const latest = useRef(0);
 
-  const from = date;
-  const to = shiftDay(date, 6);
+  const from = mondayOf(date);
+  const to = shiftDay(from, 6);
 
-  const baseToday = todayClub();
+  const baseMonday = mondayOf(todayClub());
   const weekOptions = useMemo(() => {
     const options = [];
     const offsets = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8];
     for (const offset of offsets) {
-      const wStart = shiftDay(baseToday, offset * 7);
+      const wStart = shiftDay(baseMonday, offset * 7);
       const label = formatWeekRange(wStart);
       let prefix = "";
       if (offset === 0) prefix = isVietnamese ? "Tuần này: " : "This week: ";
@@ -114,14 +120,15 @@ export default function WeeklyCalendarPage() {
         label: `${prefix}${label}`,
       });
     }
-    if (!options.some((o) => o.value === date)) {
+    const currentMonday = mondayOf(date);
+    if (!options.some((o) => o.value === currentMonday)) {
       options.unshift({
-        value: date,
-        label: formatWeekRange(date),
+        value: currentMonday,
+        label: formatWeekRange(currentMonday),
       });
     }
     return options;
-  }, [baseToday, isVietnamese, date]);
+  }, [baseMonday, isVietnamese, date]);
 
   // Đổi ngày nhanh: chỉ nhận kết quả của lần tải mới nhất.
   const load = useCallback(async () => {
@@ -155,6 +162,7 @@ export default function WeeklyCalendarPage() {
 
   const shown = sessions.filter(
     (s) =>
+      s.status !== "CANCELLED" &&
       (horse === "ALL" || s.horseId === horse) &&
       (groom === "ALL" || s.groomId === groom) &&
       (surface === "ALL" || s.trackType === surface) &&
@@ -256,7 +264,7 @@ export default function WeeklyCalendarPage() {
           <Button
             tone="secondary"
             size="sm"
-            onClick={() => setDate(shiftDay(date, -7))}
+            onClick={() => setDate((d) => shiftDay(mondayOf(d), -7))}
             aria-label={isVietnamese ? "Tuần trước" : tr("Previous week")}
           >
             ‹ {isVietnamese ? "Tuần trước" : tr("Previous week")}
@@ -264,7 +272,7 @@ export default function WeeklyCalendarPage() {
           <div style={{ minWidth: 280 }}>
             <Select
               aria-label={isVietnamese ? "Cụm tuần" : tr("Week range")}
-              value={date}
+              value={mondayOf(date)}
               onChange={(e) => setDate(e.target.value)}
               options={weekOptions}
             />
@@ -272,7 +280,7 @@ export default function WeeklyCalendarPage() {
           <Button
             tone="secondary"
             size="sm"
-            onClick={() => setDate(shiftDay(date, 7))}
+            onClick={() => setDate((d) => shiftDay(mondayOf(d), 7))}
             aria-label={isVietnamese ? "Tuần sau" : tr("Next week")}
           >
             {isVietnamese ? "Tuần sau" : tr("Next week")} ›
@@ -302,7 +310,7 @@ export default function WeeklyCalendarPage() {
             aria-label={tr("Status")}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            options={[{ value: "ALL", label: t("calendar.allStatuses") }, ...(Object.keys(SESSION_STATUS_LABEL) as SessionStatus[]).map((st) => ({ value: st, label: SESSION_STATUS_LABEL[st] }))]}
+            options={[{ value: "ALL", label: t("calendar.allStatuses") }, ...(Object.keys(SESSION_STATUS_LABEL) as SessionStatus[]).filter((st) => st !== "CANCELLED").map((st) => ({ value: st, label: SESSION_STATUS_LABEL[st] }))]}
           />
         </div>
       </Card>
@@ -398,7 +406,7 @@ export default function WeeklyCalendarPage() {
             setDialog(null);
             setSelected(null);
             if (d >= from && d <= to) void load();
-            else setDate(d);
+            else setDate(mondayOf(d));
           }}
         />
       )}

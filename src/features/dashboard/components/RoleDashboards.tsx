@@ -689,7 +689,7 @@ export function TrainerDashboard() {
           )}
           {pctDraft > 0 && (
             <div
-              title={`${isVi ? "Bản nháp" : "Draft"}: ${draftPlan} (${pctDraft}%)`}
+              title={`${isVi ? "Chờ kích hoạt" : "Pending activation"}: ${draftPlan} (${pctDraft}%)`}
               style={{ width: `${pctDraft}%`, background: "var(--info)", transition: "width 0.3s" }}
             />
           )}
@@ -715,7 +715,7 @@ export function TrainerDashboard() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--info)" }} />
-            <span>{isVi ? "Giáo án nháp:" : "Draft plans:"} <strong>{draftPlan}</strong> ({pctDraft}%)</span>
+            <span>{isVi ? "Giáo án chờ kích hoạt:" : "Pending plans:"} <strong>{draftPlan}</strong> ({pctDraft}%)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
@@ -834,7 +834,7 @@ export function TrainerDashboard() {
                       <td style={{ padding: "10px 12px" }}>
                         {r.plan?.status === "DRAFT" ? (
                           <Badge tone="info">
-                            {isVi ? `Bản nháp: ${r.plan.name}` : `Draft: ${r.plan.name}`}
+                            {isVi ? `Chờ kích hoạt: ${r.plan.name}` : `Pending: ${r.plan.name}`}
                           </Badge>
                         ) : (
                           <Badge tone="warn">

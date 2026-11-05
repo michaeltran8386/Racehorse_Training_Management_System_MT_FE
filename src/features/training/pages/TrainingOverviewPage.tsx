@@ -6,6 +6,7 @@ import { Badge } from "@/shared/components/ui/Badge";
 import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Card } from "@/shared/components/ui/Card";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
+import { Modal } from "@/shared/components/ui/Modal";
 import { Paged } from "@/shared/components/ui/Pagination";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Input } from "@/shared/components/form/Input";
@@ -39,6 +40,12 @@ export default function TrainingOverviewPage() {
   const [planFilter, setPlanFilter] = useState("ALL");
   const [spikeOnly, setSpikeOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("name");
+  const [lockedHorseModal, setLockedHorseModal] = useState<{
+    id: string;
+    name: string;
+    horseCode?: string | null;
+    status: string;
+  } | null>(null);
 
   useEffect(() => {
     const f = searchParams.get("filter") ?? searchParams.get("plan");
@@ -201,7 +208,7 @@ export default function TrainingOverviewPage() {
                 { value: "ALL", label: tr("All horses") },
                 { value: "ACTIVE", label: isVietnamese ? "Đang huấn luyện (Có giáo án)" : tr("With an active plan") },
                 { value: "NONE", label: isVietnamese ? "Chưa có giáo án (Cần xếp lịch)" : tr("Without training plan") },
-                { value: "DRAFT", label: isVietnamese ? "Có giáo án nháp" : tr("With a draft plan") },
+                { value: "DRAFT", label: isVietnamese ? "Giáo án chờ kích hoạt" : tr("With draft plan") },
                 { value: "LOCKED", label: isVietnamese ? "Khóa y tế / Chấn thương" : tr("Medically locked / Injured") },
               ]}
             />
@@ -286,8 +293,8 @@ export default function TrainingOverviewPage() {
                             </span>
                             {r.plan.status === "DRAFT" && (
                               <div>
-                                <Badge tone="neutral">
-                                  {isVietnamese ? "Nháp – chưa kích hoạt" : tr("Draft – not activated")}
+                                <Badge tone="info">
+                                  {isVietnamese ? "Chờ kích hoạt" : tr("Pending Activation")}
                                 </Badge>
                               </div>
                             )}
@@ -369,7 +376,18 @@ export default function TrainingOverviewPage() {
                               <Button
                                 size="sm"
                                 tone="primary"
-                                onClick={() => navigate(`/training/plans/new?horseId=${r.horse.id}`)}
+                                onClick={() => {
+                                  if (r.horse.isMedicalLocked) {
+                                    setLockedHorseModal({
+                                      id: r.horse.id,
+                                      name: r.horse.name,
+                                      horseCode: r.horse.horseCode,
+                                      status: r.horse.status,
+                                    });
+                                    return;
+                                  }
+                                  navigate(`/training/plans/new?horseId=${r.horse.id}`);
+                                }}
                               >
                                 {isVietnamese ? "+ Tạo giáo án" : tr("+ Create plan")}
                               </Button>
@@ -387,6 +405,47 @@ export default function TrainingOverviewPage() {
           )}</Paged>
         )}
       </Card>
+    
+      {lockedHorseModal && (
+        <Modal
+          title={isVietnamese ? "Không thể tạo giáo án huấn luyện" : "Cannot Create Training Plan"}
+          tone="danger"
+          width={500}
+          onClose={() => setLockedHorseModal(null)}
+          foot={
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+              <Button tone="secondary" onClick={() => setLockedHorseModal(null)}>
+                {isVietnamese ? "Đóng" : tr("Close")}
+              </Button>
+              <LinkButton
+                to={`/medical?horseId=${lockedHorseModal.id}`}
+                tone="primary"
+              >
+                {isVietnamese ? "Xem hồ sơ bệnh án" : tr("View medical records")}
+              </LinkButton>
+            </div>
+          }
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Badge tone="danger">
+                <Icon name="lock" inline size={12} /> {isVietnamese ? "Khóa huấn luyện y tế" : "Medical Lock Active"}
+              </Badge>
+              <span style={{ fontWeight: 600 }}>{lockedHorseModal.name} {lockedHorseModal.horseCode ? `(${lockedHorseModal.horseCode})` : ""}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.5, color: "var(--text)" }}>
+              {isVietnamese
+                ? "Ngựa hiện đang trong trạng thái Khóa y tế do Bác sĩ thú y chỉ định. Theo quy chuẩn an toàn và phúc lợi ngựa, mọi kế hoạch tập luyện hoặc tạo mới giáo án đều bị tạm dừng nhằm phòng tránh tái phát chấn thương."
+                : "This horse is currently under a Medical Lock assigned by the veterinarian. To ensure equine welfare and safety, training plans cannot be created until the lock is lifted."}
+            </p>
+            <div style={{ background: "var(--surface-sunken)", padding: "0.75rem", borderRadius: "6px", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+              {isVietnamese
+                ? "💡 Hướng xử lý: Vui lòng liên hệ Bác sĩ thú y phụ trách (VET) để kiểm tra tình trạng lâm sàng và gỡ khóa y tế trên Hồ sơ bệnh án trước khi lập kế hoạch huấn luyện."
+                : "Action needed: Please contact the Veterinarian to perform clinical assessment and lift the lock in the Medical Record before planning workouts."}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

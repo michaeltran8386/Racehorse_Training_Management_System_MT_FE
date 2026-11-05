@@ -181,7 +181,8 @@ export default function PlanDetailPage() {
               <Button
                 tone="danger"
                 onClick={async () => {
-                  if (window.confirm(`Delete draft plan "${plan.name}"? This action cannot be undone.`)) {
+                  const confirmMsg = isVietnamese ? `Xóa giáo án "${plan.name}"? Thao tác này không thể hoàn tác.` : `Delete plan "${plan.name}"? This action cannot be undone.`;
+                  if (window.confirm(confirmMsg)) {
                     try {
                       await trainingApi.deletePlan(plan.id);
                       navigate("/training/plans");
@@ -191,7 +192,7 @@ export default function PlanDetailPage() {
                   }
                 }}
               >
-                {tr("Delete draft")}
+                {isVietnamese ? "Xóa giáo án" : tr("Delete plan")}
               </Button>
             )}
             {isTrainer && <Button tone="ghost" onClick={() => setDialog({ kind: "clone" })}>{tr("Clone")}</Button>}
