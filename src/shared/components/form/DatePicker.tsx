@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { Icon } from "@/shared/components/ui/Icon";
 import { cx } from "@/shared/lib/cx";
 import { useAppLanguage } from "@/shared/lib/language";
+import { useFieldControl } from "./Field";
 import styles from "./DatePicker.module.css";
 
 export interface DatePickerProps {
@@ -53,8 +54,10 @@ export function DatePicker({
   id,
   style,
   highlightOverdue = true,
-  invalid = false,
+  invalid,
 }: DatePickerProps) {
+  const field = useFieldControl();
+  const isInvalid = invalid ?? field?.invalid ?? false;
   const { isVietnamese } = useAppLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -264,7 +267,7 @@ export function DatePicker({
         aria-required={required}
         aria-expanded={isOpen}
         onClick={() => setIsOpen((prev) => !prev)}
-        className={cx(styles.inputBtn, invalid && styles.invalid)}
+        className={cx(styles.inputBtn, isInvalid && styles.invalid)}
       >
         {formattedDisplay ? (
           <span className={styles.dateDisplay}>{formattedDisplay}</span>

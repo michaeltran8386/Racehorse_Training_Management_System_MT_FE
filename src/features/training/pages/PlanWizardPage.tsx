@@ -47,66 +47,163 @@ function newPhase(startDate: string, endDate: string, index: number): TrainingPh
 }
 
 /** Kiểm form trước khi gửi (BE kiểm lại tất cả). Trả câu lỗi đầu tiên hoặc "". */
-function validate(
+interface PhaseFieldErrors {
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  sessionsPerWeek?: string;
+  maxWeeklyDistance?: string;
+  targetSpeedKmh?: string;
+  goal?: string;
+}
+
+interface FormErrors {
+  horseId?: string;
+  name?: string;
+  startDate?: string;
+  endDate?: string;
+  objective?: string;
+  notes?: string;
+  phases?: Record<string, PhaseFieldErrors>;
+  general?: string;
+}
+
+/** Kiểm tra toàn bộ form, trả về chi tiết lỗi theo từng trường. */
+function validatePlanForm(
+  horseId: string,
   name: string,
   objective: string,
+  notes: string,
   start: string,
   end: string,
   phases: TrainingPhase[],
   isVietnamese: boolean,
   editing: boolean,
-): string {
+): FormErrors {
+  const errors: FormErrors = {};
+
+  if (!horseId) {
+    errors.horseId = isVietnamese ? "Vui lòng chọn ngựa áp dụng." : tr("Please select a horse.");
+  }
+
   const trimmedName = name.trim();
-  if (trimmedName.length < 3 || trimmedName.length > 150) return tr("Plan name must be 3 to 150 characters.");
-  if (/^\d+$/.test(trimmedName)) {
-    return isVietnamese ? "Tên giáo án không được đặt hoàn toàn bằng số." : tr("Plan name cannot be only numbers.");
+  if (trimmedName.length === 0) {
+    errors.name = isVietnamese ? "Vui lòng nhập tên giáo án." : tr("Please enter a plan name.");
+  } else if (trimmedName.length < 3 || trimmedName.length > 150) {
+    errors.name = isVietnamese ? "Tên giáo án phải từ 3 đến 150 ký tự." : tr("Plan name must be 3 to 150 characters.");
+  } else if (/^\d+$/.test(trimmedName)) {
+    errors.name = isVietnamese ? "Tên giáo án không được đặt hoàn toàn bằng số." : tr("Plan name cannot be only numbers.");
+  } else if (!/[\p{L}]/u.test(trimmedName)) {
+    errors.name = isVietnamese ? "Tên giáo án phải chứa chữ cái." : tr("Plan name must contain letters.");
   }
-  if (!/[\p{L}]/u.test(trimmedName)) {
-    return isVietnamese ? "Tên giáo án phải chứa chữ cái." : tr("Plan name must contain letters.");
+
+  const tomorrow = addDays(todayClub(), 1);
+  if (!start) {
+    errors.startDate = isVietnamese ? "Vui lòng chọn ngày bắt đầu." : tr("Please select a start date.");
+  } else if (!editing && start < tomorrow) {
+    errors.startDate = isVietnamese ? "Ngày bắt đầu giáo án phải từ ngày mai trở đi." : tr("Plan start date must be from tomorrow onwards.");
+  } else if (start < addDays(todayClub(), -7)) {
+    errors.startDate = isVietnamese ? "Ngày bắt đầu không được sớm hơn 7 ngày trước." : tr("Start date cannot be earlier than 7 days ago.");
   }
+
+  if (!end) {
+    errors.endDate = isVietnamese ? "Vui lòng chọn ngày kết thúc." : tr("Please select an end date.");
+  } else if (end < start) {
+    errors.endDate = isVietnamese ? "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu." : tr("End date must be on or after the start date.");
+  } else {
+    const s = new Date(`${start}T00:00:00Z`).getTime();
+    const e = new Date(`${end}T00:00:00Z`).getTime();
+    const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24));
+    if (diffDays < 7) {
+      errors.endDate = isVietnamese
+        ? "Giáo án phải kéo dài ít nhất 1 tuần (7 ngày) giữa ngày bắt đầu và ngày kết thúc."
+        : tr("Training plan must last at least 1 week (7 days) between start date and end date.");
+    } else if (diffDays > 365) {
+      errors.endDate = isVietnamese ? "Giáo án tối đa 52 tuần (365 ngày)." : tr("Plan duration cannot exceed 52 weeks.");
+    }
+  }
+
   const trimmedObj = objective.trim();
-  if (trimmedObj.length < 10 || trimmedObj.length > 1000) return tr("Objective must be 10 to 1000 characters.");
-  if (!/^[\p{L}]/u.test(trimmedObj)) {
-    return isVietnamese
+  if (trimmedObj.length === 0) {
+    errors.objective = isVietnamese ? "Vui lòng nhập mục tiêu giáo án." : tr("Please enter training objectives.");
+  } else if (trimmedObj.length < 10 || trimmedObj.length > 1000) {
+    errors.objective = isVietnamese ? "Mục tiêu phải từ 10 đến 1000 ký tự." : tr("Objective must be 10 to 1000 characters.");
+  } else if (!/^[\p{L}]/u.test(trimmedObj)) {
+    errors.objective = isVietnamese
       ? "Mục tiêu phải bắt đầu bằng chữ cái, không được bắt đầu bằng số hay ký tự đặc biệt."
       : tr("Objective must start with a letter, not a number or symbol.");
   }
-  if (end < start) return tr("End date must be on or after the start date.");
-  const tomorrow = addDays(todayClub(), 1);
-  if (!editing && start < tomorrow) {
-    return isVietnamese
-      ? "Ngày bắt đầu giáo án phải từ ngày mai trở đi."
-      : tr("Plan start date must be from tomorrow onwards.");
+
+  if (notes.length > 1000) {
+    errors.notes = isVietnamese ? "Ghi chú tối đa 1000 ký tự." : tr("Notes cannot exceed 1000 characters.");
   }
-  const s = new Date(`${start}T00:00:00Z`).getTime();
-  const e = new Date(`${end}T00:00:00Z`).getTime();
-  const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24));
-  if (diffDays < 7) {
-    return tr("Training plan must last at least 1 week (7 days) between start date and end date.");
+
+  if (phases.length === 0) {
+    errors.general = isVietnamese ? "Giáo án cần ít nhất một giai đoạn." : tr("A plan needs at least one phase.");
+  } else {
+    const phaseErrors: Record<string, PhaseFieldErrors> = {};
+    const sorted = [...phases].sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+    for (let i = 0; i < sorted.length; i++) {
+      const p = sorted[i];
+      const pErr: PhaseFieldErrors = {};
+
+      if (p.name.trim().length < 2 || p.name.trim().length > 100) {
+        pErr.name = isVietnamese ? "Tên giai đoạn phải từ 2 đến 100 ký tự." : tr("Each phase needs a name (2-100 characters).");
+      }
+
+      if (p.startDate < start || p.startDate > end) {
+        pErr.startDate = isVietnamese ? "Ngày bắt đầu phải nằm trong thời gian của giáo án." : tr("Phase start must be within plan dates.");
+      }
+      if (i > 0 && p.startDate <= sorted[i - 1].endDate) {
+        pErr.startDate = isVietnamese
+          ? `Trùng ngày với giai đoạn "${sorted[i - 1].name}".`
+          : tr("Phase overlaps with previous phase.");
+      }
+
+      if (p.endDate < p.startDate) {
+        pErr.endDate = isVietnamese ? "Ngày kết thúc phải bằng hoặc sau ngày bắt đầu." : tr("End date must be on or after start date.");
+      } else if (p.endDate > end) {
+        pErr.endDate = isVietnamese ? "Ngày kết thúc không được vượt quá ngày kết thúc của giáo án." : tr("Phase end date cannot exceed plan end date.");
+      }
+
+      if (!p.sessionsPerWeek || p.sessionsPerWeek < 1 || p.sessionsPerWeek > 14) {
+        pErr.sessionsPerWeek = isVietnamese ? "Số buổi một tuần phải từ 1 đến 14." : tr("Sessions per week must be 1 to 14.");
+      }
+
+      if (!p.maxWeeklyDistance || p.maxWeeklyDistance < 500 || p.maxWeeklyDistance > 60000) {
+        pErr.maxWeeklyDistance = isVietnamese ? "Cự ly tối đa mỗi tuần phải từ 500 đến 60.000 m." : tr("Max distance per week must be 500 to 60,000 m.");
+      }
+
+      if (p.targetSpeedKmh !== undefined && (p.targetSpeedKmh < 10 || p.targetSpeedKmh > 70)) {
+        pErr.targetSpeedKmh = isVietnamese ? "Tốc độ mục tiêu từ 10 đến 70 km/h." : tr("Target speed must be 10 to 70 km/h.");
+      }
+
+      if (p.goal && p.goal.length > 500) {
+        pErr.goal = isVietnamese ? "Mục tiêu giai đoạn tối đa 500 ký tự." : tr("Phase goal cannot exceed 500 characters.");
+      }
+
+      if (Object.keys(pErr).length > 0) {
+        phaseErrors[p.id] = pErr;
+      }
+    }
+
+    if (Object.keys(phaseErrors).length > 0) {
+      errors.phases = phaseErrors;
+    }
   }
-  if (phases.length === 0) return tr("A plan needs at least one phase.");
-  const sorted = [...phases].sort((a, b) => a.startDate.localeCompare(b.startDate));
-  for (const [i, p] of sorted.entries()) {
-    if (p.name.trim().length < 2) return tr("Each phase needs a name (2-100 characters).");
-    if (p.endDate < p.startDate) return tr("Phase {{name}}: end date must be on or after the start date.", { name: p.name });
-    if (p.startDate < start || p.endDate > end) {
-      return tr("Phase {{name}} ({{phaseStart}} → {{phaseEnd}}) must be within the plan dates ({{planStart}} → {{planEnd}}).", {
-        name: p.name,
-        phaseStart: p.startDate,
-        phaseEnd: p.endDate,
-        planStart: start,
-        planEnd: end,
-      });
-    }
-    if (i > 0 && p.startDate <= sorted[i - 1].endDate) return tr("Phase {{name}} overlaps phase {{prev}}.", { name: p.name, prev: sorted[i - 1].name });
-    if (!p.sessionsPerWeek || p.sessionsPerWeek < 1 || p.sessionsPerWeek > 14) {
-      return isVietnamese ? `Giai đoạn ${p.name}: Số buổi một tuần phải từ 1 đến 14.` : tr("Sessions per week must be 1 to 14.");
-    }
-    if (!p.maxWeeklyDistance || p.maxWeeklyDistance < 500 || p.maxWeeklyDistance > 60000) {
-      return isVietnamese ? `Giai đoạn ${p.name}: Cự ly tối đa mỗi tuần phải từ 500 đến 60.000 m.` : tr("Max distance per week must be 500 to 60,000 m.");
-    }
+
+  return errors;
+}
+
+function hasErrors(errors: FormErrors): boolean {
+  if (errors.horseId || errors.name || errors.startDate || errors.endDate || errors.objective || errors.notes || errors.general) {
+    return true;
   }
-  return "";
+  if (errors.phases && Object.keys(errors.phases).length > 0) {
+    return true;
+  }
+  return false;
 }
 
 /** SC-2.03 Tạo / Sửa giáo án (HT). Sửa được khi Nháp hoặc Đang áp dụng. */
@@ -133,6 +230,45 @@ export default function PlanWizardPage() {
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [phaseTouched, setPhaseTouched] = useState<Record<string, boolean>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  const markTouched = (field: string) => {
+    setTouched((cur) => (cur[field] ? cur : { ...cur, [field]: true }));
+  };
+
+  const markPhaseTouched = (phaseId: string, field: string) => {
+    const key = `${phaseId}_${field}`;
+    setPhaseTouched((cur) => (cur[key] ? cur : { ...cur, [key]: true }));
+  };
+
+  const isFieldVisible = (field: string) => submitted || Boolean(touched[field]);
+  const isPhaseFieldVisible = (phaseId: string, field: string) =>
+    submitted || Boolean(phaseTouched[`${phaseId}_${field}`]);
+
+  const formErrors = useMemo(
+    () =>
+      validatePlanForm(
+        horseId,
+        name,
+        objective,
+        notes,
+        startDate,
+        endDate,
+        phases,
+        isVietnamese,
+        editing,
+      ),
+    [horseId, name, objective, notes, startDate, endDate, phases, isVietnamese, editing],
+  );
+
+  useEffect(() => {
+    if (error && !hasErrors(formErrors)) {
+      setError("");
+    }
+  }, [error, formErrors]);
 
   useEffect(() => {
     getHorses({ limit: 100 })
@@ -216,12 +352,14 @@ export default function PlanWizardPage() {
   const handleStartDateChange = (newStart: string) => {
     setStartDate(newStart);
     setDirty(true);
+    markTouched("startDate");
     // Giáo án phải ít nhất 1 tuần (7 ngày)
     const minEnd = addDays(newStart, 7);
     let targetEnd = endDate;
     if (endDate < minEnd) {
       targetEnd = minEnd;
       setEndDate(minEnd);
+      markTouched("endDate");
     }
     // Giai đoạn chỉ được nằm trong tổng thời gian của giáo án [newStart, targetEnd]
     setPhases((cur) =>
@@ -238,6 +376,7 @@ export default function PlanWizardPage() {
   const handleEndDateChange = (newEnd: string) => {
     setEndDate(newEnd);
     setDirty(true);
+    markTouched("endDate");
     // Giai đoạn chỉ được nằm trong tổng thời gian của giáo án, không vượt quá newEnd
     setPhases((cur) =>
       cur.map((p) => {
@@ -280,9 +419,13 @@ export default function PlanWizardPage() {
   };
 
   const save = async (activate: boolean) => {
-    const problem = validate(name, objective, startDate, endDate, phases, isVietnamese, editing);
-    if (problem) {
-      setError(problem);
+    setSubmitted(true);
+    if (hasErrors(formErrors)) {
+      setError(
+        isVietnamese
+          ? "Vui lòng kiểm tra và sửa các thông tin chưa hợp lệ hiển thị bên dưới."
+          : tr("Please check and correct the invalid fields below."),
+      );
       return;
     }
     setSubmitting(true);
@@ -349,16 +492,36 @@ export default function PlanWizardPage() {
               </div>
             </div>
             <div className={styles.twoCol}>
-              <Field label={tr("Horse")} required>
+              <Field
+                label={tr("Horse")}
+                required
+                error={isFieldVisible("horseId") ? formErrors.horseId : undefined}
+              >
                 <SearchSelect
                   value={horseId}
                   disabled={editing}
-                  onChange={change(setHorseId)}
-                  options={horses.map((h) => ({ value: h.id, label: `${h.name} (${h.horseCode ?? ""})${h.isMedicalLocked ? " · Training Lock" : ""}` }))}
+                  onChange={(val) => {
+                    change(setHorseId)(val);
+                    markTouched("horseId");
+                  }}
+                  options={horses.map((h) => ({
+                    value: h.id,
+                    label: `${h.name} (${h.horseCode ?? ""})${h.isMedicalLocked ? " · Training Lock" : ""}`,
+                  }))}
                 />
               </Field>
-              <Field label={tr("Plan name")} required hint={tr("3-150 characters")}>
-                <Input value={name} maxLength={150} onChange={(e) => change(setName)(e.target.value)} />
+              <Field
+                label={tr("Plan name")}
+                required
+                hint={tr("3-150 characters")}
+                error={isFieldVisible("name") ? formErrors.name : undefined}
+              >
+                <Input
+                  value={name}
+                  maxLength={150}
+                  onChange={(e) => change(setName)(e.target.value)}
+                  onBlur={() => markTouched("name")}
+                />
               </Field>
             </div>
             {horse?.isMedicalLocked && (
@@ -395,10 +558,16 @@ export default function PlanWizardPage() {
                 label={tr("Start date")}
                 required
                 hint={editing ? undefined : isVietnamese ? "Từ ngày mai trở đi" : tr("From tomorrow onwards")}
+                error={isFieldVisible("startDate") ? formErrors.startDate : undefined}
               >
                 <DatePicker min={editing ? undefined : tomorrow} value={startDate} onChange={handleStartDateChange} />
               </Field>
-              <Field label={tr("End date")} required hint={tr("At least 1 week, at most 52 weeks")}>
+              <Field
+                label={tr("End date")}
+                required
+                hint={tr("At least 1 week, at most 52 weeks")}
+                error={isFieldVisible("endDate") ? formErrors.endDate : undefined}
+              >
                 <DatePicker min={addDays(startDate, 7)} value={endDate} onChange={handleEndDateChange} />
               </Field>
             </div>
@@ -416,11 +585,32 @@ export default function PlanWizardPage() {
               </div>
             </div>
             <div className={styles.twoCol}>
-              <Field label={tr("Objective")} required hint={tr("10-1000 characters")}>
-                <Textarea rows={3} maxLength={1000} value={objective} onChange={(e) => change(setObjective)(e.target.value)} />
+              <Field
+                label={tr("Objective")}
+                required
+                hint={tr("10-1000 characters")}
+                error={isFieldVisible("objective") ? formErrors.objective : undefined}
+              >
+                <Textarea
+                  rows={3}
+                  maxLength={1000}
+                  value={objective}
+                  onChange={(e) => change(setObjective)(e.target.value)}
+                  onBlur={() => markTouched("objective")}
+                />
               </Field>
-              <Field label={tr("Notes")} hint={tr("Up to 1000 characters")}>
-                <Textarea rows={3} maxLength={1000} value={notes} onChange={(e) => change(setNotes)(e.target.value)} />
+              <Field
+                label={tr("Notes")}
+                hint={tr("Up to 1000 characters")}
+                error={isFieldVisible("notes") ? formErrors.notes : undefined}
+              >
+                <Textarea
+                  rows={3}
+                  maxLength={1000}
+                  value={notes}
+                  onChange={(e) => change(setNotes)(e.target.value)}
+                  onBlur={() => markTouched("notes")}
+                />
               </Field>
             </div>
           </div>
@@ -450,8 +640,17 @@ export default function PlanWizardPage() {
             )}
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 200px), 1fr))", gap: "1rem" }}>
-            <Field label={tr("Phase name")} required>
-              <Input value={ph.name} maxLength={100} onChange={(e) => updatePhase(i, { name: e.target.value })} />
+            <Field
+              label={tr("Phase name")}
+              required
+              error={isPhaseFieldVisible(ph.id, "name") ? formErrors.phases?.[ph.id]?.name : undefined}
+            >
+              <Input
+                value={ph.name}
+                maxLength={100}
+                onChange={(e) => updatePhase(i, { name: e.target.value })}
+                onBlur={() => markPhaseTouched(ph.id, "name")}
+              />
             </Field>
             <Field label={tr("Phase type")} required>
               <Select
@@ -460,13 +659,42 @@ export default function PlanWizardPage() {
                 options={(Object.keys(PHASE_TYPE_LABEL) as PhaseType[]).map((t) => ({ value: t, label: tr(PHASE_TYPE_LABEL[t]) }))}
               />
             </Field>
-            <Field label={tr("From")} required>
-              <DatePicker min={startDate} max={endDate} value={ph.startDate} onChange={(val) => updatePhase(i, { startDate: val })} />
+            <Field
+              label={tr("From")}
+              required
+              error={isPhaseFieldVisible(ph.id, "startDate") ? formErrors.phases?.[ph.id]?.startDate : undefined}
+            >
+              <DatePicker
+                min={startDate}
+                max={endDate}
+                value={ph.startDate}
+                onChange={(val) => {
+                  updatePhase(i, { startDate: val });
+                  markPhaseTouched(ph.id, "startDate");
+                }}
+              />
             </Field>
-            <Field label={tr("To")} required>
-              <DatePicker min={ph.startDate} max={endDate} value={ph.endDate} onChange={(val) => updatePhase(i, { endDate: val })} />
+            <Field
+              label={tr("To")}
+              required
+              error={isPhaseFieldVisible(ph.id, "endDate") ? formErrors.phases?.[ph.id]?.endDate : undefined}
+            >
+              <DatePicker
+                min={ph.startDate}
+                max={endDate}
+                value={ph.endDate}
+                onChange={(val) => {
+                  updatePhase(i, { endDate: val });
+                  markPhaseTouched(ph.id, "endDate");
+                }}
+              />
             </Field>
-            <Field label={tr("Sessions per week")} required hint={tr("1 – 14")}>
+            <Field
+              label={tr("Sessions per week")}
+              required
+              hint={tr("1 – 14")}
+              error={isPhaseFieldVisible(ph.id, "sessionsPerWeek") ? formErrors.phases?.[ph.id]?.sessionsPerWeek : undefined}
+            >
               <Input
                 type="number"
                 min={1}
@@ -477,9 +705,15 @@ export default function PlanWizardPage() {
                     sessionsPerWeek: e.target.value === "" ? 0 : Number(e.target.value),
                   })
                 }
+                onBlur={() => markPhaseTouched(ph.id, "sessionsPerWeek")}
               />
             </Field>
-            <Field label={tr("Max distance per week (m)")} required hint={tr("500 – 60 000")}>
+            <Field
+              label={tr("Max distance per week (m)")}
+              required
+              hint={tr("500 – 60 000")}
+              error={isPhaseFieldVisible(ph.id, "maxWeeklyDistance") ? formErrors.phases?.[ph.id]?.maxWeeklyDistance : undefined}
+            >
               <Input
                 type="number"
                 min={500}
@@ -491,6 +725,7 @@ export default function PlanWizardPage() {
                     maxWeeklyDistance: e.target.value === "" ? 0 : Number(e.target.value),
                   })
                 }
+                onBlur={() => markPhaseTouched(ph.id, "maxWeeklyDistance")}
               />
             </Field>
             <Field label={tr("Main surface")} required>
@@ -500,20 +735,39 @@ export default function PlanWizardPage() {
                 options={(Object.keys(SURFACE_LABEL) as PhaseSurface[]).map((s) => ({ value: s, label: tr(SURFACE_LABEL[s]) }))}
               />
             </Field>
-            <Field label={tr("Target speed (km/h)")} hint={tr("10 – 70, optional")}>
+            <Field
+              label={tr("Target speed (km/h)")}
+              hint={tr("10 – 70, optional")}
+              error={isPhaseFieldVisible(ph.id, "targetSpeedKmh") ? formErrors.phases?.[ph.id]?.targetSpeedKmh : undefined}
+            >
               <Input
                 type="number"
                 min={10}
                 max={70}
                 step={0.1}
                 value={ph.targetSpeedKmh ?? ""}
-                onChange={(e) => updatePhase(i, { targetSpeedKmh: e.target.value === "" ? undefined : Number(e.target.value) })}
+                onChange={(e) =>
+                  updatePhase(i, {
+                    targetSpeedKmh: e.target.value === "" ? undefined : Number(e.target.value),
+                  })
+                }
+                onBlur={() => markPhaseTouched(ph.id, "targetSpeedKmh")}
               />
             </Field>
           </div>
           <div style={{ marginTop: "1rem" }}>
-            <Field label={tr("Phase goal")} hint={tr("Up to 500 characters")}>
-              <Textarea rows={2} maxLength={500} value={ph.goal ?? ""} onChange={(e) => updatePhase(i, { goal: e.target.value })} />
+            <Field
+              label={tr("Phase goal")}
+              hint={tr("Up to 500 characters")}
+              error={isPhaseFieldVisible(ph.id, "goal") ? formErrors.phases?.[ph.id]?.goal : undefined}
+            >
+              <Textarea
+                rows={2}
+                maxLength={500}
+                value={ph.goal ?? ""}
+                onChange={(e) => updatePhase(i, { goal: e.target.value })}
+                onBlur={() => markPhaseTouched(ph.id, "goal")}
+              />
             </Field>
           </div>
         </Card>
@@ -522,11 +776,13 @@ export default function PlanWizardPage() {
       <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem", padding: "0.75rem 0" }}>
         <Button tone="ghost" onClick={cancel}>{tr("Cancel")}</Button>
         <Button tone="secondary" onClick={() => void save(false)} disabled={submitting || !horseId}>
-          {editing ? tr("Save draft changes") : tr("Save Draft")}
+          {editing ? (isVietnamese ? "Lưu thay đổi" : tr("Save draft changes")) : isVietnamese ? "Lưu bản chờ kích hoạt" : tr("Save Draft")}
         </Button>
         {canActivateAfterSave && (
           <Button tone="primary" onClick={() => void save(true)} disabled={submitting || !horseId}>
-            {editing ? tr("Save and activate") : <>{tr("Save Plan & Next: Add Workouts")} <Icon name="arrowRight" inline size={14} /></>}
+            {editing
+              ? isVietnamese ? "Lưu & kích hoạt" : tr("Save and activate")
+              : <>{isVietnamese ? "Lưu giáo án & Tiếp theo: Xếp lịch tập" : tr("Save Plan & Next: Add Workouts")} <Icon name="arrowRight" inline size={14} /></>}
           </Button>
         )}
       </div>

@@ -90,6 +90,11 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
   const [warnings, setWarnings] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  const markTouched = (k: string) => setTouched((cur) => (cur[k] ? cur : { ...cur, [k]: true }));
+  const isFieldVisible = (k: string) => submitted || Boolean(touched[k]);
 
   useEffect(() => {
     trainingApi
@@ -124,6 +129,51 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
   const effIntensity: ExerciseIntensity = forcedHeavy ? "HEAVY" : intensity;
   const effSurface: TrackType = noSurface ? "NONE" : surface;
 
+  const fieldErrors = useMemo(() => {
+    const errs: Record<string, string> = {};
+    if (!planId) {
+      errs.planId = isVietnamese ? "Vui lòng chọn ngựa và giáo án." : tr("Please select a horse and plan.");
+    }
+    if (phases.length > 0 && !phaseId) {
+      errs.phaseId = isVietnamese ? "Vui lòng chọn giai đoạn." : tr("Please select a phase.");
+    }
+    if (!groomId) {
+      errs.groomId = isVietnamese ? "Vui lòng chọn nhân viên chăm sóc." : tr("Please select an assigned groom.");
+    }
+    if (forcedHeavy && (!speed || Number(speed) < 10 || Number(speed) > 70)) {
+      errs.speed = isVietnamese ? "Tốc độ mục tiêu từ 10 đến 70 km/h." : tr("Target speed (10-70 km/h) is required for breeze and trial runs.");
+    }
+    if (forcedHeavy && !jockey.trim()) {
+      errs.jockey = isVietnamese ? "Vui lòng nhập tên nài ngựa." : tr("Jockey name is required for breeze and trial runs.");
+    }
+    if (!distance || distance < 100 || distance > 5000) {
+      errs.distance = isVietnamese ? "Cự ly phải từ 100 đến 5000 m." : tr("Distance must be 100 to 5000 m.");
+    }
+    if (!reps || reps < 1 || reps > 10) {
+      errs.reps = isVietnamese ? "Số hiệp phải từ 1 đến 10." : tr("Reps must be 1 to 10.");
+    }
+    const today = todayClub();
+    if (date === today) {
+      const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const minTimeDate = new Date(now.getTime() + 30 * 60 * 1000);
+      const minH = String(minTimeDate.getUTCHours()).padStart(2, "0");
+      const minM = String(minTimeDate.getUTCMinutes()).padStart(2, "0");
+      const todayMinTime = `${minH}:${minM}`;
+      if (time < todayMinTime) {
+        errs.time = isVietnamese
+          ? `Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo thời gian thực (từ ${todayMinTime} trở đi).`
+          : tr("Start time for today must be at least 30 minutes in the future (from {{time}}).", { time: todayMinTime });
+      }
+    }
+    return errs;
+  }, [planId, phases.length, phaseId, groomId, forcedHeavy, speed, jockey, distance, reps, date, time, isVietnamese]);
+
+  useEffect(() => {
+    if (error && Object.keys(fieldErrors).length === 0) {
+      setError("");
+    }
+  }, [error, fieldErrors]);
+
   const input = (): SessionInput => ({
     scheduledDate: clubIso(date, time),
     phaseId,
@@ -141,49 +191,14 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
   });
 
   const submit = async () => {
-    if (!planId) {
-      setError(tr("Please select a horse and plan."));
+    setSubmitted(true);
+    if (Object.keys(fieldErrors).length > 0) {
+      setError(
+        isVietnamese
+          ? "Vui lòng kiểm tra và sửa các thông tin chưa hợp lệ bên dưới."
+          : tr("Please check and correct the invalid fields below."),
+      );
       return;
-    }
-    if (phases.length > 0 && !phaseId) {
-      setError(tr("Please select a phase."));
-      return;
-    }
-    if (!groomId) {
-      setError(tr("Please select an assigned groom."));
-      return;
-    }
-    if (forcedHeavy && (!speed || Number(speed) < 10 || Number(speed) > 70)) {
-      setError(tr("Target speed (10-70 km/h) is required for breeze and trial runs."));
-      return;
-    }
-    if (forcedHeavy && !jockey.trim()) {
-      setError(tr("Jockey name is required for breeze and trial runs."));
-      return;
-    }
-    if (!distance || distance < 100 || distance > 5000) {
-      setError(tr("Distance must be 100 to 5000 m."));
-      return;
-    }
-    if (!reps || reps < 1 || reps > 10) {
-      setError(tr("Reps must be 1 to 10."));
-      return;
-    }
-    const today = todayClub();
-    if (date === today) {
-      const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
-      const minTimeDate = new Date(now.getTime() + 30 * 60 * 1000);
-      const minH = String(minTimeDate.getUTCHours()).padStart(2, "0");
-      const minM = String(minTimeDate.getUTCMinutes()).padStart(2, "0");
-      const todayMinTime = `${minH}:${minM}`;
-      if (time < todayMinTime) {
-        setError(
-          isVietnamese
-            ? `Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo thời gian thực (từ ${todayMinTime} trở đi).`
-            : tr("Start time for today must be at least 30 minutes in the future (from {{time}}).", { time: todayMinTime }),
-        );
-        return;
-      }
     }
 
     setSubmitting(true);
@@ -248,11 +263,18 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
           </Alert>
         )}
         {!fixedPlan && !editing && (
-          <Field label={tr("Horse / plan")} required>
+          <Field
+            label={tr("Horse / plan")}
+            required
+            error={isFieldVisible("planId") ? fieldErrors.planId : undefined}
+          >
             <SearchSelect
               placeholder={tr("Horse / plan")}
               value={planId}
-              onChange={setPlanId}
+              onChange={(val) => {
+                setPlanId(val);
+                markTouched("planId");
+              }}
               options={(plans ?? []).map((p) => ({
                 value: p.id,
                 label: `${p.horseName} – ${p.name} (${p.status === "ACTIVE" ? "Active" : "Draft"})${p.isLockedByMedical ? " · Training Lock" : ""}`,
@@ -266,16 +288,42 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
           </Alert>
         )}
         {phases.length > 0 && (
-          <Field label={tr("Phase")} required hint={phase ? `${phase.startDate} → ${phase.endDate}` : undefined}>
-            <SearchSelect placeholder={tr("Phase")} value={phaseId} onChange={setPhaseId} options={phases.map((p) => ({ value: p.id, label: p.name }))} />
+          <Field
+            label={tr("Phase")}
+            required
+            hint={phase ? `${phase.startDate} → ${phase.endDate}` : undefined}
+            error={isFieldVisible("phaseId") ? fieldErrors.phaseId : undefined}
+          >
+            <SearchSelect
+              placeholder={tr("Phase")}
+              value={phaseId}
+              onChange={(val) => {
+                setPhaseId(val);
+                markTouched("phaseId");
+              }}
+              options={phases.map((p) => ({ value: p.id, label: p.name }))}
+            />
           </Field>
         )}
         <div className={formLayout.columns}>
           <Field label={tr("Date")} required>
             <Input type="date" min={todayClub()} value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
-          <Field label={tr("Start time")} required hint="04:00 – 20:00">
-            <Input type="time" min="04:00" max="20:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
+          <Field
+            label={tr("Start time")}
+            required
+            hint="04:00 – 20:00"
+            error={isFieldVisible("time") ? fieldErrors.time : undefined}
+          >
+            <Input
+              type="time"
+              min="04:00"
+              max="20:00"
+              step={900}
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+              onBlur={() => markTouched("time")}
+            />
           </Field>
         </div>
         <div className={formLayout.columns}>
@@ -304,14 +352,51 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
           </Field>
         </div>
         <div className={formLayout.columns}>
-          <Field label={tr("Distance per rep (m)")} required hint="100 – 5000">
-            <Input type="number" min={100} max={5000} value={distance} onChange={(e) => setDistance(Number(e.target.value))} />
+          <Field
+            label={tr("Distance per rep (m)")}
+            required
+            hint="100 – 5000"
+            error={isFieldVisible("distance") ? fieldErrors.distance : undefined}
+          >
+            <Input
+              type="number"
+              min={100}
+              max={5000}
+              value={distance}
+              onChange={(e) => setDistance(Number(e.target.value))}
+              onBlur={() => markTouched("distance")}
+            />
           </Field>
-          <Field label={tr("Reps")} required hint="1 – 10">
-            <Input type="number" min={1} max={10} value={reps} onChange={(e) => setReps(Number(e.target.value))} />
+          <Field
+            label={tr("Reps")}
+            required
+            hint="1 – 10"
+            error={isFieldVisible("reps") ? fieldErrors.reps : undefined}
+          >
+            <Input
+              type="number"
+              min={1}
+              max={10}
+              value={reps}
+              onChange={(e) => setReps(Number(e.target.value))}
+              onBlur={() => markTouched("reps")}
+            />
           </Field>
-          <Field label={tr("Target speed (km/h)")} required={forcedHeavy} hint="10 – 70">
-            <Input type="number" min={10} max={70} step={0.1} value={speed} onChange={(e) => setSpeed(e.target.value)} />
+          <Field
+            label={tr("Target speed (km/h)")}
+            required={forcedHeavy}
+            hint="10 – 70"
+            error={isFieldVisible("speed") ? fieldErrors.speed : undefined}
+          >
+            <Input
+              type="number"
+              min={10}
+              max={70}
+              step={0.1}
+              value={speed}
+              onChange={(e) => setSpeed(e.target.value)}
+              onBlur={() => markTouched("speed")}
+            />
           </Field>
         </div>
         <div className={formLayout.columns}>
@@ -325,12 +410,33 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
                 .map((t) => ({ value: t, label: TRACK_LABEL[t] }))}
             />
           </Field>
-          <Field label={tr("Jockey")} required={forcedHeavy}>
-            <Input value={jockey} maxLength={100} onChange={(e) => setJockey(e.target.value)} />
+          <Field
+            label={tr("Jockey")}
+            required={forcedHeavy}
+            error={isFieldVisible("jockey") ? fieldErrors.jockey : undefined}
+          >
+            <Input
+              value={jockey}
+              maxLength={100}
+              onChange={(e) => setJockey(e.target.value)}
+              onBlur={() => markTouched("jockey")}
+            />
           </Field>
         </div>
-        <Field label={tr("Groom")} required>
-          <SearchSelect placeholder={tr("Groom")} value={groomId} onChange={setGroomId} options={grooms.map((g) => ({ value: g.id, label: g.fullName }))} />
+        <Field
+          label={tr("Groom")}
+          required
+          error={isFieldVisible("groomId") ? fieldErrors.groomId : undefined}
+        >
+          <SearchSelect
+            placeholder={tr("Groom")}
+            value={groomId}
+            onChange={(val) => {
+              setGroomId(val);
+              markTouched("groomId");
+            }}
+            options={grooms.map((g) => ({ value: g.id, label: g.fullName }))}
+          />
         </Field>
         <Field label={tr("Instructions")} hint={tr("Up to 500 characters")}>
           <Textarea rows={2} maxLength={500} value={notes} onChange={(e) => setNotes(e.target.value)} />
