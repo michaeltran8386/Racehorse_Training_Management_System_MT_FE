@@ -65,7 +65,7 @@ interface WorkoutDialogProps {
  * - BE trả WARNINGS_NEED_CONFIRMATION -> hiện khung vàng, bấm Lưu lần 2 để xác nhận.
  */
 export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, defaultType, onClose, onSaved }: WorkoutDialogProps) {
-  useAppLanguage();
+  const { isVietnamese } = useAppLanguage();
   const toast = useToast();
   const editing = Boolean(session);
   const [grooms, setGrooms] = useState<Groom[]>([]);
@@ -168,6 +168,22 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
     if (!reps || reps < 1 || reps > 10) {
       setError(tr("Reps must be 1 to 10."));
       return;
+    }
+    const today = todayClub();
+    if (date === today) {
+      const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const minTimeDate = new Date(now.getTime() + 30 * 60 * 1000);
+      const minH = String(minTimeDate.getUTCHours()).padStart(2, "0");
+      const minM = String(minTimeDate.getUTCMinutes()).padStart(2, "0");
+      const todayMinTime = `${minH}:${minM}`;
+      if (time < todayMinTime) {
+        setError(
+          isVietnamese
+            ? `Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo thời gian thực (từ ${todayMinTime} trở đi).`
+            : tr("Start time for today must be at least 30 minutes in the future (from {{time}}).", { time: todayMinTime }),
+        );
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -522,13 +538,45 @@ export function GeneratePhaseScheduleDialog({
     });
   }, []);
 
+  const maxDays = phase.sessionsPerWeek || 5;
   const toggleDay = (d: number) => {
-    setWeekdays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d].sort((a, b) => a - b)));
+    setWeekdays((cur) => {
+      if (cur.includes(d)) {
+        return cur.filter((x) => x !== d);
+      }
+      if (cur.length >= maxDays) {
+        toast.show(
+          isVietnamese
+            ? `Giai đoạn này giới hạn tối đa ${maxDays} buổi/tuần.`
+            : tr("This phase is limited to {{count}} sessions per week.", { count: maxDays }),
+          "warn",
+        );
+        return cur;
+      }
+      return [...cur, d].sort((a, b) => a - b);
+    });
   };
+
+  const today = todayClub();
+  const isStartingToday = phase.startDate <= today;
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const minTimeDate = new Date(now.getTime() + 30 * 60 * 1000);
+  const minH = String(minTimeDate.getUTCHours()).padStart(2, "0");
+  const minM = String(minTimeDate.getUTCMinutes()).padStart(2, "0");
+  const todayMinTime = `${minH}:${minM}`;
+  const minTimeAllowed = isStartingToday && phase.startDate === today && todayMinTime > "04:00" ? todayMinTime : "04:00";
 
   const submit = async () => {
     if (weekdays.length === 0) {
       setError(isVietnamese ? "Vui lòng chọn ít nhất một thứ trong tuần." : tr("Please select at least one weekday."));
+      return;
+    }
+    if (isStartingToday && phase.startDate === today && time < todayMinTime) {
+      setError(
+        isVietnamese
+          ? `Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo thời gian thực (từ ${todayMinTime} trở đi).`
+          : tr("Start time for today must be at least 30 minutes in the future (from {{time}}).", { time: todayMinTime }),
+      );
       return;
     }
     const distNum = Number(distance);
@@ -608,25 +656,54 @@ export function GeneratePhaseScheduleDialog({
             : tr("Workouts will be scheduled within {{start}} → {{end}} on selected days.", { start: phase.startDate, end: phase.endDate })}
         </p>
 
-        <Field label={isVietnamese ? `Các thứ trong tuần (${weekdays.length}/${phase.sessionsPerWeek} buổi/tuần)` : tr("Days of the week")} required>
+        <Field
+          label={
+            isVietnamese
+              ? `Các thứ trong tuần (${weekdays.length}/${maxDays} buổi/tuần)`
+              : tr("Days of the week ({{selected}}/{{max}})", { selected: weekdays.length, max: maxDays })
+          }
+          required
+        >
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
-            {WEEKDAYS.map((w) => (
-              <Button
-                key={w.n}
-                type="button"
-                size="sm"
-                tone={weekdays.includes(w.n) ? "primary" : "secondary"}
-                onClick={() => toggleDay(w.n)}
-              >
-                {w.label}
-              </Button>
-            ))}
+            {WEEKDAYS.map((w) => {
+              const isSelected = weekdays.includes(w.n);
+              const reachedMax = weekdays.length >= maxDays && !isSelected;
+              return (
+                <Button
+                  key={w.n}
+                  type="button"
+                  size="sm"
+                  tone={isSelected ? "primary" : "secondary"}
+                  disabled={reachedMax}
+                  onClick={() => toggleDay(w.n)}
+                >
+                  {w.label}
+                </Button>
+              );
+            })}
           </div>
         </Field>
 
         <div className={formLayout.columns}>
-          <Field label={tr("Start time")} required hint="04:00 – 20:00">
-            <Input type="time" min="04:00" max="20:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
+          <Field
+            label={tr("Start time")}
+            required
+            hint={
+              isStartingToday && phase.startDate === today && todayMinTime > "04:00"
+                ? isVietnamese
+                  ? `Từ ${todayMinTime} – 20:00 (sau ít nhất 30p)`
+                  : `${todayMinTime} – 20:00`
+                : "04:00 – 20:00"
+            }
+          >
+            <Input
+              type="time"
+              min={minTimeAllowed}
+              max="20:00"
+              step={900}
+              value={time}
+              onChange={(e) => setTime(e.target.value)}
+            />
           </Field>
           <Field label={tr("Surface")} required>
             <Select

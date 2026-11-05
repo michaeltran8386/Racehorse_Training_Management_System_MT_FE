@@ -47,10 +47,37 @@ function newPhase(startDate: string, endDate: string, index: number): TrainingPh
 }
 
 /** Kiểm form trước khi gửi (BE kiểm lại tất cả). Trả câu lỗi đầu tiên hoặc "". */
-function validate(name: string, objective: string, start: string, end: string, phases: TrainingPhase[]): string {
-  if (name.trim().length < 3 || name.trim().length > 150) return tr("Plan name must be 3 to 150 characters.");
-  if (objective.trim().length < 10 || objective.trim().length > 1000) return tr("Objective must be 10 to 1000 characters.");
+function validate(
+  name: string,
+  objective: string,
+  start: string,
+  end: string,
+  phases: TrainingPhase[],
+  isVietnamese: boolean,
+  editing: boolean,
+): string {
+  const trimmedName = name.trim();
+  if (trimmedName.length < 3 || trimmedName.length > 150) return tr("Plan name must be 3 to 150 characters.");
+  if (/^\d+$/.test(trimmedName)) {
+    return isVietnamese ? "Tên giáo án không được đặt hoàn toàn bằng số." : tr("Plan name cannot be only numbers.");
+  }
+  if (!/[\p{L}]/u.test(trimmedName)) {
+    return isVietnamese ? "Tên giáo án phải chứa chữ cái." : tr("Plan name must contain letters.");
+  }
+  const trimmedObj = objective.trim();
+  if (trimmedObj.length < 10 || trimmedObj.length > 1000) return tr("Objective must be 10 to 1000 characters.");
+  if (!/^[\p{L}]/u.test(trimmedObj)) {
+    return isVietnamese
+      ? "Mục tiêu phải bắt đầu bằng chữ cái, không được bắt đầu bằng số hay ký tự đặc biệt."
+      : tr("Objective must start with a letter, not a number or symbol.");
+  }
   if (end < start) return tr("End date must be on or after the start date.");
+  const tomorrow = addDays(todayClub(), 1);
+  if (!editing && start < tomorrow) {
+    return isVietnamese
+      ? "Ngày bắt đầu giáo án phải từ ngày mai trở đi."
+      : tr("Plan start date must be from tomorrow onwards.");
+  }
   const s = new Date(`${start}T00:00:00Z`).getTime();
   const e = new Date(`${end}T00:00:00Z`).getTime();
   const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24));
@@ -72,6 +99,12 @@ function validate(name: string, objective: string, start: string, end: string, p
       });
     }
     if (i > 0 && p.startDate <= sorted[i - 1].endDate) return tr("Phase {{name}} overlaps phase {{prev}}.", { name: p.name, prev: sorted[i - 1].name });
+    if (!p.sessionsPerWeek || p.sessionsPerWeek < 1 || p.sessionsPerWeek > 14) {
+      return isVietnamese ? `Giai đoạn ${p.name}: Số buổi một tuần phải từ 1 đến 14.` : tr("Sessions per week must be 1 to 14.");
+    }
+    if (!p.maxWeeklyDistance || p.maxWeeklyDistance < 500 || p.maxWeeklyDistance > 60000) {
+      return isVietnamese ? `Giai đoạn ${p.name}: Cự ly tối đa mỗi tuần phải từ 500 đến 60.000 m.` : tr("Max distance per week must be 500 to 60,000 m.");
+    }
   }
   return "";
 }
@@ -93,9 +126,10 @@ export default function PlanWizardPage() {
   const [name, setName] = useState("");
   const [objective, setObjective] = useState("");
   const [notes, setNotes] = useState("");
-  const [startDate, setStartDate] = useState(todayClub());
-  const [endDate, setEndDate] = useState(addDays(todayClub(), 41));
-  const [phases, setPhases] = useState<TrainingPhase[]>(() => [newPhase(todayClub(), addDays(todayClub(), 41), 0)]);
+  const tomorrow = addDays(todayClub(), 1);
+  const [startDate, setStartDate] = useState(tomorrow);
+  const [endDate, setEndDate] = useState(addDays(tomorrow, 41));
+  const [phases, setPhases] = useState<TrainingPhase[]>(() => [newPhase(tomorrow, addDays(tomorrow, 41), 0)]);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -246,7 +280,7 @@ export default function PlanWizardPage() {
   };
 
   const save = async (activate: boolean) => {
-    const problem = validate(name, objective, startDate, endDate, phases);
+    const problem = validate(name, objective, startDate, endDate, phases, isVietnamese, editing);
     if (problem) {
       setError(problem);
       return;
@@ -357,8 +391,12 @@ export default function PlanWizardPage() {
               </div>
             </div>
             <div className={styles.twoCol}>
-              <Field label={tr("Start date")} required hint={editing ? undefined : tr("No earlier than 7 days ago")}>
-                <DatePicker value={startDate} onChange={handleStartDateChange} />
+              <Field
+                label={tr("Start date")}
+                required
+                hint={editing ? undefined : isVietnamese ? "Từ ngày mai trở đi" : tr("From tomorrow onwards")}
+              >
+                <DatePicker min={editing ? undefined : tomorrow} value={startDate} onChange={handleStartDateChange} />
               </Field>
               <Field label={tr("End date")} required hint={tr("At least 1 week, at most 52 weeks")}>
                 <DatePicker min={addDays(startDate, 7)} value={endDate} onChange={handleEndDateChange} />
@@ -429,7 +467,17 @@ export default function PlanWizardPage() {
               <DatePicker min={ph.startDate} max={endDate} value={ph.endDate} onChange={(val) => updatePhase(i, { endDate: val })} />
             </Field>
             <Field label={tr("Sessions per week")} required hint={tr("1 – 14")}>
-              <Input type="number" min={1} max={14} value={ph.sessionsPerWeek} onChange={(e) => updatePhase(i, { sessionsPerWeek: Number(e.target.value) })} />
+              <Input
+                type="number"
+                min={1}
+                max={14}
+                value={ph.sessionsPerWeek === 0 ? "" : ph.sessionsPerWeek}
+                onChange={(e) =>
+                  updatePhase(i, {
+                    sessionsPerWeek: e.target.value === "" ? 0 : Number(e.target.value),
+                  })
+                }
+              />
             </Field>
             <Field label={tr("Max distance per week (m)")} required hint={tr("500 – 60 000")}>
               <Input
@@ -437,8 +485,12 @@ export default function PlanWizardPage() {
                 min={500}
                 max={60000}
                 step={100}
-                value={ph.maxWeeklyDistance}
-                onChange={(e) => updatePhase(i, { maxWeeklyDistance: Number(e.target.value) })}
+                value={ph.maxWeeklyDistance === 0 ? "" : ph.maxWeeklyDistance}
+                onChange={(e) =>
+                  updatePhase(i, {
+                    maxWeeklyDistance: e.target.value === "" ? 0 : Number(e.target.value),
+                  })
+                }
               />
             </Field>
             <Field label={tr("Main surface")} required>

@@ -27,7 +27,7 @@ const PAGE_SIZE = 10;
 /** SC-2.02 Danh sách giáo án. Bấm dòng để mở SC-2.04; HT có Lập giáo án và Nhân bản. */
 export default function PlanListPage() {
   useScreenTranslation();
-  useAppLanguage();
+  const { isVietnamese } = useAppLanguage();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const user = useCurrentUser();
@@ -36,7 +36,7 @@ export default function PlanListPage() {
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState(params.get("status") ?? "OPEN");
+  const [activeTab, setActiveTab] = useState(params.get("status") ?? "ALL");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [cloning, setCloning] = useState<TrainingPlan | null>(null);
@@ -60,8 +60,7 @@ export default function PlanListPage() {
   const q = search.toLowerCase();
   const filtered = plans.filter(
     (p) =>
-      (activeTab === "ALL" ||
-        (activeTab === "OPEN" ? p.status === "DRAFT" || p.status === "ACTIVE" : p.status === activeTab)) &&
+      (activeTab === "ALL" || p.status === activeTab) &&
       (p.name.toLowerCase().includes(q) || p.planCode.toLowerCase().includes(q) || p.horseName.toLowerCase().includes(q)),
   );
   const shown = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -71,7 +70,6 @@ export default function PlanListPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <PageHeader
         title="Training Plans"
-        description="Draft → Active → Completed / Cancelled. Open a plan to manage its phases and workouts."
         action={isTrainer ? <Button tone="primary" onClick={() => navigate("/training/plans/new")}>{tr("+ Create New Plan")}</Button> : undefined}
       />
 
@@ -79,12 +77,11 @@ export default function PlanListPage() {
         <div className={styles.toolbar}>
           <Tabs
             items={[
-              { id: "OPEN", label: `Draft + Active (${count("DRAFT") + count("ACTIVE")})` },
-              { id: "ACTIVE", label: `Active (${count("ACTIVE")})` },
-              { id: "DRAFT", label: `Draft (${count("DRAFT")})` },
-              { id: "COMPLETED", label: `Completed (${count("COMPLETED")})` },
-              { id: "CANCELLED", label: `Cancelled (${count("CANCELLED")})` },
-              { id: "ALL", label: `All (${plans.length})` },
+              { id: "ALL", label: isVietnamese ? `Tất cả (${plans.length})` : `All (${plans.length})` },
+              { id: "ACTIVE", label: isVietnamese ? `Đang áp dụng (${count("ACTIVE")})` : `Active (${count("ACTIVE")})` },
+              { id: "DRAFT", label: isVietnamese ? `Chờ kích hoạt (${count("DRAFT")})` : `Pending Activation (${count("DRAFT")})` },
+              { id: "COMPLETED", label: isVietnamese ? `Đã hoàn thành (${count("COMPLETED")})` : `Completed (${count("COMPLETED")})` },
+              { id: "CANCELLED", label: isVietnamese ? `Đã hủy (${count("CANCELLED")})` : `Cancelled (${count("CANCELLED")})` },
             ]}
             active={activeTab}
             onChange={(t) => {

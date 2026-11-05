@@ -54,7 +54,7 @@ export type TrackType = "TURF" | "DIRT" | "SYNTHETIC" | "NONE";
 export type CancelWorkoutReason = "WEATHER" | "TRACK_CONDITION" | "HORSE_HEALTH" | "PLAN_CHANGE" | "OTHER";
 
 export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
-  DRAFT: "Draft",
+  DRAFT: "Pending Activation",
   ACTIVE: "Active",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
@@ -63,9 +63,9 @@ export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
 export type Tone = "ok" | "warn" | "danger" | "neutral" | "info";
 
 export const PLAN_STATUS_TONE: Record<PlanStatus, Tone> = {
-  DRAFT: "neutral",
-  ACTIVE: "info",
-  COMPLETED: "ok",
+  DRAFT: "info",
+  ACTIVE: "ok",
+  COMPLETED: "neutral",
   CANCELLED: "danger",
 };
 

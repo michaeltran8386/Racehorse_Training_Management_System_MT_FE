@@ -2,6 +2,17 @@
 // Khóa là đúng câu tiếng Anh trong code; {{ten}} là biến trong câu ghép.
 // Thêm câu mới: thêm một dòng "English": "Tiếng Việt". Câu không có ở đây sẽ hiện tiếng Anh.
 export const VI_TEXT: Record<string, string> = {
+  "Pending Activation": "Chờ kích hoạt",
+  "Plan name cannot be only numbers.": "Tên giáo án không được đặt hoàn toàn bằng số.",
+  "Plan name must contain letters.": "Tên giáo án phải chứa chữ cái.",
+  "Objective must start with a letter, not a number or symbol.": "Mục tiêu phải bắt đầu bằng chữ cái, không được bắt đầu bằng số hay ký tự đặc biệt.",
+  "From tomorrow onwards": "Từ ngày mai trở đi",
+  "Plan start date must be from tomorrow onwards.": "Ngày bắt đầu giáo án phải từ ngày mai trở đi.",
+  "Start time for today must be at least 30 minutes in the future (from {{time}}).": "Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo thời gian thực (từ {{time}} trở đi).",
+  "This phase is limited to {{count}} sessions per week.": "Giai đoạn này giới hạn tối đa {{count}} buổi/tuần.",
+  "Days of the week ({{selected}}/{{max}})": "Các thứ trong tuần ({{selected}}/{{max}} buổi/tuần)",
+  "Week range": "Cụm tuần",
+  "Select week": "Chọn cụm tuần",
   "View chart": "Xem biểu đồ",
   "Switch horse": "Đổi ngựa",
   "⚡ Sinh lịch": "⚡ Sinh lịch",

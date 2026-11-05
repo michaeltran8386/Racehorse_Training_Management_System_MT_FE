@@ -190,7 +190,7 @@ export const en = {
   },
   calendar: {
     title: "Training Schedule",
-    subtitle: "Workouts by day or week. Heavy workouts are blocked while a horse is under a Training Lock.",
+    subtitle: "Workouts by week. Heavy workouts are blocked while a horse is under a Training Lock.",
     trialRuns: "Trial runs",
     scheduleWorkout: "+ Schedule Workout",
     today: "Today",

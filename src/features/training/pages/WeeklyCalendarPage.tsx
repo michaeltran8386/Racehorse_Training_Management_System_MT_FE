@@ -8,9 +8,7 @@ import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Card } from "@/shared/components/ui/Card";
 import { Modal } from "@/shared/components/ui/Modal";
-import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { SkeletonCards } from "@/shared/components/ui/Skeleton";
-import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
 import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
@@ -40,9 +38,11 @@ function shiftDay(date: string, days: number): string {
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
-function mondayOf(date: string): string {
-  const d = new Date(`${date}T00:00:00Z`);
-  return shiftDay(date, -((d.getUTCDay() + 6) % 7));
+function formatWeekRange(startDateStr: string): string {
+  const endDateStr = shiftDay(startDateStr, 6);
+  const [sy, sm, sd] = startDateStr.split("-").map(Number);
+  const [ey, em, ed] = endDateStr.split("-").map(Number);
+  return `${sd}/${sm}/${sy} – ${ed}/${em}/${ey}`;
 }
 function minutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
@@ -81,7 +81,6 @@ export default function WeeklyCalendarPage() {
   const [params] = useSearchParams();
   const isTrainer = user.role === "HEAD_TRAINER";
 
-  const [mode, setMode] = useState<"day" | "week">("day");
   const [date, setDate] = useState(todayClub());
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
@@ -96,8 +95,33 @@ export default function WeeklyCalendarPage() {
   const [dialog, setDialog] = useState<Dialog>(null);
   const latest = useRef(0);
 
-  const from = mode === "day" ? date : mondayOf(date);
-  const to = mode === "day" ? date : shiftDay(mondayOf(date), 6);
+  const from = date;
+  const to = shiftDay(date, 6);
+
+  const baseToday = todayClub();
+  const weekOptions = useMemo(() => {
+    const options = [];
+    const offsets = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8];
+    for (const offset of offsets) {
+      const wStart = shiftDay(baseToday, offset * 7);
+      const label = formatWeekRange(wStart);
+      let prefix = "";
+      if (offset === 0) prefix = isVietnamese ? "Tuần này: " : "This week: ";
+      else if (offset === -1) prefix = isVietnamese ? "Tuần trước: " : "Last week: ";
+      else if (offset === 1) prefix = isVietnamese ? "Tuần sau: " : "Next week: ";
+      options.push({
+        value: wStart,
+        label: `${prefix}${label}`,
+      });
+    }
+    if (!options.some((o) => o.value === date)) {
+      options.unshift({
+        value: date,
+        label: formatWeekRange(date),
+      });
+    }
+    return options;
+  }, [baseToday, isVietnamese, date]);
 
   // Đổi ngày nhanh: chỉ nhận kết quả của lần tải mới nhất.
   const load = useCallback(async () => {
@@ -200,7 +224,7 @@ export default function WeeklyCalendarPage() {
     );
   };
 
-  const days = mode === "week" ? Array.from({ length: 7 }, (_, i) => shiftDay(from, i)) : [date];
+  const days = Array.from({ length: 7 }, (_, i) => shiftDay(from, i));
   const b = selected ? sessionButtons(selected, user.role) : null;
 
   return (
@@ -229,12 +253,30 @@ export default function WeeklyCalendarPage() {
 
       <Card pad={16}>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-          <Button tone="ghost" size="sm" onClick={() => setDate(shiftDay(date, mode === "day" ? -1 : -7))} aria-label={isVietnamese ? "Trước" : tr("Previous")}>‹</Button>
-          <Input type="date" aria-label={tr("Date")} value={date} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ width: 170 }} />
-          <Button tone="ghost" size="sm" onClick={() => setDate(shiftDay(date, mode === "day" ? 1 : 7))} aria-label={isVietnamese ? "Sau" : tr("Next")}>›</Button>
-          <Button tone="secondary" size="sm" onClick={() => setDate(todayClub())}>{t("calendar.today")}</Button>
-          <Button tone={mode === "day" ? "primary" : "secondary"} aria-pressed={mode === "day"} size="sm" onClick={() => setMode("day")}>{t("calendar.day")}</Button>
-          <Button tone={mode === "week" ? "primary" : "secondary"} aria-pressed={mode === "week"} size="sm" onClick={() => setMode("week")}>{t("calendar.week")}</Button>
+          <Button
+            tone="secondary"
+            size="sm"
+            onClick={() => setDate(shiftDay(date, -7))}
+            aria-label={isVietnamese ? "Tuần trước" : tr("Previous week")}
+          >
+            ‹ {isVietnamese ? "Tuần trước" : tr("Previous week")}
+          </Button>
+          <div style={{ minWidth: 280 }}>
+            <Select
+              aria-label={isVietnamese ? "Cụm tuần" : tr("Week range")}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              options={weekOptions}
+            />
+          </div>
+          <Button
+            tone="secondary"
+            size="sm"
+            onClick={() => setDate(shiftDay(date, 7))}
+            aria-label={isVietnamese ? "Tuần sau" : tr("Next week")}
+          >
+            {isVietnamese ? "Tuần sau" : tr("Next week")} ›
+          </Button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))", gap: "0.5rem", marginTop: "0.75rem" }}>
           <SearchSelect aria-label={tr("Horse")} value={horse} onChange={setHorse} options={[{ value: "ALL", label: t("calendar.allHorses") }, ...uniq(sessions, (s) => s.horseId, (s) => s.horseName)]} />
@@ -275,19 +317,6 @@ export default function WeeklyCalendarPage() {
         <div>
           {loading ? (
             <SkeletonCards count={3} />
-          ) : mode === "day" ? (
-            shown.length === 0 ? (
-              <EmptyState title={tr("No workouts on {{date}}.", { date: formatDate(`${date}T00:00`) })} />
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <div style={{ fontWeight: 700, fontSize: "var(--fs-body-lg)", marginBottom: "0.25rem" }}>
-                  {formatCalendarDay(date, isVietnamese).weekdayFull}, {formatDate(`${date}T00:00`)} ({shown.length} {isVietnamese ? "bài tập" : shown.length === 1 ? "workout" : "workouts"})
-                </div>
-                {shown.map((s) => (
-                  <SessionBlock key={s.id} s={s} />
-                ))}
-              </div>
-            )
           ) : (
             <div className={styles.calendarCard}>
               <div className={styles.calendarGrid}>
@@ -305,7 +334,7 @@ export default function WeeklyCalendarPage() {
                         <span className={`${styles.workoutCountPill} ${daySessions.length > 0 ? styles.hasWorkoutsPill : ""}`}>
                           {daySessions.length > 0
                             ? `${daySessions.length} ${isVietnamese ? "bài tập" : daySessions.length === 1 ? "workout" : "workouts"}`
-                            : (isVietnamese ? "0 bài" : tr("0 workouts"))}
+                            : isVietnamese ? "0 bài" : tr("0 workouts")}
                         </span>
                       </div>
                       <div className={styles.columnBody}>

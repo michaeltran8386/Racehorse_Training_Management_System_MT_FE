@@ -192,7 +192,7 @@ export const vi: TranslationResources = {
   },
   calendar: {
     title: "Lịch tuần huấn luyện",
-    subtitle: "Bài tập theo ngày hoặc tuần. Bài tập nặng bị chặn khi ngựa đang có lệnh Khóa huấn luyện.",
+    subtitle: "Bài tập theo tuần. Bài tập nặng bị chặn khi ngựa đang có lệnh Khóa huấn luyện.",
     trialRuns: "Lượt chạy thử",
     scheduleWorkout: "+ Lên lịch bài tập",
     today: "Hôm nay",
