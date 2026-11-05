@@ -235,7 +235,7 @@ export function NutritionPlanModal({
         });
         toast.show(
           submitImmediately
-            ? tr('Nutrition plan submitted for veterinarian approval.')
+            ? tr('Khẩu phần ăn đã được áp dụng trực tiếp cho ngựa.')
             : tr('Nutrition plan draft saved successfully.'),
           'ok',
         );
@@ -288,7 +288,7 @@ export function NutritionPlanModal({
             {busy ? tr('Saving...') : tr('Save Draft')}
           </Button>
           <Button tone="primary" onClick={() => handleSave(true)} disabled={busy || loadingInitial}>
-            {busy ? tr('Submitting...') : tr('Submit for Approval')}
+            {busy ? tr('Applying...') : tr('Save & Apply Plan')}
           </Button>
         </>
       }
