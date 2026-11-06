@@ -22,6 +22,7 @@ import type { SettableStallStatus, Stall, Zone } from "../types";
 import { STALL_STATUS_LABEL } from "../types";
 import { GridCell, ZoneGrid, type CellLook } from "../components/ZoneGrid";
 import { AssignStallDialog, ReturnStallDialog, TransferStallDialog } from "../components/StallDialogs";
+import { StallDialog, ZoneDialog } from "../components/StallZoneModals";
 import { HEALTH_STATUS } from "@/shared/lib/status";
 import { HORSE_STATUS_COLOR, allocationOf, useStallCounts } from "../stallUtils";
 
@@ -52,6 +53,8 @@ export default function StableMapPage() {
   const [onlyMine, setOnlyMine] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [zoneModalOpen, setZoneModalOpen] = useState(false);
+  const [stallModalOpen, setStallModalOpen] = useState(false);
   const [statusChange, setStatusChange] = useState<(typeof stallStatusOptions)[number] | null>(null);
   const [statusNote, setStatusNote] = useState("");
   const [statusBusy, setStatusBusy] = useState(false);
@@ -291,6 +294,12 @@ export default function StableMapPage() {
                 </div>
               )}
             </div>
+            {canSetStatus && (
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button tone="primary" onClick={() => setZoneModalOpen(true)}>+ {tr("Thêm khu chuồng")}</Button>
+                <Button tone="secondary" onClick={() => setStallModalOpen(true)}>+ {tr("Thêm ô chuồng")}</Button>
+              </div>
+            )}
             <Segmented
               label={tr("View")}
               items={[
@@ -311,10 +320,13 @@ export default function StableMapPage() {
       )}
 
       {zones && zones.length === 0 ? (
-        <div style={{ padding: 40, textAlign: "center", border: "2px dashed var(--border)", borderRadius: "var(--r-lg)" }}>
+        <div style={{ padding: 40, textAlign: "center", border: "2px dashed var(--border)", borderRadius: "var(--r-lg)", display: "grid", gap: 12, justifyItems: "center" }}>
           <p>{tr("No barn zones have been set up yet.")}</p>
           {user.role === "CLUB_MANAGER" && (
-            <LinkButton to="/catalogs/stalls">{tr("Go to the stall catalogue")}</LinkButton>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button tone="primary" onClick={() => setZoneModalOpen(true)}>+ {tr("Thêm khu chuồng đầu tiên")}</Button>
+              <LinkButton to="/catalogs/stalls" tone="secondary">{tr("Go to the stall catalogue")}</LinkButton>
+            </div>
           )}
         </div>
       ) : (
@@ -434,6 +446,28 @@ export default function StableMapPage() {
           allocation={allocationOf(selected)!}
           onClose={() => closeDialog(false)}
           onDone={() => closeDialog(true)}
+        />
+      )}
+      {zoneModalOpen && (
+        <ZoneDialog
+          onClose={() => setZoneModalOpen(false)}
+          onSaved={(newZone) => {
+            setZoneModalOpen(false);
+            setZoneId(newZone.id);
+            loadZones();
+          }}
+        />
+      )}
+      {stallModalOpen && (
+        <StallDialog
+          zone={zone}
+          zones={zones ?? []}
+          onClose={() => setStallModalOpen(false)}
+          onSaved={() => {
+            setStallModalOpen(false);
+            loadStalls();
+            loadZones();
+          }}
         />
       )}
     </div>
