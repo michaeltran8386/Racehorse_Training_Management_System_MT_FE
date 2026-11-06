@@ -76,7 +76,7 @@ export const vi: TranslationResources = {
     plans: "Kế hoạch huấn luyện",
     calendar: "Lịch tuần",
     trials: "Lượt chạy thử",
-    metrics: "Chỉ số buổi tập",
+    metrics: "Ghi kết quả buổi tập",
     monitor: "Giám sát thời gian thực",
     alerts: "Cảnh báo sau buổi tập",
     races: "Giải đua & Lịch thi đấu",

@@ -307,7 +307,17 @@ export default function PlanDetailPage() {
                           <div style={{ display: "flex", gap: "0.35rem", justifyContent: "flex-end" }}>
                             {b.edit && <Button size="sm" tone="ghost" onClick={() => setDialog({ kind: "edit", session: s })}>{tr("Edit")}</Button>}
                             {b.record && (
-                              <LinkButton to={`/training/sessions/${s.id}/result`} size="sm" tone="secondary">{tr("Record result")}</LinkButton>
+                              <LinkButton to={`/training/sessions/${s.id}/result`} size="sm" tone="secondary">{isVietnamese ? "Ghi kết quả" : tr("Record result")}</LinkButton>
+                            )}
+                            {!b.record && b.recordDisabledReason && (
+                              <Button
+                                size="sm"
+                                tone="secondary"
+                                disabled
+                                title={isVietnamese ? `Chưa đến giờ bắt đầu (${s.startTime} ngày ${s.sessionDate})` : tr("Workout has not started yet")}
+                              >
+                                {isVietnamese ? "Ghi kết quả" : tr("Record result")}
+                              </Button>
                             )}
                             {b.viewResult && (
                               <LinkButton to={`/training/sessions/${s.id}/result`} size="sm" tone="secondary">{tr("View result")}</LinkButton>

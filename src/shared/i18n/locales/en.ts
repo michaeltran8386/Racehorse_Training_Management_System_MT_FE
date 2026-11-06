@@ -74,7 +74,7 @@ export const en = {
     plans: "Training Plans",
     calendar: "Weekly Calendar",
     trials: "Trial Runs",
-    metrics: "Session Metrics",
+    metrics: "Record Results",
     monitor: "Session Telemetry",
     alerts: "Post-workout Alerts",
     races: "Race Entries",

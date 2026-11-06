@@ -5,6 +5,7 @@ export interface SessionButtons {
   edit: boolean; // BTN-2.20: Đã lên lịch và chưa tới giờ
   cancel: boolean; // BTN-2.21: Đã lên lịch, Bị chặn, Bỏ lỡ
   record: boolean; // BTN-2.22: Đã lên lịch đã tới giờ; Bỏ lỡ trong 7 ngày
+  recordDisabledReason?: string; // lý do chưa thể ghi kết quả (chưa tới giờ tập)
   viewResult: boolean; // BTN-2.23: Hoàn thành
   restore: boolean; // BTN-2.24: Bị chặn
   restoreBlockedReason?: string; // vô hiệu hóa khi ngựa vẫn đang khóa
@@ -30,6 +31,10 @@ export function sessionButtons(s: ExerciseSession, role: string): SessionButtons
     edit: ht && planOpen && s.status === "SCHEDULED" && !started,
     cancel: ht && (s.status === "SCHEDULED" || s.status === "BLOCKED" || s.status === "MISSED"),
     record: ht && ((s.status === "SCHEDULED" && started) || missedInTime),
+    recordDisabledReason:
+      ht && s.status === "SCHEDULED" && !started
+        ? "Chưa đến giờ bắt đầu buổi tập."
+        : undefined,
     viewResult: s.status === "COMPLETED",
     restore: ht && s.status === "BLOCKED",
     restoreBlockedReason: s.isHorseLocked ? "The horse is still under a Training Lock." : undefined,

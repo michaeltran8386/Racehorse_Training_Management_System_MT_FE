@@ -371,6 +371,16 @@ export default function WeeklyCalendarPage() {
             <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
               {b.edit && <Button size="sm" tone="ghost" onClick={() => setDialog({ kind: "edit", session: selected })}>{isVietnamese ? "Sửa" : tr("Edit")}</Button>}
               {b.record && <LinkButton to={`/training/sessions/${selected.id}/result`} size="sm" tone="secondary">{isVietnamese ? "Ghi kết quả" : tr("Record result")}</LinkButton>}
+              {!b.record && b.recordDisabledReason && (
+                <Button
+                  size="sm"
+                  tone="secondary"
+                  disabled
+                  title={isVietnamese ? `Chưa đến giờ bắt đầu (${selected.startTime} ngày ${selected.sessionDate})` : tr("Workout has not started yet")}
+                >
+                  {isVietnamese ? "Ghi kết quả" : tr("Record result")}
+                </Button>
+              )}
               {b.viewResult && <LinkButton to={`/training/sessions/${selected.id}/result`} size="sm" tone="secondary">{isVietnamese ? "Xem kết quả" : tr("View result")}</LinkButton>}
               {b.restore && (
                 <Button size="sm" tone="primary" disabled={Boolean(b.restoreBlockedReason)} title={b.restoreBlockedReason ? tr(b.restoreBlockedReason) : undefined} onClick={() => setDialog({ kind: "restore", session: selected })}>

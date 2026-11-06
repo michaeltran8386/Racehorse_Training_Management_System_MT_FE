@@ -33,7 +33,7 @@ function minusDays(date: string, days: number): string {
  */
 export default function SessionMetricsPage() {
   useScreenTranslation();
-  useAppLanguage();
+  const { isVietnamese } = useAppLanguage();
   const user = useCurrentUser();
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [horses, setHorses] = useState<{ value: string; label: string }[]>([]);
@@ -91,14 +91,14 @@ export default function SessionMetricsPage() {
         {s.result?.performanceScore != null ? `${s.result.performanceScore}/10` : "—"}
       </td>
       <td style={{ padding: "0.6rem 0.75rem", textAlign: "right" }}>
-        <LinkButton to={`/training/sessions/${s.id}/result`} size="sm" tone="secondary">{tr(action)}</LinkButton>
+        <LinkButton to={`/training/sessions/${s.id}/result`} size="sm" tone="secondary">{isVietnamese ? (action === "Record result" ? "Ghi kết quả" : "Xem kết quả") : tr(action)}</LinkButton>
       </td>
     </tr>
   );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      <PageHeader title="Session Metrics" description="Log workout performance, biometric telemetry, and abnormal health indicators." action={(user.role === "HEAD_TRAINER" || user.role === "VETERINARIAN") ? <LinkButton to="/training/alerts" tone="secondary">{tr("Abnormal-sign alerts")}</LinkButton> : undefined} />
+      <PageHeader title={isVietnamese ? "Ghi kết quả buổi tập" : "Session Metrics"} description={isVietnamese ? "Ghi nhận kết quả tập luyện, dữ liệu sinh trắc (nhịp tim, tốc độ, cự ly) và cảnh báo dấu hiệu bất thường." : "Log workout performance, biometric telemetry, and abnormal health indicators."} action={(user.role === "HEAD_TRAINER" || user.role === "VETERINARIAN") ? <LinkButton to="/training/alerts" tone="secondary">{isVietnamese ? "Cảnh báo dấu hiệu bất thường" : tr("Abnormal-sign alerts")}</LinkButton> : undefined} />
 
       {/* KPI Stats Overview */}
       <div className={styles.metrics}>
@@ -140,7 +140,7 @@ export default function SessionMetricsPage() {
 
       {user.role === "HEAD_TRAINER" && (
         <Card pad={16} className={styles.tableCard}>
-          <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{tr("Waiting for a result ({{count}})", { count: pending.length })}</h2>
+          <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{isVietnamese ? `Buổi tập chờ ghi kết quả (${pending.length})` : tr("Waiting for a result ({{count}})", { count: pending.length })}</h2>
           {loading ? null : pending.length === 0 ? (
             <EmptyState title={tr("Nothing to record right now.")} />
           ) : (
@@ -155,7 +155,7 @@ export default function SessionMetricsPage() {
       )}
 
       <Card pad={16} className={styles.tableCard}>
-        <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{tr("Results – last 14 days ({{count}})", { count: recent.length })}</h2>
+        <h2 style={{ margin: "0 0 0.75rem", fontSize: "var(--fs-body-lg)" }}>{isVietnamese ? `Kết quả 14 ngày gần nhất (${recent.length})` : tr("Results – last 14 days ({{count}})", { count: recent.length })}</h2>
         {loading ? (
           <div style={{ color: "var(--text-muted)" }}>{tr("Loading...")}</div>
         ) : recent.length === 0 ? (
