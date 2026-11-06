@@ -213,7 +213,8 @@ export default function TrialRunsPage() {
                                   </Button>
                                 </div>
                               )}
-                            {(actions.record || actions.viewResult) && (
+                            {/* Buổi chưa tới giờ vẫn hiện "Record result" (sau khi chạy mô phỏng sớm); BE quyết định có cho lưu không. */}
+                            {(actions.record || actions.viewResult || (upcoming && user.role === "HEAD_TRAINER")) && (
                               <LinkButton to={`/training/sessions/${row.id}/result`} size="sm" tone={row.status === "COMPLETED" ? "secondary" : "primary"}>
                                 {row.status === "COMPLETED"
                                   ? (isVietnamese ? "Xem kết quả" : tr("View result"))
