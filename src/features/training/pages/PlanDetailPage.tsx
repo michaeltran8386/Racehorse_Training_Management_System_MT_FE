@@ -15,6 +15,7 @@ import { messageFor } from "@/shared/lib/messages";
 import { todayClub, trainingApi } from "../api";
 import { ActivatePlanDialog, ClonePlanDialog, ClosePlanDialog } from "../components/PlanDialogs";
 import { ProgressBar } from "../components/ProgressBar";
+import { useAllowEarlyStart } from "../components/useAllowEarlyStart";
 import { sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
 import {
   CancelWorkoutDialog,
@@ -66,6 +67,7 @@ export default function PlanDetailPage() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const user = useCurrentUser();
+  const allowEarly = useAllowEarlyStart(user.role === "HEAD_TRAINER");
   const isTrainer = user.role === "HEAD_TRAINER";
 
   const [plan, setPlan] = useState<PlanWithSessions | null>(null);
@@ -282,7 +284,7 @@ export default function PlanDetailPage() {
                 </thead>
                 <tbody>
                   {shownSessions.map((s) => {
-                    const b = sessionButtons(s, user.role);
+                    const b = sessionButtons(s, user.role, allowEarly);
                     return (
                       <tr key={s.id} style={{ borderBottom: "1px solid var(--border)" }}>
                         <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>{s.sessionDate} {s.startTime}</td>

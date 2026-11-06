@@ -18,6 +18,7 @@ import { todayClub, trainingApi } from "../api";
 import { TRACK_LABEL } from "../types";
 import type { ExerciseSession, TrainingPlan } from "../types";
 import { WorkoutDialog } from "../components/WorkoutDialogs";
+import { useAllowEarlyStart } from "../components/useAllowEarlyStart";
 import { sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
 
 import { tr } from "@/shared/i18n/tr";
@@ -36,6 +37,7 @@ function plusDays(date: string, days: number): string {
 export default function TrialRunsPage() {
   useScreenTranslation();
   const user = useCurrentUser();
+  const allowEarly = useAllowEarlyStart(user.role === "HEAD_TRAINER");
   const toast = useToast();
   const { isVietnamese, t } = useAppLanguage();
   const [from, setFrom] = useState(todayClub());
@@ -185,7 +187,7 @@ export default function TrialRunsPage() {
                 <tbody>
                   {rows.map((row) => {
                     const upcoming = row.status === "SCHEDULED" && Date.parse(row.scheduledAt) > Date.now();
-                    const actions = sessionButtons(row, user.role);
+                    const actions = sessionButtons(row, user.role, allowEarly);
                     return (
                       <tr key={row.id} style={{ borderBottom: "1px solid var(--border)" }}>
                         <td style={{ padding: "0.5rem 0.75rem", fontWeight: 700 }}>{row.startTime}</td>
@@ -213,9 +215,15 @@ export default function TrialRunsPage() {
                                   <Button
                                     size="sm"
                                     tone="primary"
-                                    // Buổi chưa tới giờ vẫn bấm được: BE quyết định (cờ dev SIMULATOR_ALLOW_EARLY), nếu chặn thì hiện lỗi.
-                                    disabled={launchingId === row.id || row.isHorseLocked}
-                                    title={row.isHorseLocked ? tr("The horse is still under a Training Lock.") : undefined}
+                                    // Chưa tới giờ thì khóa, trừ khi BE bật cờ dev SIMULATOR_ALLOW_EARLY.
+                                    disabled={launchingId === row.id || row.isHorseLocked || (upcoming && !allowEarly)}
+                                    title={
+                                      row.isHorseLocked
+                                        ? tr("The horse is still under a Training Lock.")
+                                        : upcoming && !allowEarly
+                                          ? tr("The workout has not reached its scheduled start time.")
+                                          : undefined
+                                    }
                                     onClick={() => void launchSimulation(row.id)}
                                   >
                                     {launchingId === row.id

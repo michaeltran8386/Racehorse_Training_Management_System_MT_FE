@@ -20,7 +20,7 @@ function startOfDay(d: Date): Date {
   return res;
 }
 
-/** Buổi chưa ghi kết quả nhưng đã chạy mô phỏng xong (có thể sớm hơn giờ tập khi BE bật cờ dev). */
+/** Buổi chưa ghi kết quả nhưng đã chạy mô phỏng xong. */
 export function isSimulatedAwaitingResult(s: ExerciseSession): boolean {
   return s.status === "SCHEDULED" && s.simulationStatus === "COMPLETED";
 }
@@ -43,12 +43,13 @@ export function sessionStatusTone(s: ExerciseSession): Tone {
   return SESSION_STATUS_TONE[s.status];
 }
 
-export function sessionButtons(s: ExerciseSession, role: string): SessionButtons {
+/** allowEarly = cờ dev của BE; tắt thì chỉ cho ghi kết quả khi đã tới giờ tập. */
+export function sessionButtons(s: ExerciseSession, role: string, allowEarly = false): SessionButtons {
   const ht = role === "HEAD_TRAINER";
   const planOpen = s.planStatus === undefined || s.planStatus === "DRAFT" || s.planStatus === "ACTIVE";
   const scheduledTime = new Date(s.scheduledAt).getTime();
-  // Đã mô phỏng xong thì coi như buổi tập đã diễn ra: cho ghi kết quả ngay.
-  const started = scheduledTime <= Date.now() || isSimulatedAwaitingResult(s);
+  // Chỉ khi bật cờ dev: đã mô phỏng xong thì cho ghi kết quả trước giờ tập.
+  const started = scheduledTime <= Date.now() || (allowEarly && isSimulatedAwaitingResult(s));
   // Bug #62: BE tính hạn ghi muộn đến 00:00 ngày thứ 8 sau ngày tập (startOfClubDay + 8 ngày).
   const deadline = startOfDay(new Date(s.scheduledAt)).getTime() + 8 * DAY;
   const missedInTime = s.status === "MISSED" && Date.now() < deadline;

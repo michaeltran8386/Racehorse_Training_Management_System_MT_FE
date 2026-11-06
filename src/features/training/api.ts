@@ -364,6 +364,10 @@ export const trainingApi = {
     return (await api<BeWorkout[]>("GET", `/training/trial-runs${qs}`)).map((w) => toSession(w));
   },
 
+  async getSimulatorConfig(): Promise<{ allowEarlyStart: boolean }> {
+    return api<{ allowEarlyStart: boolean }>("GET", "/simulator/config");
+  },
+
   async startSimulation(workoutId: string): Promise<WorkoutSimulationStart> {
     return api<WorkoutSimulationStart>("POST", `/simulator/workouts/${workoutId}/start`);
   },

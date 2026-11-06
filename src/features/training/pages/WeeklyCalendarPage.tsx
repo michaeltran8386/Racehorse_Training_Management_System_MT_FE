@@ -17,6 +17,7 @@ import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
 import { formatDate } from "@/shared/lib/format";
 import { todayClub, trainingApi } from "../api";
+import { useAllowEarlyStart } from "../components/useAllowEarlyStart";
 import { sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
 import { CancelWorkoutDialog, RestoreWorkoutDialog, WorkoutDialog } from "../components/WorkoutDialogs";
 import {
@@ -82,6 +83,7 @@ type Dialog =
 export default function WeeklyCalendarPage() {
   useScreenTranslation();
   const user = useCurrentUser();
+  const allowEarly = useAllowEarlyStart(user.role === "HEAD_TRAINER");
   const { isVietnamese, t } = useAppLanguage();
   const [params] = useSearchParams();
   const isTrainer = user.role === "HEAD_TRAINER";
@@ -231,7 +233,7 @@ export default function WeeklyCalendarPage() {
   };
 
   const days = Array.from({ length: 7 }, (_, i) => shiftDay(from, i));
-  const b = selected ? sessionButtons(selected, user.role) : null;
+  const b = selected ? sessionButtons(selected, user.role, allowEarly) : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
@@ -399,7 +401,7 @@ export default function WeeklyCalendarPage() {
               {!b.record && b.recordDisabledReason && (
                 <div style={{ color: "var(--muted)" }}>
                   {tr("Results can be recorded from {{time}} on {{date}}.", { time: selected.startTime, date: selected.sessionDate })}
-                  {selected.sessionType === "TRIAL" ? ` ${tr("Run the simulation on the Trial Runs page to record earlier.")}` : ""}
+                  {allowEarly && selected.sessionType === "TRIAL" ? ` ${tr("Run the simulation on the Trial Runs page to record earlier.")}` : ""}
                 </div>
               )}
               {selected.statusReason && <div style={{ color: "var(--danger)" }}>{localizeServerText(selected.statusReason)}</div>}

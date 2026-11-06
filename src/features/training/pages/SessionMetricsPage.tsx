@@ -14,6 +14,7 @@ import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { messageFor } from "@/shared/lib/messages";
 import { getHorses } from "@/features/horses/api";
 import { todayClub, trainingApi } from "../api";
+import { useAllowEarlyStart } from "../components/useAllowEarlyStart";
 import { sessionButtons } from "../components/sessionRules";
 import { EXERCISE_TYPE_LABEL, SESSION_STATUS_LABEL, SESSION_STATUS_TONE } from "../types";
 import type { ExerciseSession } from "../types";
@@ -35,6 +36,7 @@ export default function SessionMetricsPage() {
   useScreenTranslation();
   const { isVietnamese } = useAppLanguage();
   const user = useCurrentUser();
+  const allowEarly = useAllowEarlyStart(user.role === "HEAD_TRAINER");
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [horses, setHorses] = useState<{ value: string; label: string }[]>([]);
   const [horseId, setHorseId] = useState("");
@@ -53,7 +55,7 @@ export default function SessionMetricsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const pending = sessions.filter((s) => sessionButtons(s, user.role).record);
+  const pending = sessions.filter((s) => sessionButtons(s, user.role, allowEarly).record);
   const recent = sessions.filter((s) => s.status === "COMPLETED").reverse();
 
   const totalSessionsCount = sessions.length;
