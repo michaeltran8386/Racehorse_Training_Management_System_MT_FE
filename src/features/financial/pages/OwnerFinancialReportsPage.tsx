@@ -23,6 +23,7 @@ import { messageFor } from "@/shared/lib/messages";
 import { fetchOwnerSummary, changeInvoiceStatus, generateMonthlyInvoices, payInvoice } from "../api";
 import type { FinancialInvoice, InvoiceStatus, OwnerSummaryResponse } from "../types";
 import { exportStatementXlsx, printStatement } from "../statementExport";
+import { invoiceStatusLabel } from "../invoiceStatus";
 
 const PAGE_SIZE = 10;
 
@@ -52,8 +53,10 @@ export default function OwnerFinancialReportsPage() {
   // Generate monthly invoices modal state
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
   const [billingPeriodInput, setBillingPeriodInput] = useState(() => {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const now = new Date(Date.now() + 7 * 3600000);
+    now.setUTCDate(1);
+    now.setUTCMonth(now.getUTCMonth() - 1);
+    return now.toISOString().slice(0, 7);
   });
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
@@ -88,7 +91,7 @@ export default function OwnerFinancialReportsPage() {
     setStatusMessage(null);
     try {
       await changeInvoiceStatus(id, newStatus);
-      setStatusMessage(tr("Invoice status updated to {{status}}", { status: tr(newStatus) }));
+      setStatusMessage(tr("Invoice status updated to {{status}}", { status: invoiceStatusLabel(newStatus) }));
       await loadData();
     } catch (err) {
       setActionError(messageFor(err));
@@ -125,7 +128,7 @@ export default function OwnerFinancialReportsPage() {
   }
 
   async function handleConfirmGenerate() {
-    if (!billingPeriodInput.match(/^\d{4}-\d{2}$/)) {
+    if (!billingPeriodInput.match(/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/)) {
       setGenerateError(tr("Please enter a valid billing period in YYYY-MM format (e.g. 2026-11)"));
       return;
     }
@@ -134,12 +137,12 @@ export default function OwnerFinancialReportsPage() {
     try {
       const res = await generateMonthlyInvoices(billingPeriodInput);
       setStatusMessage(
-        tr(`Generated ${res.createdCount} draft statements for period ${res.billingPeriod}`),
+        tr("Generated {{count}} unissued statements for period {{period}}", { count: res.createdCount, period: res.billingPeriod }),
       );
       setIsGenerateOpen(false);
       await loadData();
     } catch (err: any) {
-      setGenerateError(err?.message || tr("Failed to generate monthly invoices"));
+      setGenerateError(messageFor(err));
     } finally {
       setGenerating(false);
     }
@@ -210,13 +213,15 @@ export default function OwnerFinancialReportsPage() {
             <Button tone="secondary" icon="download" disabled={filteredInvoices.length === 0} onClick={() => exportStatementXlsx(filteredInvoices, periodLabel)}>
               {tr("Export Excel")}
             </Button>
-            {isClubManager && <Button tone="primary" onClick={handleOpenGenerate}>+ {tr("Create monthly drafts")}</Button>}
+            {isClubManager && <Button tone="primary" onClick={handleOpenGenerate}>+ {tr("Create monthly statements")}</Button>}
           </div>
         }
       />
 
       {statusMessage && <Alert tone="ok" onDismiss={() => setStatusMessage(null)}>{statusMessage}</Alert>}
       {actionError && <Alert tone="danger" title={tr("Failed to update invoice status")} onDismiss={() => setActionError("")}>{actionError}</Alert>}
+
+      {summary && <div role="status"><Badge tone={summary.outstandingDebt > 0 ? "danger" : "ok"}>{tr("Outstanding balance")}: {summary.outstandingDebt == null ? "—" : summary.outstandingDebt.toLocaleString(locale) + " VND"}</Badge></div>}
 
       {/* KPI Tiles */}
       <div className={styles.metrics}>
@@ -237,7 +242,7 @@ export default function OwnerFinancialReportsPage() {
           label={tr("Net total across statements")}
           value={summary ? totalNet.toLocaleString(locale) : "—"}
           unit="VND"
-          caption={tr("Includes draft and paid statements; not an outstanding balance.")}
+          caption={tr("Includes unissued and paid statements; not an outstanding balance.")}
         />
         <KpiTile
           label={tr("Billing Statements")}
@@ -295,7 +300,7 @@ export default function OwnerFinancialReportsPage() {
             <label htmlFor="invoice-status" className={styles.filterLabel}>{tr("Status")}</label>
             <select id="invoice-status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as InvoiceStatus | "ALL"); setPage(1); }} className={styles.periodSelect}>
               <option value="ALL">{tr("All statuses")}</option>
-              {(["DRAFT", "SENT", "PAID", "OVERDUE"] as const).map((status) => <option key={status} value={status}>{tr(status)}</option>)}
+              {(["DRAFT", "SENT", "PAID", "OVERDUE"] as const).map((status) => <option key={status} value={status}>{invoiceStatusLabel(status)}</option>)}
             </select>
           </div>
           <div className={styles.filterField}>
@@ -338,6 +343,7 @@ export default function OwnerFinancialReportsPage() {
                   <th style={{ padding: "0.75rem 0.5rem" }}>{tr("Conditioning")}</th>
                   <th style={{ padding: "0.75rem 0.5rem" }}>{tr("Prize Credit")}</th>
                   <th style={{ padding: "0.75rem 0.5rem" }}>{tr("Net Amount")}</th>
+                  <th style={{ padding: "0.75rem 0.5rem" }}>{tr("Payment deadline")}</th>
                   <th style={{ padding: "0.75rem 0.5rem" }}>{tr("Status")}</th>
                   <th style={{ padding: "0.75rem 0.5rem" }}>{tr("Actions")}</th>
                 </tr>
@@ -381,6 +387,9 @@ export default function OwnerFinancialReportsPage() {
                           : `${inv.netAmount.toLocaleString(locale)} đ`}
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
+                        {inv.dueAt ? new Date(inv.dueAt).toLocaleString(locale, { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" }) : tr("No payment deadline")}
+                      </td>
+                      <td style={{ padding: "0.75rem 0.5rem" }}>
                         <Badge
                           tone={
                             inv.status === "PAID"
@@ -392,7 +401,7 @@ export default function OwnerFinancialReportsPage() {
                               : "neutral"
                           }
                         >
-                          {tr(user.role === "HORSE_OWNER" && inv.status === "DRAFT" ? "Draft — Not issued" : inv.status)}
+                          {invoiceStatusLabel(inv.status)}
                         </Badge>
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
@@ -445,8 +454,8 @@ export default function OwnerFinancialReportsPage() {
       {/* Generate Monthly Invoices Modal */}
       {isGenerateOpen && (
         <Modal
-          title={tr("Create monthly draft statements")}
-          subtitle={tr("Create draft statements for the selected billing period")}
+          title={tr("Create monthly statements")}
+          subtitle={tr("Create unissued statements for a completed billing month")}
           width={540}
           onClose={generating ? undefined : () => setIsGenerateOpen(false)}
           foot={
@@ -455,7 +464,7 @@ export default function OwnerFinancialReportsPage() {
                 {tr("Cancel")}
               </Button>
               <Button tone="primary" onClick={handleConfirmGenerate} disabled={generating}>
-                {generating ? tr("Generating...") : tr("Create drafts")}
+                {generating ? tr("Generating...") : tr("Create statements")}
               </Button>
             </div>
           }
@@ -501,7 +510,7 @@ export default function OwnerFinancialReportsPage() {
                 }}
               />
               <p id="draft-period-help" style={{ margin: "0.375rem 0 0", fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
-                {tr("Drafts are created for owned horses without a statement for this period.")}
+                {tr("Statements are created for horses with recorded stays in a completed month. Existing statements are kept.")}
               </p>
             </div>
 
@@ -522,10 +531,10 @@ export default function OwnerFinancialReportsPage() {
                 <Icon name="clipboard" inline size={14} /> {tr("Monthly Statement Calculation Rule:")}
               </strong>
               <div>
-                • <strong>{tr("Total Upkeep Expenses:")}</strong> {tr("Drafts start with boarding and training fees; medical fees start at zero.")}
+                • <strong>{tr("Total Upkeep Expenses:")}</strong> {tr("Boarding is 6,000,000 VND per calendar month, prorated by actual stay days. Each month is billed separately.")}
               </div>
               <div>
-                • <strong>{tr("Tournament Prize Credits:")}</strong> {tr("Draft prize credits start at zero.")}
+                • <strong>{tr("Tournament Prize Credits:")}</strong> {tr("Prize credits on new statements start at zero.")}
               </div>
               <div>
                 • <strong>{tr("Net Settlement Balance:")}</strong> {tr("Upkeep Expenses minus Prize Credits. Generates a clear payable statement for the horse owner.")}
@@ -555,8 +564,11 @@ export default function OwnerFinancialReportsPage() {
         >
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {actionError && <Alert tone="danger">{actionError}</Alert>}
-            <div><Badge tone={selectedInvoice.status === "PAID" ? "ok" : selectedInvoice.status === "OVERDUE" ? "danger" : selectedInvoice.status === "SENT" ? "warn" : "neutral"}>{tr(user.role === "HORSE_OWNER" && selectedInvoice.status === "DRAFT" ? "Draft — Not issued" : selectedInvoice.status)}</Badge></div>
+            <div><Badge tone={selectedInvoice.status === "PAID" ? "ok" : selectedInvoice.status === "OVERDUE" ? "danger" : selectedInvoice.status === "SENT" ? "warn" : "neutral"}>{invoiceStatusLabel(selectedInvoice.status)}</Badge></div>
             {isClubManager && <div>{tr("Owner")}: {selectedInvoice.owner?.fullName || "—"}</div>}
+            <div>{tr("Payment deadline")}: {selectedInvoice.dueAt ? new Date(selectedInvoice.dueAt).toLocaleString(locale, { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" }) : tr("No payment deadline")}</div>
+            {selectedInvoice.boardingDays != null && <div>{tr("Boarding days: {{count}}", { count: selectedInvoice.boardingDays })}</div>}
+            {selectedInvoice.boardingMonthlyRate != null && <div>{tr("Monthly boarding rate")}: {selectedInvoice.boardingMonthlyRate.toLocaleString(locale)} VND</div>}
             {/* Bill Summary */}
             <div
               style={{

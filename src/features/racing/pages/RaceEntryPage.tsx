@@ -376,31 +376,33 @@ export default function RaceEntryPage() {
                           {tourney.location}
                         </p>
                       </div>
-                      {isClubManager && tourney.status !== "CANCELLED" && !isCompleted && (
-                        <Button
-                          tone="secondary"
-                          icon="edit"
-                          aria-label={tr("Edit")}
-                          title={tr("Edit")}
-                          className={styles.eventEdit}
-                          onClick={() => setEditingTournament(tourney)}
-                        />
-                      )}
-                      <Badge
-                        tone={
-                          isOpenReg
-                            ? "ok"
-                            : isCompleted
-                            ? "neutral"
-                            : isUpcoming
-                            ? "info"
-                            : tourney.status === "CLOSED_REGISTRATION"
-                            ? "warn"
-                            : "danger"
-                        }
-                      >
-                        {getTournamentStatusLabel(tourney.status)}
-                      </Badge>
+                      <div className={styles.eventHeaderActions}>
+                        <Badge
+                          tone={
+                            isOpenReg
+                              ? "ok"
+                              : isCompleted
+                              ? "neutral"
+                              : isUpcoming
+                              ? "info"
+                              : tourney.status === "CLOSED_REGISTRATION"
+                              ? "warn"
+                              : "danger"
+                          }
+                        >
+                          {getTournamentStatusLabel(tourney.status)}
+                        </Badge>
+                        {isClubManager && tourney.status !== "CANCELLED" && !isCompleted && (
+                          <Button
+                            tone="secondary"
+                            icon="edit"
+                            aria-label={tr("Edit")}
+                            title={tr("Edit")}
+                            className={styles.eventEdit}
+                            onClick={() => setEditingTournament(tourney)}
+                          />
+                        )}
+                      </div>
                     </div>
 
                     {/* Specs Grid */}
@@ -499,6 +501,24 @@ export default function RaceEntryPage() {
                         </Button>
                       )}
 
+                      {isClubManager && tourney.status === "UPCOMING" && (
+                        <Button
+                          tone="primary"
+                          onClick={() => setOpenRegTarget(tourney)}
+                        >
+                          {isVietnamese() ? "Mở đăng ký" : tr("Open Registration")}
+                        </Button>
+                      )}
+
+                      {isClubManager && tourney.status === "OPEN_REGISTRATION" && (
+                        <Button
+                          tone="secondary"
+                          onClick={() => setCloseTarget(tourney)}
+                        >
+                          {isVietnamese() ? "Đóng đăng ký" : tr("Close Registration")}
+                        </Button>
+                      )}
+
                       {canManage && isClosedReg && registeredCount > 0 && (
                         <Button
                           tone="secondary"
@@ -518,7 +538,7 @@ export default function RaceEntryPage() {
                           </Button>
                         ) : isClubManager && isClosedReg ? (
                           <Button
-                            tone="quiet"
+                            tone="primary"
                             onClick={() => setResultsTournament(tourney)}
                           >
                             <Icon name="clock" inline size={14} /> {tr("Record Results")}
@@ -526,38 +546,25 @@ export default function RaceEntryPage() {
                         ) : null)}
                     </div>
 
-                    {isClubManager && (
-                      <div className={`${styles.eventActionGroup} ${styles.eventLifecycleActions}`}>
-                        {tourney.status === "UPCOMING" && (
-                          <Button
-                            tone="primary"
-                            onClick={() => setOpenRegTarget(tourney)}
-                          >
-                            {isVietnamese() ? "Mở đăng ký" : tr("Open Registration")}
-                          </Button>
-                        )}
-                        {tourney.status === "OPEN_REGISTRATION" && (
-                          <Button
-                            tone="secondary"
-                            onClick={() => setCloseTarget(tourney)}
-                          >
-                            {isVietnamese() ? "Đóng đăng ký" : tr("Close Registration")}
-                          </Button>
-                        )}
+                    {isClubManager && (!isCompleted || registeredCount === 0) && (
+                      <div className={styles.eventLifecycleActions}>
                         {!isCompleted && tourney.status !== "CANCELLED" && (
                           <Button
                             tone="quiet"
+                            size="sm"
                             onClick={() => setCancelTarget(tourney)}
                           >
-                            {isVietnamese() ? "Hủy giải đua" : tr("Cancel Event")}
+                            {isVietnamese() ? "Hủy giải" : tr("Cancel Event")}
                           </Button>
                         )}
                         {registeredCount === 0 && (tourney.status === "UPCOMING" || tourney.status === "OPEN_REGISTRATION") && (
                           <Button
-                            tone="danger"
+                            tone="ghost"
+                            size="sm"
+                            style={{ color: "var(--danger)" }}
                             onClick={() => setDeleteTarget(tourney)}
                           >
-                            {isVietnamese() ? "Xóa giải chưa dùng" : tr("Delete Unused Event")}
+                            {isVietnamese() ? "Xóa giải" : tr("Delete Unused Event")}
                           </Button>
                         )}
                       </div>

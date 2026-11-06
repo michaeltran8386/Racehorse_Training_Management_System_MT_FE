@@ -19,6 +19,9 @@ export interface FinancialInvoice {
   };
   billingPeriod: string;
   boardingFee: number;
+  boardingDays?: number | null;
+  boardingMonthlyRate?: number | null;
+  dueAt?: string | null;
   medicalFee: number;
   trainingFee: number;
   prizeCredit: number;
@@ -30,6 +33,7 @@ export interface FinancialInvoice {
 }
 
 export interface OwnerSummaryResponse {
+  outstandingDebt: number;
   totalBoarding: number;
   totalMedical: number;
   totalTraining: number;

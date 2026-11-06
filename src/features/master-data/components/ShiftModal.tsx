@@ -118,7 +118,7 @@ export function ShiftModal({ item, onClose, onSaved }: ShiftModalProps) {
           <Field label={tr('Shift Code')} required error={dirty ? errors.code : ''}>
             <Input
               value={code}
-              placeholder="VD: SHIFT_MORNING"
+              placeholder={tr('e.g. SHIFT_MORNING')}
               onChange={(e) => {
                 setCode(e.target.value.toUpperCase());
                 setDirty(true);

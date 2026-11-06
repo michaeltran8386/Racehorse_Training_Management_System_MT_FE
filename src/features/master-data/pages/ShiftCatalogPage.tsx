@@ -15,10 +15,13 @@ import { tr } from '@/shared/i18n/tr';
 import { getShifts, setShiftActive } from '../api/suppliesApi';
 import { ShiftModal } from '../components/ShiftModal';
 import type { ShiftCatalogItem } from '../types/supplies';
+import { useAppLanguage } from '@/shared/lib/language';
+import { getLocalizedShiftName } from '@/features/stable/utils/shiftLocalization';
 
 export default function ShiftCatalogPage() {
   useScreenTranslation();
   const currentUser = useCurrentUser();
+  const { isVietnamese: isVi } = useAppLanguage();
   const toast = useToast();
   const isManager = currentUser.role === 'CLUB_MANAGER';
 
@@ -107,7 +110,10 @@ export default function ShiftCatalogPage() {
             header: tr('Shift Name'),
             render: (s) => (
               <div>
-                <div className={styles.shiftName}>{s.name}</div>
+                <div className={styles.shiftName}>{getLocalizedShiftName(s, isVi)}</div>
+                {s.name && s.name !== getLocalizedShiftName(s, isVi) && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{s.name}</div>
+                )}
                 {s.description && (
                   <div className={styles.description}>{s.description}</div>
                 )}

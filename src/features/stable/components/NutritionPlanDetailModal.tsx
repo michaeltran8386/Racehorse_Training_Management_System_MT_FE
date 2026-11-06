@@ -128,7 +128,7 @@ export function NutritionPlanDetailModal({
 
   const statusLabels: Record<string, string> = {
     DRAFT: tr('Draft'),
-    PENDING_APPROVAL: tr('Pending Approval'),
+    PENDING_APPROVAL: tr('Awaiting Vet Approval'),
     APPROVED: tr('Approved & Active'),
     REJECTED: tr('Rejected'),
     ARCHIVED: tr('Archived'),

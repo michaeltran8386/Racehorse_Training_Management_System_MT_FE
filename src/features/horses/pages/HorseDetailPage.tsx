@@ -566,19 +566,19 @@ export default function HorseDetailPage() {
                 rowKey={(incident) => incident.id}
                 rows={history.simulatorIncidents}
                 columns={[
-                  { key: "timestamp", header: "Timestamp", render: (incident) => formatDateTime(incident.createdAt) },
-                  { key: "incident", header: "Description", render: (incident) => (
+                  { key: "timestamp", header: tr("Timestamp"), render: (incident) => formatDateTime(incident.createdAt) },
+                  { key: "incident", header: tr("Description"), render: (incident) => (
                     <div className={styles.incidentDescription}>
                       {incident.incidentNumber && <strong>{incident.incidentNumber}</strong>}
                       <div>{incident.description}</div>
                     </div>
                   ) },
-                  { key: "severity", header: "Severity", render: (incident) => (
+                  { key: "severity", header: tr("Severity"), render: (incident) => (
                     <Badge tone={incident.severity === "CRITICAL" ? "danger" : incident.severity === "MODERATE" ? "warn" : "ok"}>
                       {tr({ MILD: "Mild", MODERATE: "Moderate", CRITICAL: "Critical" }[incident.severity])}
                     </Badge>
                   ) },
-                  { key: "status", header: "Status", render: (incident) => tr({
+                  { key: "status", header: tr("Status"), render: (incident) => tr({
                     REPORTED: "Reported", UNDER_REVIEW: "Under Review", RESOLVED: "Resolved", DISMISSED: "Dismissed",
                   }[incident.status]) },
                   ...(currentUser.role === "HORSE_OWNER" ? [] : [{

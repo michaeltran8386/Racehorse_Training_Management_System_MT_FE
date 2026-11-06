@@ -3,7 +3,6 @@ import { Modal } from '@/shared/components/ui/Modal';
 import { Icon } from '@/shared/components/ui/Icon';
 import { Field } from '@/shared/components/form/Field';
 import { Input } from '@/shared/components/form/Input';
-import { Select } from '@/shared/components/form/Select';
 import { SearchSelect } from '@/shared/components/form/SearchSelect';
 import { Textarea } from '@/shared/components/form/Textarea';
 import { Button } from '@/shared/components/ui/Button';

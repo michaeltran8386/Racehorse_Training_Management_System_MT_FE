@@ -12,17 +12,19 @@ import { Alert } from '@/shared/components/ui/Alert';
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
 import { useAppLanguage } from '@/shared/lib/language';
 import { tr } from '@/shared/i18n/tr';
+import { formatDateTime } from '@/shared/lib/format';
 import styles from './IncidentListPage.module.css';
 import { messageFor } from '@/shared/lib/messages';
 import { incidentsApi } from '../api/incidentsApi';
-import { IncidentReportModal, COMMON_SYMPTOMS } from '../components/IncidentReportModal';
+import { IncidentReportModal } from '../components/IncidentReportModal';
 import { IncidentDetailModal } from '../components/IncidentDetailModal';
+import { formatSymptom } from '../utils/symptomLocalization';
 import type { IncidentReport, IncidentSeverity, IncidentStatus } from '../types/incidents';
 
 export default function IncidentListPage() {
   useScreenTranslation();
   const user = useCurrentUser();
-  useAppLanguage();
+  const { isVietnamese: isVi } = useAppLanguage();
   const [incidents, setIncidents] = useState<IncidentReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -81,11 +83,6 @@ export default function IncidentListPage() {
     }
   };
 
-  const formatSymptom = (symKey: string) => {
-    const found = COMMON_SYMPTOMS.find((s) => s.key === symKey);
-    return found ? tr(found.label) : tr(symKey);
-  };
-
   // Tìm kiếm lọc phía client (API sự cố chưa nhận tham số search).
   const visible = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -100,11 +97,11 @@ export default function IncidentListPage() {
     {
       key: 'code',
       header: tr('Code'),
-      width: 120,
+      width: 140,
       render: (inc) => (
         <span className={styles.code}>
           {inc.incidentNumber}
-          <small>{new Date(inc.createdAt).toLocaleString('vi-VN', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</small>
+          <small>{formatDateTime(inc.createdAt)}</small>
         </span>
       ),
     },
@@ -128,7 +125,7 @@ export default function IncidentListPage() {
       render: (inc) => (
         <span className={styles.symptoms} title={inc.description}>
           {(inc.symptomsJson ?? []).slice(0, 2).map((sym, idx) => (
-            <span key={idx} className={styles.symptom}>{formatSymptom(sym)}</span>
+            <span key={idx} className={styles.symptom}>{formatSymptom(sym, isVi)}</span>
           ))}
           {(inc.symptomsJson?.length ?? 0) > 2 && <small>+{(inc.symptomsJson?.length ?? 0) - 2}</small>}
         </span>

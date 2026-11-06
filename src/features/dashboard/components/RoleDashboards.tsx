@@ -10,8 +10,8 @@ import { Skeleton } from "@/shared/components/ui/Skeleton";
 import type { HealthStatus } from "@/shared/types/enums";
 import type { AuthUser } from "@/shared/types/auth";
 import { getHealthBoard } from "@/features/health/api";
-import { todayClub, trainingApi } from "@/features/training/api";
-import { EXERCISE_TYPE_LABEL, SESSION_STATUS_LABEL } from "@/features/training/types";
+import { todayClub, clubParts, trainingApi } from "@/features/training/api";
+import { EXERCISE_TYPE_LABEL, SESSION_STATUS_LABEL, INTENSITY_LABEL, TRACK_LABEL } from "@/features/training/types";
 import { getZones } from "@/features/stable/api";
 import { getHorses } from "@/features/horses/api";
 import { listAccounts } from "@/features/accounts/api";
@@ -20,27 +20,12 @@ import { dailyTasksApi } from "@/features/stable/api/dailyTasksApi";
 import { getMyShifts } from "@/features/stable/api/shiftRosterApi";
 import { incidentsApi } from "@/features/stable/api/incidentsApi";
 import { fetchOwnerSummary } from "@/features/financial/api";
-import type { InvoiceStatus } from "@/features/financial/types";
+import { invoiceStatusLabel } from "@/features/financial/invoiceStatus";
 import type { Tournament } from "@/features/racing/types";
-import { useLoaded } from "./DashboardBlocks";
+import { Block, useLoaded } from "./DashboardBlocks";
 import { ActionItemsCard } from "./ActionItemsCard";
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
-
-const INVOICE_STATUS_VI: Record<InvoiceStatus, string> = {
-  DRAFT: "Nháp",
-  SENT: "Đã gửi",
-  PAID: "Đã thanh toán",
-  OVERDUE: "Quá hạn",
-  CANCELLED: "Đã hủy",
-};
-const INVOICE_STATUS_EN: Record<InvoiceStatus, string> = {
-  DRAFT: "Draft",
-  SENT: "Sent",
-  PAID: "Paid",
-  OVERDUE: "Overdue",
-  CANCELLED: "Cancelled",
-};
 
 /** Tuần Thứ Hai – Chủ Nhật chứa ngày `date` (YYYY-MM-DD). */
 function clubWeek(date: string): [string, string] {
@@ -597,11 +582,16 @@ export function TrainerDashboard() {
 
   // Ngựa cần phân bổ giáo án (chưa có giáo án hoặc đang ở bản nháp)
   const unassignedHorses = rows.filter((r) => !r.plan || r.plan.status === "DRAFT");
+  const next = overview.data?.nextWorkout;
+  const plan = overview.data?.latestPlan;
+  const nextTime = next ? clubParts(next.scheduledDate) : null;
+  const labelFor = (labels: Record<string, string>, value: string | null) => value ? tr(labels[value] ?? value) : "—";
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* 4 Thẻ KPI chính */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "16px" }}>
+        <InteractiveKpiCard icon="horse" label={isVi ? "Ngựa đang quản lý" : "Managed horses"} value={k?.managedHorses ?? "—"} to="/training" />
         <InteractiveKpiCard
           icon="activity"
           iconBg="var(--ok-bg)"
@@ -928,6 +918,50 @@ export function TrainerDashboard() {
 
         <UpcomingTournamentsWidget />
       </div>
+
+      <Block title={tr("Your next actions")} state={overview}>
+        {() => (
+          <div className={styles.trainerActions}>
+            <Card pad={20}>
+              <h3 className={styles.widgetTitle}>{tr("Next Workout")}</h3>
+              {next && nextTime ? (
+                <div className={styles.actionDetails}>
+                  <div><Badge tone="info">{nextTime.date === todayClub() ? tr("Today") : nextTime.date.slice(8, 10) + "/" + nextTime.date.slice(5, 7)} {nextTime.time}</Badge></div>
+                  <strong>{next.horseName}</strong>
+                  <span className={styles.actionMeta}>{next.horseCode || "—"}</span>
+                  <span>{labelFor(EXERCISE_TYPE_LABEL, next.workoutType)} · {labelFor(TRACK_LABEL, next.surface)}</span>
+                  <span className={styles.actionMeta}>{tr("Intensity")}: {labelFor(INTENSITY_LABEL, next.intensity)}</span>
+                  <LinkButton to="/training/calendar" tone="primary">{tr("Open weekly calendar")}</LinkButton>
+                </div>
+              ) : (
+                <div className={styles.actionDetails}>
+                  <p>{tr("No upcoming workouts.")}</p>
+                  <LinkButton to="/training/calendar" tone="secondary">{tr("Open weekly calendar")}</LinkButton>
+                </div>
+              )}
+            </Card>
+            <Card pad={20}>
+              <h3 className={styles.widgetTitle}>{tr("Latest Training Plan")}</h3>
+              {plan ? (
+                <div className={styles.actionDetails}>
+                  <div><Badge tone="ok">{tr("Active")}</Badge></div>
+                  <strong>{plan.name}</strong>
+                  <span className={styles.actionMeta}>{plan.planCode || "—"}</span>
+                  <span>{plan.horseName}</span>
+                  <span>{plan.currentPhaseName || tr("No current phase")}</span>
+                  <span className={styles.actionMeta}>{clubParts(plan.startDate).date} – {clubParts(plan.endDate).date}</span>
+                  <LinkButton to={"/training/plans/" + plan.id} tone="primary">{tr("View training plan")}</LinkButton>
+                </div>
+              ) : (
+                <div className={styles.actionDetails}>
+                  <p>{tr("No active training plan.")}</p>
+                  <LinkButton to="/training/plans/new" tone="primary">{tr("Create training plan")}</LinkButton>
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+      </Block>
     </div>
   );
 }
@@ -1110,7 +1144,7 @@ export function OwnerDashboard() {
   const invoiceText = !summary.data
     ? "—"
     : latestInvoice
-      ? (isVi ? INVOICE_STATUS_VI : INVOICE_STATUS_EN)[latestInvoice.status]
+      ? invoiceStatusLabel(latestInvoice.status)
       : isVi
         ? "Chưa có"
         : "None";

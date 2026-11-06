@@ -10,10 +10,12 @@ import { Badge } from '@/shared/components/ui/Badge';
 import { Alert } from '@/shared/components/ui/Alert';
 import { useToast } from '@/shared/components/ui/Toast';
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
+import { useAppLanguage } from '@/shared/lib/language';
 import { tr } from '@/shared/i18n/tr';
+import { ROLE_LABEL } from '@/shared/lib/permissions';
 import { messageFor } from '@/shared/lib/messages';
 import { incidentsApi } from '../api/incidentsApi';
-import { COMMON_SYMPTOMS } from './IncidentReportModal';
+import { formatSymptom } from '../utils/symptomLocalization';
 import type { IncidentReport, IncidentSeverity, IncidentStatus } from '../types/incidents';
 
 interface IncidentDetailModalProps {
@@ -29,6 +31,7 @@ export function IncidentDetailModal({
 }: IncidentDetailModalProps) {
   const toast = useToast();
   const user = useCurrentUser();
+  const { isVietnamese: isVi } = useAppLanguage();
   const navigate = useNavigate();
   const canReview = user?.role === 'VETERINARIAN';
 
@@ -51,7 +54,13 @@ export function IncidentDetailModal({
         status,
         vetNotes: vetNotes.trim() || undefined,
       });
-      toast.show(tr('Incident status updated to {{status}}.', { status }), 'ok');
+      const statusLabel =
+        status === 'UNDER_REVIEW'
+          ? tr('Under Review')
+          : status === 'RESOLVED'
+          ? tr('Resolved')
+          : tr('Dismissed');
+      toast.show(tr('Incident status updated to {{status}}.', { status: statusLabel }), 'ok');
       onUpdated(updated);
     } catch (err) {
       setError(messageFor(err));
@@ -82,11 +91,6 @@ export function IncidentDetailModal({
       case 'DISMISSED':
         return <Badge tone="neutral">{tr('Dismissed')}</Badge>;
     }
-  };
-
-  const formatSymptom = (symKey: string) => {
-    const found = COMMON_SYMPTOMS.find((s) => s.key === symKey);
-    return found ? tr(found.label) : tr(symKey);
   };
 
   return (
@@ -120,7 +124,7 @@ export function IncidentDetailModal({
           <div>
             <div style={{ color: 'var(--muted)', fontSize: '0.75rem' }}>{tr('Reported By')}</div>
             <div style={{ color: 'var(--ink)', marginTop: '0.25rem' }}>
-              {incident.reportedBy?.fullName || tr('Staff')} ({incident.reportedBy?.role || 'GROOM'})
+              {incident.reportedBy?.fullName || tr('Staff')} ({tr(ROLE_LABEL[incident.reportedBy?.role as keyof typeof ROLE_LABEL] || incident.reportedBy?.role || 'Groom')})
             </div>
           </div>
           <div>
@@ -149,7 +153,7 @@ export function IncidentDetailModal({
                     fontWeight: 500,
                   }}
                 >
-                  {formatSymptom(sym)}
+                  {formatSymptom(sym, isVi)}
                 </span>
               ))}
             </div>
