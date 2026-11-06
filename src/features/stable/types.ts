@@ -2,6 +2,12 @@
 export type StallStatus = "AVAILABLE" | "OCCUPIED" | "MAINTENANCE" | "INACTIVE";
 export type SettableStallStatus = "AVAILABLE" | "MAINTENANCE" | "INACTIVE";
 
+export const STALL_STATUS_OPTIONS: Array<{ value: SettableStallStatus; label: string }> = [
+  { value: "AVAILABLE", label: "Active" },
+  { value: "MAINTENANCE", label: "Maintenance" },
+  { value: "INACTIVE", label: "Inactive" },
+];
+
 export interface StallAllocation {
   id: string;
   stallId: string;
@@ -16,6 +22,8 @@ export interface StallAllocation {
     name: string;
     status: string;
     isMedicalLocked?: boolean;
+    isDebtImpounded?: boolean;
+    debtImpoundReason?: string | null;
   };
   assignedGroom?: {
     id: string;

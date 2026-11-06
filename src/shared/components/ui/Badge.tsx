@@ -9,12 +9,13 @@ interface BadgeProps {
   tone?: BadgeTone;
   dot?: boolean;
   icon?: string;
+  title?: string;
   children: ReactNode;
 }
 
-export function Badge({ tone = "neutral", dot = false, icon, children }: BadgeProps) {
+export function Badge({ tone = "neutral", dot = false, icon, title, children }: BadgeProps) {
   return (
-    <span className={cx(styles.badge, styles[tone])}>
+    <span className={cx(styles.badge, styles[tone])} title={title}>
       {icon ? <Icon name={icon} size={12} /> : dot && <span className={styles.dot} />}
       {trNode(children)}
     </span>

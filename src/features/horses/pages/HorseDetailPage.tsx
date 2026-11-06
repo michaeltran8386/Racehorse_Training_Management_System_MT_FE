@@ -273,6 +273,14 @@ export default function HorseDetailPage() {
         </Alert>
       )}
 
+      {/* Banner Debt Impounded */}
+      {horse.isDebtImpounded && (
+        <Alert tone="danger" title={tr("Lưu giữ do nợ phí")}>
+          {horse.debtImpoundReason ?? tr("Ngựa đang trong diện Lưu giữ do nợ phí.")}{" "}
+          {tr("Cấm thi đấu giải đua, cấm chuyển nhượng / xuất chuồng. Chỉ được phép tập bài đi bộ nhẹ (WALK). Lệnh lưu giữ sẽ tự động giải tỏa ngay sau khi hóa đơn nợ được thanh toán.")}
+        </Alert>
+      )}
+
       {/* Banner Retired */}
       {horse.status === "RETIRED" && (
         <Alert tone="info" title={tr("No longer managed")}>
@@ -298,6 +306,11 @@ export default function HorseDetailPage() {
               {horse.isMedicalLocked && (
                 <Badge tone="danger" icon="lock">
                   {tr("Training Lock")}
+                </Badge>
+              )}
+              {horse.isDebtImpounded && (
+                <Badge tone="danger" icon="alert-circle">
+                  {tr("Lưu giữ do nợ phí")}
                 </Badge>
               )}
             </div>

@@ -118,6 +118,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
   }, [planId, phaseId, date, time, type, intensity, distance, reps, groomId]);
 
   const locked = Boolean(plan?.isLockedByMedical);
+  const impounded = Boolean(plan?.isDebtImpounded || session?.isDebtImpounded);
   const forcedHeavy = ALWAYS_HEAVY.includes(type);
   const noSurface = NO_SURFACE.includes(type);
   const effIntensity: ExerciseIntensity = forcedHeavy ? "HEAVY" : intensity;
@@ -248,6 +249,11 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
             {tr("Only light or medium workouts can be scheduled. Breeze, trial run and heavy intensity are disabled.")}
           </Alert>
         )}
+        {impounded && (
+          <Alert tone="danger" title={tr("Lưu giữ do nợ phí")}>
+            {tr("Ngựa đang bị lưu giữ do nợ phí: Cấm các bài tập nặng (Breeze, Trial, Canter). Chỉ cho phép đi bộ / vận động nhẹ (Walk).")}
+          </Alert>
+        )}
         {phases.length > 0 && (
           <Field label={tr("Phase")} required hint={phase ? `${phase.startDate} → ${phase.endDate}` : undefined}>
             <SearchSelect placeholder={tr("Phase")} value={phaseId} onChange={setPhaseId} options={phases.map((p) => ({ value: p.id, label: p.name }))} />
@@ -269,7 +275,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
               options={(Object.keys(EXERCISE_TYPE_LABEL) as ExerciseType[]).map((t) => ({
                 value: t,
                 label: EXERCISE_TYPE_LABEL[t],
-                disabled: locked && ALWAYS_HEAVY.includes(t),
+                disabled: (locked || impounded) && ALWAYS_HEAVY.includes(t),
               }))}
             />
           </Field>
@@ -281,7 +287,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
               options={(Object.keys(INTENSITY_LABEL) as ExerciseIntensity[]).map((i) => ({
                 value: i,
                 label: INTENSITY_LABEL[i],
-                disabled: locked && i === "HEAVY",
+                disabled: (locked || impounded) && i === "HEAVY",
               }))}
             />
           </Field>
