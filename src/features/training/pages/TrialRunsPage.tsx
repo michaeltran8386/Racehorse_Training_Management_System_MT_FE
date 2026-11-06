@@ -173,7 +173,16 @@ export default function TrialRunsPage() {
           <Card key={key} pad={20}>
             <h2 className={styles.groupTitle}>{key}</h2>
             <div style={{ overflowX: "auto" }}>
-              <table className={styles.table}>
+              <table className={styles.table} style={{ tableLayout: "fixed", minWidth: 760 }}>
+                {/* Cố định độ rộng cột để các nhóm ngày thẳng hàng với nhau */}
+                <colgroup>
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "22%" }} />
+                  <col style={{ width: "17%" }} />
+                </colgroup>
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
                     <th style={{ padding: "0.5rem 0.75rem" }}>{isVietnamese ? "Giờ chạy" : tr("Time")}</th>

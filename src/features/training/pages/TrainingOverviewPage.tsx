@@ -281,7 +281,9 @@ export default function TrainingOverviewPage() {
                               {r.horse.stallCode}
                             </span>
                           )}
-                          <Badge tone={st.tone as never}>{st.label}</Badge>
+                          <span title={tr("Horse status")}>
+                            <Badge tone={st.tone as never}>{st.label}</Badge>
+                          </span>
                         </div>
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
@@ -300,9 +302,17 @@ export default function TrainingOverviewPage() {
                             )}
                           </div>
                         ) : (
-                          <span style={{ color: "var(--text-muted)" }}>
-                            {isVietnamese ? "Chưa có giáo án" : tr("None")}
-                          </span>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <span style={{ color: "var(--text-muted)" }}>
+                              {isVietnamese ? "Chưa có giáo án" : tr("No plan")}
+                            </span>
+                            {/* Trạng thái ngựa do quản lý / thú y đặt, không tự đổi theo giáo án -> nói rõ khi lệch nhau */}
+                            {r.horse.status === "IN_TRAINING" && (
+                              <span title={tr("Marked “In training” but no plan yet – create one or update the horse status.")}>
+                                <Badge tone="warn">{tr("Status mismatch")}</Badge>
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
@@ -351,7 +361,7 @@ export default function TrainingOverviewPage() {
                             : tr("Load score = Distance (km) × Repetitions × Intensity factor")
                         }
                       >
-                        <span style={{ cursor: "help" }}>
+                        <span style={{ cursor: "help", whiteSpace: "nowrap" }}>
                           {r.load7d} {isVietnamese ? "điểm" : tr("pts")}{" "}
                           {r.loadSpike && (
                             <Badge tone="danger">
@@ -365,8 +375,8 @@ export default function TrainingOverviewPage() {
                           ? `${clubParts(r.nextWorkout.date).date.slice(5)} ${clubParts(r.nextWorkout.date).time} – ${EXERCISE_TYPE_LABEL[r.nextWorkout.workoutType] ? tr(EXERCISE_TYPE_LABEL[r.nextWorkout.workoutType]) : r.nextWorkout.workoutType}`
                           : "—"}
                       </td>
-                      <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>
-                        <div style={{ display: "flex", gap: "0.35rem" }}>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "0.35rem" }}>
                           {r.plan ? (
                             <Button size="sm" tone="secondary" onClick={() => r.plan && navigate(`/training/plans/${r.plan.id}`)}>
                               {tr("View plan")}

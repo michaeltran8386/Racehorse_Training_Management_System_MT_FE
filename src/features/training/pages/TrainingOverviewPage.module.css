@@ -13,7 +13,7 @@
 .search { width: min(240px, 100%); }
 .filter { flex: 0 1 200px; min-width: 150px; }
 .table { width: 100%; border-collapse: collapse; text-align: left; font-size: var(--fs-body); }
-.table th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); }
+.table th { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--text-2); white-space: normal; vertical-align: bottom; }
 .table tbody tr:hover { background: var(--surface-row-hover); }
 .activeMetricCard { border-color: var(--brand) !important; background: var(--surface-row-hover); box-shadow: 0 0 0 1px var(--brand); }
 @media (max-width: 900px) { .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -420,6 +420,15 @@ export default function PlanDetailPage() {
   );
 }
 
+/** "2026-11-09" (thứ Hai) -> "09/11 – 15/11". */
+function weekRange(monday: string): string {
+  const [y, m, d] = monday.split("-").map(Number);
+  const start = new Date(y, m - 1, d);
+  const end = new Date(y, m - 1, d + 6);
+  const fmt = (x: Date) => `${String(x.getDate()).padStart(2, "0")}/${String(x.getMonth() + 1).padStart(2, "0")}`;
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
 /** Một giai đoạn: định mức vs thực tế; tuần vượt cự ly định mức hoặc số buổi có cảnh báo. */
 function PhaseCard({
   phase,
@@ -435,6 +444,7 @@ function PhaseCard({
   onGenerateSchedule?: () => void;
 }) {
   const { isVietnamese } = useAppLanguage();
+  const num = (x: number) => x.toLocaleString(isVietnamese ? "vi-VN" : "en-US");
   const done = sessions.filter((s) => s.status === "COMPLETED");
   const run = done.reduce((sum, s) => sum + distanceOf(s), 0);
   const weekly = new Map<string, number>();
@@ -444,10 +454,11 @@ function PhaseCard({
     weekly.set(key, (weekly.get(key) ?? 0) + distanceOf(s));
     weeklyCounts.set(key, (weeklyCounts.get(key) ?? 0) + 1);
   }
-  const overWeeks = [...weekly.entries()].filter(([, m]) => m > phase.maxWeeklyDistance).map(([w]) => w);
-  const overSessionWeeks = [...weeklyCounts.entries()]
-    .filter(([, count]) => count > phase.sessionsPerWeek)
-    .map(([w, count]) => ({ week: w, count }));
+  // Tuần (T2–CN) vượt định mức số buổi hoặc cự ly: gom thành một dòng dễ đọc cho mỗi tuần.
+  const overLimitWeeks = [...weeklyCounts.keys()]
+    .sort()
+    .map((week) => ({ week, count: weeklyCounts.get(week) ?? 0, meters: weekly.get(week) ?? 0 }))
+    .filter((w) => w.count > phase.sessionsPerWeek || w.meters > phase.maxWeeklyDistance);
 
   const scheduled = sessions.filter((x) => x.status !== "CANCELLED").length;
   const ended = phase.endDate < todayClub();
@@ -470,30 +481,49 @@ function PhaseCard({
         <dl className={styles.phaseStats}>
           <dt>{tr("Quota")}</dt>
           <dd>
-            {tr("{{count}} sessions/week", { count: phase.sessionsPerWeek })} · {phase.maxWeeklyDistance.toLocaleString()} {tr("m/week")} · {surface}
+            {tr("{{count}} sessions/week", { count: phase.sessionsPerWeek })} · {num(phase.maxWeeklyDistance)} {tr("m/week")} · {surface}
             {phase.targetSpeedKmh ? ` · ${phase.targetSpeedKmh} km/h` : ""}
           </dd>
           <dt>{tr("Scheduled")}</dt>
           <dd>{tr("{{count}} session(s)", { count: scheduled })}</dd>
           <dt>{tr("Completed")}</dt>
           <dd>
-            {tr("{{count}} session(s)", { count: done.length })} · {run.toLocaleString()} m
+            {tr("{{count}} session(s)", { count: done.length })} · {num(run)} m
           </dd>
         </dl>
         <div className={styles.phaseBar} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={tr("Completed")}>
           <span style={{ width: `${pct}%` }} />
         </div>
 
-        {overWeeks.map((w) => (
-          <Badge key={w} tone="warn">{tr("Over quota – week of {{week}}", { week: w })}</Badge>
-        ))}
-        {overSessionWeeks.map(({ week, count }) => (
-          <Badge key={week} tone="warn">
-            {isVietnamese
-              ? `Cảnh báo BR-2.21: Tuần ${week} có ${count} buổi (vượt ${phase.sessionsPerWeek} buổi/tuần)`
-              : tr("BR-2.21: {{count}} workouts (exceeds {{quota}}/week)", { count, quota: phase.sessionsPerWeek })}
-          </Badge>
-        ))}
+        {overLimitWeeks.length > 0 && (
+          <div className={styles.phaseWarn} role="note">
+            <strong>{tr("Schedule exceeds this phase's weekly limit")}</strong>
+            <span>
+              {tr("Limit: {{count}} sessions and {{meters}} m per week (Mon–Sun).", {
+                count: phase.sessionsPerWeek,
+                meters: num(phase.maxWeeklyDistance),
+              })}
+            </span>
+            <ul>
+              {overLimitWeeks.map((w) => (
+                <li key={w.week}>
+                  <b>{weekRange(w.week)}</b>
+                  {": "}
+                  {w.count > phase.sessionsPerWeek
+                    ? tr("{{count}} sessions ({{extra}} too many)", { count: w.count, extra: w.count - phase.sessionsPerWeek })
+                    : tr("{{count}} session(s)", { count: w.count })}
+                  {" · "}
+                  {w.meters > phase.maxWeeklyDistance
+                    ? tr("{{meters}} m ({{extra}} m over)", {
+                        meters: num(w.meters),
+                        extra: num(w.meters - phase.maxWeeklyDistance),
+                      })
+                    : `${num(w.meters)} m`}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {canEdit && onGenerateSchedule && !ended && (
           <div className={styles.phaseFoot}>

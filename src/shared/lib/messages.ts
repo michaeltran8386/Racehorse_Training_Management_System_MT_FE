@@ -87,6 +87,7 @@ const GENERIC: Record<string, string> = {
   INVALID_GROOM: "Choose an active groom.",
   TRIAL_SLOT_TAKEN: "This track already has a trial run within 15 minutes of that time.",
   MAX_WORKOUTS_PER_DAY: "A horse can have at most 3 workouts per day.",
+  GROOM_TIME_CONFLICT: "This groom already has another workout within 30 minutes. Choose another groom or change the time.",
   WORKOUT_NOT_FOUND: "This workout no longer exists. Reload the schedule.",
   WORKOUT_NOT_EDITABLE: "Only scheduled workouts can be edited.",
   WORKOUT_NOT_STARTED: "Results can be recorded once the workout has started.",
@@ -124,6 +125,10 @@ const DYNAMIC: Record<string, (d: Record<string, unknown>) => string | undefined
   ROW_OUT_OF_RANGE: (d) => `Row must be between 1 and ${d.max}.`,
   COL_OUT_OF_RANGE: (d) => `Column must be between 1 and ${d.max}.`,
   POSITION_TAKEN: (d) => `This grid position is already used by stall ${d.stallCode}.`,
+  GROOM_TIME_CONFLICT: (d) =>
+    d.groom
+      ? `Groom ${d.groom} is already assigned to ${d.horse}'s workout at ${d.time} on ${d.date}. Choose another groom or move the time by at least 30 minutes.`
+      : undefined,
 };
 
 import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";

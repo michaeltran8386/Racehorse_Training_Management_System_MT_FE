@@ -36,7 +36,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (status === "anonymous") navigate(`/login?next=${encodeURIComponent(pathname)}`, { replace: true });
   }, [status, pathname, navigate]);
 
-  // Giao diện v2 (sáng, xanh rêu) đang thử trên vai trò Head Trainer; duyệt xong sẽ bật cho mọi vai trò.
+  // Giao diện v2 (sáng, xanh dương dịu) đang thử trên vai trò Head Trainer; duyệt xong sẽ bật cho mọi vai trò.
   useEffect(() => {
     const root = document.documentElement;
     if (user?.role === "HEAD_TRAINER") {

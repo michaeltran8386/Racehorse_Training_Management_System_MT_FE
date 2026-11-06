@@ -1,34 +1,34 @@
 /* ============================================================ Giao diện v2 (thử trên Head Trainer)
-   Bật bằng <html data-ui="v2">. Sáng, sạch, xanh rêu; bo góc mềm; chữ không chân dễ đọc.
+   Bật bằng <html data-ui="v2">. Sáng, sạch, xanh dương dịu; bo góc mềm; chữ không chân dễ đọc.
    Chỉ đổi giá trị token: các trang dùng var(--…) tự đổi theo. Duyệt xong thì bật cho mọi vai trò. */
 :root[data-ui="v2"] {
-  /* Nền & bề mặt */
-  --bg-page:#F6F7F4; --bg-surface:#FFFFFF; --bg-subtle:#F0F2EE;
-  --page:var(--bg-page); --surface:var(--bg-surface); --surface-2:var(--bg-subtle); --surface-3:#E4E8E2;
-  --surface-table-head:#F4F6F2; --surface-row-hover:#F2F5F0;
-  --border:#E1E5DE; --border-soft:#EEF1EC; --border-strong:#C9D0C5; --border-field:#9AA597;
+  /* Nền & bề mặt: trắng ngà hơi lạnh, tương phản vừa phải để không chói */
+  --bg-page:#F5F7FA; --bg-surface:#FFFFFF; --bg-subtle:#F0F3F8;
+  --page:var(--bg-page); --surface:var(--bg-surface); --surface-2:var(--bg-subtle); --surface-3:#E5EAF2;
+  --surface-sunken:#F3F5F9; --surface-table-head:#F5F7FB; --surface-row-hover:#F3F6FC;
+  --border:#E3E8EF; --border-soft:#EDF1F6; --border-strong:#CBD3DF; --border-field:#9AA5B4;
 
-  /* Chữ */
-  --text-primary:#1B2420; --text-muted:#5B6660;
-  --text:var(--text-primary); --text-2:var(--text-muted); --muted:var(--text-muted); --muted-2:#76817B;
+  /* Chữ: xám than thay vì đen tuyền */
+  --text-primary:#1F2937; --text-muted:#5F6B7A;
+  --text:var(--text-primary); --text-2:var(--text-muted); --muted:var(--text-muted); --muted-2:#7B8594;
 
-  /* Xanh rêu chủ đạo */
-  --brand-primary:#3F6B4E; --brand-secondary:#2F5E73;
-  --brand:#3F6B4E; --brand-600:#335A41; --brand-700:#284A34; --brand-100:#DCE8DF; --brand-50:#EEF4EF; --brand-ring:#3F6B4E;
+  /* Xanh dương dịu chủ đạo */
+  --brand-primary:#2F6FDB; --brand-secondary:#4C5FD5;
+  --brand:#2F6FDB; --brand-600:#255DC0; --brand-700:#1E4C9E; --brand-100:#DCE7FB; --brand-50:#EEF3FD; --brand-ring:#2F6FDB;
   --text-on-brand:#FFFFFF;
   --ink:var(--text); --ink-70:var(--muted); --accent:var(--brand); --accent-600:var(--brand-600); --accent-100:var(--brand-100); --accent-50:var(--brand-50);
 
   /* Trạng thái (giữ ngữ nghĩa, tông dịu) */
-  --ok:#2E7D4F; --ok-bg:#E3F2E8; --warn:#9A5B00; --warn-bg:#FDF0D8;
-  --danger:#B3362B; --danger-bg:#FBE4E1; --info:#2F5E73; --info-bg:#E2EEF3;
+  --ok:#1F8A55; --ok-bg:#E2F4EA; --warn:#9A5B00; --warn-bg:#FDF2DC;
+  --danger:#C2372C; --danger-bg:#FCE6E3; --info:#2F6FDB; --info-bg:#E6EEFC;
 
   /* Điều hướng sáng */
-  --nav-bg:#FFFFFF; --nav-bg-2:#FFFFFF; --nav-line:#E6EAE3; --nav-text:#26302B; --nav-text-2:#6C776F;
-  --nav-item-hover:#F1F4EF; --nav-item-active-bg:#E6EFE8; --nav-item-active-text:#2C5139; --nav-item-active-dot:#3F6B4E;
-  --topbar-bg:rgba(255,255,255,.88);
+  --nav-bg:#FFFFFF; --nav-bg-2:#FFFFFF; --nav-line:#E6EAF0; --nav-text:#273142; --nav-text-2:#6B7585;
+  --nav-item-hover:#F2F5FA; --nav-item-active-bg:#E8EFFC; --nav-item-active-text:#1E4C9E; --nav-item-active-dot:#2F6FDB;
+  --topbar-bg:rgba(255,255,255,.9);
 
   /* Biểu đồ */
-  --chart-line:#3F6B4E; --chart-bar:#5E8C6C; --chart-accent:#C98A12; --chart-grid:#E4E8E2;
+  --chart-line:#2F6FDB; --chart-bar:#6C94E6; --chart-accent:#E59A1A; --chart-grid:#E5EAF2;
 
   /* Chữ không chân, tiêu đề cùng họ chữ (bỏ kiểu in hoa đậm) */
   --font:'Inter','Segoe UI',system-ui,sans-serif; --font-display:'Inter','Segoe UI',system-ui,sans-serif;
@@ -36,28 +36,29 @@
 
   /* Bo góc mềm, bóng nhẹ */
   --r-xs:4px; --r-sm:6px; --r:10px; --r-lg:12px; --r-xl:14px; --r-modal:16px; --r-btn:8px; --r-field:8px;
-  --shadow-sm:0 1px 2px rgba(27,36,32,.05);
-  --shadow:0 1px 3px rgba(27,36,32,.06), 0 1px 2px rgba(27,36,32,.04);
-  --shadow-pop:0 10px 30px rgba(27,36,32,.12); --shadow-lg:0 20px 50px rgba(27,36,32,.16);
+  --shadow-sm:0 1px 2px rgba(15,23,42,.05);
+  --shadow:0 1px 3px rgba(15,23,42,.06), 0 1px 2px rgba(15,23,42,.04);
+  --shadow-pop:0 10px 30px rgba(15,23,42,.12); --shadow-lg:0 20px 50px rgba(15,23,42,.16);
 
-  --toast-bg:#1B2420; --toast-border:#1B2420; --toast-text:#F6F7F4;
+  --toast-bg:#1F2937; --toast-border:#1F2937; --toast-text:#F5F7FA;
   --toast-icon-info:#8FC1D4; --toast-icon-ok:#8FD3A6; --toast-icon-warn:#F2C46B; --toast-icon-danger:#F29B91;
 }
 
 :root[data-ui="v2"][data-theme="dark"] {
-  --bg-page:#111714; --bg-surface:#18201C; --bg-subtle:#1D2621;
-  --page:var(--bg-page); --surface:var(--bg-surface); --surface-2:var(--bg-subtle); --surface-3:#26312B;
-  --surface-table-head:#1B2420; --surface-row-hover:#1F2924;
-  --border:#2C3832; --border-soft:#232D28; --border-strong:#3D4B43; --border-field:#6F7E75;
-  --text-primary:#E7ECE8; --text-muted:#A8B4AC; --muted-2:#8D9A92;
-  --brand:#8DBE9B; --brand-600:#A5CFB1; --brand-700:#C2E0CA; --brand-100:#2A3D31; --brand-50:#1F2D24; --brand-ring:#8DBE9B;
-  --text-on-brand:#10170F;
-  --ok:#8FD3A6; --ok-bg:rgba(143,211,166,.14); --warn:#F2C46B; --warn-bg:rgba(242,196,107,.14);
-  --danger:#F29B91; --danger-bg:rgba(242,155,145,.14); --info:#8FC1D4; --info-bg:rgba(143,193,212,.14);
-  --nav-bg:#141B17; --nav-bg-2:#141B17; --nav-line:#26302B; --nav-text:#E7ECE8; --nav-text-2:#9AA79F;
-  --nav-item-hover:#1E2722; --nav-item-active-bg:#24352A; --nav-item-active-text:#C2E0CA; --nav-item-active-dot:#8DBE9B;
-  --topbar-bg:rgba(24,32,28,.9);
-  --chart-line:#8DBE9B; --chart-bar:#6FA680; --chart-accent:#F2C46B; --chart-grid:#2C3832;
+  /* Tối: xanh than, không đen tuyền; chữ ngà để đỡ mỏi mắt */
+  --bg-page:#0F172A; --bg-surface:#162033; --bg-subtle:#1B263B;
+  --page:var(--bg-page); --surface:var(--bg-surface); --surface-2:var(--bg-subtle); --surface-3:#243049;
+  --surface-sunken:#131C2E; --surface-table-head:#18233A; --surface-row-hover:#1C2840;
+  --border:#2A3650; --border-soft:#212C43; --border-strong:#3A4865; --border-field:#6B7A96;
+  --text-primary:#E5E9F0; --text-muted:#A3AEC2; --muted-2:#8894AA;
+  --brand:#7AA7F5; --brand-600:#93B8F7; --brand-700:#B4CEFA; --brand-100:#22355A; --brand-50:#1A2A47; --brand-ring:#7AA7F5;
+  --text-on-brand:#0B1424;
+  --ok:#7DD3A4; --ok-bg:rgba(125,211,164,.14); --warn:#F2C46B; --warn-bg:rgba(242,196,107,.14);
+  --danger:#F49A90; --danger-bg:rgba(244,154,144,.14); --info:#7AA7F5; --info-bg:rgba(122,167,245,.14);
+  --nav-bg:#121B2D; --nav-bg-2:#121B2D; --nav-line:#232E46; --nav-text:#E5E9F0; --nav-text-2:#97A3B8;
+  --nav-item-hover:#1A2540; --nav-item-active-bg:#1F3156; --nav-item-active-text:#B4CEFA; --nav-item-active-dot:#7AA7F5;
+  --topbar-bg:rgba(22,32,51,.9);
+  --chart-line:#7AA7F5; --chart-bar:#5B86D6; --chart-accent:#F2C46B; --chart-grid:#2A3650;
 }
 
 /* Chữ: bỏ kiểu tiêu đề in hoa / chữ hẹp của bản cũ trong vùng ứng dụng */

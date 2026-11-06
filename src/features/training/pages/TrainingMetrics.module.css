@@ -47,6 +47,12 @@
 .phaseStats dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; }
 .phaseBar { height: 6px; border-radius: 999px; background: var(--surface-sunken); overflow: hidden; }
 .phaseBar > span { display: block; height: 100%; border-radius: inherit; background: var(--brand); }
+/* Khung cảnh báo vượt định mức tuần */
+.phaseWarn { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--text); font-size: 13px; line-height: 1.45; }
+.phaseWarn > strong { color: var(--warn); font-weight: 650; }
+.phaseWarn > span { color: var(--text-2); }
+.phaseWarn ul { margin: 2px 0 0; padding-left: 18px; }
+.phaseWarn b { font-weight: 600; font-variant-numeric: tabular-nums; }
 .phaseFoot { margin-top: auto; padding-top: 4px; }
 .phaseFoot > button { width: 100%; }
 .phaseName { color: var(--text); font: 700 24px/1.1 var(--font-display); text-transform: uppercase; }
