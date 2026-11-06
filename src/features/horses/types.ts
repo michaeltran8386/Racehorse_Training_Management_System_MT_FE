@@ -24,6 +24,9 @@ export interface Horse {
   avatarUrl?: string;
   status: HorseStatus;
   isMedicalLocked: boolean;
+  isDebtImpounded?: boolean;
+  debtImpoundedAt?: string | null;
+  debtImpoundReason?: string | null;
   retireReason?: RetireReason | null;
   ownerId?: string;
   owner?: { id: string; fullName: string; email: string };

@@ -142,6 +142,7 @@ export default function StableMapPage() {
           bg: color.bg,
           fg: color.fg,
           locked: !!a.horse.isMedicalLocked,
+          impounded: !!a.horse.isDebtImpounded,
           mine: isMine(s),
           dimmed: onlyMine && !isMine(s),
           flash: flashId === s.id,
@@ -201,7 +202,12 @@ export default function StableMapPage() {
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <HealthBadge status={a.horse.status as HealthStatus} />
-              {a.horse.isMedicalLocked && <Badge tone="danger" icon="lock">{tr("Training Lock")}</Badge>}
+              {a.horse.isMedicalLocked && <Badge tone="warn" icon="lock">{tr("Khóa y tế")}</Badge>}
+              {a.horse.isDebtImpounded && (
+                <Badge tone="danger" icon="alert-circle" title={a.horse.debtImpoundReason ?? undefined}>
+                  {tr("Lưu giữ do nợ phí")}
+                </Badge>
+              )}
             </div>
             <div style={{ fontSize: "var(--fs-body)" }}>{tr("Groom:")}{" "}{a.assignedGroom?.fullName ?? "—"}</div>
             <div style={{ fontSize: "var(--fs-body)" }}>{tr("In this stall since {{date}}", { date: formatDate(a.startDate) })}</div>
@@ -352,8 +358,12 @@ export default function StableMapPage() {
               {tr("Empty")}
             </li>
             <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: "var(--r-xs)", border: "2px solid var(--warn)" }} />
+              {tr("Khóa y tế")}
+            </li>
+            <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: "var(--r-xs)", border: "2px solid var(--danger)" }} />
-              {tr("Training Lock")}
+              {tr("Lưu giữ do nợ phí")}
             </li>
           </ul>
 

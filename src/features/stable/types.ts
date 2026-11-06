@@ -22,6 +22,8 @@ export interface StallAllocation {
     name: string;
     status: string;
     isMedicalLocked?: boolean;
+    isDebtImpounded?: boolean;
+    debtImpoundReason?: string | null;
   };
   assignedGroom?: {
     id: string;

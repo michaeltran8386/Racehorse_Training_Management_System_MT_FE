@@ -16,6 +16,11 @@ function formatIneligibleReason(reason: string, isVi: boolean): string {
     return "Đang bị Khóa y tế thú y (Cấm xuất chuồng / Cấm thi đấu)";
   }
 
+  // 1b. Lưu giữ do nợ phí
+  if (/debt impound|overdue payment/i.test(reason)) {
+    return "Đang bị Lưu giữ do nợ phí quá hạn (Cấm thi đấu / Cấm chuyển nhượng)";
+  }
+
   // 2. Trạng thái sức khỏe
   if (/Horse health status is (currently\s+)?(\w+)/i.test(reason)) {
     const match = reason.match(/Horse health status is (currently\s+)?(\w+)/i);
