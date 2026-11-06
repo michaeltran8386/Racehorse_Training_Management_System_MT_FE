@@ -175,6 +175,7 @@ export default function InjuryMapPage() {
   const [formRegion, setFormRegion] = useState("");
   const [formType, setFormType] = useState("");
   const [formSeverity, setFormSeverity] = useState<SeverityLevel | "">("");
+  const [formStage, setFormStage] = useState<InjuryStage>("ACUTE");
   const [formNotes, setFormNotes] = useState("");
 
   // Form update stage
@@ -243,6 +244,7 @@ export default function InjuryMapPage() {
       setFormRegion("");
       setFormType("");
       setFormSeverity("");
+      setFormStage("ACUTE");
       setFormNotes("");
       setAddModalPoint({ x, y });
       setMarkingMode(false);
@@ -265,7 +267,7 @@ export default function InjuryMapPage() {
         bodySide: view,
         injuryType: formType.trim(),
         severity: formSeverity,
-        stage: "ACUTE",
+        stage: formStage || (formSeverity === "MILD" ? "SUBACUTE" : "ACUTE"),
         description: formNotes.trim() || undefined,
         discoveryDate: new Date().toISOString(),
       };
@@ -758,7 +760,34 @@ export default function InjuryMapPage() {
             </Field>
 
             <Field label={tr("Severity Level *")}>
-              <Select options={[{ value: "", label: tr("— Select —") }, ...SEVERITY_OPTIONS]} value={formSeverity} disabled={savingInjury} onChange={(e) => setFormSeverity(e.target.value as SeverityLevel | "")} />
+              <Select
+                options={[{ value: "", label: tr("— Select —") }, ...SEVERITY_OPTIONS]}
+                value={formSeverity}
+                disabled={savingInjury}
+                onChange={(e) => {
+                  const val = e.target.value as SeverityLevel | "";
+                  setFormSeverity(val);
+                  if (val === "MILD") {
+                    setFormStage("SUBACUTE");
+                  } else if (val === "MODERATE" || val === "SEVERE" || val === "CRITICAL") {
+                    setFormStage("ACUTE");
+                  }
+                }}
+              />
+            </Field>
+
+            <Field label={tr("Recovery Stage *")}>
+              <Select
+                options={[
+                  { value: "ACUTE", label: isVietnamese() ? "Cấp tính (Acute)" : "Acute" },
+                  { value: "SUBACUTE", label: isVietnamese() ? "Bán cấp (Subacute)" : "Subacute" },
+                  { value: "RECOVERING", label: isVietnamese() ? "Đang phục hồi (Recovering)" : "Recovering" },
+                  { value: "HEALED", label: isVietnamese() ? "Đã lành (Healed)" : "Healed" },
+                ]}
+                value={formStage}
+                disabled={savingInjury}
+                onChange={(e) => setFormStage(e.target.value as InjuryStage)}
+              />
             </Field>
 
             <Field label={tr("Clinical Notes & Instructions")}>
@@ -793,10 +822,10 @@ export default function InjuryMapPage() {
               <Select
                 options={[
                   { value: "", label: tr("— Select —") },
-                  { value: "ACUTE", label: "Acute" },
-                  { value: "SUBACUTE", label: "Subacute" },
-                  { value: "RECOVERING", label: "Recovering" },
-                  { value: "HEALED", label: "Healed" },
+                  { value: "ACUTE", label: isVietnamese() ? "Cấp tính (Acute)" : "Acute" },
+                  { value: "SUBACUTE", label: isVietnamese() ? "Bán cấp (Subacute)" : "Subacute" },
+                  { value: "RECOVERING", label: isVietnamese() ? "Đang phục hồi (Recovering)" : "Recovering" },
+                  { value: "HEALED", label: isVietnamese() ? "Đã lành (Healed)" : "Healed" },
                 ]}
                 value={newStage}
                 disabled={savingInjury}

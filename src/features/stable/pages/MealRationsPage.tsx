@@ -89,8 +89,8 @@ export default function MealRationsPage() {
 
   const statusLabels: Record<string, string> = {
     DRAFT: tr('Draft'),
-    PENDING_APPROVAL: tr('Chờ xử lý'),
-    APPROVED: tr('Currently Active'),
+    PENDING_APPROVAL: tr('Pending Approval'),
+    APPROVED: tr('Approved'),
     REJECTED: tr('Rejected'),
     ARCHIVED: tr('Archived'),
   };
@@ -120,7 +120,7 @@ export default function MealRationsPage() {
       <PageHeader
         title={tr('Nutrition & Feed Management')}
         description={tr(
-          'Quản lý khẩu phần ăn của ngựa, định lượng theo tỷ lệ trọng lượng (1.5% - 3.0%) do Huấn luyện viên trưởng thiết lập và áp dụng.',
+          'Manage horse feed rations, scientific dietary limits (1.5% - 3.0%), and veterinarian review workflows.',
         )}
         action={
           canCreate ? (
@@ -143,25 +143,27 @@ export default function MealRationsPage() {
       <div className={styles.metrics}>
         <Card pad={16}>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-            {tr('Active Feeding Rations')}
+            {tr('Approved')}
           </div>
           <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--ok)', marginTop: '4px' }}>
             {stats.totalActive}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-            {tr('Active plans in daily operation')}
+            {tr('Approved plans in daily operation')}
           </div>
         </Card>
 
         <Card pad={16}>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', textTransform: 'uppercase' }}>
-            {tr('Draft Plans')}
+            {tr('Pending Approval')}
           </div>
-          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: stats.draftCount > 0 ? 'var(--warn)' : 'var(--color-text-secondary)', marginTop: '4px' }}>
-            {stats.draftCount}
+          <div style={{ fontSize: '1.75rem', fontWeight: 700, color: stats.pendingReview > 0 ? 'var(--warn)' : 'var(--color-text-secondary)', marginTop: '4px' }}>
+            {stats.pendingReview}
           </div>
           <div style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginTop: '4px' }}>
-            {tr('Khẩu phần đang soạn thảo')}
+            {isVet && stats.pendingReview > 0
+              ? tr('Pending review by you')
+              : tr('Submitted by Head Trainer')}
           </div>
         </Card>
 
@@ -193,9 +195,10 @@ export default function MealRationsPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
             {[
               { id: 'ALL', label: tr('All Plans') },
-              { id: 'APPROVED', label: tr('Currently Active'), badge: stats.totalActive },
+              { id: 'PENDING_APPROVAL', label: tr('Pending Approval'), badge: stats.pendingReview },
+              { id: 'APPROVED', label: tr('Approved'), badge: stats.totalActive },
               { id: 'DRAFT', label: tr('Drafts'), badge: stats.draftCount },
-              { id: 'ARCHIVED', label: tr('Archived') },
+              { id: 'REJECTED', label: tr('Rejected') },
             ].map((tab) => {
               const active = statusFilter === tab.id;
               return (
@@ -295,7 +298,7 @@ export default function MealRationsPage() {
         ) : (
           <Paged items={filteredPlans} noun="plans">{(pagePlans) => (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem', tableLayout: 'fixed' }}>
+            <table style={{ width: '100%', minWidth: '960px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.875rem' }}>
               <thead>
                 <tr
                   style={{
@@ -304,14 +307,14 @@ export default function MealRationsPage() {
                     color: 'var(--color-text-secondary)',
                   }}
                 >
-                  <th style={{ padding: '0.75rem 1rem', width: '14%' }}>{tr('Plan Code')}</th>
-                  <th style={{ padding: '0.75rem 1rem', width: '20%' }}>{tr('Horse')}</th>
-                  <th style={{ padding: '0.75rem 1rem', width: '14%' }}>{tr('Stall / Zone')}</th>
-                  <th style={{ padding: '0.75rem 1rem', width: '13%' }}>{tr('Daily Feed (kg)')}</th>
-                  <th style={{ padding: '0.75rem 1rem', width: '15%' }}>{tr('Body Ratio (%BW)')}</th>
-                  <th style={{ padding: '0.75rem 1rem', width: '12%' }}>{tr('Status')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '13%' }}>{tr('Plan Code')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '18%' }}>{tr('Horse')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '15%' }}>{tr('Stall / Zone')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '11%' }}>{tr('Daily Feed (kg)')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '14%' }}>{tr('Body Ratio (%BW)')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '13%' }}>{tr('Status')}</th>
                   <th style={{ padding: '0.75rem 1rem', width: '12%' }}>{tr('Updated')}</th>
-                  <th style={{ padding: '0.75rem 1rem', width: '10%', textAlign: 'right' }}>{tr('Actions')}</th>
+                  <th style={{ padding: '0.75rem 1rem', width: '14%', textAlign: 'right' }}>{tr('Actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -395,7 +398,7 @@ export default function MealRationsPage() {
                       </td>
 
                       {/* Status */}
-                      <td style={{ padding: '0.875rem 1rem' }}>
+                      <td style={{ padding: '0.875rem 1rem', whiteSpace: 'nowrap' }}>
                         <Badge tone={statusBadgeTone[p.status] || 'neutral'}>
                           {statusLabels[p.status] || p.status}
                         </Badge>
@@ -407,14 +410,16 @@ export default function MealRationsPage() {
                       </td>
 
                       {/* Action buttons */}
-                      <td style={{ padding: '0.875rem 1rem', textAlign: 'right' }}>
+                      <td style={{ padding: '0.875rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                           <Button
                             size="sm"
-                            tone="secondary"
+                            tone={p.status === 'PENDING_APPROVAL' && isVet ? "primary" : "secondary"}
                             onClick={() => setDetailPlan(p)}
                           >
-                            {tr('Details')}
+                            {p.status === 'PENDING_APPROVAL' && isVet
+                              ? tr('Review')
+                              : tr('Details')}
                           </Button>
 
                           {canCreate && (p.status === 'DRAFT' || p.status === 'REJECTED') && (
