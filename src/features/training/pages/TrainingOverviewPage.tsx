@@ -151,7 +151,7 @@ export default function TrainingOverviewPage() {
             <div style={{
               fontSize: "var(--fs-h1)",
               fontWeight: 700,
-              color: (k.horsesWithoutPlan ?? 0) > 0 ? "#d97706" : undefined,
+              color: (k.horsesWithoutPlan ?? 0) > 0 ? "var(--warn)" : undefined,
             }}>
               {k.horsesWithoutPlan ?? 0}
             </div>

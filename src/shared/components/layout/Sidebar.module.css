@@ -503,3 +503,13 @@
 @media (prefers-reduced-motion: reduce) {
   .groupToggle svg { transition: none; }
 }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .nav { border-right: 1px solid var(--nav-line); }
+:global(:root[data-ui="v2"]) .logo img { filter: none; }
+:global(:root[data-ui="v2"]) .item { border-radius: var(--r); margin-inline: 4px; }
+:global(:root[data-ui="v2"]) .active, :global(:root[data-ui="v2"]) .active:hover { font-weight: 650; }
+:global(:root[data-ui="v2"]) .activePill { left: -4px; border-radius: 0 3px 3px 0; background: var(--nav-item-active-dot); }
+:global(:root[data-ui="v2"]) .collapseBtn, :global(:root[data-ui="v2"]) .logo { border-radius: var(--r); }
+:global(:root[data-ui="v2"]) .userAvatar { border-radius: 999px; background: var(--brand-100); color: var(--brand-700); }
+:global(:root[data-ui="v2"]) .user { border-radius: var(--r); }

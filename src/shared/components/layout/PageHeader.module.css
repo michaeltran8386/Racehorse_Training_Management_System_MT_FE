@@ -11,3 +11,8 @@
 .text, .side { max-width: 100%; }
 .title, .description { overflow-wrap: anywhere; }
 @media (max-width: 520px) { .header { align-items: stretch; } .side { min-width: 0; } }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .header { border-bottom: 0; padding-bottom: 4px; align-items: center; }
+:global(:root[data-ui="v2"]) .title { font-family: var(--font); font-size: 26px; font-weight: 700; line-height: 34px; letter-spacing: -0.01em; text-transform: none; }
+:global(:root[data-ui="v2"]) .description { color: var(--text-2); }

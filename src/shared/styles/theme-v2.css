@@ -1,0 +1,76 @@
+/* ============================================================ Giao diện v2 (thử trên Head Trainer)
+   Bật bằng <html data-ui="v2">. Sáng, sạch, xanh rêu; bo góc mềm; chữ không chân dễ đọc.
+   Chỉ đổi giá trị token: các trang dùng var(--…) tự đổi theo. Duyệt xong thì bật cho mọi vai trò. */
+:root[data-ui="v2"] {
+  /* Nền & bề mặt */
+  --bg-page:#F6F7F4; --bg-surface:#FFFFFF; --bg-subtle:#F0F2EE;
+  --page:var(--bg-page); --surface:var(--bg-surface); --surface-2:var(--bg-subtle); --surface-3:#E4E8E2;
+  --surface-table-head:#F4F6F2; --surface-row-hover:#F2F5F0;
+  --border:#E1E5DE; --border-soft:#EEF1EC; --border-strong:#C9D0C5; --border-field:#9AA597;
+
+  /* Chữ */
+  --text-primary:#1B2420; --text-muted:#5B6660;
+  --text:var(--text-primary); --text-2:var(--text-muted); --muted:var(--text-muted); --muted-2:#76817B;
+
+  /* Xanh rêu chủ đạo */
+  --brand-primary:#3F6B4E; --brand-secondary:#2F5E73;
+  --brand:#3F6B4E; --brand-600:#335A41; --brand-700:#284A34; --brand-100:#DCE8DF; --brand-50:#EEF4EF; --brand-ring:#3F6B4E;
+  --text-on-brand:#FFFFFF;
+  --ink:var(--text); --ink-70:var(--muted); --accent:var(--brand); --accent-600:var(--brand-600); --accent-100:var(--brand-100); --accent-50:var(--brand-50);
+
+  /* Trạng thái (giữ ngữ nghĩa, tông dịu) */
+  --ok:#2E7D4F; --ok-bg:#E3F2E8; --warn:#9A5B00; --warn-bg:#FDF0D8;
+  --danger:#B3362B; --danger-bg:#FBE4E1; --info:#2F5E73; --info-bg:#E2EEF3;
+
+  /* Điều hướng sáng */
+  --nav-bg:#FFFFFF; --nav-bg-2:#FFFFFF; --nav-line:#E6EAE3; --nav-text:#26302B; --nav-text-2:#6C776F;
+  --nav-item-hover:#F1F4EF; --nav-item-active-bg:#E6EFE8; --nav-item-active-text:#2C5139; --nav-item-active-dot:#3F6B4E;
+  --topbar-bg:rgba(255,255,255,.88);
+
+  /* Biểu đồ */
+  --chart-line:#3F6B4E; --chart-bar:#5E8C6C; --chart-accent:#C98A12; --chart-grid:#E4E8E2;
+
+  /* Chữ không chân, tiêu đề cùng họ chữ (bỏ kiểu in hoa đậm) */
+  --font:'Inter','Segoe UI',system-ui,sans-serif; --font-display:'Inter','Segoe UI',system-ui,sans-serif;
+  --mono:var(--font); --font-numeric:var(--font);
+
+  /* Bo góc mềm, bóng nhẹ */
+  --r-xs:4px; --r-sm:6px; --r:10px; --r-lg:12px; --r-xl:14px; --r-modal:16px; --r-btn:8px; --r-field:8px;
+  --shadow-sm:0 1px 2px rgba(27,36,32,.05);
+  --shadow:0 1px 3px rgba(27,36,32,.06), 0 1px 2px rgba(27,36,32,.04);
+  --shadow-pop:0 10px 30px rgba(27,36,32,.12); --shadow-lg:0 20px 50px rgba(27,36,32,.16);
+
+  --toast-bg:#1B2420; --toast-border:#1B2420; --toast-text:#F6F7F4;
+  --toast-icon-info:#8FC1D4; --toast-icon-ok:#8FD3A6; --toast-icon-warn:#F2C46B; --toast-icon-danger:#F29B91;
+}
+
+:root[data-ui="v2"][data-theme="dark"] {
+  --bg-page:#111714; --bg-surface:#18201C; --bg-subtle:#1D2621;
+  --page:var(--bg-page); --surface:var(--bg-surface); --surface-2:var(--bg-subtle); --surface-3:#26312B;
+  --surface-table-head:#1B2420; --surface-row-hover:#1F2924;
+  --border:#2C3832; --border-soft:#232D28; --border-strong:#3D4B43; --border-field:#6F7E75;
+  --text-primary:#E7ECE8; --text-muted:#A8B4AC; --muted-2:#8D9A92;
+  --brand:#8DBE9B; --brand-600:#A5CFB1; --brand-700:#C2E0CA; --brand-100:#2A3D31; --brand-50:#1F2D24; --brand-ring:#8DBE9B;
+  --text-on-brand:#10170F;
+  --ok:#8FD3A6; --ok-bg:rgba(143,211,166,.14); --warn:#F2C46B; --warn-bg:rgba(242,196,107,.14);
+  --danger:#F29B91; --danger-bg:rgba(242,155,145,.14); --info:#8FC1D4; --info-bg:rgba(143,193,212,.14);
+  --nav-bg:#141B17; --nav-bg-2:#141B17; --nav-line:#26302B; --nav-text:#E7ECE8; --nav-text-2:#9AA79F;
+  --nav-item-hover:#1E2722; --nav-item-active-bg:#24352A; --nav-item-active-text:#C2E0CA; --nav-item-active-dot:#8DBE9B;
+  --topbar-bg:rgba(24,32,28,.9);
+  --chart-line:#8DBE9B; --chart-bar:#6FA680; --chart-accent:#F2C46B; --chart-grid:#2C3832;
+}
+
+/* Chữ: bỏ kiểu tiêu đề in hoa / chữ hẹp của bản cũ trong vùng ứng dụng */
+:root[data-ui="v2"] body { font-family: var(--font); background: var(--page); color: var(--text); }
+:root[data-ui="v2"] main h1, :root[data-ui="v2"] main h2, :root[data-ui="v2"] main h3,
+:root[data-ui="v2"] [role="dialog"] h2, :root[data-ui="v2"] [role="dialog"] h3 {
+  font-family: var(--font); text-transform: none; letter-spacing: -0.005em;
+}
+:root[data-ui="v2"] ::selection { background: var(--brand-100); color: var(--text); }
+
+/* Bản cũ dùng chữ in hoa + giãn chữ cho tiêu đề, nhãn, cột bảng ở từng trang.
+   v2: chữ thường đầu câu, dễ đọc hơn khi quét số liệu (mã như HR-000001 vốn đã in hoa nên không đổi). */
+:root[data-ui="v2"] main *, :root[data-ui="v2"] [role="dialog"] *, :root[data-ui="v2"] nav * {
+  text-transform: none;
+  letter-spacing: normal;
+}

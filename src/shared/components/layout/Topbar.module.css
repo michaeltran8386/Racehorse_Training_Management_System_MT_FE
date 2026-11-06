@@ -157,3 +157,7 @@
 .crumbs li:not(:last-child) { flex-shrink: 3; }
 .sep { flex-shrink: 0; }
 .crumbLink, .crumbText { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .bar { backdrop-filter: saturate(1.4) blur(10px); -webkit-backdrop-filter: saturate(1.4) blur(10px); border-bottom: 1px solid var(--border); }
+:global(:root[data-ui="v2"]) .badge { border-radius: var(--r-pill); background: var(--danger); color: #fff; }

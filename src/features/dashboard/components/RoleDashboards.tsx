@@ -110,8 +110,8 @@ export function InteractiveKpiCard({
           </div>
           {progress !== undefined ? (
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-              <div style={{ flex: 1, height: 6, borderRadius: 0, background: "var(--surface-sunken, #e5e7eb)", overflow: "hidden" }}>
-                <div style={{ width: `${Math.min(100, progress)}%`, height: "100%", background: "var(--brand)", borderRadius: 0 }} />
+              <div style={{ flex: 1, height: 6, borderRadius: 999, background: "var(--surface-sunken, #e5e7eb)", overflow: "hidden" }}>
+                <div style={{ width: `${Math.min(100, progress)}%`, height: "100%", background: "var(--brand)", borderRadius: 999 }} />
               </div>
               <span style={{ fontSize: "var(--fs-xs, 0.75rem)", fontWeight: 700, color: "var(--muted)" }}>{progress}%</span>
             </div>
@@ -603,13 +603,13 @@ export function TrainerDashboard() {
         />
         <InteractiveKpiCard
           icon="alert"
-          iconBg={withoutPlan > 0 ? "rgba(245, 158, 11, 0.15)" : "var(--surface-sunken)"}
-          iconColor={withoutPlan > 0 ? "#f59e0b" : "var(--muted)"}
+          iconBg={withoutPlan > 0 ? "var(--warn-bg)" : "var(--surface-sunken)"}
+          iconColor={withoutPlan > 0 ? "var(--warn)" : "var(--muted)"}
           label={isVi ? "Chưa có giáo án" : "Needs training plan"}
           value={overview.loading ? "—" : withoutPlan}
           trend={
             withoutPlan > 0 ? (
-              <span style={{ color: "#d97706", fontWeight: 700 }}>
+              <span style={{ color: "var(--warn)", fontWeight: 700 }}>
                 {isVi ? "⚠️ Cần lập kế hoạch" : "Action needed"}
               </span>
             ) : (
@@ -686,7 +686,7 @@ export function TrainerDashboard() {
           {pctWithout > 0 && (
             <div
               title={`${isVi ? "Chưa có giáo án" : "Needs plan"}: ${withoutPlan} (${pctWithout}%)`}
-              style={{ width: `${pctWithout}%`, background: "#f59e0b", transition: "width 0.3s" }}
+              style={{ width: `${pctWithout}%`, background: "var(--warn)", transition: "width 0.3s" }}
             />
           )}
           {pctLocked > 0 && (
@@ -708,7 +708,7 @@ export function TrainerDashboard() {
             <span>{isVi ? "Giáo án chờ kích hoạt:" : "Pending plans:"} <strong>{draftPlan}</strong> ({pctDraft}%)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b" }} />
+            <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--warn)" }} />
             <span>{isVi ? "Chưa có giáo án:" : "Needs plan:"} <strong>{withoutPlan}</strong> ({pctWithout}%)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
@@ -873,7 +873,7 @@ export function TrainerDashboard() {
               alignItems: "center",
               justifyContent: "space-between",
               padding: "10px 14px",
-              background: (k?.loadSpikeHorses ?? 0) > 0 ? "rgba(245, 158, 11, 0.1)" : "var(--surface-sunken)",
+              background: (k?.loadSpikeHorses ?? 0) > 0 ? "var(--warn-bg)" : "var(--surface-sunken)",
               borderRadius: 6,
             }}>
               <div>
@@ -887,7 +887,7 @@ export function TrainerDashboard() {
               <span style={{
                 fontSize: "1.2rem",
                 fontWeight: 700,
-                color: (k?.loadSpikeHorses ?? 0) > 0 ? "#d97706" : "var(--muted)",
+                color: (k?.loadSpikeHorses ?? 0) > 0 ? "var(--warn)" : "var(--muted)",
               }}>
                 {k?.loadSpikeHorses ?? 0} {isVi ? "ngựa" : "horses"}
               </span>

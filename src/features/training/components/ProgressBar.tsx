@@ -26,12 +26,12 @@ export function ProgressBar({ done, total, due, overdue }: ProgressBarProps) {
 
   return (
     <div title={titleParts.join(" · ")} style={{ minWidth: 120 }}>
-      <div style={{ height: 6, background: "var(--surface-sunken, #e5e7eb)", borderRadius: 3, overflow: "hidden" }}>
+      <div style={{ height: 6, background: "var(--surface-sunken)", borderRadius: 3, overflow: "hidden" }}>
         <div
           style={{
             height: "100%",
             width: `${Math.min(100, Math.max(0, pct))}%`,
-            background: "var(--brand, #2563eb)",
+            background: "var(--brand)",
             transition: "width 0.3s ease",
           }}
         />
@@ -42,7 +42,7 @@ export function ProgressBar({ done, total, due, overdue }: ProgressBarProps) {
           justifyContent: "space-between",
           alignItems: "center",
           fontSize: "var(--fs-caption, 12px)",
-          color: "var(--text-muted, #64748b)",
+          color: "var(--text-muted)",
           marginTop: 2,
           gap: "4px",
         }}
@@ -55,7 +55,7 @@ export function ProgressBar({ done, total, due, overdue }: ProgressBarProps) {
         )}
       </div>
       {overdueCount > 0 && (
-        <div style={{ fontSize: "11px", color: "var(--danger, #ef4444)", marginTop: 2, fontWeight: 600 }}>
+        <div style={{ fontSize: "11px", color: "var(--danger)", marginTop: 2, fontWeight: 600 }}>
           {tr("Trễ ghi kết quả")}: {overdueCount} {tr("buổi")}
         </div>
       )}

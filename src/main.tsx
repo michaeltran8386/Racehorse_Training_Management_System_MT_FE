@@ -6,6 +6,7 @@ import "@/shared/styles/tokens.css";
 import "@/shared/styles/fonts.css";
 import "@/shared/styles/equiflow-fonts.css";
 import "@/shared/styles/global.css";
+import "@/shared/styles/theme-v2.css";
 import "@/shared/i18n";
 
 // Fix React removeChild / insertBefore crash caused by browser auto-translate (issue #11538)

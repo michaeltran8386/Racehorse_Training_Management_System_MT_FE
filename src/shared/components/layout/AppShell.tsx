@@ -36,6 +36,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (status === "anonymous") navigate(`/login?next=${encodeURIComponent(pathname)}`, { replace: true });
   }, [status, pathname, navigate]);
 
+  // Giao diện v2 (sáng, xanh rêu) đang thử trên vai trò Head Trainer; duyệt xong sẽ bật cho mọi vai trò.
+  useEffect(() => {
+    const root = document.documentElement;
+    if (user?.role === "HEAD_TRAINER") root.dataset.ui = "v2";
+    else delete root.dataset.ui;
+    return () => {
+      delete root.dataset.ui;
+    };
+  }, [user?.role]);
+
   // Thông báo: hỏi BE mỗi 30 giây khi đã đăng nhập; đổi tài khoản/đăng xuất thì dừng.
   useEffect(() => {
     if (status !== "authenticated" || !user) return;

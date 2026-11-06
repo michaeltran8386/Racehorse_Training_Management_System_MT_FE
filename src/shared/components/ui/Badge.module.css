@@ -20,3 +20,7 @@
 .violet { background: var(--violet-bg); color: var(--violet); }
 .brand { background: var(--brand-50); color: var(--brand-600); }
 .brand { color: var(--text); }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .badge { border-radius: var(--r-pill); padding: 0 10px; font-weight: 600; }
+:global(:root[data-ui="v2"]) .brand { background: var(--brand-50); color: var(--brand-700); }
