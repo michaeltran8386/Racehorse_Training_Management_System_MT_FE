@@ -267,12 +267,12 @@ export default function TrainingOverviewPage() {
                         <span className="sr-only">{tr("Training Lock")}</span>
                       </span>
                     )}
-                        <div style={{ display: "flex", gap: "0.35rem", alignItems: "center", marginTop: "2px" }}>
-                          <span style={{ color: "var(--text-muted)" }}>{r.horse.horseCode}</span>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center", marginTop: "2px" }}>
+                          <span style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>{r.horse.horseCode}</span>
                           {r.horse.stallCode && (
                             <span style={{
                               fontSize: "10px",
-                              color: "var(--text)",
+                              color: "var(--text)", whiteSpace: "nowrap",
                               background: "var(--surface-sunken)",
                               padding: "1px 5px",
                               borderRadius: "3px",

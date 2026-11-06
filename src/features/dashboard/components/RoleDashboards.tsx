@@ -578,15 +578,25 @@ export function TrainerDashboard() {
   const totalHorses = k?.managedHorses ?? rows.length;
   const inTraining = k?.horsesInTraining ?? rows.filter((r) => r.plan?.status === "ACTIVE").length;
   const withoutPlan = k?.horsesWithoutPlan ?? rows.filter((r) => !r.plan).length;
-  const draftPlan = k?.horsesDraftPlan ?? rows.filter((r) => r.plan?.status === "DRAFT").length;
   const injuredOrLocked =
     k?.horsesInjuredOrLocked ??
     rows.filter((r) => r.horse.isMedicalLocked || r.horse.status === "INJURED" || r.horse.status === "UNDER_OBSERVATION").length;
 
   const pctInTraining = totalHorses > 0 ? Math.round((inTraining / totalHorses) * 100) : 0;
-  const pctDraft = totalHorses > 0 ? Math.round((draftPlan / totalHorses) * 100) : 0;
-  const pctWithout = totalHorses > 0 ? Math.round((withoutPlan / totalHorses) * 100) : 0;
-  const pctLocked = totalHorses > 0 ? Math.round((injuredOrLocked / totalHorses) * 100) : 0;
+
+  // Thanh phân bổ: mỗi ngựa thuộc đúng một nhóm (khóa y tế được ưu tiên) để tổng luôn là 100%.
+  const isLockedRow = (r: (typeof rows)[number]) =>
+    r.horse.isMedicalLocked || r.horse.status === "INJURED" || r.horse.status === "UNDER_OBSERVATION";
+  const segTotal = rows.length;
+  const segLocked = rows.filter(isLockedRow).length;
+  const segActive = rows.filter((r) => !isLockedRow(r) && r.plan?.status === "ACTIVE").length;
+  const segDraft = rows.filter((r) => !isLockedRow(r) && r.plan?.status === "DRAFT").length;
+  const segNone = segTotal - segLocked - segActive - segDraft;
+  const segPct = (n: number) => (segTotal > 0 ? Math.round((n / segTotal) * 100) : 0);
+  const segPctActive = segPct(segActive);
+  const segPctDraft = segPct(segDraft);
+  const segPctNone = segPct(segNone);
+  const segPctLocked = segPct(segLocked);
 
   // Ngựa cần phân bổ giáo án (chưa có giáo án hoặc đang ở bản nháp)
   const unassignedHorses = rows.filter((r) => !r.plan || r.plan.status === "DRAFT");
@@ -598,7 +608,7 @@ export function TrainerDashboard() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* 4 Thẻ KPI chính */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "16px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))", gap: "16px" }}>
         <InteractiveKpiCard icon="horse" label={isVi ? "Ngựa đang quản lý" : "Managed horses"} value={k?.managedHorses ?? "—"} to="/training" />
         <InteractiveKpiCard
           icon="activity"
@@ -679,28 +689,28 @@ export function TrainerDashboard() {
           background: "var(--surface-sunken)",
           marginBottom: "12px",
         }}>
-          {pctInTraining > 0 && (
+          {segPctActive > 0 && (
             <div
-              title={`${isVi ? "Đang huấn luyện" : "In training"}: ${inTraining} (${pctInTraining}%)`}
-              style={{ width: `${pctInTraining}%`, background: "var(--ok)", transition: "width 0.3s" }}
+              title={`${isVi ? "Đang huấn luyện" : "In training"}: ${segActive} (${segPctActive}%)`}
+              style={{ width: `${segPctActive}%`, background: "var(--ok)", transition: "width 0.3s" }}
             />
           )}
-          {pctDraft > 0 && (
+          {segPctDraft > 0 && (
             <div
-              title={`${isVi ? "Chờ kích hoạt" : "Pending activation"}: ${draftPlan} (${pctDraft}%)`}
-              style={{ width: `${pctDraft}%`, background: "var(--info)", transition: "width 0.3s" }}
+              title={`${isVi ? "Chờ kích hoạt" : "Pending activation"}: ${segDraft} (${segPctDraft}%)`}
+              style={{ width: `${segPctDraft}%`, background: "var(--info)", transition: "width 0.3s" }}
             />
           )}
-          {pctWithout > 0 && (
+          {segPctNone > 0 && (
             <div
-              title={`${isVi ? "Chưa có giáo án" : "Needs plan"}: ${withoutPlan} (${pctWithout}%)`}
-              style={{ width: `${pctWithout}%`, background: "var(--warn)", transition: "width 0.3s" }}
+              title={`${isVi ? "Chưa có giáo án" : "Needs plan"}: ${segNone} (${segPctNone}%)`}
+              style={{ width: `${segPctNone}%`, background: "var(--warn)", transition: "width 0.3s" }}
             />
           )}
-          {pctLocked > 0 && (
+          {segPctLocked > 0 && (
             <div
-              title={`${isVi ? "Khóa y tế / Chấn thương" : "Medical lock"}: ${injuredOrLocked} (${pctLocked}%)`}
-              style={{ width: `${pctLocked}%`, background: "var(--danger)", transition: "width 0.3s" }}
+              title={`${isVi ? "Khóa y tế / Chấn thương" : "Medical lock"}: ${segLocked} (${segPctLocked}%)`}
+              style={{ width: `${segPctLocked}%`, background: "var(--danger)", transition: "width 0.3s" }}
             />
           )}
         </div>
@@ -709,19 +719,19 @@ export function TrainerDashboard() {
         <div style={{ display: "flex", flexWrap: "wrap", gap: "16px", fontSize: "var(--fs-xs)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--ok)" }} />
-            <span>{isVi ? "Đang huấn luyện:" : "In training:"} <strong>{inTraining}</strong> ({pctInTraining}%)</span>
+            <span>{isVi ? "Đang huấn luyện:" : "In training:"} <strong>{segActive}</strong> ({segPctActive}%)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--info)" }} />
-            <span>{isVi ? "Giáo án chờ kích hoạt:" : "Pending plans:"} <strong>{draftPlan}</strong> ({pctDraft}%)</span>
+            <span>{isVi ? "Giáo án chờ kích hoạt:" : "Pending plans:"} <strong>{segDraft}</strong> ({segPctDraft}%)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--warn)" }} />
-            <span>{isVi ? "Chưa có giáo án:" : "Needs plan:"} <strong>{withoutPlan}</strong> ({pctWithout}%)</span>
+            <span>{isVi ? "Chưa có giáo án:" : "Needs plan:"} <strong>{segNone}</strong> ({segPctNone}%)</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ width: 10, height: 10, borderRadius: "50%", background: "var(--danger)" }} />
-            <span>{isVi ? "Khóa y tế / Chấn thương:" : "Medical lock:"} <strong>{injuredOrLocked}</strong> ({pctLocked}%)</span>
+            <span>{isVi ? "Khóa y tế / Chấn thương:" : "Medical lock:"} <strong>{segLocked}</strong> ({segPctLocked}%)</span>
           </div>
         </div>
       </Card>
@@ -845,6 +855,15 @@ export function TrainerDashboard() {
                           <LinkButton to={`/training/plans/${r.plan.id}`} tone="secondary" size="sm">
                             {isVi ? "Xem & Kích hoạt" : "Review & Activate"}
                           </LinkButton>
+                        ) : r.horse.isMedicalLocked ? (
+                          // Ngựa đang bị Khóa huấn luyện: BE không cho tạo giáo án, nên chặn sẵn và nói rõ lý do.
+                          <Button
+                            tone="secondary"
+                            size="sm"
+                            blockedReason={isVi ? "Ngựa đang bị Khóa huấn luyện. Chờ Bác sĩ thú y gỡ khóa." : "The horse is under a Training Lock. Wait for the Veterinarian to lift it."}
+                          >
+                            {isVi ? "+ Lập giáo án" : "+ Setup Plan"}
+                          </Button>
                         ) : (
                           <LinkButton
                             to={`/training/plans/new?horseId=${r.horse.id}`}

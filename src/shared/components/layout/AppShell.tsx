@@ -39,8 +39,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   // Giao diện v2 (sáng, xanh rêu) đang thử trên vai trò Head Trainer; duyệt xong sẽ bật cho mọi vai trò.
   useEffect(() => {
     const root = document.documentElement;
-    if (user?.role === "HEAD_TRAINER") root.dataset.ui = "v2";
-    else delete root.dataset.ui;
+    if (user?.role === "HEAD_TRAINER") {
+      root.dataset.ui = "v2";
+      // v2 mặc định nền sáng; người dùng đã tự chọn sáng/tối thì giữ lựa chọn đó.
+      try {
+        if (!localStorage.getItem("equiflow-theme")) root.dataset.theme = "light";
+      } catch {
+        root.dataset.theme = "light";
+      }
+    } else delete root.dataset.ui;
     return () => {
       delete root.dataset.ui;
     };

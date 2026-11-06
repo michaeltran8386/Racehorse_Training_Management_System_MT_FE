@@ -74,3 +74,19 @@
   text-transform: none;
   letter-spacing: normal;
 }
+
+/* Khung thẻ riêng của từng trang (thẻ số liệu, bảng tóm tắt, thẻ cảnh báo...) — bo góc + bóng nhẹ như Card dùng chung.
+   Tên lớp CSS module giữ dạng _ten_hash nên khớp được cả khi build. */
+:root[data-ui="v2"] main :is(
+  [class*="_kpi_"], [class*="_metrics_"], [class*="_summary_"], [class*="_panel_"], [class*="_liveCard_"],
+  [class*="_alertCard_"], [class*="_card_"], [class*="_event_"], [class*="_filters_"], [class*="_guide_"],
+  [class*="_stat_"], [class*="_tile_"], [class*="_notice_"]
+) {
+  border-radius: var(--r-lg);
+}
+:root[data-ui="v2"] main :is([class*="_kpi_"], [class*="_metrics_"] > *, [class*="_liveCard_"], [class*="_alertCard_"]) {
+  box-shadow: var(--shadow);
+}
+
+/* Thanh bên rộng hơn để nhãn menu không xuống 2–3 dòng */
+:root[data-ui="v2"] { --sidebar-w: 248px; --sidebar-w-md: 248px; }

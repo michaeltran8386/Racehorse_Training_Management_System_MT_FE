@@ -222,7 +222,6 @@ export default function WeeklyCalendarPage() {
           <div>
             <strong>{tr(EXERCISE_TYPE_LABEL[s.sessionType])}</strong>
             {isHeavySession && (isVietnamese ? " · Nặng" : tr(" · Heavy"))}
-            {isTrial && (isVietnamese ? " · Chạy thử" : tr(" · Trial Run"))}
           </div>
           <div>{s.targetDistanceMeters}m × {s.repetitions} · {tr(TRACK_LABEL[s.trackType])}</div>
           <div><Icon name="user" inline size={12} /> {s.groomName ?? (isVietnamese ? "Chưa giao" : "—")}</div>

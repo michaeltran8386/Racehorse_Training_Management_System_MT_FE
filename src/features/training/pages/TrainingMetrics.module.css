@@ -43,3 +43,7 @@
 .tableScroll { max-width: 100%; overflow-x: auto; }
 .chartGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 900px) { .chartGrid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .planTitle { font: 700 28px/1.2 var(--font); letter-spacing: -0.01em; }
+:global(:root[data-ui="v2"]) .phaseName { font: 650 var(--fs-section)/1.3 var(--font); }
