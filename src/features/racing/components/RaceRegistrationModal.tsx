@@ -3,7 +3,7 @@ import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
-import { tr, isVietnamese } from "@/shared/i18n/tr";
+import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { fetchEligibility, registerHorseForRace, scratchHorseFromRace, fetchTournamentDetail } from "../api";
 import type { EligibilityResponse, Tournament } from "../types";
@@ -106,7 +106,7 @@ export function RaceRegistrationModal({
         setSelectedHorseId(firstAvailable.id);
       }
     } catch (err: any) {
-      setError(err?.message || tr("Failed to load race eligibility"));
+      setError(localizeServerText(err?.message) || tr("Failed to load race eligibility"));
     } finally {
       setLoading(false);
     }
@@ -125,7 +125,7 @@ export function RaceRegistrationModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err?.message || tr("Failed to register horse for tournament"));
+      setError(localizeServerText(err?.message) || tr("Failed to register horse for tournament"));
     } finally {
       setSubmitting(false);
     }
@@ -146,7 +146,7 @@ export function RaceRegistrationModal({
       onSuccess();
       await loadEligibility();
     } catch (err: any) {
-      setError(err?.message || tr("Failed to scratch horse"));
+      setError(localizeServerText(err?.message) || tr("Failed to scratch horse"));
     } finally {
       setScratchSubmitting(false);
     }
@@ -266,7 +266,7 @@ export function RaceRegistrationModal({
                         <div style={{ fontWeight: 700, color: "var(--ink)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                           {reg.horse.name}
                           <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", fontWeight: 400 }}>
-                            #{reg.horse.horseCode || "N/A"}
+                            #{reg.horse.horseCode || tr("N/A")}
                           </span>
                         </div>
                         <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
@@ -406,7 +406,7 @@ export function RaceRegistrationModal({
                             <div style={{ fontWeight: 700, color: "var(--ink)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
                               {h.name}
                               <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", fontWeight: 400 }}>
-                                #{h.horseCode || "N/A"}
+                                #{h.horseCode || tr("N/A")}
                               </span>
                             </div>
                             <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>

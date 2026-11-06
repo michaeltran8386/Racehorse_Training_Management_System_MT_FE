@@ -54,7 +54,7 @@ export type TrackType = "TURF" | "DIRT" | "SYNTHETIC" | "NONE";
 export type CancelWorkoutReason = "WEATHER" | "TRACK_CONDITION" | "HORSE_HEALTH" | "PLAN_CHANGE" | "OTHER";
 
 export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
-  DRAFT: "Draft",
+  DRAFT: "Pending Activation",
   ACTIVE: "Active",
   COMPLETED: "Completed",
   CANCELLED: "Cancelled",
@@ -63,9 +63,9 @@ export const PLAN_STATUS_LABEL: Record<PlanStatus, string> = {
 export type Tone = "ok" | "warn" | "danger" | "neutral" | "info";
 
 export const PLAN_STATUS_TONE: Record<PlanStatus, Tone> = {
-  DRAFT: "neutral",
-  ACTIVE: "info",
-  COMPLETED: "ok",
+  DRAFT: "info",
+  ACTIVE: "ok",
+  COMPLETED: "neutral",
   CANCELLED: "danger",
 };
 
@@ -192,8 +192,8 @@ export interface TrainingPlan {
   phases: TrainingPhase[];
   headTrainerName: string;
   workoutCount: number;
-  /** Số buổi Hoàn thành / số buổi đã đến hạn. */
-  progress: { completed: number; due: number };
+  /** Tiến độ giáo án: completed, total, due, overdue (T1). */
+  progress: { completed: number; total?: number; due: number; overdue?: number };
   lockedSince?: string | null;
   cancelledReason?: string | null;
   completionSummary?: string | null;
@@ -253,8 +253,12 @@ export interface ExerciseSession {
   notes?: string | null;
   statusReason?: string | null;
   medicalOverride: boolean;
+  /** Trạng thái lần mô phỏng của buổi tập (null = chưa mô phỏng). */
+  simulationStatus?: SimulationStatus | null;
   result?: SessionResult;
 }
+
+export type SimulationStatus = "PENDING" | "RUNNING" | "COMPLETED" | "ABORTED_INJURY";
 
 /** Dữ liệu gửi khi thêm / sửa buổi tập (DL-2.01). */
 export interface SessionInput {
@@ -319,10 +323,20 @@ export interface FitnessData {
 
 /** SC-2.01 tổng quan huấn luyện. */
 export interface OverviewRow {
-  horse: { id: string; name: string; horseCode?: string | null; status: string; isMedicalLocked: boolean };
-  plan: { id: string; planCode?: string | null; name: string } | null;
+  horse: {
+    id: string;
+    name: string;
+    horseCode?: string | null;
+    status: string;
+    isMedicalLocked: boolean;
+    avatarUrl?: string | null;
+    breed?: string | null;
+    gender?: string | null;
+    stallCode?: string | null;
+  };
+  plan: { id: string; planCode?: string | null; name: string; status?: PlanStatus } | null;
   currentPhase: { name: string; week: number; weeks: number } | null;
-  progress: { completed: number; due: number } | null;
+  progress: { completed: number; total?: number; due: number; overdue?: number } | null;
   latestScore: number | null;
   previousAvgScore: number | null;
   load7d: number;
@@ -340,6 +354,10 @@ export interface TrainingOverview {
     todayTotal: number;
     blockedNext7Days: number;
     loadSpikeHorses: number;
+    horsesInTraining?: number;
+    horsesWithoutPlan?: number;
+    horsesDraftPlan?: number;
+    horsesInjuredOrLocked?: number;
   };
   rows: OverviewRow[];
 }

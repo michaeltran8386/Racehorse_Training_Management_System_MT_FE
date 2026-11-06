@@ -85,3 +85,9 @@
 @keyframes modal-fade { from { opacity: 0; } }
 @keyframes modal-pop { from { opacity: 0; transform: translateY(8px) scale(.96); } }
 @media (prefers-reduced-motion: reduce) { .overlay, .dialog { animation: none; } }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .dialog { border-radius: var(--r-modal); box-shadow: var(--shadow-lg); overflow: hidden; }
+:global(:root[data-ui="v2"]) .title { font-family: var(--font); font-size: var(--fs-section); font-weight: 650; line-height: 26px; text-transform: none; letter-spacing: 0; }
+:global(:root[data-ui="v2"]) .badge { border-radius: var(--r); }
+:global(:root[data-ui="v2"]) .close { border-radius: var(--r-sm); }

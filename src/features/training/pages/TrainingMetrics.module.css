@@ -36,10 +36,31 @@
 @media (max-width: 520px) { .liveCard { padding: 1rem; } .liveMetrics { gap: .5rem; } .liveMetric { padding: .75rem; } }
 .planFilters { display: flex; align-items: center; flex-wrap: wrap; gap: .75rem; margin-bottom: 1rem; }
 .planFilter { flex: 0 1 220px; min-width: 0; }
-.phaseCard { border-left: 3px solid var(--border-strong); padding-left: 1rem; line-height: 1.6; overflow-wrap: anywhere; }
-.currentPhase { border-left-color: var(--brand); }
+/* Thẻ giai đoạn (tab Giai đoạn của chi tiết giáo án) */
+.phaseCard { display: flex; flex-direction: column; gap: 10px; height: 100%; padding: 16px; border-top: 3px solid transparent; border-radius: inherit; overflow-wrap: anywhere; }
+.currentPhase { border-top-color: var(--brand); }
+.phaseHead { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.phaseDates { margin-top: -4px; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.phaseGoal { font-size: var(--fs-body); color: var(--text-2); }
+.phaseStats { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; margin: 0; padding-top: 10px; border-top: 1px solid var(--border); font-size: 13px; }
+.phaseStats dt { color: var(--muted); }
+.phaseStats dd { margin: 0; color: var(--text); font-variant-numeric: tabular-nums; }
+.phaseBar { height: 6px; border-radius: 999px; background: var(--surface-sunken); overflow: hidden; }
+.phaseBar > span { display: block; height: 100%; border-radius: inherit; background: var(--brand); }
+/* Khung cảnh báo vượt định mức tuần */
+.phaseWarn { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border-radius: 8px; background: var(--warn-bg); color: var(--text); font-size: 13px; line-height: 1.45; }
+.phaseWarn > strong { color: var(--warn); font-weight: 650; }
+.phaseWarn > span { color: var(--text-2); }
+.phaseWarn ul { margin: 2px 0 0; padding-left: 18px; }
+.phaseWarn b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.phaseFoot { margin-top: auto; padding-top: 4px; }
+.phaseFoot > button { width: 100%; }
 .phaseName { color: var(--text); font: 700 24px/1.1 var(--font-display); text-transform: uppercase; }
 @media (max-width: 520px) { .planFilter { flex-basis: 100%; } }
 .tableScroll { max-width: 100%; overflow-x: auto; }
 .chartGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 @media (max-width: 900px) { .chartGrid { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .planTitle { font: 700 28px/1.2 var(--font); letter-spacing: -0.01em; }
+:global(:root[data-ui="v2"]) .phaseName { font: 650 var(--fs-section)/1.3 var(--font); }

@@ -6,7 +6,7 @@ import { Textarea } from "@/shared/components/form/Textarea";
 import { Button } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/ui/Modal";
 import { ApiError } from "@/shared/lib/api";
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 
 const TREATMENT_RESULT_OPTIONS = [
   { value: "Fully recovered", label: "Fully recovered" },
@@ -66,7 +66,7 @@ export function CloseRecordModal({
         } else if (err instanceof ApiError && err.code === "RECORD_NOT_CLOSED") {
           setError(tr("Only a closed medical record can be reopened."));
         } else {
-          setError(err instanceof Error ? tr(err.message) : tr("An error occurred."));
+          setError(err instanceof Error ? localizeServerText(err.message) : tr("An error occurred."));
         }
       } finally {
         setBusy(false);
@@ -86,7 +86,7 @@ export function CloseRecordModal({
         await onConfirmClose(trimmed, treatmentResult);
         onClose();
       } catch (err: unknown) {
-        setError(err instanceof Error ? tr(err.message) : tr("An error occurred."));
+        setError(err instanceof Error ? localizeServerText(err.message) : tr("An error occurred."));
       } finally {
         setBusy(false);
       }

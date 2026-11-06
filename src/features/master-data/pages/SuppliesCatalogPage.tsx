@@ -1,3 +1,4 @@
+import { vndUnit } from "@/shared/lib/format";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
@@ -13,7 +14,7 @@ import { Select } from '@/shared/components/form/Select';
 import { useToast } from '@/shared/components/ui/Toast';
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
 import { messageFor } from '@/shared/lib/messages';
-import { tr } from '@/shared/i18n/tr';
+import { isVietnamese, tr } from '@/shared/i18n/tr';
 import { getSupplies, setSupplyActive } from '../api/suppliesApi';
 import { SupplyModal } from '../components/SupplyModal';
 import {
@@ -200,7 +201,7 @@ export default function SuppliesCatalogPage() {
                   key: 'unitPrice',
                   header: tr('Unit Price (VND)'),
                   render: (it: SupplyCatalogItem) =>
-                    it.unitPrice !== null ? it.unitPrice.toLocaleString('vi-VN') + ' đ' : '—',
+                    it.unitPrice !== null ? it.unitPrice.toLocaleString(isVietnamese() ? 'vi-VN' : 'en-US') + ' ' + vndUnit() : '—',
                 },
               ]
             : []),

@@ -111,3 +111,8 @@
   .cellLabel { display: inline-block; flex: 0 1 120px; color: var(--muted); font-size: var(--fs-caption); }
   .stackOnNarrow .td > :not(.cellLabel) { min-width: 0; }
 }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .th { font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-2); }
+:global(:root[data-ui="v2"]) .td { border-bottom-color: var(--border-soft); }
+:global(:root[data-ui="v2"]) .selected { background: var(--brand-50) !important; box-shadow: inset 3px 0 0 var(--brand); }

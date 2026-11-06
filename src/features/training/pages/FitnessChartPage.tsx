@@ -9,9 +9,11 @@ import styles from "./TrainingMetrics.module.css";
 import { Card } from "@/shared/components/ui/Card";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Pagination } from "@/shared/components/ui/Pagination";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { messageFor } from "@/shared/lib/messages";
 import { HEALTH_STATUS } from "@/shared/lib/status";
 import type { HealthStatus } from "@/shared/types/enums";
+import { getHorses } from "@/features/horses/api";
 import { clubParts, trainingApi } from "../api";
 import { BarChart, ChartCard, LineChart, RadialGauge } from "../components/FitnessChart";
 import type { BarDatum, ChartSeries, LinePoint } from "../components/FitnessChart";
@@ -63,6 +65,7 @@ export default function FitnessChartPage() {
   useScreenTranslation();
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const [horses, setHorses] = useState<{ value: string; label: string }[]>([]);
   const [weeks, setWeeks] = useState(12);
   const [data, setData] = useState<FitnessData | null>(null);
   const [loadedAt, setLoadedAt] = useState(0);
@@ -70,6 +73,18 @@ export default function FitnessChartPage() {
   const [error, setError] = useState("");
   const [page, setPage] = useState(1);
   const latest = useRef(0);
+
+  useEffect(() => {
+    getHorses({ limit: 100 })
+      .then((res) => {
+        setHorses(
+          res.items
+            .filter((h) => h.status !== "RETIRED")
+            .map((h) => ({ value: h.id, label: `${h.name} (${h.horseCode ?? ""})` })),
+        );
+      })
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async () => {
     const requestId = ++latest.current;
@@ -130,7 +145,17 @@ export default function FitnessChartPage() {
       <PageHeader title={tr("Fitness") + " – " + data.horse.name} action={<><Badge tone={statusCfg.tone as never}>{statusCfg.label}</Badge>{data.horse.isMedicalLocked && <Badge tone="danger" icon="lock">{tr("Training Lock")}</Badge>}<LinkButton to={`/horses/${data.horse.id}`} tone="secondary">{tr("Horse profile")}</LinkButton></>} />
 
       <Card pad={16}>
-        <div className={styles.fitnessFilters}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+          {horses.length > 0 && (
+            <div style={{ minWidth: 260, maxWidth: 360, width: "100%" }}>
+              <SearchSelect
+                aria-label={tr("Switch horse")}
+                value={id}
+                onChange={(newId) => newId && navigate(`/horses/${newId}/fitness`)}
+                options={horses}
+              />
+            </div>
+          )}
           <div style={{ display: "flex", gap: "0.35rem" }}>
             {RANGES.map((w) => (
               <Button key={w} size="sm" tone={weeks === w ? "primary" : "secondary"} aria-pressed={weeks === w} onClick={() => { if (w !== weeks) { setLoading(true); setPage(1); setWeeks(w); } }}>

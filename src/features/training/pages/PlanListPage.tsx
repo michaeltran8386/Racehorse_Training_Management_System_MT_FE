@@ -23,11 +23,13 @@ import type { PlanStatus, TrainingPlan } from "../types";
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 const PAGE_SIZE = 10;
+// Thứ tự trong tab "Tất cả": Đang áp dụng -> Chờ kích hoạt -> Đã hoàn thành -> Đã hủy.
+const STATUS_ORDER: Record<PlanStatus, number> = { ACTIVE: 0, DRAFT: 1, COMPLETED: 2, CANCELLED: 3 };
 
 /** SC-2.02 Danh sách giáo án. Bấm dòng để mở SC-2.04; HT có Lập giáo án và Nhân bản. */
 export default function PlanListPage() {
   useScreenTranslation();
-  useAppLanguage();
+  const { isVietnamese } = useAppLanguage();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const user = useCurrentUser();
@@ -36,7 +38,7 @@ export default function PlanListPage() {
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState(params.get("status") ?? "OPEN");
+  const [activeTab, setActiveTab] = useState(params.get("status") ?? "ALL");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [cloning, setCloning] = useState<TrainingPlan | null>(null);
@@ -58,12 +60,14 @@ export default function PlanListPage() {
   }, [loadPlans]);
 
   const q = search.toLowerCase();
-  const filtered = plans.filter(
-    (p) =>
-      (activeTab === "ALL" ||
-        (activeTab === "OPEN" ? p.status === "DRAFT" || p.status === "ACTIVE" : p.status === activeTab)) &&
-      (p.name.toLowerCase().includes(q) || p.planCode.toLowerCase().includes(q) || p.horseName.toLowerCase().includes(q)),
-  );
+  const filtered = plans
+    .filter(
+      (p) =>
+        (activeTab === "ALL" || p.status === activeTab) &&
+        (p.name.toLowerCase().includes(q) || p.planCode.toLowerCase().includes(q) || p.horseName.toLowerCase().includes(q)),
+    )
+    // Cùng trạng thái: giáo án bắt đầu gần đây lên trước.
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || b.startDate.localeCompare(a.startDate));
   const shown = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const count = (s: PlanStatus) => plans.filter((p) => p.status === s).length;
 
@@ -71,23 +75,18 @@ export default function PlanListPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <PageHeader
         title="Training Plans"
-        description="Draft → Active → Completed / Cancelled. Open a plan to manage its phases and workouts."
-        action={<>
-          <Link className={styles.secondaryAction} to="/training/plans/history">{tr("History")}</Link>
-          {isTrainer && <Button tone="primary" onClick={() => navigate("/training/plans/new")}>{tr("+ Create New Plan")}</Button>}
-        </>}
+        action={isTrainer ? <Button tone="primary" onClick={() => navigate("/training/plans/new")}>{tr("+ Create New Plan")}</Button> : undefined}
       />
 
       <Card pad={16}>
         <div className={styles.toolbar}>
           <Tabs
             items={[
-              { id: "OPEN", label: `Draft + Active (${count("DRAFT") + count("ACTIVE")})` },
-              { id: "ACTIVE", label: `Active (${count("ACTIVE")})` },
-              { id: "DRAFT", label: `Draft (${count("DRAFT")})` },
-              { id: "COMPLETED", label: `Completed (${count("COMPLETED")})` },
-              { id: "CANCELLED", label: `Cancelled (${count("CANCELLED")})` },
-              { id: "ALL", label: `All (${plans.length})` },
+              { id: "ALL", label: isVietnamese ? `Tất cả (${plans.length})` : `All (${plans.length})` },
+              { id: "ACTIVE", label: isVietnamese ? `Đang áp dụng (${count("ACTIVE")})` : `Active (${count("ACTIVE")})` },
+              { id: "DRAFT", label: isVietnamese ? `Chờ kích hoạt (${count("DRAFT")})` : `Pending Activation (${count("DRAFT")})` },
+              { id: "COMPLETED", label: isVietnamese ? `Đã hoàn thành (${count("COMPLETED")})` : `Completed (${count("COMPLETED")})` },
+              { id: "CANCELLED", label: isVietnamese ? `Đã hủy (${count("CANCELLED")})` : `Cancelled (${count("CANCELLED")})` },
             ]}
             active={activeTab}
             onChange={(t) => {
@@ -128,14 +127,13 @@ export default function PlanListPage() {
             <table className={styles.table}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
-                  <th className={styles.colCode}>{tr("Code")}</th>
                   <th className={styles.colName}>{tr("Plan")}</th>
                   <th className={styles.colHorse}>{tr("Horse")}</th>
                   <th className={styles.colDates}>{tr("Dates")}</th>
                   <th className={styles.colPhases}>{tr("Phases")}</th>
                   <th className={styles.colProgress}>{tr("Progress")}</th>
                   <th className={styles.colStatus}>{tr("Status")}</th>
-                  <th className={styles.colTrainer}>{tr("Trainer")}</th>
+                  {!isTrainer && <th className={styles.colTrainer}>{tr("Trainer")}</th>}
                   <th className={styles.colActions}>{tr("Actions")}</th>
                 </tr>
               </thead>
@@ -153,10 +151,12 @@ export default function PlanListPage() {
                     }}
                     onClick={() => navigate(`/training/plans/${plan.id}`)}
                   >
-                    <td className={styles.colCode} style={{ fontWeight: 600 }}>{plan.planCode}</td>
-                    <td className={styles.colName} style={{ fontWeight: 600 }}>{plan.name}</td>
+                    <td className={styles.colName}>
+                      <div className={styles.planName}>{plan.name}</div>
+                      <div className={styles.planCode}>{plan.planCode}</div>
+                    </td>
                     <td className={styles.colHorse}>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                      <div className={styles.horseCell}>
                         <span>{plan.horseName}</span>
                         {plan.isLockedByMedical && (
                           <Badge tone="danger" icon="lock">
@@ -166,16 +166,22 @@ export default function PlanListPage() {
                       </div>
                     </td>
                     <td className={styles.colDates}>
-                      {plan.startDate} – {plan.endDate}
+                      <div>{plan.startDate}</div>
+                      <div className={styles.dateEnd}>→ {plan.endDate}</div>
                     </td>
                     <td className={styles.colPhases}>{plan.phases.length}</td>
                     <td className={styles.colProgress}>
-                      <ProgressBar done={plan.progress.completed} total={plan.progress.due} />
+                      <ProgressBar
+                        done={plan.progress.completed}
+                        total={plan.progress.total ?? plan.progress.due}
+                        due={plan.progress.due}
+                        overdue={plan.progress.overdue}
+                      />
                     </td>
                     <td className={styles.colStatus}>
                       <Badge tone={PLAN_STATUS_TONE[plan.status]}>{PLAN_STATUS_LABEL[plan.status]}</Badge>
                     </td>
-                    <td className={styles.colTrainer}>{plan.headTrainerName}</td>
+                    {!isTrainer && <td className={styles.colTrainer}>{plan.headTrainerName}</td>}
                     <td className={styles.colActions} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: "inline-flex", gap: "0.5rem" }}>
                         <LinkButton to={`/training/plans/${plan.id}`} tone="secondary" size="sm">{tr("View")}</LinkButton>

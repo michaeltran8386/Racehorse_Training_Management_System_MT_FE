@@ -11,7 +11,7 @@ import type { PublicAccount } from "@/shared/types/auth";
 import { transferHorseOwner } from "../api";
 import type { Horse } from "../types";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 interface AssignOwnerModalProps {
   horse: Horse;
   isOpen: boolean;
@@ -75,14 +75,14 @@ export function AssignOwnerModal({ horse, isOpen, onClose, onSuccess }: AssignOw
       onSuccess();
       onClose();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to transfer ownership";
+      const msg = err instanceof Error ? localizeServerText(err.message) : tr("Failed to transfer ownership");
       toast.show(msg, "danger");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const currentOwnerDisplay = horse.owner?.fullName || horse.ownerName || "Unassigned";
+  const currentOwnerDisplay = horse.owner?.fullName || horse.ownerName || tr("Unassigned");
 
   return (
     <Modal onClose={onClose} title={tr("Transfer owner: {{name}}", { name: horse.name })}>

@@ -8,7 +8,7 @@ import { Button } from "@/shared/components/ui/Button";
 import { Modal } from "@/shared/components/ui/Modal";
 import type { StopPrescriptionInput } from "../types";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 const STOP_REASON_OPTIONS = [
   { value: "Resolved", label: "Condition resolved / Symptoms cleared" },
   { value: "Adverse reaction", label: "Adverse reaction / Allergy detected" },
@@ -41,7 +41,7 @@ export function StopPrescriptionModal({ medicationName, onClose, onSubmit }: Sto
       });
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to discontinue medication.");
+      setError(err instanceof Error ? localizeServerText(err.message) : tr("Failed to discontinue medication."));
     } finally {
       setBusy(false);
     }

@@ -7,3 +7,5 @@
 .date time { font-variant-numeric: tabular-nums; font-weight: 700; }
 .image { position: absolute; inset: 0 0 0 38%; background: linear-gradient(90deg, #0a161c 0%, rgba(10,22,28,.5) 35%, rgba(10,22,28,.08) 100%), url('/images/hero/hero-turf-race.png') center 38% / cover; }
 @media (max-width: 720px) { .banner { min-height: 200px; } .content { width: 100%; padding: 28px 24px; } .image { inset: 0; opacity: .3; } }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */

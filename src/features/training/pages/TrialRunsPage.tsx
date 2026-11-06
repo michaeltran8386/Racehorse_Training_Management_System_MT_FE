@@ -13,11 +13,13 @@ import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { useToast } from "@/shared/components/ui/Toast";
 import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
+import { ApiError } from "@/shared/lib/api";
 import { todayClub, trainingApi } from "../api";
-import { SESSION_STATUS_LABEL, TRACK_LABEL } from "../types";
+import { TRACK_LABEL } from "../types";
 import type { ExerciseSession, TrainingPlan } from "../types";
 import { WorkoutDialog } from "../components/WorkoutDialogs";
-import { sessionButtons } from "../components/sessionRules";
+import { useAllowEarlyStart } from "../components/useAllowEarlyStart";
+import { sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
 
 import { tr } from "@/shared/i18n/tr";
 import styles from "./TrialRunsPage.module.css";
@@ -35,6 +37,7 @@ function plusDays(date: string, days: number): string {
 export default function TrialRunsPage() {
   useScreenTranslation();
   const user = useCurrentUser();
+  const allowEarly = useAllowEarlyStart(user.role === "HEAD_TRAINER");
   const toast = useToast();
   const { isVietnamese, t } = useAppLanguage();
   const [from, setFrom] = useState(todayClub());
@@ -67,12 +70,22 @@ export default function TrialRunsPage() {
     [from, to, toast],
   );
 
+  // Quay lại từ tab Simulator: tải lại lặng lẽ (không hiện khung chờ) để trạng thái mô phỏng cập nhật ngay.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      trainingApi.getTrialRuns({ from, to }).then(setTrials).catch(() => undefined);
+    };
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
+  }, [from, to]);
+
   useEffect(() => {
     void load();
     trainingApi
       .getPlans()
       .then((data) => {
-        setPlans(data);
+        setPlans(data.filter((p) => p.status === "DRAFT" || p.status === "ACTIVE"));
         setPlansLoaded(true);
       })
       .catch(() => {
@@ -97,7 +110,8 @@ export default function TrialRunsPage() {
       popup.location.replace(launchUrl);
     } catch (err) {
       popup.close();
-      toast.show(messageFor(err), "danger");
+      const notStarted = err instanceof ApiError && err.code === "WORKOUT_NOT_STARTED";
+      toast.show(notStarted ? tr("The workout has not reached its scheduled start time.") : messageFor(err), "danger");
     } finally {
       setLaunchingId(null);
     }
@@ -159,7 +173,16 @@ export default function TrialRunsPage() {
           <Card key={key} pad={20}>
             <h2 className={styles.groupTitle}>{key}</h2>
             <div style={{ overflowX: "auto" }}>
-              <table className={styles.table}>
+              <table className={styles.table} style={{ tableLayout: "fixed", minWidth: 760 }}>
+                {/* Cố định độ rộng cột để các nhóm ngày thẳng hàng với nhau */}
+                <colgroup>
+                  <col style={{ width: "10%" }} />
+                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "15%" }} />
+                  <col style={{ width: "18%" }} />
+                  <col style={{ width: "22%" }} />
+                  <col style={{ width: "17%" }} />
+                </colgroup>
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
                     <th style={{ padding: "0.5rem 0.75rem" }}>{isVietnamese ? "Giờ chạy" : tr("Time")}</th>
@@ -173,7 +196,7 @@ export default function TrialRunsPage() {
                 <tbody>
                   {rows.map((row) => {
                     const upcoming = row.status === "SCHEDULED" && Date.parse(row.scheduledAt) > Date.now();
-                    const actions = sessionButtons(row, user.role);
+                    const actions = sessionButtons(row, user.role, allowEarly);
                     return (
                       <tr key={row.id} style={{ borderBottom: "1px solid var(--border)" }}>
                         <td style={{ padding: "0.5rem 0.75rem", fontWeight: 700 }}>{row.startTime}</td>
@@ -185,28 +208,30 @@ export default function TrialRunsPage() {
                           {row.targetDistanceMeters}m{row.targetSpeedKmh ? tr(` · ${row.targetSpeedKmh} km/h`) : ""}
                         </td>
                         <td style={{ padding: "0.5rem 0.75rem" }}>
-                          <Badge tone={row.status === "BLOCKED" ? "danger" : row.status === "COMPLETED" ? "ok" : "info"}>
-                            {upcoming ? (isVietnamese ? "Sắp tới" : "Upcoming") : tr(SESSION_STATUS_LABEL[row.status])}
+                          <Badge tone={sessionStatusTone(row)}>
+                            {upcoming && !row.simulationStatus ? tr("Upcoming") : tr(sessionStatusLabel(row))}
                           </Badge>
                         </td>
                         <td style={{ padding: "0.5rem 0.75rem", textAlign: "right" }}>
                           <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: "0.5rem" }}>
                             {user.role === "HEAD_TRAINER" &&
                               row.status === "SCHEDULED" &&
-                              !upcoming &&
+                              // Đã mô phỏng xong / dừng vì chấn thương thì không chạy lại được (BE trả SIMULATOR_SESSION_FINISHED).
+                              row.simulationStatus !== "COMPLETED" &&
+                              row.simulationStatus !== "ABORTED_INJURY" &&
                               plans.some((p) => p.id === row.planId) && (
                                 <div>
                                   <Button
                                     size="sm"
                                     tone="primary"
-                                    disabled={
-                                      launchingId === row.id ||
-                                      row.isHorseLocked
-                                    }
+                                    // Chưa tới giờ thì khóa, trừ khi BE bật cờ dev SIMULATOR_ALLOW_EARLY.
+                                    disabled={launchingId === row.id || row.isHorseLocked || (upcoming && !allowEarly)}
                                     title={
                                       row.isHorseLocked
                                         ? tr("The horse is still under a Training Lock.")
-                                        : undefined
+                                        : upcoming && !allowEarly
+                                          ? tr("The workout has not reached its scheduled start time.")
+                                          : undefined
                                     }
                                     onClick={() => void launchSimulation(row.id)}
                                   >
@@ -240,7 +265,7 @@ export default function TrialRunsPage() {
       {isScheduleOpen && (
         <WorkoutDialog
           plans={plans}
-          defaultDate={from}
+          defaultDate={from < todayClub() ? todayClub() : from}
           defaultType="TRIAL"
           onClose={() => setIsScheduleOpen(false)}
           onSaved={(savedDate?: string) => {

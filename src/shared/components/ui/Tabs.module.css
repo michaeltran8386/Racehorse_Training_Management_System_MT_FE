@@ -105,3 +105,9 @@
 .tab { flex: 0 0 auto; min-height: 40px; }
 .tab:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
 .tab:active { transform: none; }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .tab { border-radius: var(--r-pill); background: transparent; border-color: transparent; color: var(--text-2); }
+:global(:root[data-ui="v2"]) .tab:hover { background: var(--surface-2); border-color: transparent; color: var(--text); }
+:global(:root[data-ui="v2"]) .on, :global(:root[data-ui="v2"]) .on:hover { background: var(--brand-50); border-color: var(--brand-100); border-bottom: 1px solid var(--brand-100); color: var(--brand-700); }
+:global(:root[data-ui="v2"]) .on .count { background: var(--brand); color: var(--text-on-brand); border-color: var(--brand); }

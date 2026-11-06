@@ -8,9 +8,7 @@ import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Card } from "@/shared/components/ui/Card";
 import { Modal } from "@/shared/components/ui/Modal";
-import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { SkeletonCards } from "@/shared/components/ui/Skeleton";
-import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
 import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
@@ -19,14 +17,14 @@ import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
 import { formatDate } from "@/shared/lib/format";
 import { todayClub, trainingApi } from "../api";
-import { sessionButtons } from "../components/sessionRules";
+import { useAllowEarlyStart } from "../components/useAllowEarlyStart";
+import { sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
 import { CancelWorkoutDialog, RestoreWorkoutDialog, WorkoutDialog } from "../components/WorkoutDialogs";
 import {
   EXERCISE_TYPE_LABEL,
   INTENSITY_LABEL,
   isHeavy,
   SESSION_STATUS_LABEL,
-  SESSION_STATUS_TONE,
   TRACK_LABEL,
 } from "../types";
 import type { ExerciseSession, ExerciseType, SessionStatus, TrackType, TrainingPlan } from "../types";
@@ -34,15 +32,23 @@ import type { ExerciseSession, ExerciseType, SessionStatus, TrackType, TrainingP
 import styles from "./WeeklyCalendarPage.module.css";
 
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 function shiftDay(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
 }
+function formatWeekRange(startDateStr: string): string {
+  const endDateStr = shiftDay(startDateStr, 6);
+  const [sy, sm, sd] = startDateStr.split("-").map(Number);
+  const [ey, em, ed] = endDateStr.split("-").map(Number);
+  return `${sd}/${sm}/${sy} – ${ed}/${em}/${ey}`;
+}
 function mondayOf(date: string): string {
   const d = new Date(`${date}T00:00:00Z`);
-  return shiftDay(date, -((d.getUTCDay() + 6) % 7));
+  const day = d.getUTCDay(); // 0: CN, 1: T2, ..., 6: T7
+  const diff = day === 0 ? -6 : 1 - day;
+  return shiftDay(date, diff);
 }
 function minutes(t: string): number {
   const [h, m] = t.split(":").map(Number);
@@ -77,12 +83,12 @@ type Dialog =
 export default function WeeklyCalendarPage() {
   useScreenTranslation();
   const user = useCurrentUser();
+  const allowEarly = useAllowEarlyStart(user.role === "HEAD_TRAINER");
   const { isVietnamese, t } = useAppLanguage();
   const [params] = useSearchParams();
   const isTrainer = user.role === "HEAD_TRAINER";
 
-  const [mode, setMode] = useState<"day" | "week">("day");
-  const [date, setDate] = useState(todayClub());
+  const [date, setDate] = useState(() => mondayOf(todayClub()));
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,14 +96,40 @@ export default function WeeklyCalendarPage() {
   const [horse, setHorse] = useState("ALL");
   const [groom, setGroom] = useState("ALL");
   const [surface, setSurface] = useState("ALL");
-  const [type, setType] = useState("ALL");
+  const [type, setType] = useState(params.get("type") ?? "ALL");
   const [status, setStatus] = useState(params.get("status") ?? "ALL");
   const [selected, setSelected] = useState<ExerciseSession | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
   const latest = useRef(0);
 
-  const from = mode === "day" ? date : mondayOf(date);
-  const to = mode === "day" ? date : shiftDay(mondayOf(date), 6);
+  const from = mondayOf(date);
+  const to = shiftDay(from, 6);
+
+  const baseMonday = mondayOf(todayClub());
+  const weekOptions = useMemo(() => {
+    const options = [];
+    const offsets = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8];
+    for (const offset of offsets) {
+      const wStart = shiftDay(baseMonday, offset * 7);
+      const label = formatWeekRange(wStart);
+      let prefix = "";
+      if (offset === 0) prefix = isVietnamese ? "Tuần này: " : "This week: ";
+      else if (offset === -1) prefix = isVietnamese ? "Tuần trước: " : "Last week: ";
+      else if (offset === 1) prefix = isVietnamese ? "Tuần sau: " : "Next week: ";
+      options.push({
+        value: wStart,
+        label: `${prefix}${label}`,
+      });
+    }
+    const currentMonday = mondayOf(date);
+    if (!options.some((o) => o.value === currentMonday)) {
+      options.unshift({
+        value: currentMonday,
+        label: formatWeekRange(currentMonday),
+      });
+    }
+    return options;
+  }, [baseMonday, isVietnamese, date]);
 
   // Đổi ngày nhanh: chỉ nhận kết quả của lần tải mới nhất.
   const load = useCallback(async () => {
@@ -131,6 +163,7 @@ export default function WeeklyCalendarPage() {
 
   const shown = sessions.filter(
     (s) =>
+      s.status !== "CANCELLED" &&
       (horse === "ALL" || s.horseId === horse) &&
       (groom === "ALL" || s.groomId === groom) &&
       (surface === "ALL" || s.trackType === surface) &&
@@ -181,7 +214,7 @@ export default function WeeklyCalendarPage() {
       >
         <div className={styles.cardTop}>
           <span className={styles.timeTag}>{s.startTime}</span>
-          <Badge tone={SESSION_STATUS_TONE[s.status]}>{SESSION_STATUS_LABEL[s.status]}</Badge>
+          <Badge tone={sessionStatusTone(s)}>{sessionStatusLabel(s)}</Badge>
         </div>
         <div className={styles.horseName} title={s.horseName}>
           {s.horseName}
@@ -190,7 +223,6 @@ export default function WeeklyCalendarPage() {
           <div>
             <strong>{tr(EXERCISE_TYPE_LABEL[s.sessionType])}</strong>
             {isHeavySession && (isVietnamese ? " · Nặng" : tr(" · Heavy"))}
-            {isTrial && (isVietnamese ? " · Chạy thử" : tr(" · Trial Run"))}
           </div>
           <div>{s.targetDistanceMeters}m × {s.repetitions} · {tr(TRACK_LABEL[s.trackType])}</div>
           <div><Icon name="user" inline size={12} /> {s.groomName ?? (isVietnamese ? "Chưa giao" : "—")}</div>
@@ -200,21 +232,59 @@ export default function WeeklyCalendarPage() {
     );
   };
 
-  const days = mode === "week" ? Array.from({ length: 7 }, (_, i) => shiftDay(from, i)) : [date];
-  const b = selected ? sessionButtons(selected, user.role) : null;
+  const days = Array.from({ length: 7 }, (_, i) => shiftDay(from, i));
+  const b = selected ? sessionButtons(selected, user.role, allowEarly) : null;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
-      <PageHeader title={t("calendar.title")} description={t("calendar.subtitle")} action={<><LinkButton to="/training/trials" tone="secondary">{t("calendar.trialRuns")}</LinkButton>{isTrainer && <Button tone="primary" onClick={() => setDialog({ kind: "add" })}>{t("calendar.scheduleWorkout")}</Button>}</>} />
+      <PageHeader
+        title={t("calendar.title")}
+        description={t("calendar.subtitle")}
+        action={
+          <>
+            <Button
+              tone={type === "TRIAL" ? "primary" : "secondary"}
+              onClick={() => setType(type === "TRIAL" ? "ALL" : "TRIAL")}
+            >
+              {type === "TRIAL"
+                ? (isVietnamese ? "✓ Đang xem chạy thử" : "✓ Showing Trial Runs")
+                : (isVietnamese ? "Lượt chạy thử" : t("calendar.trialRuns"))}
+            </Button>
+            {isTrainer && (
+              <Button tone="primary" onClick={() => setDialog({ kind: "add" })}>
+                {t("calendar.scheduleWorkout")}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Card pad={16}>
         <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-          <Button tone="ghost" size="sm" onClick={() => setDate(shiftDay(date, mode === "day" ? -1 : -7))} aria-label={isVietnamese ? "Trước" : tr("Previous")}>‹</Button>
-          <Input type="date" aria-label={tr("Date")} value={date} onChange={(e) => e.target.value && setDate(e.target.value)} style={{ width: 170 }} />
-          <Button tone="ghost" size="sm" onClick={() => setDate(shiftDay(date, mode === "day" ? 1 : 7))} aria-label={isVietnamese ? "Sau" : tr("Next")}>›</Button>
-          <Button tone="secondary" size="sm" onClick={() => setDate(todayClub())}>{t("calendar.today")}</Button>
-          <Button tone={mode === "day" ? "primary" : "secondary"} aria-pressed={mode === "day"} size="sm" onClick={() => setMode("day")}>{t("calendar.day")}</Button>
-          <Button tone={mode === "week" ? "primary" : "secondary"} aria-pressed={mode === "week"} size="sm" onClick={() => setMode("week")}>{t("calendar.week")}</Button>
+          <Button
+            tone="secondary"
+            size="sm"
+            onClick={() => setDate((d) => shiftDay(mondayOf(d), -7))}
+            aria-label={isVietnamese ? "Tuần trước" : tr("Previous week")}
+          >
+            ‹ {isVietnamese ? "Tuần trước" : tr("Previous week")}
+          </Button>
+          <div style={{ minWidth: 280 }}>
+            <Select
+              aria-label={isVietnamese ? "Cụm tuần" : tr("Week range")}
+              value={mondayOf(date)}
+              onChange={(e) => setDate(e.target.value)}
+              options={weekOptions}
+            />
+          </div>
+          <Button
+            tone="secondary"
+            size="sm"
+            onClick={() => setDate((d) => shiftDay(mondayOf(d), 7))}
+            aria-label={isVietnamese ? "Tuần sau" : tr("Next week")}
+          >
+            {isVietnamese ? "Tuần sau" : tr("Next week")} ›
+          </Button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))", gap: "0.5rem", marginTop: "0.75rem" }}>
           <SearchSelect aria-label={tr("Horse")} value={horse} onChange={setHorse} options={[{ value: "ALL", label: t("calendar.allHorses") }, ...uniq(sessions, (s) => s.horseId, (s) => s.horseName)]} />
@@ -240,7 +310,7 @@ export default function WeeklyCalendarPage() {
             aria-label={tr("Status")}
             value={status}
             onChange={(e) => setStatus(e.target.value)}
-            options={[{ value: "ALL", label: t("calendar.allStatuses") }, ...(Object.keys(SESSION_STATUS_LABEL) as SessionStatus[]).map((st) => ({ value: st, label: SESSION_STATUS_LABEL[st] }))]}
+            options={[{ value: "ALL", label: t("calendar.allStatuses") }, ...(Object.keys(SESSION_STATUS_LABEL) as SessionStatus[]).filter((st) => st !== "CANCELLED").map((st) => ({ value: st, label: SESSION_STATUS_LABEL[st] }))]}
           />
         </div>
       </Card>
@@ -255,19 +325,6 @@ export default function WeeklyCalendarPage() {
         <div>
           {loading ? (
             <SkeletonCards count={3} />
-          ) : mode === "day" ? (
-            shown.length === 0 ? (
-              <EmptyState title={tr("No workouts on {{date}}.", { date: formatDate(`${date}T00:00`) })} />
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                <div style={{ fontWeight: 700, fontSize: "var(--fs-body-lg)", marginBottom: "0.25rem" }}>
-                  {formatCalendarDay(date, isVietnamese).weekdayFull}, {formatDate(`${date}T00:00`)} ({shown.length} {isVietnamese ? "bài tập" : shown.length === 1 ? "workout" : "workouts"})
-                </div>
-                {shown.map((s) => (
-                  <SessionBlock key={s.id} s={s} />
-                ))}
-              </div>
-            )
           ) : (
             <div className={styles.calendarCard}>
               <div className={styles.calendarGrid}>
@@ -285,7 +342,7 @@ export default function WeeklyCalendarPage() {
                         <span className={`${styles.workoutCountPill} ${daySessions.length > 0 ? styles.hasWorkoutsPill : ""}`}>
                           {daySessions.length > 0
                             ? `${daySessions.length} ${isVietnamese ? "bài tập" : daySessions.length === 1 ? "workout" : "workouts"}`
-                            : (isVietnamese ? "0 bài" : tr("0 workouts"))}
+                            : isVietnamese ? "0 bài" : tr("0 workouts")}
                         </span>
                       </div>
                       <div className={styles.columnBody}>
@@ -314,6 +371,16 @@ export default function WeeklyCalendarPage() {
             <div style={{ display: "flex", gap: "0.35rem", flexWrap: "wrap", justifyContent: "flex-end" }}>
               {b.edit && <Button size="sm" tone="ghost" onClick={() => setDialog({ kind: "edit", session: selected })}>{isVietnamese ? "Sửa" : tr("Edit")}</Button>}
               {b.record && <LinkButton to={`/training/sessions/${selected.id}/result`} size="sm" tone="secondary">{isVietnamese ? "Ghi kết quả" : tr("Record result")}</LinkButton>}
+              {!b.record && b.recordDisabledReason && (
+                <Button
+                  size="sm"
+                  tone="secondary"
+                  disabled
+                  title={isVietnamese ? `Chưa đến giờ bắt đầu (${selected.startTime} ngày ${selected.sessionDate})` : tr("Workout has not started yet")}
+                >
+                  {isVietnamese ? "Ghi kết quả" : tr("Record result")}
+                </Button>
+              )}
               {b.viewResult && <LinkButton to={`/training/sessions/${selected.id}/result`} size="sm" tone="secondary">{isVietnamese ? "Xem kết quả" : tr("View result")}</LinkButton>}
               {b.restore && (
                 <Button size="sm" tone="primary" disabled={Boolean(b.restoreBlockedReason)} title={b.restoreBlockedReason ? tr(b.restoreBlockedReason) : undefined} onClick={() => setDialog({ kind: "restore", session: selected })}>
@@ -331,7 +398,13 @@ export default function WeeklyCalendarPage() {
               <div>{tr(TRACK_LABEL[selected.trackType])} · {isVietnamese ? "Nài ngựa" : tr("Jockey")}: {selected.jockeyName || "—"} · {isVietnamese ? "Chăm sóc" : tr("Groom")}: {selected.groomName || (isVietnamese ? "Chưa giao" : "—")}</div>
               <div>{isVietnamese ? "Giáo án" : tr("Plan")}: {selected.planName} {selected.phaseName ? `· ${selected.phaseName}` : ""}</div>
               {selected.notes && <div>{isVietnamese ? "Chỉ dẫn" : tr("Instructions")}: {selected.notes}</div>}
-              {selected.statusReason && <div style={{ color: "var(--danger)" }}>{selected.statusReason}</div>}
+              {!b.record && b.recordDisabledReason && (
+                <div style={{ color: "var(--muted)" }}>
+                  {tr("Results can be recorded from {{time}} on {{date}}.", { time: selected.startTime, date: selected.sessionDate })}
+                  {allowEarly && selected.sessionType === "TRIAL" ? ` ${tr("Run the simulation on the Trial Runs page to record earlier.")}` : ""}
+                </div>
+              )}
+              {selected.statusReason && <div style={{ color: "var(--danger)" }}>{localizeServerText(selected.statusReason)}</div>}
               {selected.medicalOverride && <Badge tone="warn">{isVietnamese ? "Xếp lịch trong trạng thái y tế" : tr("Scheduled in a medical status")}</Badge>}
             </div>
           </Modal>
@@ -349,7 +422,7 @@ export default function WeeklyCalendarPage() {
             setDialog(null);
             setSelected(null);
             if (d >= from && d <= to) void load();
-            else setDate(d);
+            else setDate(mondayOf(d));
           }}
         />
       )}

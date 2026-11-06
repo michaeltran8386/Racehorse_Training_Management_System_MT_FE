@@ -13,6 +13,7 @@ import type {
   SessionInput,
   SessionResult,
   SessionStatus,
+  SimulationStatus,
   TrackType,
   TrainingAlert,
   TrainingOverview,
@@ -62,7 +63,7 @@ export interface BePlan {
   phaseName: string;
   objective?: string | null;
   notes?: string | null;
-  progress?: { completed: number; due: number };
+  progress?: { completed: number; total?: number; due: number; overdue?: number };
   phases?: unknown;
   targetSpeed?: number | null;
   targetDistance?: number | null;
@@ -73,6 +74,7 @@ export interface BePlan {
   completionSummary?: string | null;
   createdAt: string;
   horse?: BeHorse;
+  simulatorSession?: { status: SimulationStatus } | null;
   trainer?: { fullName: string } | null;
   _count?: { workoutSessions: number };
 }
@@ -117,6 +119,7 @@ export interface BeWorkout {
   vetAcknowledgedAt?: string | null;
   vetNotes?: string | null;
   horse?: BeHorse;
+  simulatorSession?: { status: SimulationStatus } | null;
   trainingPlan?: { id: string; phaseName: string; status?: PlanStatus; phases?: unknown } | null;
 }
 
@@ -129,7 +132,7 @@ export function toPlan(p: BePlan): TrainingPlan {
     name: p.phaseName,
     objective: p.objective,
     notes: p.notes,
-    progress: p.progress ?? { completed: 0, due: 0 },
+    progress: p.progress ?? { completed: 0, total: 0, due: 0, overdue: 0 },
     lockedSince: p.horse?.medicalLocks?.[0]?.lockedAt ?? null,
     horseId: p.horseId,
     horseName: p.horse?.name ?? "—",
@@ -182,6 +185,7 @@ export function toSession(w: BeWorkout, planPhases?: TrainingPhase[]): ExerciseS
     notes: w.trainerNotes,
     statusReason: w.statusReason,
     medicalOverride: Boolean(w.medicalOverride),
+    simulationStatus: w.simulatorSession?.status ?? null,
     result:
       w.status === "COMPLETED"
         ? {
@@ -358,6 +362,10 @@ export const trainingApi = {
     if (range?.to) params.set("to", range.to);
     const qs = params.toString() ? `?${params.toString()}` : "";
     return (await api<BeWorkout[]>("GET", `/training/trial-runs${qs}`)).map((w) => toSession(w));
+  },
+
+  async getSimulatorConfig(): Promise<{ allowEarlyStart: boolean }> {
+    return api<{ allowEarlyStart: boolean }>("GET", "/simulator/config");
   },
 
   async startSimulation(workoutId: string): Promise<WorkoutSimulationStart> {

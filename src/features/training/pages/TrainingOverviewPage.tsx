@@ -1,11 +1,12 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Card } from "@/shared/components/ui/Card";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
+import { Modal } from "@/shared/components/ui/Modal";
 import { Paged } from "@/shared/components/ui/Pagination";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Input } from "@/shared/components/form/Input";
@@ -29,8 +30,9 @@ type SortKey = "name" | "progress" | "score" | "load" | "next";
 /** SC-2.01 Tổng quan huấn luyện (CM, HT, VET). */
 export default function TrainingOverviewPage() {
   useScreenTranslation();
-  useAppLanguage();
+  const { isVietnamese } = useAppLanguage();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const user = useCurrentUser();
   const [data, setData] = useState<TrainingOverview | null>(null);
   const [error, setError] = useState("");
@@ -38,6 +40,22 @@ export default function TrainingOverviewPage() {
   const [planFilter, setPlanFilter] = useState("ALL");
   const [spikeOnly, setSpikeOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("name");
+  const [lockedHorseModal, setLockedHorseModal] = useState<{
+    id: string;
+    name: string;
+    horseCode?: string | null;
+    status: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const f = searchParams.get("filter") ?? searchParams.get("plan");
+    if (f === "ACTIVE" || f === "DRAFT" || f === "NONE" || f === "LOCKED") {
+      setPlanFilter(f);
+    }
+    if (f === "SPIKE") {
+      setSpikeOnly(true);
+    }
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     setError("");
@@ -62,12 +80,19 @@ export default function TrainingOverviewPage() {
   if (!data) return <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>{tr("Loading overview...")}</div>;
 
   const q = search.toLowerCase();
-  const pct = (r: OverviewRow) => (r.progress && r.progress.due ? r.progress.completed / r.progress.due : -1);
+  const pct = (r: OverviewRow) =>
+    r.progress && (r.progress.total || r.progress.due)
+      ? r.progress.completed / (r.progress.total || r.progress.due)
+      : -1;
   const rows = data.rows
     .filter(
       (r) =>
         (r.horse.name.toLowerCase().includes(q) || (r.horse.horseCode ?? "").toLowerCase().includes(q)) &&
-        (planFilter === "ALL" || (planFilter === "WITH" ? r.plan : !r.plan)) &&
+        (planFilter === "ALL" ||
+          (planFilter === "ACTIVE" && r.plan?.status === "ACTIVE") ||
+          (planFilter === "DRAFT" && r.plan?.status === "DRAFT") ||
+          (planFilter === "NONE" && !r.plan) ||
+          (planFilter === "LOCKED" && (r.horse.isMedicalLocked || r.horse.status === "INJURED" || r.horse.status === "UNDER_OBSERVATION"))) &&
         (!spikeOnly || r.loadSpike),
     )
     .sort((a, b) => {
@@ -75,6 +100,13 @@ export default function TrainingOverviewPage() {
       if (sort === "score") return (b.latestScore ?? -1) - (a.latestScore ?? -1);
       if (sort === "load") return b.load7d - a.load7d;
       if (sort === "next") return (a.nextWorkout?.date ?? "9").localeCompare(b.nextWorkout?.date ?? "9");
+      const rank = (r: OverviewRow) => {
+        if (r.plan?.status === "ACTIVE") return 1;
+        if (r.plan?.status === "DRAFT") return 2;
+        return 3;
+      };
+      const diff = rank(a) - rank(b);
+      if (diff !== 0) return diff;
       return a.horse.name.localeCompare(b.horse.name);
     });
   const k = data.kpis;
@@ -91,29 +123,72 @@ export default function TrainingOverviewPage() {
       />
 
       <div className={styles.metrics}>
-        <Link to="/training/plans?status=ACTIVE" style={{ color: "inherit", textDecoration: "none" }}>
-          <Card pad={16}>
+        <button
+          type="button"
+          onClick={() => { setPlanFilter(planFilter === "ACTIVE" ? "ALL" : "ACTIVE"); setSpikeOnly(false); }}
+          className={styles.metricButton}
+          title={isVietnamese ? "Lọc ngựa đang huấn luyện" : "Filter active plans"}
+        >
+          <Card pad={16} className={planFilter === "ACTIVE" ? styles.activeMetricCard : undefined}>
             <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Active plans")}</div>
-            <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700 }}>{k.activePlans} / {k.managedHorses}</div>
-            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr("horses managed")}</div>
+            <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700, color: planFilter === "ACTIVE" ? "var(--brand)" : undefined }}>
+              {k.activePlans} / {k.managedHorses}
+            </div>
+            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{isVietnamese ? "ngựa đang huấn luyện" : tr("horses managed")}</div>
           </Card>
-        </Link>
-        <Link to="/training/calendar" style={{ color: "inherit", textDecoration: "none" }}>
-          <Card pad={16}>
-            <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Workouts today")}</div>
-            <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700 }}>{k.todayCompleted}/{k.todayTotal}</div>
-            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr("completed")}</div>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setPlanFilter(planFilter === "NONE" ? "ALL" : "NONE"); setSpikeOnly(false); }}
+          className={styles.metricButton}
+          title={isVietnamese ? "Lọc ngựa chưa có giáo án" : "Filter horses without plan"}
+        >
+          <Card pad={16} className={planFilter === "NONE" ? styles.activeMetricCard : undefined}>
+            <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>
+              {isVietnamese ? "Chưa có giáo án" : tr("Without plan")}
+            </div>
+            <div style={{
+              fontSize: "var(--fs-h1)",
+              fontWeight: 700,
+              color: (k.horsesWithoutPlan ?? 0) > 0 ? "var(--warn)" : undefined,
+            }}>
+              {k.horsesWithoutPlan ?? 0}
+            </div>
+            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+              {isVietnamese ? "ngựa cần lập kế hoạch" : tr("needs planning")}
+            </div>
           </Card>
-        </Link>
-        <Link to="/training/calendar?status=BLOCKED" style={{ color: "inherit", textDecoration: "none" }}>
-          <Card pad={16}>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setPlanFilter(planFilter === "LOCKED" ? "ALL" : "LOCKED"); setSpikeOnly(false); }}
+          className={styles.metricButton}
+          title={isVietnamese ? "Lọc ngựa bị khóa y tế / chấn thương" : "Filter locked horses"}
+        >
+          <Card pad={16} className={planFilter === "LOCKED" ? styles.activeMetricCard : undefined}>
             <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Blocked by Training Lock")}</div>
-            <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700, color: k.blockedNext7Days ? "var(--danger)" : undefined }}>{k.blockedNext7Days}</div>
-            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr("in the next 7 days")}</div>
+            <div style={{
+              fontSize: "var(--fs-h1)",
+              fontWeight: 700,
+              color: (k.horsesInjuredOrLocked ?? k.blockedNext7Days) ? "var(--danger)" : undefined,
+            }}>
+              {k.horsesInjuredOrLocked ?? k.blockedNext7Days}
+            </div>
+            <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+              {isVietnamese ? "ngựa hạn chế bài tập" : tr("in the next 7 days")}
+            </div>
           </Card>
-        </Link>
-        <button type="button" onClick={() => setSpikeOnly(true)} className={styles.metricButton}>
-          <Card pad={16}>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => { setSpikeOnly(!spikeOnly); setPlanFilter("ALL"); }}
+          className={styles.metricButton}
+          title={isVietnamese ? "Lọc tải trọng tăng đột ngột" : "Filter load spike"}
+        >
+          <Card pad={16} className={spikeOnly ? styles.activeMetricCard : undefined}>
             <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>{tr("Sudden load increase")}</div>
             <div style={{ fontSize: "var(--fs-h1)", fontWeight: 700, color: k.loadSpikeHorses ? "var(--warn)" : undefined }}>{k.loadSpikeHorses}</div>
             <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>{tr("horses above 130% of their 4-week average")}</div>
@@ -131,8 +206,10 @@ export default function TrainingOverviewPage() {
               onChange={(e) => setPlanFilter(e.target.value)}
               options={[
                 { value: "ALL", label: tr("All horses") },
-                { value: "WITH", label: tr("With an active plan") },
-                { value: "WITHOUT", label: tr("Without an active plan") },
+                { value: "ACTIVE", label: isVietnamese ? "Đang huấn luyện (Có giáo án)" : tr("With an active plan") },
+                { value: "NONE", label: isVietnamese ? "Chưa có giáo án (Cần xếp lịch)" : tr("Without training plan") },
+                { value: "DRAFT", label: isVietnamese ? "Giáo án chờ kích hoạt" : tr("With draft plan") },
+                { value: "LOCKED", label: isVietnamese ? "Khóa y tế / Chấn thương" : tr("Medically locked / Injured") },
               ]}
             />
           </div>
@@ -190,21 +267,79 @@ export default function TrainingOverviewPage() {
                         <span className="sr-only">{tr("Training Lock")}</span>
                       </span>
                     )}
-                        <div style={{ display: "flex", gap: "0.35rem", alignItems: "center" }}>
-                          <span style={{ color: "var(--text-muted)" }}>{r.horse.horseCode}</span>
-                          <Badge tone={st.tone as never}>{st.label}</Badge>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center", marginTop: "2px" }}>
+                          <span style={{ color: "var(--text-muted)", whiteSpace: "nowrap" }}>{r.horse.horseCode}</span>
+                          {r.horse.stallCode && (
+                            <span style={{
+                              fontSize: "10px",
+                              color: "var(--text)", whiteSpace: "nowrap",
+                              background: "var(--surface-sunken)",
+                              padding: "1px 5px",
+                              borderRadius: "3px",
+                              fontWeight: 600,
+                            }}>
+                              {r.horse.stallCode}
+                            </span>
+                          )}
+                          <span title={tr("Horse status")}>
+                            <Badge tone={st.tone as never}>{st.label}</Badge>
+                          </span>
                         </div>
                       </td>
-                      <td style={{ padding: "0.6rem 0.75rem" }}>{r.plan ? `${r.plan.planCode ?? ""} ${r.plan.name}` : tr("None")}</td>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>
+                        {r.plan ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <span>
+                              {r.plan.planCode ? <strong>{r.plan.planCode} </strong> : null}
+                              {r.plan.name}
+                            </span>
+                            {r.plan.status === "DRAFT" && (
+                              <div>
+                                <Badge tone="info">
+                                  {isVietnamese ? "Chờ kích hoạt" : tr("Pending Activation")}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <span style={{ color: "var(--text-muted)" }}>
+                              {isVietnamese ? "Chưa có giáo án" : tr("No plan")}
+                            </span>
+                            {/* Trạng thái ngựa do quản lý / thú y đặt, không tự đổi theo giáo án -> nói rõ khi lệch nhau */}
+                            {r.horse.status === "IN_TRAINING" && (
+                              <span title={tr("Marked “In training” but no plan yet – create one or update the horse status.")}>
+                                <Badge tone="warn">{tr("Status mismatch")}</Badge>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.currentPhase ? tr(`${r.currentPhase.name} · week ${r.currentPhase.week}/${r.currentPhase.weeks}`) : "—"}
                       </td>
-                      <td style={{ padding: "0.6rem 0.75rem", minWidth: 130 }}>
-                        {r.progress ? <ProgressBar done={r.progress.completed} total={r.progress.due} /> : "—"}
+                      <td style={{ padding: "0.6rem 0.75rem", minWidth: 140 }}>
+                        {r.progress ? (
+                          <ProgressBar
+                            done={r.progress.completed}
+                            total={r.progress.total ?? r.progress.due}
+                            due={r.progress.due}
+                            overdue={r.progress.overdue}
+                          />
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.latestScore != null ? (
-                          <span>
+                          <span
+                            title={
+                              isVietnamese
+                                ? "So với trung bình 3 buổi trước"
+                                : tr("Compared to 3-session prior average")
+                            }
+                            style={{ cursor: "help" }}
+                          >
                             {r.latestScore}/10{" "}
                             {trend && (
                               <Icon name={trend === "up" ? "trend" : "trendDown"} inline size={14} style={{ color: trend === "up" ? "var(--ok)" : "var(--danger)" }} />
@@ -214,19 +349,60 @@ export default function TrainingOverviewPage() {
                           "—"
                         )}
                       </td>
-                      <td style={{ padding: "0.6rem 0.75rem", color: r.loadSpike ? "var(--warn)" : undefined }}>
-                        {r.load7d} {r.loadSpike && <Badge tone="warn">{tr("Sudden increase")}</Badge>}
+                      <td
+                        style={{
+                          padding: "0.6rem 0.75rem",
+                          color: r.loadSpike ? "var(--danger)" : undefined,
+                          fontWeight: r.loadSpike ? 600 : undefined,
+                        }}
+                        title={
+                          isVietnamese
+                            ? "Điểm tải = Cự ly (km) × Số hiệp × Hệ số cường độ (Nhẹ: 1, Vừa: 2, Nặng: 3)"
+                            : tr("Load score = Distance (km) × Repetitions × Intensity factor")
+                        }
+                      >
+                        <span style={{ cursor: "help", whiteSpace: "nowrap" }}>
+                          {r.load7d} {isVietnamese ? "điểm" : tr("pts")}{" "}
+                          {r.loadSpike && (
+                            <Badge tone="danger">
+                              {isVietnamese ? "Tăng đột ngột (>130% TB 4 tuần)" : tr("Sudden increase")}
+                            </Badge>
+                          )}
+                        </span>
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.nextWorkout
                           ? `${clubParts(r.nextWorkout.date).date.slice(5)} ${clubParts(r.nextWorkout.date).time} – ${EXERCISE_TYPE_LABEL[r.nextWorkout.workoutType] ? tr(EXERCISE_TYPE_LABEL[r.nextWorkout.workoutType]) : r.nextWorkout.workoutType}`
                           : "—"}
                       </td>
-                      <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>
-                        <div style={{ display: "flex", gap: "0.35rem" }}>
-                          <Button size="sm" tone="secondary" disabled={!r.plan} onClick={() => r.plan && navigate(`/training/plans/${r.plan.id}`)}>
-                            {tr("View plan")}
-                          </Button>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>
+                        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "0.35rem" }}>
+                          {r.plan ? (
+                            <Button size="sm" tone="secondary" onClick={() => r.plan && navigate(`/training/plans/${r.plan.id}`)}>
+                              {tr("View plan")}
+                            </Button>
+                          ) : (
+                            user.role === "HEAD_TRAINER" && (
+                              <Button
+                                size="sm"
+                                tone="primary"
+                                onClick={() => {
+                                  if (r.horse.isMedicalLocked) {
+                                    setLockedHorseModal({
+                                      id: r.horse.id,
+                                      name: r.horse.name,
+                                      horseCode: r.horse.horseCode,
+                                      status: r.horse.status,
+                                    });
+                                    return;
+                                  }
+                                  navigate(`/training/plans/new?horseId=${r.horse.id}`);
+                                }}
+                              >
+                                {isVietnamese ? "+ Tạo giáo án" : tr("+ Create plan")}
+                              </Button>
+                            )
+                          )}
                           <LinkButton to={`/horses/${r.horse.id}/fitness`} size="sm" tone="ghost">{tr("Chart")}</LinkButton>
                         </div>
                       </td>
@@ -239,6 +415,47 @@ export default function TrainingOverviewPage() {
           )}</Paged>
         )}
       </Card>
+    
+      {lockedHorseModal && (
+        <Modal
+          title={isVietnamese ? "Không thể tạo giáo án huấn luyện" : "Cannot Create Training Plan"}
+          tone="danger"
+          width={500}
+          onClose={() => setLockedHorseModal(null)}
+          foot={
+            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+              <Button tone="secondary" onClick={() => setLockedHorseModal(null)}>
+                {isVietnamese ? "Đóng" : tr("Close")}
+              </Button>
+              <LinkButton
+                to={`/medical?horseId=${lockedHorseModal.id}`}
+                tone="primary"
+              >
+                {isVietnamese ? "Xem hồ sơ bệnh án" : tr("View medical records")}
+              </LinkButton>
+            </div>
+          }
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+              <Badge tone="danger">
+                <Icon name="lock" inline size={12} /> {isVietnamese ? "Khóa huấn luyện y tế" : "Medical Lock Active"}
+              </Badge>
+              <span style={{ fontWeight: 600 }}>{lockedHorseModal.name} {lockedHorseModal.horseCode ? `(${lockedHorseModal.horseCode})` : ""}</span>
+            </div>
+            <p style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.5, color: "var(--text)" }}>
+              {isVietnamese
+                ? "Ngựa hiện đang trong trạng thái Khóa y tế do Bác sĩ thú y chỉ định. Theo quy chuẩn an toàn và phúc lợi ngựa, mọi kế hoạch tập luyện hoặc tạo mới giáo án đều bị tạm dừng nhằm phòng tránh tái phát chấn thương."
+                : "This horse is currently under a Medical Lock assigned by the veterinarian. To ensure equine welfare and safety, training plans cannot be created until the lock is lifted."}
+            </p>
+            <div style={{ background: "var(--surface-sunken)", padding: "0.75rem", borderRadius: "6px", fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
+              {isVietnamese
+                ? "💡 Hướng xử lý: Vui lòng liên hệ Bác sĩ thú y phụ trách (VET) để kiểm tra tình trạng lâm sàng và gỡ khóa y tế trên Hồ sơ bệnh án trước khi lập kế hoạch huấn luyện."
+                : "Action needed: Please contact the Veterinarian to perform clinical assessment and lift the lock in the Medical Record before planning workouts."}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

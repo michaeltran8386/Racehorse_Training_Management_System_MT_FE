@@ -87,6 +87,7 @@ const GENERIC: Record<string, string> = {
   INVALID_GROOM: "Choose an active groom.",
   TRIAL_SLOT_TAKEN: "This track already has a trial run within 15 minutes of that time.",
   MAX_WORKOUTS_PER_DAY: "A horse can have at most 3 workouts per day.",
+  GROOM_TIME_CONFLICT: "This groom already has another workout within 30 minutes. Choose another groom or change the time.",
   WORKOUT_NOT_FOUND: "This workout no longer exists. Reload the schedule.",
   WORKOUT_NOT_EDITABLE: "Only scheduled workouts can be edited.",
   WORKOUT_NOT_STARTED: "Results can be recorded once the workout has started.",
@@ -124,9 +125,13 @@ const DYNAMIC: Record<string, (d: Record<string, unknown>) => string | undefined
   ROW_OUT_OF_RANGE: (d) => `Row must be between 1 and ${d.max}.`,
   COL_OUT_OF_RANGE: (d) => `Column must be between 1 and ${d.max}.`,
   POSITION_TAKEN: (d) => `This grid position is already used by stall ${d.stallCode}.`,
+  GROOM_TIME_CONFLICT: (d) =>
+    d.groom
+      ? `Groom ${d.groom} is already assigned to ${d.horse}'s workout at ${d.time} on ${d.date}. Choose another groom or move the time by at least 30 minutes.`
+      : undefined,
 };
 
-import { isVietnamese, tr } from "@/shared/i18n/tr";
+import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
 
 const VI_TO_EN: Record<string, string> = {
   "Ngày tập là bắt buộc.": "Scheduled date is required.",
@@ -164,6 +169,14 @@ const VI_TO_EN: Record<string, string> = {
   "Chưa chọn giai đoạn giáo án.": "Please select a training phase.",
 };
 
+// Lỗi kiểm tra dữ liệu có thể gồm nhiều dòng: dịch từng dòng theo ngôn ngữ đang chọn.
+function localizeLines(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => localizeServerText(line))
+    .join("\n");
+}
+
 export function messageFor(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status >= 500) return isVietnamese() ? tr(GENERIC.SERVER_ERROR) : GENERIC.SERVER_ERROR;
@@ -178,7 +191,7 @@ export function messageFor(err: unknown): string {
         err.message !== "Bad Request" &&
         err.message !== "Forbidden resource"
       ) {
-        return tr(err.message);
+        return localizeLines(err.message);
       }
       return enGeneric ? tr(enGeneric) : tr("Something went wrong. Try again.");
     } else {
@@ -191,7 +204,7 @@ export function messageFor(err: unknown): string {
         err.message !== "Bad Request" &&
         err.message !== "Forbidden resource"
       ) {
-        return VI_TO_EN[err.message] ?? err.message;
+        return VI_TO_EN[err.message] ?? localizeLines(err.message);
       }
       return "Something went wrong. Try again.";
     }

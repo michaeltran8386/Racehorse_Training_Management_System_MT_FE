@@ -82,6 +82,63 @@ export function tr(text: string, params?: Params): string {
   return params ? fill(text, params) : text;
 }
 
+// ---- Chiều ngược Việt -> Anh: cho câu tiếng Việt do Backend trả về khi người dùng chọn tiếng Anh.
+const VI_CHARS = /[ăâđêôơưàáạảãầấậẩẫằắặẳẵèéẹẻẽềếệểễìíịỉĩòóọỏõồốộổỗờớợởỡùúụủũừứựửữỳýỵỷỹ]/i;
+let reverseExact: Map<string, string> | null = null;
+let reversePatterns: Pattern[] | null = null;
+
+function buildReverse() {
+  reverseExact = new Map();
+  reversePatterns = [];
+  for (const [en, vi] of Object.entries(VI_TEXT)) {
+    if (!reverseExact.has(vi)) reverseExact.set(vi, en);
+    if (!vi.includes("{{")) continue;
+    const names: string[] = [];
+    const source = vi
+      .split(VAR)
+      .map((part, i) => {
+        if (i % 2 === 1) {
+          names.push(part);
+          return "(.+?)";
+        }
+        return escapeRe(part);
+      })
+      .join("");
+    reversePatterns.push({ re: new RegExp(`^${source}$`, "s"), names, vi: en });
+  }
+}
+
+/** Câu tiếng Việt -> tiếng Anh theo bảng dịch; không có thì giữ nguyên. */
+export function toEnglish(text: string): string {
+  if (!text || !VI_CHARS.test(text)) return text;
+  if (!reverseExact) buildReverse();
+  const exact = reverseExact!.get(text) ?? reverseExact!.get(text.trim());
+  if (exact !== undefined) return exact;
+  for (const p of reversePatterns!) {
+    const m = p.re.exec(text);
+    if (m) {
+      const values: Params = {};
+      // Giá trị ghép vào câu (tên ngựa, mã...) giữ nguyên, trừ khi chính nó là một câu có trong bảng.
+      p.names.forEach((n, i) => {
+        values[n] = reverseExact!.get(m[i + 1]) ?? m[i + 1];
+      });
+      return p.vi.replace(VAR, (_, name: string) => String(values[name] ?? ""));
+    }
+  }
+  return text;
+}
+
+/**
+ * Câu do Backend trả về (lỗi, cảnh báo, lý do, thông báo) có thể là tiếng Anh hoặc tiếng Việt.
+ * Hiện theo ngôn ngữ người dùng chọn: tiếng Việt thì dịch câu Anh, tiếng Anh thì dịch câu Việt.
+ */
+export function localizeServerText(text: string | null | undefined): string {
+  if (!text) return "";
+  // Không dựa vào dấu tiếng Việt để đoán ngôn ngữ: câu tiếng Anh có thể chứa tên riêng tiếng Việt.
+  // tr() / toEnglish() chỉ đổi khi tìm thấy câu trong bảng, không thì giữ nguyên.
+  return isVietnamese() ? tr(text) : toEnglish(text);
+}
+
 // Dịch nếu là chuỗi, giữ nguyên nếu là phần tử React / số.
 export function trNode<T>(node: T): T {
   return (typeof node === "string" ? tr(node) : node) as T;

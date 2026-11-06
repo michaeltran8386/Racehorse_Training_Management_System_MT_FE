@@ -470,7 +470,8 @@
 .groupToggle svg { flex: none; transition: transform 200ms ease; }
 .groupToggle[aria-expanded="true"] svg { transform: rotate(90deg); }
 .groupItems { padding-inline-start: 28px; }
-.groupClosed { display: none; }
+.groupClosed { display: none !important; }
+.collapsed .groupIsClosed { display: none !important; }
 .groupItems .item { overflow: visible; margin-bottom: 0; min-height: 44px; }
 .groupItems .item::before,
 .groupItems .item::after {
@@ -494,8 +495,21 @@
   .collapsed .groupToggle,
   .collapsed .groupItems .item::before,
   .collapsed .groupItems .item::after { display: none; }
-  .collapsed .groupItems { display: block; padding-inline-start: 0; }
+  .collapsed .groupItems { padding-inline-start: 0; }
+  .collapsed .groupItems:not(.groupClosed) { display: block; }
+  .collapsed .groupClosed,
+  .collapsed .groupIsClosed { display: none !important; }
 }
 @media (prefers-reduced-motion: reduce) {
   .groupToggle svg { transition: none; }
 }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .nav { border-right: 1px solid var(--nav-line); }
+:global(:root[data-ui="v2"]) .logo img { filter: none; }
+:global(:root[data-ui="v2"]) .item { border-radius: var(--r); margin-inline: 4px; }
+:global(:root[data-ui="v2"]) .active, :global(:root[data-ui="v2"]) .active:hover { font-weight: 650; }
+:global(:root[data-ui="v2"]) .activePill { left: -4px; border-radius: 0 3px 3px 0; background: var(--nav-item-active-dot); }
+:global(:root[data-ui="v2"]) .collapseBtn, :global(:root[data-ui="v2"]) .logo { border-radius: var(--r); }
+:global(:root[data-ui="v2"]) .userAvatar { border-radius: 999px; background: var(--brand-100); color: var(--brand-700); }
+:global(:root[data-ui="v2"]) .user { border-radius: var(--r); }

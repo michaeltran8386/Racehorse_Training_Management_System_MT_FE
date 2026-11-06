@@ -32,7 +32,7 @@ import { messageFor } from "@/shared/lib/messages";
 import { formatDate, formatDateTime } from "@/shared/lib/format";
 import { useAppLanguage } from "@/shared/lib/language";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 /** Nguồn đổi trạng thái (Tab 4). */
 function historyStatus(status?: string | null) {
   return status ? tr(HEALTH_STATUS[status as HealthStatus]?.label ?? status) : "—";
@@ -100,7 +100,7 @@ export default function HorseDetailPage() {
         }
       })
       .catch((err) => {
-        if (active) setError(err.message || "Horse record not found or you do not have permission to view.");
+        if (active) setError(localizeServerText(err.message) || tr("Horse record not found or you do not have permission to view."));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -649,7 +649,7 @@ export default function HorseDetailPage() {
                   {
                     key: "changedBy",
                     header: "Changed By",
-                    render: (r) => r.changedBy || "System",
+                    render: (r) => r.changedBy || tr("System"),
                   },
                   {
                     key: "notes",
@@ -693,7 +693,7 @@ export default function HorseDetailPage() {
                   {
                     key: "transferredBy",
                     header: "Transferred By",
-                    render: (r) => r.transferredBy || "System",
+                    render: (r) => r.transferredBy || tr("System"),
                   },
                   {
                     key: "reason",
@@ -737,7 +737,7 @@ export default function HorseDetailPage() {
                 {
                   key: "groomName",
                   header: "Assigned Groom",
-                  render: (r) => r.groomName || "Unassigned",
+                  render: (r) => r.groomName || tr("Unassigned"),
                 },
                 {
                   key: "dates",

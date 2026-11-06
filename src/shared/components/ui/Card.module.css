@@ -21,3 +21,9 @@
 
 .card { border-radius: 0; }
 .title { font-family: var(--font-display); font-size: 22px; font-weight: 800; text-transform: uppercase; }
+
+/* ---- Giao diện v2 (data-ui="v2") ---- */
+:global(:root[data-ui="v2"]) .card { border-radius: var(--r-lg); box-shadow: var(--shadow); }
+:global(:root[data-ui="v2"]) .title { font-family: var(--font); font-size: var(--fs-body-lg); font-weight: 650; text-transform: none; letter-spacing: 0; }
+:global(:root[data-ui="v2"]) .head { padding: 18px 20px 0; }
+:global(:root[data-ui="v2"]) .foot { background: var(--surface-2); }

@@ -546,10 +546,10 @@ export default function RecordFormPage() {
           setRestingHeartRate(quickHr);
           setRespiratoryRate(quickRr);
           setWeightKg(quickWeight);
-          setExamSource(`Mô hình sinh thái TMEC (Đo nhanh) · ${new Date().toLocaleTimeString()}`);
+          setExamSource(`${tr("TMEC Simulator (quick reading)")} · ${new Date().toLocaleTimeString()}`);
           setDirty(true);
           if (!silent) {
-            toast.show(tr("Chỉ số sinh tồn đã được nạp trực tiếp từ mô hình."), "ok");
+            toast.show(tr("Vital signs were loaded from the simulator."), "ok");
           }
         }
       } catch (err: unknown) {
@@ -717,7 +717,7 @@ export default function RecordFormPage() {
               {tr("Open Simulator Exam")}
             </Button>
             <Button tone="ghost" onClick={() => void handleLoadExam()} disabled={!horseId || examBusy}>
-              {tr("Lấy nhanh chỉ số từ mô hình")}
+              {tr("Quick reading from the simulator")}
             </Button>
           </div>
         </div>

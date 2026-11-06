@@ -1,3 +1,4 @@
+import { vndUnit } from "@/shared/lib/format";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useState, useEffect } from "react";
@@ -364,16 +365,16 @@ export default function OwnerFinancialReportsPage() {
                       </td>
                       {isClubManager && <td style={{ padding: "0.75rem 0.5rem" }}>{inv.owner?.fullName || "—"}</td>}
                       <td style={{ padding: "0.75rem 0.5rem" }}>
-                        {inv.boardingFee.toLocaleString(locale)} đ
+                        {inv.boardingFee.toLocaleString(locale)} {vndUnit()}
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
-                        {inv.medicalFee.toLocaleString(locale)} đ
+                        {inv.medicalFee.toLocaleString(locale)} {vndUnit()}
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
-                        {inv.trainingFee.toLocaleString(locale)} đ
+                        {inv.trainingFee.toLocaleString(locale)} {vndUnit()}
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem", color: "var(--brand-700)", fontWeight: 700 }}>
-                        {inv.prizeCredit > 0 ? `+${inv.prizeCredit.toLocaleString(locale)} đ` : "—"}
+                        {inv.prizeCredit > 0 ? `+${inv.prizeCredit.toLocaleString(locale)} ${vndUnit()}` : "—"}
                       </td>
                       <td
                         style={{
@@ -383,8 +384,8 @@ export default function OwnerFinancialReportsPage() {
                         }}
                       >
                         {isCredit
-                          ? `${tr("Payout:")} ${Math.abs(inv.netAmount).toLocaleString(locale)} đ`
-                          : `${inv.netAmount.toLocaleString(locale)} đ`}
+                          ? `${tr("Payout:")} ${Math.abs(inv.netAmount).toLocaleString(locale)} ${vndUnit()}`
+                          : `${inv.netAmount.toLocaleString(locale)} ${vndUnit()}`}
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
                         {inv.dueAt ? new Date(inv.dueAt).toLocaleString(locale, { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" }) : tr("No payment deadline")}
@@ -584,20 +585,20 @@ export default function OwnerFinancialReportsPage() {
             >
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--muted)" }}>{tr("Stall Boarding:")}</span>
-                <strong>{selectedInvoice.boardingFee.toLocaleString(locale)} đ</strong>
+                <strong>{selectedInvoice.boardingFee.toLocaleString(locale)} {vndUnit()}</strong>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--muted)" }}>{tr("Medical & Veterinary:")}</span>
-                <strong>{selectedInvoice.medicalFee.toLocaleString(locale)} đ</strong>
+                <strong>{selectedInvoice.medicalFee.toLocaleString(locale)} {vndUnit()}</strong>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--muted)" }}>{tr("Conditioning & Training:")}</span>
-                <strong>{selectedInvoice.trainingFee.toLocaleString(locale)} đ</strong>
+                <strong>{selectedInvoice.trainingFee.toLocaleString(locale)} {vndUnit()}</strong>
               </div>
               {selectedInvoice.prizeCredit > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--brand-700)" }}>
                   <span>{tr("Tournament Prize Credits:")}</span>
-                  <strong>-{selectedInvoice.prizeCredit.toLocaleString(locale)} đ</strong>
+                  <strong>-{selectedInvoice.prizeCredit.toLocaleString(locale)} {vndUnit()}</strong>
                 </div>
               )}
               <div
@@ -614,7 +615,7 @@ export default function OwnerFinancialReportsPage() {
               >
                 <span>{tr("Net Amount")}</span>
                 <span style={{ color: "var(--brand-700)" }}>
-                  {selectedInvoice.netAmount.toLocaleString(locale)} đ
+                  {selectedInvoice.netAmount.toLocaleString(locale)} {vndUnit()}
                 </span>
               </div>
             </div>

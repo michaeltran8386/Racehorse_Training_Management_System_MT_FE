@@ -1,0 +1,48 @@
+/* ============================================================ Giao diện v2 (thử trên Head Trainer)
+   Bật bằng <html data-ui="v2">. Màu theo bảng gốc; bo góc mềm; chữ không chân dễ đọc.
+   Chỉ đổi giá trị token: các trang dùng var(--…) tự đổi theo. Duyệt xong thì bật cho mọi vai trò. */
+:root[data-ui="v2"] {
+  /* Màu: dùng bảng màu gốc của hệ thống (tokens.css: nền kem, vàng #f4b942, thanh bên xanh than) cho cả sáng và tối.
+     v2 chỉ đổi chữ, bo góc, bóng. */
+  /* Chữ không chân, tiêu đề cùng họ chữ (bỏ kiểu in hoa đậm) */
+  --font:'Inter','Segoe UI',system-ui,sans-serif; --font-display:'Inter','Segoe UI',system-ui,sans-serif;
+  --mono:var(--font); --font-numeric:var(--font);
+
+  /* Bo góc mềm, bóng nhẹ */
+  --r-xs:4px; --r-sm:6px; --r:10px; --r-lg:12px; --r-xl:14px; --r-modal:16px; --r-btn:8px; --r-field:8px;
+  --shadow-sm:0 1px 2px rgba(27,36,32,.05);
+  --shadow:0 1px 3px rgba(27,36,32,.06), 0 1px 2px rgba(27,36,32,.04);
+  --shadow-pop:0 10px 30px rgba(27,36,32,.12); --shadow-lg:0 20px 50px rgba(27,36,32,.16);
+}
+
+
+/* Chữ: bỏ kiểu tiêu đề in hoa / chữ hẹp của bản cũ trong vùng ứng dụng */
+:root[data-ui="v2"] body { font-family: var(--font); background: var(--page); color: var(--text); }
+:root[data-ui="v2"] main h1, :root[data-ui="v2"] main h2, :root[data-ui="v2"] main h3,
+:root[data-ui="v2"] [role="dialog"] h2, :root[data-ui="v2"] [role="dialog"] h3 {
+  font-family: var(--font); text-transform: none; letter-spacing: -0.005em;
+}
+:root[data-ui="v2"] ::selection { background: var(--brand-100); color: var(--text); }
+
+/* Bản cũ dùng chữ in hoa + giãn chữ cho tiêu đề, nhãn, cột bảng ở từng trang.
+   v2: chữ thường đầu câu, dễ đọc hơn khi quét số liệu (mã như HR-000001 vốn đã in hoa nên không đổi). */
+:root[data-ui="v2"] main *, :root[data-ui="v2"] [role="dialog"] *, :root[data-ui="v2"] nav * {
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Khung thẻ riêng của từng trang (thẻ số liệu, bảng tóm tắt, thẻ cảnh báo...) — bo góc + bóng nhẹ như Card dùng chung.
+   Tên lớp CSS module giữ dạng _ten_hash nên khớp được cả khi build. */
+:root[data-ui="v2"] main :is(
+  [class*="_kpi_"], [class*="_metrics_"], [class*="_summary_"], [class*="_panel_"], [class*="_liveCard_"],
+  [class*="_alertCard_"], [class*="_card_"], [class*="_event_"], [class*="_filters_"], [class*="_guide_"],
+  [class*="_stat_"], [class*="_tile_"], [class*="_notice_"]
+) {
+  border-radius: var(--r-lg);
+}
+:root[data-ui="v2"] main :is([class*="_kpi_"], [class*="_metrics_"] > *, [class*="_liveCard_"], [class*="_alertCard_"]) {
+  box-shadow: var(--shadow);
+}
+
+/* Thanh bên rộng hơn để nhãn menu không xuống 2–3 dòng */
+:root[data-ui="v2"] { --sidebar-w: 248px; --sidebar-w-md: 248px; }

@@ -18,10 +18,12 @@ import { EXERCISE_TYPE_LABEL } from "../types";
 import type { TrainingAlert } from "../types";
 
 import { tr } from "@/shared/i18n/tr";
+import { useAppLanguage } from "@/shared/lib/language";
 import styles from "./TrainingActivity.module.css";
 /** FR-2.14: buổi tập có dấu hiệu bất thường. HT và VET xem; chỉ VET ghi nhận. */
 export default function AlertListPage() {
   useScreenTranslation();
+  const { isVietnamese } = useAppLanguage();
   const user = useCurrentUser();
   const toast = useToast();
   // Q-0.04: chỉ Bác sĩ thú y (còn bật công tắc ackAlerts) ghi nhận cảnh báo; HT chỉ xem.
@@ -68,7 +70,15 @@ export default function AlertListPage() {
 
   return (
     <div className={styles.page}>
-      <PageHeader title="Abnormal-sign Alerts" description="Raised when the Head Trainer records abnormal signs after a workout. The Veterinarian reviews and responds." action={(user.role === "HEAD_TRAINER" || user.role === "CLUB_MANAGER") ? <LinkButton to="/training/calendar" tone="secondary" icon="arrowLeft">{tr("Training schedule")}</LinkButton> : undefined} />
+      <PageHeader
+        title={isVietnamese ? "Cảnh báo sau buổi tập" : tr("Post-workout Alerts")}
+        description={
+          isVietnamese
+            ? "Cảnh báo khi buổi tập ghi nhận dấu hiệu bất thường. Bác sĩ thú y xem xét và phản hồi."
+            : tr("Raised when abnormal signs are recorded after a workout. The Veterinarian reviews and responds.")
+        }
+        action={(user.role === "HEAD_TRAINER" || user.role === "CLUB_MANAGER") ? <LinkButton to="/training/calendar" tone="secondary" icon="arrowLeft">{tr("Training schedule")}</LinkButton> : undefined}
+      />
 
       <div className={styles.list}>
         {loading ? (
