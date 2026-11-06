@@ -199,6 +199,7 @@ export interface TrainingPlan {
   completionSummary?: string | null;
   createdAt: string;
   isLockedByMedical: boolean;
+  isDebtImpounded?: boolean;
 }
 
 export interface SessionResult {
@@ -235,6 +236,7 @@ export interface ExerciseSession {
   horseName: string;
   horseCode?: string;
   isHorseLocked: boolean;
+  isDebtImpounded?: boolean;
   scheduledAt: string; // ISO
   sessionDate: string; // YYYY-MM-DD (giờ câu lạc bộ)
   startTime: string; // HH:mm (giờ câu lạc bộ)

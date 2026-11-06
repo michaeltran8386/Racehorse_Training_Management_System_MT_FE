@@ -22,6 +22,7 @@ import type { SettableStallStatus, Stall, Zone } from "../types";
 import { STALL_STATUS_LABEL } from "../types";
 import { GridCell, ZoneGrid, type CellLook } from "../components/ZoneGrid";
 import { AssignStallDialog, ReturnStallDialog, TransferStallDialog } from "../components/StallDialogs";
+import { StallDialog, ZoneDialog } from "../components/StallZoneModals";
 import { HEALTH_STATUS } from "@/shared/lib/status";
 import { HORSE_STATUS_COLOR, allocationOf, useStallCounts } from "../stallUtils";
 
@@ -52,6 +53,8 @@ export default function StableMapPage() {
   const [onlyMine, setOnlyMine] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [zoneModalOpen, setZoneModalOpen] = useState(false);
+  const [stallModalOpen, setStallModalOpen] = useState(false);
   const [statusChange, setStatusChange] = useState<(typeof stallStatusOptions)[number] | null>(null);
   const [statusNote, setStatusNote] = useState("");
   const [statusBusy, setStatusBusy] = useState(false);
@@ -139,6 +142,7 @@ export default function StableMapPage() {
           bg: color.bg,
           fg: color.fg,
           locked: !!a.horse.isMedicalLocked,
+          impounded: !!a.horse.isDebtImpounded,
           mine: isMine(s),
           dimmed: onlyMine && !isMine(s),
           flash: flashId === s.id,
@@ -198,7 +202,12 @@ export default function StableMapPage() {
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <HealthBadge status={a.horse.status as HealthStatus} />
-              {a.horse.isMedicalLocked && <Badge tone="danger" icon="lock">{tr("Training Lock")}</Badge>}
+              {a.horse.isMedicalLocked && <Badge tone="warn" icon="lock">{tr("Khóa y tế")}</Badge>}
+              {a.horse.isDebtImpounded && (
+                <Badge tone="danger" icon="alert-circle" title={a.horse.debtImpoundReason ?? undefined}>
+                  {tr("Lưu giữ do nợ phí")}
+                </Badge>
+              )}
             </div>
             <div style={{ fontSize: "var(--fs-body)" }}>{tr("Groom:")}{" "}{a.assignedGroom?.fullName ?? "—"}</div>
             <div style={{ fontSize: "var(--fs-body)" }}>{tr("In this stall since {{date}}", { date: formatDate(a.startDate) })}</div>
@@ -291,6 +300,12 @@ export default function StableMapPage() {
                 </div>
               )}
             </div>
+            {canSetStatus && (
+              <div style={{ display: "flex", gap: 8 }}>
+                <Button tone="primary" onClick={() => setZoneModalOpen(true)}>+ {tr("Thêm khu chuồng")}</Button>
+                <Button tone="secondary" onClick={() => setStallModalOpen(true)}>+ {tr("Thêm ô chuồng")}</Button>
+              </div>
+            )}
             <Segmented
               label={tr("View")}
               items={[
@@ -311,10 +326,13 @@ export default function StableMapPage() {
       )}
 
       {zones && zones.length === 0 ? (
-        <div style={{ padding: 40, textAlign: "center", border: "2px dashed var(--border)", borderRadius: "var(--r-lg)" }}>
+        <div style={{ padding: 40, textAlign: "center", border: "2px dashed var(--border)", borderRadius: "var(--r-lg)", display: "grid", gap: 12, justifyItems: "center" }}>
           <p>{tr("No barn zones have been set up yet.")}</p>
           {user.role === "CLUB_MANAGER" && (
-            <LinkButton to="/catalogs/stalls">{tr("Go to the stall catalogue")}</LinkButton>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Button tone="primary" onClick={() => setZoneModalOpen(true)}>+ {tr("Thêm khu chuồng đầu tiên")}</Button>
+              <LinkButton to="/catalogs/stalls" tone="secondary">{tr("Go to the stall catalogue")}</LinkButton>
+            </div>
           )}
         </div>
       ) : (
@@ -340,8 +358,12 @@ export default function StableMapPage() {
               {tr("Empty")}
             </li>
             <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+              <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: "var(--r-xs)", border: "2px solid var(--warn)" }} />
+              {tr("Khóa y tế")}
+            </li>
+            <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: "var(--r-xs)", border: "2px solid var(--danger)" }} />
-              {tr("Training Lock")}
+              {tr("Lưu giữ do nợ phí")}
             </li>
           </ul>
 
@@ -434,6 +456,28 @@ export default function StableMapPage() {
           allocation={allocationOf(selected)!}
           onClose={() => closeDialog(false)}
           onDone={() => closeDialog(true)}
+        />
+      )}
+      {zoneModalOpen && (
+        <ZoneDialog
+          onClose={() => setZoneModalOpen(false)}
+          onSaved={(newZone) => {
+            setZoneModalOpen(false);
+            setZoneId(newZone.id);
+            loadZones();
+          }}
+        />
+      )}
+      {stallModalOpen && (
+        <StallDialog
+          zone={zone}
+          zones={zones ?? []}
+          onClose={() => setStallModalOpen(false)}
+          onSaved={() => {
+            setStallModalOpen(false);
+            loadStalls();
+            loadZones();
+          }}
         />
       )}
     </div>

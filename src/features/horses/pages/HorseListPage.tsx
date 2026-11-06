@@ -267,17 +267,26 @@ export default function HorseListPage() {
     },
     {
       key: "lock",
-      header: tr("Training Lock"),
-      render: (h) =>
-        h.isMedicalLocked ? (
-          <Badge tone="danger" icon="lock">
-            {tr("Locked")}
-          </Badge>
-        ) : (
-          <span style={{ color: "var(--muted)" }} aria-label={tr("Not locked")}>
-            —
-          </span>
-        ),
+      header: tr("Khóa / Lưu giữ"),
+      render: (h) => (
+        <div style={{ display: "inline-flex", gap: 4, flexWrap: "wrap" }}>
+          {h.isMedicalLocked && (
+            <Badge tone="warn" icon="lock">
+              {tr("Locked")}
+            </Badge>
+          )}
+          {h.isDebtImpounded && (
+            <Badge tone="danger" icon="alert-circle" title={h.debtImpoundReason ?? undefined}>
+              {tr("Nợ phí")}
+            </Badge>
+          )}
+          {!h.isMedicalLocked && !h.isDebtImpounded && (
+            <span style={{ color: "var(--muted)" }} aria-label={tr("Not locked")}>
+              —
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       key: "actions",

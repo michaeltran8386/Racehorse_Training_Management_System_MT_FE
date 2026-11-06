@@ -28,6 +28,7 @@ export interface CellLook {
   dashed?: boolean;
   striped?: boolean;
   locked?: boolean;
+  impounded?: boolean;
   mine?: boolean;
   dimmed?: boolean;
   flash?: boolean;
@@ -52,8 +53,16 @@ export function GridCell({
       : (look.bg ?? BASE.background),
     color: look.fg,
     borderStyle: look.dashed ? "dashed" : "solid",
-    borderWidth: look.mine || look.locked || selected ? 2 : 1,
-    borderColor: selected ? "var(--brand)" : look.locked ? "var(--danger)" : look.mine ? "var(--ok)" : "var(--border)",
+    borderWidth: look.mine || look.locked || look.impounded || selected ? 2 : 1,
+    borderColor: selected
+      ? "var(--brand)"
+      : look.impounded
+        ? "var(--danger)"
+        : look.locked
+          ? "var(--warn)"
+          : look.mine
+            ? "var(--ok)"
+            : "var(--border)",
     opacity: look.dimmed ? 0.35 : 1,
     boxShadow: look.flash ? "0 0 0 4px var(--warn-bg), 0 0 0 6px var(--warn)" : undefined,
     transition: "box-shadow 0.3s ease",
@@ -62,7 +71,10 @@ export function GridCell({
     <button type="button" style={style} onClick={onClick} title={code}>
       <span style={{ display: "flex", justifyContent: "space-between", fontWeight: 700, fontSize: "var(--fs-caption)" }}>
         {code}
-        {look.locked && <Icon name="lock" size={12} />}
+        <span style={{ display: "inline-flex", gap: 3, alignItems: "center" }}>
+          {look.locked && <Icon name="lock" size={12} />}
+          {look.impounded && <Icon name="shield-alert" size={12} />}
+        </span>
       </span>
       <strong style={{ fontSize: "var(--fs-body)" }}>{look.title}</strong>
       {look.subtitle && <span style={{ fontSize: "var(--fs-caption)", opacity: 0.8 }}>{look.subtitle}</span>}
