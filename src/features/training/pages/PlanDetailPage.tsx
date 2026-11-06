@@ -15,7 +15,7 @@ import { messageFor } from "@/shared/lib/messages";
 import { todayClub, trainingApi } from "../api";
 import { ActivatePlanDialog, ClonePlanDialog, ClosePlanDialog } from "../components/PlanDialogs";
 import { ProgressBar } from "../components/ProgressBar";
-import { sessionButtons } from "../components/sessionRules";
+import { sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
 import {
   CancelWorkoutDialog,
   GeneratePhaseScheduleDialog,
@@ -31,7 +31,6 @@ import {
   PLAN_STATUS_LABEL,
   PLAN_STATUS_TONE,
   SESSION_STATUS_LABEL,
-  SESSION_STATUS_TONE,
   TRACK_LABEL,
 } from "../types";
 import type { ExerciseSession, SessionStatus, TrainingPhase, TrainingPlan } from "../types";
@@ -298,7 +297,7 @@ export default function PlanDetailPage() {
                         <td style={{ padding: "0.6rem 0.75rem" }}>{s.jockeyName || "—"}</td>
                         <td style={{ padding: "0.6rem 0.75rem" }}>{s.groomName || "—"}</td>
                         <td style={{ padding: "0.6rem 0.75rem" }}>
-                          <Badge tone={SESSION_STATUS_TONE[s.status]}>{SESSION_STATUS_LABEL[s.status] ? tr(SESSION_STATUS_LABEL[s.status]) : s.status}</Badge>
+                          <Badge tone={sessionStatusTone(s)}>{tr(sessionStatusLabel(s))}</Badge>
                         </td>
                         <td style={{ padding: "0.6rem 0.75rem" }}>
                           {s.result ? tr(`${s.result.performanceScore ?? "—"}/10 · ${s.result.avgSpeedKmh ?? "—"} km/h`) : s.status === "CANCELLED" ? "—" : (isVietnamese ? "Chưa ghi kết quả" : "Result not recorded")}
@@ -448,46 +447,59 @@ function PhaseCard({
     .filter(([, count]) => count > phase.sessionsPerWeek)
     .map(([w, count]) => ({ week: w, count }));
 
+  const scheduled = sessions.filter((x) => x.status !== "CANCELLED").length;
+  const ended = phase.endDate < todayClub();
+  const pct = scheduled > 0 ? Math.round((done.length / scheduled) * 100) : 0;
+  const surface = TRACK_LABEL[phase.surface] ? tr(TRACK_LABEL[phase.surface]) : phase.surface;
+
   return (
-    <Card pad={16}>
+    <Card pad={0}>
       <div className={`${styles.phaseCard} ${current ? styles.currentPhase : ""}`}>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
-            <strong className={styles.phaseName}>{phase.name}</strong>
-            <Badge tone="neutral">{PHASE_TYPE_LABEL[phase.type] ?? phase.type}</Badge>
-            {current && <Badge tone="info">{tr("Current")}</Badge>}
-          </div>
-          {canEdit && onGenerateSchedule && (
-            <Button size="sm" tone="primary" onClick={onGenerateSchedule}>
-              {isVietnamese ? "⚡ Sinh lịch" : tr("⚡ Generate")}
-            </Button>
-          )}
+        <div className={styles.phaseHead}>
+          <strong className={styles.phaseName}>{phase.name}</strong>
+          <Badge tone="neutral">{PHASE_TYPE_LABEL[phase.type] ?? phase.type}</Badge>
+          {current && <Badge tone="info">{tr("Current")}</Badge>}
         </div>
-        <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>
+        <div className={styles.phaseDates}>
           {phase.startDate} → {phase.endDate}
         </div>
-        {phase.goal && <div style={{ fontSize: "var(--fs-body)", marginTop: "0.35rem" }}>{phase.goal}</div>}
-        <div style={{ fontSize: "var(--fs-body)", marginTop: "0.5rem" }}>
-          {tr("Quota:")} {phase.sessionsPerWeek}{tr("/week · max")}{" "}{phase.maxWeeklyDistance} {tr("m/week ·")}{" "}{TRACK_LABEL[phase.surface] ? tr(TRACK_LABEL[phase.surface]) : phase.surface}
-          {phase.targetSpeedKmh ? tr(` · ${phase.targetSpeedKmh} km/h`) : ""}
+        {phase.goal && <div className={styles.phaseGoal}>{phase.goal}</div>}
+
+        <dl className={styles.phaseStats}>
+          <dt>{tr("Quota")}</dt>
+          <dd>
+            {tr("{{count}} sessions/week", { count: phase.sessionsPerWeek })} · {phase.maxWeeklyDistance.toLocaleString()} {tr("m/week")} · {surface}
+            {phase.targetSpeedKmh ? ` · ${phase.targetSpeedKmh} km/h` : ""}
+          </dd>
+          <dt>{tr("Scheduled")}</dt>
+          <dd>{tr("{{count}} session(s)", { count: scheduled })}</dd>
+          <dt>{tr("Completed")}</dt>
+          <dd>
+            {tr("{{count}} session(s)", { count: done.length })} · {run.toLocaleString()} m
+          </dd>
+        </dl>
+        <div className={styles.phaseBar} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={tr("Completed")}>
+          <span style={{ width: `${pct}%` }} />
         </div>
-        <div style={{ fontSize: "var(--fs-body)" }}>
-          {tr("Actual:")} {done.length} {tr("workout(s) completed ·")} {run} {tr("m run")}
-        </div>
+
         {overWeeks.map((w) => (
-          <div key={w} style={{ marginTop: "0.25rem" }}>
-            <Badge tone="warn">{tr("Over quota – week of {{week}}", { week: w })}</Badge>
-          </div>
+          <Badge key={w} tone="warn">{tr("Over quota – week of {{week}}", { week: w })}</Badge>
         ))}
         {overSessionWeeks.map(({ week, count }) => (
-          <div key={week} style={{ marginTop: "0.25rem" }}>
-            <Badge tone="warn">
-              {isVietnamese
-                ? `Cảnh báo BR-2.21: Tuần ${week} có ${count} buổi (vượt ${phase.sessionsPerWeek} buổi/tuần)`
-                : tr("BR-2.21: {{count}} workouts (exceeds {{quota}}/week)", { count, quota: phase.sessionsPerWeek })}
-            </Badge>
-          </div>
+          <Badge key={week} tone="warn">
+            {isVietnamese
+              ? `Cảnh báo BR-2.21: Tuần ${week} có ${count} buổi (vượt ${phase.sessionsPerWeek} buổi/tuần)`
+              : tr("BR-2.21: {{count}} workouts (exceeds {{quota}}/week)", { count, quota: phase.sessionsPerWeek })}
+          </Badge>
         ))}
+
+        {canEdit && onGenerateSchedule && !ended && (
+          <div className={styles.phaseFoot}>
+            <Button size="sm" tone="secondary" icon="calendar" onClick={onGenerateSchedule}>
+              {isVietnamese ? "Sinh lịch buổi tập" : tr("Generate workouts")}
+            </Button>
+          </div>
+        )}
       </div>
     </Card>
   );

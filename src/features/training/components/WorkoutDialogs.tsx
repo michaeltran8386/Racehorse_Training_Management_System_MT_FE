@@ -1,4 +1,5 @@
 import formLayout from "@/shared/components/form/FormLayout.module.css";
+import gen from "./GenerateSchedule.module.css";
 import { useEffect, useMemo, useState } from "react";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
@@ -775,126 +776,144 @@ export function GeneratePhaseScheduleDialog({
     }
   };
 
+  // Số buổi dự kiến: các ngày trong giai đoạn (từ hôm nay) rơi vào thứ đã chọn; hôm nay chỉ tính khi giờ còn hợp lệ.
+  const plannedCount = useMemo(() => {
+    let n = 0;
+    const start = phase.startDate > today ? phase.startDate : today;
+    for (let d = new Date(`${start}T00:00:00Z`); d.toISOString().slice(0, 10) <= phase.endDate; d.setUTCDate(d.getUTCDate() + 1)) {
+      const iso = d.toISOString().slice(0, 10);
+      const weekday = d.getUTCDay() === 0 ? 7 : d.getUTCDay();
+      if (!weekdays.includes(weekday)) continue;
+      if (iso === today && time < todayMinTime) continue;
+      n++;
+    }
+    return n;
+  }, [phase.startDate, phase.endDate, today, weekdays, time, todayMinTime]);
+
+  const needsJockey = type === "BREEZE" || type === "TRIAL";
+
   return (
     <Modal
-      title={isVietnamese ? `Sinh lịch đề xuất – Giai đoạn ${phase.name}` : tr("Generate Schedule – {{name}}", { name: phase.name })}
+      title={isVietnamese ? `Sinh lịch buổi tập – ${phase.name}` : tr("Generate workouts – {{name}}", { name: phase.name })}
       onClose={onClose}
       foot={
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
           <Button tone="ghost" onClick={onClose}>{tr("Cancel")}</Button>
-          <Button tone="primary" onClick={() => void submit()} disabled={submitting}>
-            {submitting ? tr("Generating...") : isVietnamese ? "Tạo lịch buổi tập" : tr("Generate workouts")}
+          <Button tone="primary" onClick={() => void submit()} disabled={submitting || plannedCount === 0}>
+            {submitting
+              ? tr("Generating...")
+              : isVietnamese
+                ? `Tạo ${plannedCount} buổi tập`
+                : tr("Create {{count}} workouts", { count: plannedCount })}
           </Button>
         </div>
       }
     >
-      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      <div className={gen.form}>
         {error && <Alert tone="danger" title={tr("Cannot generate")}>{error}</Alert>}
-        <p style={{ margin: 0, fontSize: "var(--fs-body)", color: "var(--text-muted)" }}>
-          {isVietnamese
-            ? `Hệ thống sẽ rải lịch các buổi tập trong khung ngày ${phase.startDate} → ${phase.endDate} theo các thứ đã chọn.`
-            : tr("Workouts will be scheduled within {{start}} → {{end}} on selected days.", { start: phase.startDate, end: phase.endDate })}
-        </p>
 
-        <Field
-          label={
-            isVietnamese
-              ? `Các thứ trong tuần (${weekdays.length}/${maxDays} buổi/tuần)`
-              : tr("Days of the week ({{selected}}/{{max}})", { selected: weekdays.length, max: maxDays })
-          }
-          required
-        >
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginTop: "0.25rem" }}>
-            {WEEKDAYS.map((w) => {
-              const isSelected = weekdays.includes(w.n);
-              const reachedMax = weekdays.length >= maxDays && !isSelected;
-              return (
-                <Button
-                  key={w.n}
-                  type="button"
-                  size="sm"
-                  tone={isSelected ? "primary" : "secondary"}
-                  disabled={reachedMax}
-                  onClick={() => toggleDay(w.n)}
-                >
-                  {w.label}
-                </Button>
-              );
-            })}
+        <section className={gen.section}>
+          <h3 className={gen.sectionTitle}>{tr("Schedule")}</h3>
+          <p className={gen.range}>
+            {phase.startDate} → {phase.endDate}
+          </p>
+          <div>
+            <div className={gen.days} role="group" aria-label={tr("Days of the week")}>
+              {WEEKDAYS.map((w) => {
+                const isSelected = weekdays.includes(w.n);
+                return (
+                  <button
+                    key={w.n}
+                    type="button"
+                    className={gen.day}
+                    aria-pressed={isSelected}
+                    disabled={weekdays.length >= maxDays && !isSelected}
+                    onClick={() => toggleDay(w.n)}
+                  >
+                    {tr(w.label)}
+                  </button>
+                );
+              })}
+            </div>
+            <div className={gen.daysHint} style={{ marginTop: 6 }}>
+              {isVietnamese
+                ? `Đã chọn ${weekdays.length}/${maxDays} buổi mỗi tuần theo định mức giai đoạn.`
+                : tr("{{selected}} of {{max}} sessions per week (phase quota).", { selected: weekdays.length, max: maxDays })}
+            </div>
           </div>
-        </Field>
-
-        <div className={formLayout.columns}>
-          <Field
-            label={tr("Start time")}
-            required
-            hint={
-              isStartingToday && phase.startDate === today && todayMinTime > "04:00"
-                ? isVietnamese
-                  ? `Từ ${todayMinTime} – 20:00 (sau ít nhất 30p)`
-                  : `${todayMinTime} – 20:00`
-                : "04:00 – 20:00"
-            }
-          >
-            <Input
-              type="time"
-              min={minTimeAllowed}
-              max="20:00"
-              step={900}
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
-          </Field>
-          <Field label={tr("Surface")} required>
-            <Select
-              value={surface}
-              onChange={(e) => setSurface(e.target.value as TrackType)}
-              options={(Object.keys(TRACK_LABEL) as TrackType[]).filter((x) => x !== "NONE").map((k) => ({ value: k, label: TRACK_LABEL[k] }))}
-            />
-          </Field>
-        </div>
-
-        <div className={formLayout.columns}>
-          <Field label={tr("Exercise type")} required>
-            <Select
-              value={type}
-              onChange={(e) => setType(e.target.value as ExerciseType)}
-              options={(Object.keys(EXERCISE_TYPE_LABEL) as ExerciseType[]).map((k) => ({ value: k, label: EXERCISE_TYPE_LABEL[k] }))}
-            />
-          </Field>
-          <Field label={tr("Intensity")} required>
-            <Select
-              value={intensity}
-              onChange={(e) => setIntensity(e.target.value as ExerciseIntensity)}
-              options={(Object.keys(INTENSITY_LABEL) as ExerciseIntensity[]).map((k) => ({ value: k, label: INTENSITY_LABEL[k] }))}
-            />
-          </Field>
-        </div>
-
-        <div className={formLayout.columns}>
-          <Field label={tr("Distance (m)")} required hint="200 – 10 000 m">
-            <Input type="number" min={200} max={10000} step={100} value={distance} onChange={(e) => setDistance(e.target.value)} />
-          </Field>
-          <Field label={tr("Repetitions")} required hint="1 – 10">
-            <Input type="number" min={1} max={10} value={repetitions} onChange={(e) => setRepetitions(Math.max(1, Number(e.target.value)))} />
-          </Field>
-        </div>
-
-        <div className={formLayout.columns}>
-          <Field label={tr("Assigned groom")} required>
-            <Select
-              value={groomId}
-              onChange={(e) => setGroomId(e.target.value)}
-              options={grooms.map((g) => ({ value: g.id, label: g.fullName }))}
-            />
-          </Field>
-          {(type === "BREEZE" || type === "TRIAL") ? (
-            <Field label={tr("Jockey name")} required>
-              <Input value={jockey} onChange={(e) => setJockey(e.target.value)} placeholder={tr("Jockey name")} />
+          <div className={formLayout.columns}>
+            <Field
+              label={tr("Start time")}
+              required
+              hint={
+                isStartingToday && phase.startDate === today && todayMinTime > "04:00"
+                  ? isVietnamese
+                    ? `Từ ${todayMinTime} – 20:00 (sau ít nhất 30p)`
+                    : `${todayMinTime} – 20:00`
+                  : "04:00 – 20:00"
+              }
+            >
+              <Input type="time" min={minTimeAllowed} max="20:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
             </Field>
-          ) : (
-            <div />
-          )}
+            <Field label={tr("Surface")} required>
+              <Select
+                value={surface}
+                onChange={(e) => setSurface(e.target.value as TrackType)}
+                options={(Object.keys(TRACK_LABEL) as TrackType[]).filter((x) => x !== "NONE").map((k) => ({ value: k, label: TRACK_LABEL[k] }))}
+              />
+            </Field>
+          </div>
+        </section>
+
+        <section className={gen.section}>
+          <h3 className={gen.sectionTitle}>{tr("Workout")}</h3>
+          <div className={formLayout.columns}>
+            <Field label={tr("Exercise type")} required>
+              <Select
+                value={type}
+                onChange={(e) => setType(e.target.value as ExerciseType)}
+                options={(Object.keys(EXERCISE_TYPE_LABEL) as ExerciseType[]).map((k) => ({ value: k, label: EXERCISE_TYPE_LABEL[k] }))}
+              />
+            </Field>
+            <Field label={tr("Intensity")} required>
+              <Select
+                value={intensity}
+                onChange={(e) => setIntensity(e.target.value as ExerciseIntensity)}
+                options={(Object.keys(INTENSITY_LABEL) as ExerciseIntensity[]).map((k) => ({ value: k, label: INTENSITY_LABEL[k] }))}
+              />
+            </Field>
+          </div>
+          <div className={formLayout.columns}>
+            <Field label={tr("Distance (m)")} required hint="200 – 10 000 m">
+              <Input type="number" min={200} max={10000} step={100} value={distance} onChange={(e) => setDistance(e.target.value)} />
+            </Field>
+            <Field label={tr("Repetitions")} required hint="1 – 10">
+              <Input type="number" min={1} max={10} value={repetitions} onChange={(e) => setRepetitions(Math.max(1, Number(e.target.value)))} />
+            </Field>
+          </div>
+        </section>
+
+        <section className={gen.section}>
+          <h3 className={gen.sectionTitle}>{tr("Assignment")}</h3>
+          <div className={needsJockey ? formLayout.columns : undefined}>
+            <Field label={tr("Assigned groom")} required>
+              <Select value={groomId} onChange={(e) => setGroomId(e.target.value)} options={grooms.map((g) => ({ value: g.id, label: g.fullName }))} />
+            </Field>
+            {needsJockey && (
+              <Field label={tr("Jockey name")} required>
+                <Input value={jockey} onChange={(e) => setJockey(e.target.value)} placeholder={tr("Jockey name")} />
+              </Field>
+            )}
+          </div>
+        </section>
+
+        <div className={gen.summary} aria-live="polite">
+          <strong>{plannedCount}</strong>
+          <span>
+            {isVietnamese
+              ? `buổi sẽ được tạo · ${time} · ${tr(EXERCISE_TYPE_LABEL[type])} ${distance} m`
+              : tr("workouts will be created · {{time}} · {{type}} {{distance}} m", { time, type: tr(EXERCISE_TYPE_LABEL[type]), distance })}
+          </span>
         </div>
       </div>
     </Modal>

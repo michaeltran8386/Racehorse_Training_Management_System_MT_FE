@@ -13,6 +13,7 @@ import type {
   SessionInput,
   SessionResult,
   SessionStatus,
+  SimulationStatus,
   TrackType,
   TrainingAlert,
   TrainingOverview,
@@ -73,6 +74,7 @@ export interface BePlan {
   completionSummary?: string | null;
   createdAt: string;
   horse?: BeHorse;
+  simulatorSession?: { status: SimulationStatus } | null;
   trainer?: { fullName: string } | null;
   _count?: { workoutSessions: number };
 }
@@ -117,6 +119,7 @@ export interface BeWorkout {
   vetAcknowledgedAt?: string | null;
   vetNotes?: string | null;
   horse?: BeHorse;
+  simulatorSession?: { status: SimulationStatus } | null;
   trainingPlan?: { id: string; phaseName: string; status?: PlanStatus; phases?: unknown } | null;
 }
 
@@ -182,6 +185,7 @@ export function toSession(w: BeWorkout, planPhases?: TrainingPhase[]): ExerciseS
     notes: w.trainerNotes,
     statusReason: w.statusReason,
     medicalOverride: Boolean(w.medicalOverride),
+    simulationStatus: w.simulatorSession?.status ?? null,
     result:
       w.status === "COMPLETED"
         ? {

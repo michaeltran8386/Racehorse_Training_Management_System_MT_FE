@@ -23,6 +23,8 @@ import type { PlanStatus, TrainingPlan } from "../types";
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 const PAGE_SIZE = 10;
+// Thứ tự trong tab "Tất cả": Đang áp dụng -> Chờ kích hoạt -> Đã hoàn thành -> Đã hủy.
+const STATUS_ORDER: Record<PlanStatus, number> = { ACTIVE: 0, DRAFT: 1, COMPLETED: 2, CANCELLED: 3 };
 
 /** SC-2.02 Danh sách giáo án. Bấm dòng để mở SC-2.04; HT có Lập giáo án và Nhân bản. */
 export default function PlanListPage() {
@@ -58,11 +60,14 @@ export default function PlanListPage() {
   }, [loadPlans]);
 
   const q = search.toLowerCase();
-  const filtered = plans.filter(
-    (p) =>
-      (activeTab === "ALL" || p.status === activeTab) &&
-      (p.name.toLowerCase().includes(q) || p.planCode.toLowerCase().includes(q) || p.horseName.toLowerCase().includes(q)),
-  );
+  const filtered = plans
+    .filter(
+      (p) =>
+        (activeTab === "ALL" || p.status === activeTab) &&
+        (p.name.toLowerCase().includes(q) || p.planCode.toLowerCase().includes(q) || p.horseName.toLowerCase().includes(q)),
+    )
+    // Cùng trạng thái: giáo án bắt đầu gần đây lên trước.
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || b.startDate.localeCompare(a.startDate));
   const shown = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const count = (s: PlanStatus) => plans.filter((p) => p.status === s).length;
 
@@ -122,14 +127,13 @@ export default function PlanListPage() {
             <table className={styles.table}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
-                  <th className={styles.colCode}>{tr("Code")}</th>
                   <th className={styles.colName}>{tr("Plan")}</th>
                   <th className={styles.colHorse}>{tr("Horse")}</th>
                   <th className={styles.colDates}>{tr("Dates")}</th>
                   <th className={styles.colPhases}>{tr("Phases")}</th>
                   <th className={styles.colProgress}>{tr("Progress")}</th>
                   <th className={styles.colStatus}>{tr("Status")}</th>
-                  <th className={styles.colTrainer}>{tr("Trainer")}</th>
+                  {!isTrainer && <th className={styles.colTrainer}>{tr("Trainer")}</th>}
                   <th className={styles.colActions}>{tr("Actions")}</th>
                 </tr>
               </thead>
@@ -147,10 +151,12 @@ export default function PlanListPage() {
                     }}
                     onClick={() => navigate(`/training/plans/${plan.id}`)}
                   >
-                    <td className={styles.colCode} style={{ fontWeight: 600 }}>{plan.planCode}</td>
-                    <td className={styles.colName} style={{ fontWeight: 600 }}>{plan.name}</td>
+                    <td className={styles.colName}>
+                      <div className={styles.planName}>{plan.name}</div>
+                      <div className={styles.planCode}>{plan.planCode}</div>
+                    </td>
                     <td className={styles.colHorse}>
-                      <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                      <div className={styles.horseCell}>
                         <span>{plan.horseName}</span>
                         {plan.isLockedByMedical && (
                           <Badge tone="danger" icon="lock">
@@ -160,7 +166,8 @@ export default function PlanListPage() {
                       </div>
                     </td>
                     <td className={styles.colDates}>
-                      {plan.startDate} – {plan.endDate}
+                      <div>{plan.startDate}</div>
+                      <div className={styles.dateEnd}>→ {plan.endDate}</div>
                     </td>
                     <td className={styles.colPhases}>{plan.phases.length}</td>
                     <td className={styles.colProgress}>
@@ -174,7 +181,7 @@ export default function PlanListPage() {
                     <td className={styles.colStatus}>
                       <Badge tone={PLAN_STATUS_TONE[plan.status]}>{PLAN_STATUS_LABEL[plan.status]}</Badge>
                     </td>
-                    <td className={styles.colTrainer}>{plan.headTrainerName}</td>
+                    {!isTrainer && <td className={styles.colTrainer}>{plan.headTrainerName}</td>}
                     <td className={styles.colActions} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: "inline-flex", gap: "0.5rem" }}>
                         <LinkButton to={`/training/plans/${plan.id}`} tone="secondary" size="sm">{tr("View")}</LinkButton>

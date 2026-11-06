@@ -22,13 +22,14 @@
 
 .table {
   width: 100%;
-  min-width: 1060px;
+  /* Vừa khung nội dung ở màn hình laptop; màn hẹp mới cuộn ngang. */
+  min-width: 860px;
   border-collapse: collapse;
   text-align: left;
   font-size: var(--fs-body);
 }
 .table th {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem;
   font-size: 11px;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -36,22 +37,22 @@
   white-space: nowrap;
 }
 .table td {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem;
   vertical-align: middle;
 }
-.table td:first-child {
-  font-variant-numeric: tabular-nums;
-}
 
-.colCode { width: 110px; white-space: nowrap; }
-.colName { min-width: 250px; line-height: 1.45; word-break: break-word; }
-.colHorse { min-width: 170px; white-space: nowrap; }
-.colDates { min-width: 200px; white-space: nowrap; }
-.colPhases { width: 75px; text-align: center; white-space: nowrap; }
-.colProgress { min-width: 140px; white-space: nowrap; }
-.colStatus { width: 130px; white-space: nowrap; }
-.colTrainer { min-width: 170px; white-space: nowrap; }
-.colActions { width: 140px; text-align: right; white-space: nowrap; }
+.colName { min-width: 200px; line-height: 1.4; word-break: break-word; }
+.planName { font-weight: 600; }
+.planCode { margin-top: 2px; font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.colHorse { min-width: 130px; }
+.horseCell { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+.colDates { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dateEnd { color: var(--muted); }
+.colPhases { width: 64px; text-align: center; white-space: nowrap; }
+.colProgress { min-width: 130px; white-space: nowrap; }
+.colStatus { white-space: nowrap; }
+.colTrainer { min-width: 140px; }
+.colActions { text-align: right; white-space: nowrap; }
 
 .table tbody tr:hover { background: var(--surface-row-hover); }
 .table tbody tr:focus-visible { outline: 2px solid var(--brand); outline-offset: -3px; }

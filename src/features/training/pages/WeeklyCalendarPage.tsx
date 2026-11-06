@@ -17,14 +17,13 @@ import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
 import { formatDate } from "@/shared/lib/format";
 import { todayClub, trainingApi } from "../api";
-import { sessionButtons } from "../components/sessionRules";
+import { sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
 import { CancelWorkoutDialog, RestoreWorkoutDialog, WorkoutDialog } from "../components/WorkoutDialogs";
 import {
   EXERCISE_TYPE_LABEL,
   INTENSITY_LABEL,
   isHeavy,
   SESSION_STATUS_LABEL,
-  SESSION_STATUS_TONE,
   TRACK_LABEL,
 } from "../types";
 import type { ExerciseSession, ExerciseType, SessionStatus, TrackType, TrainingPlan } from "../types";
@@ -213,7 +212,7 @@ export default function WeeklyCalendarPage() {
       >
         <div className={styles.cardTop}>
           <span className={styles.timeTag}>{s.startTime}</span>
-          <Badge tone={SESSION_STATUS_TONE[s.status]}>{SESSION_STATUS_LABEL[s.status]}</Badge>
+          <Badge tone={sessionStatusTone(s)}>{sessionStatusLabel(s)}</Badge>
         </div>
         <div className={styles.horseName} title={s.horseName}>
           {s.horseName}
@@ -397,6 +396,12 @@ export default function WeeklyCalendarPage() {
               <div>{tr(TRACK_LABEL[selected.trackType])} · {isVietnamese ? "Nài ngựa" : tr("Jockey")}: {selected.jockeyName || "—"} · {isVietnamese ? "Chăm sóc" : tr("Groom")}: {selected.groomName || (isVietnamese ? "Chưa giao" : "—")}</div>
               <div>{isVietnamese ? "Giáo án" : tr("Plan")}: {selected.planName} {selected.phaseName ? `· ${selected.phaseName}` : ""}</div>
               {selected.notes && <div>{isVietnamese ? "Chỉ dẫn" : tr("Instructions")}: {selected.notes}</div>}
+              {!b.record && b.recordDisabledReason && (
+                <div style={{ color: "var(--muted)" }}>
+                  {tr("Results can be recorded from {{time}} on {{date}}.", { time: selected.startTime, date: selected.sessionDate })}
+                  {selected.sessionType === "TRIAL" ? ` ${tr("Run the simulation on the Trial Runs page to record earlier.")}` : ""}
+                </div>
+              )}
               {selected.statusReason && <div style={{ color: "var(--danger)" }}>{localizeServerText(selected.statusReason)}</div>}
               {selected.medicalOverride && <Badge tone="warn">{isVietnamese ? "Xếp lịch trong trạng thái y tế" : tr("Scheduled in a medical status")}</Badge>}
             </div>

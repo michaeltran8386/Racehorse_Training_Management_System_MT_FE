@@ -15,10 +15,10 @@ import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
 import { ApiError } from "@/shared/lib/api";
 import { todayClub, trainingApi } from "../api";
-import { SESSION_STATUS_LABEL, TRACK_LABEL } from "../types";
+import { TRACK_LABEL } from "../types";
 import type { ExerciseSession, TrainingPlan } from "../types";
 import { WorkoutDialog } from "../components/WorkoutDialogs";
-import { sessionButtons } from "../components/sessionRules";
+import { sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
 
 import { tr } from "@/shared/i18n/tr";
 import styles from "./TrialRunsPage.module.css";
@@ -67,6 +67,16 @@ export default function TrialRunsPage() {
     },
     [from, to, toast],
   );
+
+  // Quay lại từ tab Simulator: tải lại lặng lẽ (không hiện khung chờ) để trạng thái mô phỏng cập nhật ngay.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState !== "visible") return;
+      trainingApi.getTrialRuns({ from, to }).then(setTrials).catch(() => undefined);
+    };
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
+  }, [from, to]);
 
   useEffect(() => {
     void load();
@@ -187,14 +197,17 @@ export default function TrialRunsPage() {
                           {row.targetDistanceMeters}m{row.targetSpeedKmh ? tr(` · ${row.targetSpeedKmh} km/h`) : ""}
                         </td>
                         <td style={{ padding: "0.5rem 0.75rem" }}>
-                          <Badge tone={row.status === "BLOCKED" ? "danger" : row.status === "COMPLETED" ? "ok" : "info"}>
-                            {upcoming ? (isVietnamese ? "Sắp tới" : "Upcoming") : tr(SESSION_STATUS_LABEL[row.status])}
+                          <Badge tone={sessionStatusTone(row)}>
+                            {upcoming && !row.simulationStatus ? tr("Upcoming") : tr(sessionStatusLabel(row))}
                           </Badge>
                         </td>
                         <td style={{ padding: "0.5rem 0.75rem", textAlign: "right" }}>
                           <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: "0.5rem" }}>
                             {user.role === "HEAD_TRAINER" &&
                               row.status === "SCHEDULED" &&
+                              // Đã mô phỏng xong / dừng vì chấn thương thì không chạy lại được (BE trả SIMULATOR_SESSION_FINISHED).
+                              row.simulationStatus !== "COMPLETED" &&
+                              row.simulationStatus !== "ABORTED_INJURY" &&
                               plans.some((p) => p.id === row.planId) && (
                                 <div>
                                   <Button
@@ -213,8 +226,7 @@ export default function TrialRunsPage() {
                                   </Button>
                                 </div>
                               )}
-                            {/* Buổi chưa tới giờ vẫn hiện "Record result" (sau khi chạy mô phỏng sớm); BE quyết định có cho lưu không. */}
-                            {(actions.record || actions.viewResult || (upcoming && user.role === "HEAD_TRAINER")) && (
+                            {(actions.record || actions.viewResult) && (
                               <LinkButton to={`/training/sessions/${row.id}/result`} size="sm" tone={row.status === "COMPLETED" ? "secondary" : "primary"}>
                                 {row.status === "COMPLETED"
                                   ? (isVietnamese ? "Xem kết quả" : tr("View result"))

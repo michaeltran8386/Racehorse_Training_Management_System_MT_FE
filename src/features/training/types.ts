@@ -251,8 +251,12 @@ export interface ExerciseSession {
   notes?: string | null;
   statusReason?: string | null;
   medicalOverride: boolean;
+  /** Trạng thái lần mô phỏng của buổi tập (null = chưa mô phỏng). */
+  simulationStatus?: SimulationStatus | null;
   result?: SessionResult;
 }
+
+export type SimulationStatus = "PENDING" | "RUNNING" | "COMPLETED" | "ABORTED_INJURY";
 
 /** Dữ liệu gửi khi thêm / sửa buổi tập (DL-2.01). */
 export interface SessionInput {
