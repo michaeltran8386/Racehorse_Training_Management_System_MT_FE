@@ -36,7 +36,7 @@ import {
 } from "../types";
 import type { ExerciseSession, SessionStatus, TrainingPhase, TrainingPlan } from "../types";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 type PlanWithSessions = TrainingPlan & { sessions: ExerciseSession[] };
 type Dialog =
@@ -352,7 +352,7 @@ export default function PlanDetailPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
           {plan.completionSummary && (
             <Card pad={16}>
-              <strong>{tr("Plan summary:")}</strong> {plan.completionSummary}
+              <strong>{tr("Plan summary:")}</strong> {localizeServerText(plan.completionSummary)}
             </Card>
           )}
           {comments.length === 0 ? (

@@ -10,7 +10,7 @@ import { Badge } from "@/shared/components/ui/Badge";
 import type { HealthStatus, HorseStatus } from "@/shared/types/enums";
 import type { Horse } from "../types";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 interface ChangeStatusDialogProps {
   horse: Horse;
   onSuccess: (updatedHorse: Horse) => void;
@@ -82,7 +82,7 @@ export function ChangeStatusDialog({ horse, onSuccess }: ChangeStatusDialogProps
         status,
         reason: reason.trim() || undefined,
       });
-      toast.show(res.message || "Horse status updated successfully", "ok");
+      toast.show(localizeServerText(res.message) || tr("Horse status updated successfully"), "ok");
       setOpen(false);
       onSuccess({ ...horse, status });
     } catch (err: unknown) {

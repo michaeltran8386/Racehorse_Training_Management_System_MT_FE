@@ -43,6 +43,14 @@ const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
   CANCELLED: "Đã hủy",
 };
 
+const TOURNAMENT_STATUS_LABEL_EN: Record<string, string> = {
+  UPCOMING: "Upcoming",
+  OPEN_REGISTRATION: "Open for registration",
+  CLOSED_REGISTRATION: "Registration closed",
+  COMPLETED: "Completed",
+  CANCELLED: "Cancelled",
+};
+
 // ------------------------------------------------------------------
 // Interactive KPI Tile (Matches Image 2 Top Row)
 // ------------------------------------------------------------------
@@ -244,7 +252,7 @@ function UpcomingTournamentsWidget() {
                 </div>
 
                 <Badge tone={isOpen ? "ok" : isCompleted ? "neutral" : "info"}>
-                  {isVi ? (TOURNAMENT_STATUS_LABEL[t.status] || t.status) : tr(t.status)}
+                  {isVi ? (TOURNAMENT_STATUS_LABEL[t.status] || t.status) : (TOURNAMENT_STATUS_LABEL_EN[t.status] || t.status)}
                 </Badge>
               </Link>
             );

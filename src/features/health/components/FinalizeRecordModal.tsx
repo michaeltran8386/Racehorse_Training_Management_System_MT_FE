@@ -10,7 +10,7 @@ import { HEALTH_STATUS } from "@/shared/lib/status";
 import type { HealthStatus } from "@/shared/types/enums";
 import type { FinalizeRecordInput } from "../types";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 interface FinalizeRecordModalProps {
   recordNumber: string;
   proposedStatus?: string;
@@ -53,7 +53,7 @@ export function FinalizeRecordModal({
       });
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to finalize medical record.");
+      setError(err instanceof Error ? localizeServerText(err.message) : tr("Failed to finalize medical record."));
     } finally {
       setBusy(false);
     }

@@ -16,7 +16,7 @@ import { useAppLanguage } from "@/shared/lib/language";
 import { downloadXlsx } from "@/shared/lib/xlsx";
 import styles from "./AuditLogPage.module.css";
 
-import { tr } from "@/shared/i18n/tr";
+import { toEnglish, tr } from "@/shared/i18n/tr";
 interface AuditLog {
   id: string; userId: string | null; action: string; entityName: string; entityId: string | null;
   oldValuesJson: string | null; newValuesJson: string | null; ipAddress: string | null;
@@ -214,7 +214,7 @@ function shortId(id: string | null) {
 }
 
 function translateDetail(detail: string, isVi: boolean) {
-  if (!isVi) return detail;
+  if (!isVi) return toEnglish(detail);
   return detail
     .replace(/^Generated (\d+) unissued invoices for billing period (\d{4}-\d{2})$/, (_, count: string, period: string) =>
       "Đã tự động tạo " + count + " hóa đơn chờ gửi cho kỳ thanh toán tháng " + (periodLabel(period) || period))

@@ -16,7 +16,7 @@ import { getHorseById, createHorse, updateHorse, getHorseCatalog } from "../api"
 import type { Horse, CreateHorsePayload, UpdateHorsePayload, HorseCatalogItem } from "../types";
 
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 const GENDER_OPTIONS = [
   { value: "Stallion", label: "Stallion (male)" },
   { value: "Mare", label: "Mare (female)" },
@@ -98,7 +98,7 @@ export default function HorseFormPage() {
       })
       .catch((err) => {
         if (!active) return;
-        const msg = err instanceof ApiError ? err.message : "Horse profile not found.";
+        const msg = err instanceof ApiError ? localizeServerText(err.message) : tr("Horse profile not found.");
         setGeneralError(msg);
       })
       .finally(() => {
@@ -170,11 +170,11 @@ export default function HorseFormPage() {
     }
 
     if (!weightKg.trim() && !isEdit) {
-      errs.weightKg = "Cân nặng là bắt buộc.";
+      errs.weightKg = "Weight is required.";
     } else if (weightKg.trim()) {
       const numW = Number(weightKg);
       if (!Number.isFinite(numW) || numW < 0.01) {
-        errs.weightKg = "Cân nặng phải lớn hơn 0 kg.";
+        errs.weightKg = "Weight must be greater than 0 kg.";
       }
     }
 
@@ -244,9 +244,9 @@ export default function HorseFormPage() {
         } else if (err.code === "DUPLICATE_MICROCHIP") {
           setErrors((prev) => ({ ...prev, microchip: "Microchip number is already registered to another horse." }));
         } else if (err.code === "INVALID_DOB") {
-          setErrors((prev) => ({ ...prev, dob: err.message || "Invalid date of birth." }));
+          setErrors((prev) => ({ ...prev, dob: localizeServerText(err.message) || tr("Invalid date of birth.") }));
         } else {
-          setGeneralError(err.message || "An error occurred while saving the horse profile.");
+          setGeneralError(localizeServerText(err.message) || tr("An error occurred while saving the horse profile."));
         }
       } else {
         setGeneralError("Server connection error. Please try again.");

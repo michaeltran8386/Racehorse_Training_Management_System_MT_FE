@@ -11,7 +11,7 @@ import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { SkeletonTable } from "@/shared/components/ui/Skeleton";
 import { tr } from "@/shared/i18n/tr";
 import { messageFor } from "@/shared/lib/messages";
-import { formatDate } from "@/shared/lib/format";
+import { formatDate, vndUnit } from "@/shared/lib/format";
 import { useAppLanguage } from "@/shared/lib/language";
 import { fetchTournaments, fetchTournamentDetail } from "../api";
 import type { Tournament } from "../types";
@@ -117,7 +117,7 @@ export default function RaceResultsPage() {
                 <div className={styles.eventMeta}>
                   <span>{selectedTournament.location}</span>
                   <span>{selectedTournament.distanceMeters}m ({tr(selectedTournament.trackType)})</span>
-                  <span>{tr("Purse:")} {selectedTournament.prizePool.toLocaleString(locale)} đ</span>
+                  <span>{tr("Purse:")} {selectedTournament.prizePool.toLocaleString(locale)} {vndUnit()}</span>
                 </div>
               )}
             </div>
@@ -153,7 +153,7 @@ export default function RaceResultsPage() {
                   <div className={styles.podiumStat}>
                     <span style={{ color: "var(--muted)" }}>{tr("Prize Won:")}</span>
                     <strong style={{ color: "var(--brand-700)" }}>
-                      {firstPlace.result?.prizeMoneyWon.toLocaleString(locale)} đ
+                      {firstPlace.result?.prizeMoneyWon.toLocaleString(locale)} {vndUnit()}
                     </strong>
                   </div>
                   {firstPlace.result?.officialNotes && (
@@ -189,7 +189,7 @@ export default function RaceResultsPage() {
                     <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Prize Won:")}</span>
                       <strong style={{ color: "var(--brand-700)" }}>
-                        {secondPlace.result?.prizeMoneyWon.toLocaleString(locale)} đ
+                        {secondPlace.result?.prizeMoneyWon.toLocaleString(locale)} {vndUnit()}
                       </strong>
                     </div>
                   </div>
@@ -221,7 +221,7 @@ export default function RaceResultsPage() {
                     <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Prize Won:")}</span>
                       <strong style={{ color: "var(--brand-700)" }}>
-                        {thirdPlace.result?.prizeMoneyWon.toLocaleString(locale)} đ
+                        {thirdPlace.result?.prizeMoneyWon.toLocaleString(locale)} {vndUnit()}
                       </strong>
                     </div>
                   </div>
@@ -274,7 +274,7 @@ export default function RaceResultsPage() {
                           {reg.result?.avgSpeedKmh} km/h
                         </td>
                         <td style={{ padding: "0.75rem 0.5rem", fontWeight: 600 }}>
-                          {reg.result?.prizeMoneyWon != null ? `${reg.result.prizeMoneyWon.toLocaleString(locale)} đ` : "—"}
+                          {reg.result?.prizeMoneyWon != null ? `${reg.result.prizeMoneyWon.toLocaleString(locale)} ${vndUnit()}` : "—"}
                         </td>
                         <td style={{ padding: "0.75rem 0.5rem", color: "var(--muted)" }}>
                           {reg.result?.officialNotes || "—"}

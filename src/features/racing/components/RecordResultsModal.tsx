@@ -1,9 +1,10 @@
+import { vndUnit } from "@/shared/lib/format";
 import { useState, useEffect } from "react";
 import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { recordRaceResults, fetchTournamentDetail, type SingleResultInput } from "../api";
 import type { Tournament } from "../types";
@@ -67,7 +68,7 @@ export function RecordResultsModal({
           setRows([]);
         }
       })
-      .catch((err) => setError(err?.message || tr("Failed to load tournament registrations")))
+      .catch((err) => setError(localizeServerText(err?.message) || tr("Failed to load tournament registrations")))
       .finally(() => setLoadingDetail(false));
   }, [tournament?.id, isOpen]);
 
@@ -143,7 +144,7 @@ export function RecordResultsModal({
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err?.message || tr("Failed to record race results"));
+      setError(localizeServerText(err?.message) || tr("Failed to record race results"));
     } finally {
       setLoading(false);
     }
@@ -326,7 +327,7 @@ export function RecordResultsModal({
                     <td style={{ padding: "0.5rem", wordBreak: "break-word" }}>
                       {isReadOnly ? (
                         <span style={{ fontWeight: 600, color: row.prizeMoneyWon !== "" && row.prizeMoneyWon > 0 ? "var(--brand-700)" : "var(--muted)", whiteSpace: "nowrap" }}>
-                          {row.prizeMoneyWon === "" ? "—" : `${row.prizeMoneyWon.toLocaleString()} đ`}
+                          {row.prizeMoneyWon === "" ? "—" : `${row.prizeMoneyWon.toLocaleString()} ${vndUnit()}`}
                         </span>
                       ) : (
                         <input

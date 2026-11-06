@@ -33,7 +33,7 @@ import type {
 } from "../types";
 import { hasCode } from "./PlanDialogs";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 const WEEKDAYS = [
   { n: 1, label: "Mon" },
@@ -275,7 +275,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
           <Alert tone="warn" title={tr("Please check before saving")}>
             <ul style={{ margin: 0, paddingLeft: "1.1rem" }}>
               {warnings.map((w) => (
-                <li key={w}>{w}</li>
+                <li key={w}>{localizeServerText(w)}</li>
               ))}
             </ul>
           </Alert>
