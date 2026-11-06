@@ -13,6 +13,7 @@ import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { useToast } from "@/shared/components/ui/Toast";
 import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
+import { ApiError } from "@/shared/lib/api";
 import { todayClub, trainingApi } from "../api";
 import { SESSION_STATUS_LABEL, TRACK_LABEL } from "../types";
 import type { ExerciseSession, TrainingPlan } from "../types";
@@ -97,7 +98,8 @@ export default function TrialRunsPage() {
       popup.location.replace(launchUrl);
     } catch (err) {
       popup.close();
-      toast.show(messageFor(err), "danger");
+      const notStarted = err instanceof ApiError && err.code === "WORKOUT_NOT_STARTED";
+      toast.show(notStarted ? tr("The workout has not reached its scheduled start time.") : messageFor(err), "danger");
     } finally {
       setLaunchingId(null);
     }
@@ -198,20 +200,9 @@ export default function TrialRunsPage() {
                                   <Button
                                     size="sm"
                                     tone="primary"
-                                    disabled={
-                                      launchingId === row.id ||
-                                      row.isHorseLocked ||
-                                      upcoming
-                                    }
-                                    title={
-                                      row.isHorseLocked
-                                        ? tr("The horse is still under a Training Lock.")
-                                        : upcoming
-                                          ? isVietnamese
-                                            ? `Mở được từ ${row.startTime} ngày ${row.sessionDate}`
-                                            : `Available from ${row.startTime} on ${row.sessionDate}`
-                                          : undefined
-                                    }
+                                    // Buổi chưa tới giờ vẫn bấm được: BE quyết định (cờ dev SIMULATOR_ALLOW_EARLY), nếu chặn thì hiện lỗi.
+                                    disabled={launchingId === row.id || row.isHorseLocked}
+                                    title={row.isHorseLocked ? tr("The horse is still under a Training Lock.") : undefined}
                                     onClick={() => void launchSimulation(row.id)}
                                   >
                                     {launchingId === row.id
