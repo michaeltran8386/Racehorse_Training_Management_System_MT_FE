@@ -248,6 +248,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("dashboard", "Dashboard", "home"),
         item("horses", "Horses", "horse", { requires: "viewHorses" }),
         item("stalls", "Stall Map", "grid"),
+        item("rations", "Meal Rations", "wheat", { i18nKey: "rations" }),
       ],
     },
     {
@@ -387,7 +388,7 @@ const sidebarOrder: Record<Role, [string, string[]][]> = {
   ],
   VETERINARIAN: [
     ["WORKSPACE", ["dashboard", "assistant"]],
-    ["MASTER DATA", ["horses", "stalls"]],
+    ["MASTER DATA", ["horses", "stalls", "rations"]],
     ["MEDICAL", ["herd", "records", "locks", "alerts", "vaccine", "incidents"]],
   ],
   GROOM: [

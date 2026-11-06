@@ -3,7 +3,6 @@ import { Modal } from '@/shared/components/ui/Modal';
 import { Icon } from '@/shared/components/ui/Icon';
 import { Field } from '@/shared/components/form/Field';
 import { Input } from '@/shared/components/form/Input';
-import { Select } from '@/shared/components/form/Select';
 import { SearchSelect } from '@/shared/components/form/SearchSelect';
 import { Textarea } from '@/shared/components/form/Textarea';
 import { Button } from '@/shared/components/ui/Button';
@@ -235,7 +234,7 @@ export function NutritionPlanModal({
         });
         toast.show(
           submitImmediately
-            ? tr('Khẩu phần ăn đã được áp dụng trực tiếp cho ngựa.')
+            ? tr('Nutrition plan submitted for veterinarian approval.')
             : tr('Nutrition plan draft saved successfully.'),
           'ok',
         );
@@ -288,7 +287,7 @@ export function NutritionPlanModal({
             {busy ? tr('Saving...') : tr('Save Draft')}
           </Button>
           <Button tone="primary" onClick={() => handleSave(true)} disabled={busy || loadingInitial}>
-            {busy ? tr('Applying...') : tr('Save & Apply Plan')}
+            {busy ? tr('Submitting...') : tr('Submit for Approval')}
           </Button>
         </>
       }
