@@ -109,7 +109,7 @@
 :global(:root[data-ui="v2"]) .sm { border-radius: 7px; }
 :global(:root[data-ui="v2"]) .md, :global(:root[data-ui="v2"]) .lg { border-radius: var(--r-btn); }
 :global(:root[data-ui="v2"]) .primary { box-shadow: 0 1px 2px rgba(27,36,32,.12); }
-:global(:root[data-ui="v2"]) .primary:hover:not(.off) { box-shadow: 0 2px 6px rgba(63,107,78,.28); }
+:global(:root[data-ui="v2"]) .primary:hover:not(.off) { box-shadow: 0 2px 6px rgba(10,22,28,.22); }
 :global(:root[data-ui="v2"]) .secondary, :global(:root[data-ui="v2"]) .outline { background: var(--surface); border-color: var(--border-strong); box-shadow: 0 1px 2px rgba(27,36,32,.04); }
 :global(:root[data-ui="v2"]) .quiet { background: var(--brand-50); color: var(--brand-700); border-color: var(--brand-100); }
 :global(:root[data-ui="v2"]) .dark { background: var(--text); border-color: var(--text); color: var(--surface); }

@@ -9,5 +9,3 @@
 @media (max-width: 720px) { .banner { min-height: 200px; } .content { width: 100%; padding: 28px 24px; } .image { inset: 0; opacity: .3; } }
 
 /* ---- Giao diện v2 (data-ui="v2") ---- */
-:global(:root[data-ui="v2"]) .label, :global(:root[data-ui="v2"]) .content h1 span { color: #B9E0C3; }
-:global(:root[data-ui="v2"]) .banner { border-radius: var(--r-lg); background: #1F3326; }
