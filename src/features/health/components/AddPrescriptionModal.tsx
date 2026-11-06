@@ -11,7 +11,7 @@ import { Modal } from "@/shared/components/ui/Modal";
 import type { PrescriptionInput } from "../types";
 import { formatDate } from "@/shared/lib/format";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 const UNIT_OPTIONS = [
   { value: "g", label: "g" },
   { value: "mg", label: "mg" },
@@ -116,7 +116,7 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
       });
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to record prescription.");
+      setError(err instanceof Error ? localizeServerText(err.message) : tr("Failed to record prescription."));
     } finally {
       setBusy(false);
     }

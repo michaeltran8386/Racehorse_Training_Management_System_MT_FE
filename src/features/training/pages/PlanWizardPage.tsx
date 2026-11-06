@@ -259,7 +259,7 @@ export default function PlanWizardPage() {
       const end = addDays(cur, 6);
       list.push({
         id: `ph-init-${i}`,
-        name: `Giai đoạn ${i + 1}`,
+        name: `${tr("Phase")} ${i + 1}`,
         type: "BASE",
         startDate: cur,
         endDate: end,

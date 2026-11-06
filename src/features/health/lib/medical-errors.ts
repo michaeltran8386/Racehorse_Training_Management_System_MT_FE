@@ -1,5 +1,5 @@
 import { ApiError } from "@/shared/lib/api";
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 
 export interface ParsedMedicalError {
   summary: string;
@@ -159,7 +159,7 @@ export function parseMedicalErrors(err: unknown): ParsedMedicalError {
       }
     }
     if (!matched && raw) {
-      const translated = tr(raw);
+      const translated = localizeServerText(raw);
       if (!details.includes(translated)) {
         details.push(translated);
       }

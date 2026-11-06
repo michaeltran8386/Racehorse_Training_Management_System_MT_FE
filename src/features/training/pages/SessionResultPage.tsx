@@ -550,24 +550,24 @@ export default function SessionResultPage() {
                 <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-muted)", alignSelf: "center" }}>{tr("Quick notes:")}</span>
                 <button
                   type="button"
-                  onClick={() => set(setComment, "comment")(tr("Hoàn thành tốt bài tập, sải bước đều và nhịp thở phục hồi ổn định."))}
+                  onClick={() => set(setComment, "comment")(tr("Completed the workout well; even stride and steady breathing recovery."))}
                   className={styles.quickNote}
                 >
-                  {tr("+ Hoàn thành tốt")}
+                  {tr("+ Completed well")}
                 </button>
                 <button
                   type="button"
-                  onClick={() => set(setComment, "comment")(tr("Ngựa mệt mỏi nhẹ ở 200m cuối, cần theo dõi giảm tải buổi sau."))}
+                  onClick={() => set(setComment, "comment")(tr("Slightly tired in the last 200 m; consider a lighter load next session."))}
                   className={styles.quickNote}
                 >
-                  {tr("+ Mệt mỏi nhẹ")}
+                  {tr("+ Slightly tired")}
                 </button>
                 <button
                   type="button"
-                  onClick={() => set(setComment, "comment")(tr("Có dấu hiệu bất thường về vận động, đề nghị Bác sĩ thú y kiểm tra chuyên sâu."))}
+                  onClick={() => set(setComment, "comment")(tr("Abnormal movement signs; ask the Veterinarian for a detailed check."))}
                   className={styles.quickNote}
                 >
-                  {tr("+ Bất thường cần khám")}
+                  {tr("+ Needs a vet check")}
                 </button>
               </div>
             </div>
@@ -595,24 +595,24 @@ export default function SessionResultPage() {
                     <span style={{ fontSize: "var(--fs-xs)", color: "var(--text-muted)", alignSelf: "center" }}>{tr("Quick templates:")}</span>
                     <button
                       type="button"
-                      onClick={() => set(setSignNotes)(tr("Khập khiễng nhẹ chân sau bên phải sau khi tăng tốc cự ly 800m."))}
+                      onClick={() => set(setSignNotes)(tr("Slight lameness in the right hind leg after the 800 m acceleration."))}
                       className={styles.quickNote}
                     >
-                      {tr("+ Khập khiễng chân sau")}
+                      {tr("+ Hind-leg lameness")}
                     </button>
                     <button
                       type="button"
-                      onClick={() => set(setSignNotes)(tr("Nhịp tim phục hồi chậm, thở dốc bất thường kéo dài hơn 10 phút sau bài tập."))}
+                      onClick={() => set(setSignNotes)(tr("Slow heart-rate recovery; heavy breathing for more than 10 minutes after the workout."))}
                       className={styles.quickNote}
                     >
-                      {tr("+ Thở dốc, tim chậm hồi")}
+                      {tr("+ Slow recovery")}
                     </button>
                     <button
                       type="button"
-                      onClick={() => set(setSignNotes)(tr("Căng cứng cơ vai và lưng khi sải bước dài, có biểu hiện đau khi chạm vào."))}
+                      onClick={() => set(setSignNotes)(tr("Stiff shoulder and back muscles on long strides; sensitive to touch."))}
                       className={styles.quickNote}
                     >
-                      {tr("+ Căng cứng cơ vai")}
+                      {tr("+ Stiff shoulders")}
                     </button>
                   </div>
                 </>

@@ -3,7 +3,7 @@ import { Icon } from "@/shared/components/ui/Icon";
 import { useState, useEffect } from "react";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import type { Tournament, TrackSurface, TournamentStatus } from "../types";
 
@@ -103,7 +103,7 @@ export function TournamentModal({
       });
       onClose();
     } catch (err: any) {
-      setError(err?.message || tr("Failed to save tournament"));
+      setError(localizeServerText(err?.message) || tr("Failed to save tournament"));
     } finally {
       setLoading(false);
     }

@@ -1,6 +1,6 @@
 import type { Role } from "@/shared/types/enums";
 import { api } from "@/shared/lib/api";
-import { isVietnamese } from "@/shared/i18n/tr";
+import { isVietnamese, localizeServerText } from "@/shared/i18n/tr";
 import { formatShortDate } from "./format";
 
 // Thông báo trong ứng dụng (C-01): dữ liệu từ BE GET /notifications, giữ trong bộ nhớ và hỏi lại mỗi 30 giây.
@@ -383,8 +383,8 @@ export function localizeNotification(n: AppNotification, isVi: boolean): Localiz
 
   if (!isVi) {
     return {
-      title: n.title,
-      message: n.message,
+      title: localizeServerText(n.title),
+      message: localizeServerText(n.message),
       categoryLabel,
       senderName: n.senderName,
     };
@@ -589,6 +589,9 @@ export function localizeNotification(n: AppNotification, isVi: boolean): Localiz
     if (m) message = `Ngựa ${m[1]} đã hoàn thành buổi tập với điểm số đạt được là ${m[2]}.`;
   }
 
+  // Câu chưa có mẫu riêng ở trên: dịch theo bảng chung (giữ nguyên tên, mã).
+  if (title === n.title) title = localizeServerText(n.title);
+  if (message === n.message) message = localizeServerText(n.message);
   return { title, message, categoryLabel, senderName };
 }
 

@@ -8,7 +8,7 @@ import { Modal } from "@/shared/components/ui/Modal";
 import styles from "./ExamVitals.module.css";
 import type { FollowUpInput } from "../types";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 interface AddFollowUpModalProps {
   onClose: () => void;
   onSubmit: (input: FollowUpInput) => Promise<void>;
@@ -47,7 +47,7 @@ export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
       });
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to record follow-up examination.");
+      setError(err instanceof Error ? localizeServerText(err.message) : tr("Failed to record follow-up examination."));
     } finally {
       setBusy(false);
     }

@@ -126,7 +126,7 @@ const DYNAMIC: Record<string, (d: Record<string, unknown>) => string | undefined
   POSITION_TAKEN: (d) => `This grid position is already used by stall ${d.stallCode}.`,
 };
 
-import { isVietnamese, tr } from "@/shared/i18n/tr";
+import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
 
 const VI_TO_EN: Record<string, string> = {
   "Ngày tập là bắt buộc.": "Scheduled date is required.",
@@ -164,6 +164,14 @@ const VI_TO_EN: Record<string, string> = {
   "Chưa chọn giai đoạn giáo án.": "Please select a training phase.",
 };
 
+// Lỗi kiểm tra dữ liệu có thể gồm nhiều dòng: dịch từng dòng theo ngôn ngữ đang chọn.
+function localizeLines(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => localizeServerText(line))
+    .join("\n");
+}
+
 export function messageFor(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status >= 500) return isVietnamese() ? tr(GENERIC.SERVER_ERROR) : GENERIC.SERVER_ERROR;
@@ -178,7 +186,7 @@ export function messageFor(err: unknown): string {
         err.message !== "Bad Request" &&
         err.message !== "Forbidden resource"
       ) {
-        return tr(err.message);
+        return localizeLines(err.message);
       }
       return enGeneric ? tr(enGeneric) : tr("Something went wrong. Try again.");
     } else {
@@ -191,7 +199,7 @@ export function messageFor(err: unknown): string {
         err.message !== "Bad Request" &&
         err.message !== "Forbidden resource"
       ) {
-        return VI_TO_EN[err.message] ?? err.message;
+        return VI_TO_EN[err.message] ?? localizeLines(err.message);
       }
       return "Something went wrong. Try again.";
     }

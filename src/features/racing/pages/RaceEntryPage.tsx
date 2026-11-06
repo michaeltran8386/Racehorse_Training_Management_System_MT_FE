@@ -15,7 +15,7 @@ import { tr, isVietnamese } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { messageFor } from "@/shared/lib/messages";
-import { formatDate } from "@/shared/lib/format";
+import { formatDate, vndUnit } from "@/shared/lib/format";
 
 const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
   UPCOMING: "Sắp diễn ra",
@@ -447,7 +447,7 @@ export default function RaceEntryPage() {
                           {tr("Purse Pool")}
                         </span>
                         <strong style={{ fontSize: "var(--fs-sm)", color: "var(--brand-700)" }}>
-                          {tourney.prizePool.toLocaleString(locale)} đ
+                          {tourney.prizePool.toLocaleString(locale)} {vndUnit()}
                         </strong>
                       </div>
                     </div>

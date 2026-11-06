@@ -94,3 +94,8 @@ export function givenName(name: string): string {
 export function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
 }
+
+/** Đơn vị tiền theo ngôn ngữ: "đ" (tiếng Việt) hoặc "VND" (tiếng Anh). */
+export function vndUnit(): string {
+  return isVietnamese() ? "đ" : "VND";
+}

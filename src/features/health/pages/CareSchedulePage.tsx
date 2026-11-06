@@ -25,7 +25,7 @@ import { getHorses } from "@/features/horses/api";
 import { healthApi } from "../api";
 import type { PreventiveCareItem, PreventiveStatus } from "../types";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 const CATEGORY_LABELS: Record<string, string> = {
   ALL: "All Categories",
   VACCINATION: "Vaccination",
@@ -154,7 +154,7 @@ export default function CareSchedulePage() {
       setCreateNotes("");
       void loadData();
     } catch (err: any) {
-      toast.show(err?.message || "Failed to create care schedule", "danger");
+      toast.show(localizeServerText(err?.message) || tr("Failed to create care schedule"), "danger");
     } finally {
       setSubmitting(false);
     }
@@ -194,7 +194,7 @@ export default function CareSchedulePage() {
       setSelectedCare(null);
       void loadData();
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Error recording care completion";
+      const msg = err?.response?.data?.message || localizeServerText(err?.message) || tr("Error recording care completion");
       toast.show(msg, "danger");
     } finally {
       setSubmitting(false);

@@ -10,7 +10,7 @@ import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
 import type { CareInstructionItem, TreatmentPhaseInput } from "../types";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 const ACTIVITY_OPTIONS = [
   { value: "Strict stall rest", label: "Strict stall rest" },
   { value: "Hand walk 10-15 mins", label: "Hand walk 10-15 mins" },
@@ -75,7 +75,7 @@ export function AddTreatmentPhaseModal({ onClose, onSubmit }: AddTreatmentPhaseM
       });
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : tr("Failed to save treatment phase."));
+      setError(err instanceof Error ? localizeServerText(err.message) : tr("Failed to save treatment phase."));
     } finally {
       setBusy(false);
     }

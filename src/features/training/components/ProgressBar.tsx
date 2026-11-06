@@ -15,13 +15,13 @@ export function ProgressBar({ done, total, due, overdue }: ProgressBarProps) {
   const overdueCount = overdue ?? (due != null ? Math.max(0, due - done) : 0);
 
   const titleParts = [
-    `${tr("Tiến độ")}: ${pct}% (${done}/${total})`,
+    `${tr("Progress")}: ${pct}% (${done}/${total})`,
   ];
   if (onTrackPct != null) {
-    titleParts.push(`${tr("Đúng tiến độ")}: ${onTrackPct}% (${done}/${due})`);
+    titleParts.push(`${tr("On schedule")}: ${onTrackPct}% (${done}/${due})`);
   }
   if (overdueCount > 0) {
-    titleParts.push(`${tr("Trễ ghi kết quả")}: ${overdueCount} ${tr("buổi")}`);
+    titleParts.push(`${tr("Overdue results")}: ${overdueCount} ${tr("session(s)")}`);
   }
 
   return (
@@ -47,16 +47,16 @@ export function ProgressBar({ done, total, due, overdue }: ProgressBarProps) {
           gap: "4px",
         }}
       >
-        <span>{total > 0 ? `${pct}% (${done}/${total})` : tr("Chưa có buổi")}</span>
+        <span>{total > 0 ? `${pct}% (${done}/${total})` : tr("No sessions yet")}</span>
         {onTrackPct != null && (
-          <span style={{ fontSize: "11px", opacity: 0.85 }} title={`${tr("Đúng tiến độ")}: ${onTrackPct}% (${done}/${due})`}>
-            {tr("Đúng hạn")}: {onTrackPct}%
+          <span style={{ fontSize: "11px", opacity: 0.85 }} title={`${tr("On schedule")}: ${onTrackPct}% (${done}/${due})`}>
+            {tr("On track")}: {onTrackPct}%
           </span>
         )}
       </div>
       {overdueCount > 0 && (
         <div style={{ fontSize: "11px", color: "var(--danger, #ef4444)", marginTop: 2, fontWeight: 600 }}>
-          {tr("Trễ ghi kết quả")}: {overdueCount} {tr("buổi")}
+          {tr("Overdue results")}: {overdueCount} {tr("session(s)")}
         </div>
       )}
     </div>

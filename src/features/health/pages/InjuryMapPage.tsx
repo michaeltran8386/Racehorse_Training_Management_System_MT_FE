@@ -78,7 +78,7 @@ import { getHorseById, getHorses } from "@/features/horses/api";
 import type { Horse } from "@/features/horses/types";
 import { capitalize, formatDate } from "@/shared/lib/format";
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 export default function InjuryMapPage() {
   useScreenTranslation();
   const { id = "" } = useParams();
@@ -142,15 +142,15 @@ export default function InjuryMapPage() {
             const rawY = item.coordinateY ?? item.y;
             const x = typeof rawX === "number" && Number.isFinite(rawX) && rawX >= 0 && rawX <= 100 ? Math.round(rawX <= 1 ? rawX * 100 : rawX) : null;
             const y = typeof rawY === "number" && Number.isFinite(rawY) && rawY >= 0 && rawY <= 100 ? Math.round(rawY <= 1 ? rawY * 100 : rawY) : null;
-            const rawLayer = item.layer || "MUSCLE";
+            const rawLayer = item.layer || tr("MUSCLE");
             const mappedLayer = rawLayer === "BONE" || rawLayer === "TENDON_LIGAMENT" ? "SKELETON" : rawLayer;
             return {
               ...item,
               x,
               y,
               layer: mappedLayer,
-              region: item.anatomicalZone || item.region || "Anatomical Zone",
-              view: item.viewSide || item.view || "LEFT",
+              region: item.anatomicalZone || item.region || tr("Anatomical Zone"),
+              view: item.viewSide || item.view || tr("LEFT"),
             };
           });
           setInjuries(mappedList);
@@ -204,7 +204,7 @@ export default function InjuryMapPage() {
   const selectedInjury = injuries.find((i) => i.id === activeSelectedId);
 
   function getErrorMessage(error: any, fallback: string): string {
-    const msg = error?.response?.data?.message || error?.message;
+    const msg = error?.response?.data?.message || localizeServerText(error?.message);
     if (Array.isArray(msg)) return msg.join(", ");
     if (typeof msg === "string" && msg.trim()) return msg;
     return fallback;

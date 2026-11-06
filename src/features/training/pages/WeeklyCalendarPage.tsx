@@ -32,7 +32,7 @@ import type { ExerciseSession, ExerciseType, SessionStatus, TrackType, TrainingP
 import styles from "./WeeklyCalendarPage.module.css";
 
 
-import { tr } from "@/shared/i18n/tr";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 function shiftDay(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -398,7 +398,7 @@ export default function WeeklyCalendarPage() {
               <div>{tr(TRACK_LABEL[selected.trackType])} · {isVietnamese ? "Nài ngựa" : tr("Jockey")}: {selected.jockeyName || "—"} · {isVietnamese ? "Chăm sóc" : tr("Groom")}: {selected.groomName || (isVietnamese ? "Chưa giao" : "—")}</div>
               <div>{isVietnamese ? "Giáo án" : tr("Plan")}: {selected.planName} {selected.phaseName ? `· ${selected.phaseName}` : ""}</div>
               {selected.notes && <div>{isVietnamese ? "Chỉ dẫn" : tr("Instructions")}: {selected.notes}</div>}
-              {selected.statusReason && <div style={{ color: "var(--danger)" }}>{selected.statusReason}</div>}
+              {selected.statusReason && <div style={{ color: "var(--danger)" }}>{localizeServerText(selected.statusReason)}</div>}
               {selected.medicalOverride && <Badge tone="warn">{isVietnamese ? "Xếp lịch trong trạng thái y tế" : tr("Scheduled in a medical status")}</Badge>}
             </div>
           </Modal>

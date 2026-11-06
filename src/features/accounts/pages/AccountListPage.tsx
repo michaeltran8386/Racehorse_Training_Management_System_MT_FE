@@ -194,7 +194,7 @@ export default function AccountListPage() {
       header: tr("Account"),
       render: (r) => (
         <CellPrimary
-          title={r.id === me.id ? tr(`${r.fullName} (you)`) : r.fullName}
+          title={r.id === me.id ? `${r.fullName} ${tr("(you)")}` : r.fullName}
           meta={r.email}
           avatar={<Avatar name={r.fullName} size={32} tone={r.id === me.id ? "brand" : "neutral"} />}
         />
