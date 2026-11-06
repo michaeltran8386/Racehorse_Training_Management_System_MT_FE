@@ -145,7 +145,7 @@ export const VI_TEXT: Record<string, string> = {
   "2 times/day": "2 lần/ngày",
   "2. Vital Signs": "2. Chỉ số sinh tồn",
   "2D Anatomical Injury Map": "Bản đồ chấn thương giải phẫu 2D",
-  "2D Musculoskeletal Anatomical Model (SC-3.05)": "Mô hình giải phẫu cơ xương 2D (SC-3.05)",
+  "2D Musculoskeletal Anatomical Model": "Mô hình giải phẫu cơ xương 2D",
   "2D Musculoskeletal Map": "Bản đồ cơ xương 2D",
   "2D injury map": "Bản đồ chấn thương 2D",
   "3-150 characters": "3–150 ký tự",
@@ -2401,7 +2401,7 @@ export const VI_TEXT: Record<string, string> = {
   "Up to 12 years old ({{minDobStr}} – {{todayStr}})": "Tối đa 12 tuổi ({{minDobStr}} – {{todayStr}})",
   "Up to 500 characters": "Tối đa 500 ký tự",
   "Up to Date": "Còn hạn",
-  "Up to date": "Còn hạn",
+  "Up to date": "Đúng hạn",
   "Update Recovery": "Cập nhật hồi phục",
   "Update Recovery Stage: {{region}}": "Cập nhật giai đoạn hồi phục: {{region}}",
   "Update horse health status to: {{proposedStatus}}": "Cập nhật trạng thái sức khỏe ngựa thành: {{proposedStatus}}",
@@ -2647,9 +2647,8 @@ export const VI_TEXT: Record<string, string> = {
   "Look up medicines, units and withdrawal periods before treatment.": "Tra cứu thuốc, đơn vị và thời gian ngưng thuốc trước khi điều trị.",
   "Look up available feed, medicines and equipment.": "Tra cứu thức ăn, thuốc và thiết bị đang sử dụng.",
   // Supplies Catalog Page
-  "Supplies Catalog (SC-4.10)": "Danh mục vật tư (SC-4.10)",
   "Manage feed, veterinary medicines, supplements and grooming equipment.": "Quản lý danh mục thức ăn, thuốc thú y, chất điện giải và dụng cụ chăm sóc.",
-  "+ Add Supply (BTN-4.47)": "+ Thêm vật tư (BTN-4.47)",
+  "+ Add Supply": "+ Thêm vật tư",
   "Search by code or name...": "Tìm theo mã hoặc tên...",
   "Supplies and materials catalog": "Danh mục vật tư và phụ liệu",
   "Supply Name": "Tên vật tư",
@@ -2694,7 +2693,6 @@ export const VI_TEXT: Record<string, string> = {
 
   // Supply Modal
   "Add New Supply": "Thêm vật tư mới",
-  "Add New Supply (DL-4.15)": "Thêm vật tư mới",
   "Edit supply: {{code}}": "Sửa vật tư: {{code}}",
   "Supply Code": "Mã vật tư",
   "e.g. Standard Alfalfa Hay": "VD: Cỏ khô Alfalfa tiêu chuẩn",
@@ -2711,10 +2709,8 @@ export const VI_TEXT: Record<string, string> = {
   "Description cannot exceed 500 characters.": "Mô tả tối đa 500 ký tự.",
 
   // Shift Catalog Page
-  "Shift Catalog (SC-4.11)": "Danh mục ca trực",
   "Define standard shift hours for stable and horse care staff.": "Khai báo khung giờ làm việc chuẩn cho nhân viên chăm sóc chuồng trại.",
   "+ Add Shift": "+ Thêm ca trực",
-  "+ Add Shift (BTN-4.50)": "+ Thêm ca trực",
   "Add Shift": "Thêm ca trực",
   "Stable shifts catalog": "Danh mục ca trực chuồng trại",
   "Shift Name": "Tên ca trực",
@@ -2733,7 +2729,6 @@ export const VI_TEXT: Record<string, string> = {
 
   // Shift Modal
   "Add New Shift": "Thêm ca trực mới",
-  "Add New Shift (DL-4.16)": "Thêm ca trực mới",
   "Edit shift: {{code}}": "Sửa ca trực: {{code}}",
   "Shift Code": "Mã ca trực",
   "e.g. Morning Shift (05:00 - 13:00)": "VD: Ca Sáng (05:00 - 13:00)",
@@ -2755,19 +2750,14 @@ export const VI_TEXT: Record<string, string> = {
 
   // Shift Roster Page
   "Weekly Shift Roster": "Bảng phân ca trực tuần",
-  "Weekly Shift Roster (SC-4.01)": "Bảng phân ca trực tuần",
   "Staff allocation matrix by date, shift and stall zone.": "Ma trận phân bổ nhân viên chăm sóc theo ngày, ca trực và khu chuồng trại.",
   "View Stall Map": "Xem sơ đồ chuồng",
-  "View Stall Map (SC-1.04)": "Xem sơ đồ chuồng",
   "Copy from previous week": "Sao chép từ tuần trước",
-  "Copy from previous week (BTN-4.05)": "Sao chép từ tuần trước",
   "Previous week": "Tuần trước",
   "This week": "Tuần này",
-  "This week (BTN-4.03)": "Tuần này",
   "Next week": "Tuần sau",
   "All Zones": "Tất cả khu chuồng",
   "My shifts only": "Chỉ ca của tôi",
-  "My shifts only (BTN-4.06)": "Chỉ ca của tôi",
   "Delete Schedule": "Xóa lịch",
   "Are you sure you want to delete this shift schedule?": "Bạn có chắc chắn muốn xóa lịch phân ca trực này không?",
   "Shift schedule deleted successfully.": "Đã xóa lịch phân ca trực thành công.",
@@ -2775,9 +2765,7 @@ export const VI_TEXT: Record<string, string> = {
   "Rest day": "Ngày nghỉ",
   "Horses in zone:": "Ngựa trong khu:",
   "Save Roster": "Lưu phân ca",
-  "Save Roster (BTN-4.53)": "Lưu phân ca",
   "Copy": "Sao chép",
-  "Copy (BTN-4.54)": "Sao chép",
   "Your personal roster for this week ({{count}} shifts)": "Lịch trực cá nhân của bạn trong tuần ({{count}} ca)",
   "You have no shifts assigned for this week.": "Bạn chưa có ca trực nào được phân công trong tuần này.",
   "Zone:": "Khu chuồng:",
@@ -2822,7 +2810,6 @@ export const VI_TEXT: Record<string, string> = {
   "{{count}} shifts/week": "{{count}} ca/tuần",
   "Maximum 10 staff per shift.": "Mỗi ca tối đa 10 nhân viên.",
   "Application Scope": "Phạm vi áp dụng",
-  "Application Scope (DL-4.01)": "Phạm vi áp dụng",
   "Only this day ({{date}})": "Chỉ ngày này ({{date}})",
   "Rest of the week (until Sunday)": "Các ngày còn lại trong tuần (đến Chủ nhật)",
   "Same day of the week for next 4 weeks": "Cùng thứ này trong 4 tuần tới",
@@ -2832,7 +2819,6 @@ export const VI_TEXT: Record<string, string> = {
 
   // Copy Week Roster Modal
   "Copy Weekly Roster": "Sao chép phân ca tuần",
-  "Copy Weekly Roster (DL-4.02)": "Sao chép phân ca tuần",
   "Cannot copy to a past week. Please navigate to the current or a future week.": "Không thể sao chép vào tuần đã qua trong quá khứ. Vui lòng chuyển sang tuần hiện tại hoặc tuần tới.",
   "Copy from week:": "Sao chép từ tuần:",
   "To target week:": "Sang tuần đích:",
@@ -2929,7 +2915,6 @@ export const VI_TEXT: Record<string, string> = {
 
   // --- Phase 3: Daily Care Checklist & Incidents ---
   "Daily Care Checklist": "Bảng kiểm chăm sóc hàng ngày",
-  "Daily Care Checklist (SC-4.04)": "Bảng kiểm chăm sóc hàng ngày",
   "Manage daily care tasks, report incidents, and undo completed tasks within 15 minutes.": "Quản lý công việc chăm sóc hằng ngày, báo cáo sự cố và hoàn tác công việc đã hoàn thành trong 15 phút.",
   "Task date": "Ngày thực hiện",
   "Task status": "Trạng thái công việc",
@@ -3081,10 +3066,8 @@ export const VI_TEXT: Record<string, string> = {
   "Follow the veterinary instructions before working with this horse.": "Tuân theo hướng dẫn của bác sĩ thú y trước khi thực hiện công việc với ngựa này.",
   "Mobile-first task execution for Grooms & Stable Staff with real-time 15-minute undo protection and emergency reporting.": "Thao tác trên di động cho Groom & nhân viên chuồng với cơ chế hoàn tác 15 phút và báo cáo khẩn cấp.",
   "Report Incident": "Báo cáo sự cố",
-  "Report Incident (DL-4.05)": "Báo cáo sự cố",
   "Report Health Observation / Incident": "Báo cáo sự cố / Ghi nhận sức khỏe",
-  "Report Incident / Health Observation (DL-4.05)": "Báo cáo sự cố / Ghi nhận sức khỏe",
-  "Report Health Observation / Incident (DL-4.05)": "Báo cáo sự cố / Ghi nhận sức khỏe",
+  "Report Incident / Health Observation": "Báo cáo sự cố / Ghi nhận sức khỏe",
   "Sync / Generate Tasks": "Đồng bộ / Tạo việc hôm nay",
   "Generating...": "Đang tạo...",
   "Generating…": "Đang tạo…",
@@ -3230,7 +3213,6 @@ export const VI_TEXT: Record<string, string> = {
   "Adjust Physical Inventory Count": "Kiểm kê & Điều chỉnh tồn kho thực tế",
   "Initialize / Adjust Stock Balance": "Khởi tạo / Điều chỉnh tồn kho",
   "Physical stock count update with audit logging.": "Cập nhật kiểm kê tồn kho vật tư có lưu vết kiểm toán.",
-  "Physical stock count update (DL-4.06) with audit logging.": "Cập nhật kiểm kê tồn kho vật tư (DL-4.06) có lưu vết kiểm toán.",
   "Supply Item": "Mặt hàng vật tư",
   "Current Recorded System Stock": "Tồn kho hệ thống hiện tại",
   "Actual Physical Quantity": "Số lượng kiểm kê thực tế",
@@ -3246,7 +3228,6 @@ export const VI_TEXT: Record<string, string> = {
   "Restock proposal submitted successfully. Notification sent to Club Manager.": "Đã gửi phiếu đề xuất bổ sung vật tư thành công. Hệ thống đã thông báo tới Quản lý chuồng.",
   "Propose Supply Restock": "Đề xuất cấp vật tư",
   "Submit replenishment proposal for stable staff and veterinarians.": "Lập phiếu đề xuất bổ sung vật tư cho nhân viên chuồng và bác sĩ thú y.",
-  "Submit replenishment proposal (DL-4.07) for stable staff and veterinarians.": "Lập phiếu đề xuất bổ sung vật tư (DL-4.07) cho nhân viên chuồng và bác sĩ thú y.",
   "Target Stall Zone": "Khu chuồng tiếp nhận",
   "Requested Quantity": "Số lượng đề xuất",
   "Number of units required for this stall zone.": "Số lượng đơn vị cần cấp cho khu chuồng này.",
@@ -3284,7 +3265,6 @@ export const VI_TEXT: Record<string, string> = {
   "Confirm Stock Delivery": "Xác nhận nhập kho",
   "Zone Supply Inventory": "Tồn kho vật tư theo Khu chuồng",
   "Track real-time stock levels, health status, and physical counts across stall zones.": "Theo dõi mức tồn kho thời gian thực, trạng thái và kiểm kê thực tế theo khu chuồng.",
-  "Track real-time stock levels, health status, and physical counts across stall zones (SC-4.06).": "Theo dõi mức tồn kho thời gian thực, trạng thái và kiểm kê thực tế theo khu chuồng (SC-4.06).",
   "Propose Restock": "Đề xuất cấp thêm",
   "Adjust Physical Count": "Kiểm kê / Điều chỉnh",
   "Total Monitored Items": "Tổng mặt hàng theo dõi",
@@ -3309,7 +3289,6 @@ export const VI_TEXT: Record<string, string> = {
   "Adjust": "Điều chỉnh",
   "Restock Requests & Procurement": "Đề xuất & Phê duyệt Vật tư",
   "Submit supply replenishment proposals and manage manager approval workflows.": "Gửi đề xuất tiếp vận vật tư và quy trình quản lý phê duyệt cấp phát.",
-  "Submit supply replenishment proposals and manage manager approval workflows (SC-4.07).": "Gửi đề xuất tiếp vận vật tư và quy trình quản lý phê duyệt cấp phát (SC-4.07).",
   "All Proposals": "Tất cả đề xuất",
   "Pending Review": "Chờ duyệt",
   "Approved & In-Transit": "Đã duyệt / Chờ giao",
@@ -4204,6 +4183,7 @@ export const VI_TEXT: Record<string, string> = {
   "Expand sidebar": "Mở rộng thanh bên",
   "Collapse sidebar": "Thu gọn thanh bên",
   "Failed to create care schedule": "Không tạo được lịch chăm sóc.",
+  "Due date must be today or in the future.": "Ngày hẹn khám phải từ hôm nay trở đi.",
 };
 
 
