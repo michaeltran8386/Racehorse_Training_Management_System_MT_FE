@@ -92,6 +92,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
   const [submitting, setSubmitting] = useState(false);
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [validationFailed, setValidationFailed] = useState(false);
 
   const markTouched = (k: string) => setTouched((cur) => (cur[k] ? cur : { ...cur, [k]: true }));
   const isFieldVisible = (k: string) => submitted || Boolean(touched[k]);
@@ -117,6 +118,20 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
   useEffect(() => {
     if (phase && !until) setUntil(phase.endDate);
   }, [phase, until]);
+
+  // Thêm mới từ Lịch tuần / Lượt chạy thử: ngày mặc định (hôm nay) có thể nằm ngoài giáo án.
+  // Khi đổi giáo án, đưa ngày về ngày hợp lệ đầu tiên của giáo án để không bị BE từ chối.
+  useEffect(() => {
+    if (editing || phases.length === 0) return;
+    const today = todayClub();
+    if (phases.some((p) => p.startDate <= date && date <= p.endDate)) return;
+    const upcoming = phases.find((p) => p.endDate >= today);
+    if (!upcoming) return;
+    setDate(upcoming.startDate > today ? upcoming.startDate : today);
+    setPhaseId(upcoming.id);
+    // Chỉ chạy khi đổi giáo án; không theo dõi "date" để người dùng vẫn tự chọn ngày được.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planId, phases, editing]);
 
   // Sửa thông tin thì bỏ các cảnh báo / xác nhận cũ.
   useEffect(() => {
@@ -168,11 +183,13 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
     return errs;
   }, [planId, phases.length, phaseId, groomId, forcedHeavy, speed, jockey, distance, reps, date, time, isVietnamese]);
 
+  // Chỉ tự xóa thông báo "kiểm tra các ô" khi các ô đã hợp lệ; lỗi từ BE phải giữ nguyên để người dùng đọc được.
   useEffect(() => {
-    if (error && Object.keys(fieldErrors).length === 0) {
+    if (validationFailed && Object.keys(fieldErrors).length === 0) {
       setError("");
+      setValidationFailed(false);
     }
-  }, [error, fieldErrors]);
+  }, [validationFailed, fieldErrors]);
 
   const input = (): SessionInput => ({
     scheduledDate: clubIso(date, time),
@@ -193,6 +210,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
   const submit = async () => {
     setSubmitted(true);
     if (Object.keys(fieldErrors).length > 0) {
+      setValidationFailed(true);
       setError(
         isVietnamese
           ? "Vui lòng kiểm tra và sửa các thông tin chưa hợp lệ bên dưới."
@@ -300,6 +318,11 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
               onChange={(val) => {
                 setPhaseId(val);
                 markTouched("phaseId");
+                // Ngày đang chọn nằm ngoài giai đoạn mới -> đưa về ngày hợp lệ đầu tiên của giai đoạn.
+                const next = phases.find((p) => p.id === val);
+                if (next && (date < next.startDate || date > next.endDate)) {
+                  setDate(next.startDate > todayClub() ? next.startDate : todayClub());
+                }
               }}
               options={phases.map((p) => ({ value: p.id, label: p.name }))}
             />
@@ -307,7 +330,18 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
         )}
         <div className={formLayout.columns}>
           <Field label={tr("Date")} required>
-            <Input type="date" min={todayClub()} value={date} onChange={(e) => setDate(e.target.value)} />
+            <Input
+              type="date"
+              min={todayClub()}
+              value={date}
+              onChange={(e) => {
+                const value = e.target.value;
+                setDate(value);
+                // Giai đoạn đi theo ngày: chọn ngày thuộc giai đoạn khác thì tự đổi giai đoạn.
+                const containing = phases.find((p) => p.startDate <= value && value <= p.endDate);
+                if (containing) setPhaseId(containing.id);
+              }}
+            />
           </Field>
           <Field
             label={tr("Start time")}

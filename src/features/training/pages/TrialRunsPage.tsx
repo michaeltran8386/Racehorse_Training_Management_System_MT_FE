@@ -193,7 +193,6 @@ export default function TrialRunsPage() {
                           <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: "0.5rem" }}>
                             {user.role === "HEAD_TRAINER" &&
                               row.status === "SCHEDULED" &&
-                              !upcoming &&
                               plans.some((p) => p.id === row.planId) && (
                                 <div>
                                   <Button
@@ -201,12 +200,17 @@ export default function TrialRunsPage() {
                                     tone="primary"
                                     disabled={
                                       launchingId === row.id ||
-                                      row.isHorseLocked
+                                      row.isHorseLocked ||
+                                      upcoming
                                     }
                                     title={
                                       row.isHorseLocked
                                         ? tr("The horse is still under a Training Lock.")
-                                        : undefined
+                                        : upcoming
+                                          ? isVietnamese
+                                            ? `Mở được từ ${row.startTime} ngày ${row.sessionDate}`
+                                            : `Available from ${row.startTime} on ${row.sessionDate}`
+                                          : undefined
                                     }
                                     onClick={() => void launchSimulation(row.id)}
                                   >
