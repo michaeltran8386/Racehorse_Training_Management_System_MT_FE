@@ -72,7 +72,7 @@ export default function TrialRunsPage() {
     trainingApi
       .getPlans()
       .then((data) => {
-        setPlans(data);
+        setPlans(data.filter((p) => p.status === "DRAFT" || p.status === "ACTIVE"));
         setPlansLoaded(true);
       })
       .catch(() => {
@@ -240,7 +240,7 @@ export default function TrialRunsPage() {
       {isScheduleOpen && (
         <WorkoutDialog
           plans={plans}
-          defaultDate={from}
+          defaultDate={from < todayClub() ? todayClub() : from}
           defaultType="TRIAL"
           onClose={() => setIsScheduleOpen(false)}
           onSaved={(savedDate?: string) => {
