@@ -36,10 +36,10 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (status === "anonymous") navigate(`/login?next=${encodeURIComponent(pathname)}`, { replace: true });
   }, [status, pathname, navigate]);
 
-  // Giao diện v2 (màu gốc, chữ/bo góc mới) đang thử trên vai trò Head Trainer; duyệt xong sẽ bật cho mọi vai trò.
+  // Kích hoạt giao diện bo góc v2 cho toàn bộ các vai trò
   useEffect(() => {
     const root = document.documentElement;
-    if (user?.role === "HEAD_TRAINER") {
+    if (status === "authenticated") {
       root.dataset.ui = "v2";
       // v2 mặc định nền sáng; người dùng đã tự chọn sáng/tối thì giữ lựa chọn đó.
       try {
@@ -47,11 +47,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       } catch {
         root.dataset.theme = "light";
       }
-    } else delete root.dataset.ui;
+    } else {
+      delete root.dataset.ui;
+    }
     return () => {
       delete root.dataset.ui;
     };
-  }, [user?.role]);
+  }, [status]);
 
   // Thông báo: hỏi BE mỗi 30 giây khi đã đăng nhập; đổi tài khoản/đăng xuất thì dừng.
   useEffect(() => {
