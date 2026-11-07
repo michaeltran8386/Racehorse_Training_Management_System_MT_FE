@@ -96,7 +96,7 @@
 }
 
 /* Editorial controls: selected tabs remain legible in both themes. */
-.tab, :global([data-theme="dark"]) .tab { border-radius: 0; background: var(--surface); border-color: var(--border-strong); color: var(--text-2); box-shadow: none; }
+.tab, :global([data-theme="dark"]) .tab { border-radius: var(--r-pill, 999px); background: var(--surface); border-color: var(--border-strong); color: var(--text-2); box-shadow: none; }
 .tab:hover, :global([data-theme="dark"]) .tab:hover { background: var(--surface-2); border-color: var(--border-field); color: var(--text); transform: none; }
 .on, :global([data-theme="dark"]) .on { background: var(--bg-inverse); border-color: var(--bg-inverse); color: #f6f1e4; box-shadow: none; }
 .on, :global([data-theme="dark"]) .on { border-bottom: 3px solid var(--brand); }

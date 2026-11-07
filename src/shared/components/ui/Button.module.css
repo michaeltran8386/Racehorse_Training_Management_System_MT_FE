@@ -93,7 +93,7 @@
 .off { background: var(--surface-3); border-color: var(--border); color: var(--muted); cursor: not-allowed; box-shadow: none; }
 
 
-.btn, .sm, .md, .lg { border-radius: 0; box-shadow: none; }
+.btn, .sm, .md, .lg { border-radius: var(--r-pill, 999px); box-shadow: none; }
 .primary, .primary:hover:not(.off) { box-shadow: none; }
 .quiet { color: var(--text); }
 .danger { color: #fff; }

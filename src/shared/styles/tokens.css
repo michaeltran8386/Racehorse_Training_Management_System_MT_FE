@@ -314,7 +314,7 @@
   --mono:var(--font); --font-numeric:var(--font);
   --ok:#2f6b2a; --ok-bg:#e3efd9; --warn:#8a5300; --warn-bg:#fbecc8;
   --danger:#a8322a; --danger-bg:#f7dfdb; --info:#1f6a96; --info-bg:#dcebf3;
-  --r-xs:0px; --r-sm:0px; --r:0px; --r-lg:0px; --r-xl:0px; --r-modal:0px; --r-btn:0px; --r-field:0px;
+  --r-xs:0px; --r-sm:0px; --r:0px; --r-lg:0px; --r-xl:0px; --r-modal:0px; --r-btn:var(--r-pill, 999px); --r-field:0px;
   --content-max:100%; --shadow-pop:8px 8px 0 rgba(10,22,28,.22); --shadow-lg:8px 8px 0 rgba(10,22,28,.3);
 }
 [data-theme="dark"], .theme-dark {
