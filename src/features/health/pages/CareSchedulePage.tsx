@@ -460,8 +460,8 @@ export default function CareSchedulePage() {
                 value={performedByMode}
                 onChange={(e) => setPerformedByMode(e.target.value as "SELF" | "EXTERNAL")}
                 options={[
-                  { value: "SELF", label: "Self (Internal Vet / Staff)" },
-                  { value: "EXTERNAL", label: "External (External Clinic / Partner)" },
+                  { value: "SELF", label: tr("Self (Internal Vet / Staff)") },
+                  { value: "EXTERNAL", label: tr("External (External Clinic / Partner)") },
                 ]}
               />
             </Field>
