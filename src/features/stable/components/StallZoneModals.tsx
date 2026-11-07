@@ -43,8 +43,8 @@ export function ZoneDialog({
   const errors = {
     code: zone || /^[A-Z0-9-]{1,20}$/.test(code) ? "" : "Zone code: upper-case letters, digits and hyphens, at most 20 characters.",
     name: name.trim().length >= 2 && name.trim().length <= 100 ? "" : "Zone name must be 2 to 100 characters.",
-    rows: Number(rows) >= 1 && Number(rows) <= 30 && Number.isInteger(Number(rows)) ? "" : "Rows must be between 1 and 30.",
-    cols: Number(cols) >= 1 && Number(cols) <= 30 && Number.isInteger(Number(cols)) ? "" : "Columns must be between 1 and 30.",
+    rows: Number(rows) >= 1 && Number(rows) <= 4 && Number.isInteger(Number(rows)) ? "" : "Rows must be between 1 and 4.",
+    cols: Number(cols) >= 1 && Number(cols) <= 4 && Number.isInteger(Number(cols)) ? "" : "Columns must be between 1 and 4.",
     description: description.length <= 500 ? "" : "Description can be at most 500 characters.",
     sortOrder: Number(sortOrder) >= 0 && Number(sortOrder) <= 9999 ? "" : "Display order must be between 0 and 9999.",
   };
@@ -99,11 +99,11 @@ export function ZoneDialog({
           <Input value={name} onChange={(e) => touch(setName)(e.target.value)} />
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
-          <Field label={tr("Rows")} required error={errors.rows || undefined}>
-            <Input type="number" min={1} max={30} value={rows} onChange={(e) => touch(setRows)(e.target.value)} />
+          <Field label={tr("Rows")} required error={errors.rows || undefined} hint={tr("1 to 4 rows")}>
+            <Input type="number" min={1} max={4} value={rows} onChange={(e) => touch(setRows)(e.target.value)} />
           </Field>
-          <Field label={tr("Columns")} required error={errors.cols || undefined}>
-            <Input type="number" min={1} max={30} value={cols} onChange={(e) => touch(setCols)(e.target.value)} />
+          <Field label={tr("Columns")} required error={errors.cols || undefined} hint={tr("1 to 4 columns (max 16 stalls)")}>
+            <Input type="number" min={1} max={4} value={cols} onChange={(e) => touch(setCols)(e.target.value)} />
           </Field>
         </div>
         {!zone && (
@@ -158,8 +158,8 @@ export function StallDialog({
   const [dirty, setDirty] = useState(false);
   const occupied = !!stall?.allocations.length;
 
-  const maxRows = activeZone?.rows ?? 30;
-  const maxCols = activeZone?.cols ?? 30;
+  const maxRows = activeZone?.rows ?? 4;
+  const maxCols = activeZone?.cols ?? 4;
 
   const errors = {
     zone: activeZone ? "" : "Please select a barn zone.",

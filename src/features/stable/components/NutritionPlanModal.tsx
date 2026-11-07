@@ -29,17 +29,14 @@ interface NutritionPlanModalProps {
 const DEFAULT_MEALS: Meal[] = [
   {
     mealType: 'MORNING',
-    time: '06:00',
     items: [],
   },
   {
     mealType: 'NOON',
-    time: '11:30',
     items: [],
   },
   {
     mealType: 'EVENING',
-    time: '17:00',
     items: [],
   },
 ];
@@ -184,14 +181,6 @@ export function NutritionPlanModal({
         items[itemIndex] = { ...items[itemIndex], [field]: value };
       }
       copy[mealIndex] = { ...copy[mealIndex], items };
-      return copy;
-    });
-  };
-
-  const handleMealTimeChange = (mealIndex: number, timeVal: string) => {
-    setMeals((prev) => {
-      const copy = [...prev];
-      copy[mealIndex] = { ...copy[mealIndex], time: timeVal };
       return copy;
     });
   };
@@ -451,21 +440,12 @@ export function NutritionPlanModal({
                   </strong>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                    {tr('Time:')}
-                  </span>
-                  <Input
-                    type="time"
-                    value={meal.time || ''}
-                    onChange={(e) => handleMealTimeChange(mIdx, e.target.value)}
-                    style={{ width: '132px', padding: '0.2rem 0.4rem', fontSize: '0.85rem' }}
-                  />
+                <div>
                   <Button
                     size="sm"
                     tone="ghost"
                     onClick={() => handleAddItem(mIdx)}
-                    style={{ marginLeft: '0.5rem', color: 'var(--color-primary)' }}
+                    style={{ color: 'var(--color-primary)' }}
                   >
                     + {tr('Add Item')}
                   </Button>

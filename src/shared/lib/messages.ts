@@ -129,6 +129,10 @@ const DYNAMIC: Record<string, (d: Record<string, unknown>) => string | undefined
     d.groom
       ? `Groom ${d.groom} is already assigned to ${d.horse}'s workout at ${d.time} on ${d.date}. Choose another groom or move the time by at least 30 minutes.`
       : undefined,
+  GROOM_ALREADY_ASSIGNED_IN_SHIFT: (d) =>
+    d.groomName
+      ? `Staff ${d.groomName} is already assigned to ${d.zoneName} for ${d.shiftName} on ${d.date}. Each groom can only be assigned to 1 barn zone per shift.`
+      : "This groom is already assigned to another barn zone in this shift.",
 };
 
 import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
