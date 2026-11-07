@@ -35,9 +35,17 @@ const CATEGORY_LABELS: Record<string, string> = {
   GENERAL: "Routine Checkup",
 };
 
+const DEFAULT_INTERVAL_DAYS: Record<string, number> = {
+  VACCINATION: 180,
+  DEWORMING: 90,
+  FARRIER: 45,
+  DENTAL: 365,
+  GENERAL: 180,
+};
+
 // Trạng thái lịch dự phòng -> tông Badge chung (một màu một nghĩa trong toàn app).
 const STATUS_BADGES: Record<PreventiveStatus, { label: string; tone: BadgeTone; icon: string }> = {
-  UP_TO_DATE: { label: "Up to date", tone: "ok", icon: "checkCircle" },
+  UP_TO_DATE: { label: "On schedule", tone: "ok", icon: "checkCircle" },
   DUE_SOON: { label: "Due soon", tone: "warn", icon: "clock" },
   OVERDUE: { label: "Overdue", tone: "danger", icon: "alert" },
   NO_DATA: { label: "No data", tone: "neutral", icon: "info" },
@@ -113,7 +121,7 @@ export default function CareSchedulePage() {
     setLoadingHorses(true);
     try {
       const res = await getHorses({ limit: 100 });
-      const list = res.items || [];
+      const list = (res.items || []).filter((h: any) => h.status !== "RETIRED");
       setHorseList(list);
       setCreateHorseId("");
       setCreateType("");
@@ -140,6 +148,11 @@ export default function CareSchedulePage() {
       toast.show(tr("Please select a due date."), "danger");
       return;
     }
+    const todayStr = new Date().toISOString().split("T")[0];
+    if (createDueDate < todayStr) {
+      toast.show(tr("Due date must be today or in the future."), "danger");
+      return;
+    }
     try {
       setSubmitting(true);
       await healthApi.createCareSchedule({
@@ -161,13 +174,18 @@ export default function CareSchedulePage() {
   };
 
   const handleOpenCompleteModal = (care: PreventiveCareItem) => {
+    const todayStr = new Date().toISOString().split("T")[0];
+    const interval = DEFAULT_INTERVAL_DAYS[care.category] || 180;
+    const nextDateObj = new Date(Date.now() + interval * 24 * 60 * 60 * 1000);
+    const defaultNextDue = nextDateObj.toISOString().split("T")[0];
+
     setSelectedCare(care);
-    setAdminDate(new Date().toISOString().split("T")[0]);
+    setAdminDate(todayStr);
     setAdminBy(user?.fullName || "");
     setPerformedByMode("SELF");
     setProductAdministered("");
     setBatchNumber("");
-    setNextDue("");
+    setNextDue(defaultNextDue);
     setNotes("");
   };
 
@@ -290,7 +308,7 @@ export default function CareSchedulePage() {
         const st = STATUS_BADGES[item.status] || STATUS_BADGES.NO_DATA;
         return (
           <Badge tone={st.tone} icon={st.icon}>
-            {st.label}
+            {tr(st.label)}
           </Badge>
         );
       },
@@ -337,10 +355,10 @@ export default function CareSchedulePage() {
           <Tabs
             label={tr("Filter by status")}
             items={[
-              { id: "ALL", label: "All", count: loading ? undefined : items.length },
-              { id: "OVERDUE", label: "Overdue", count: loading ? undefined : count("OVERDUE") },
-              { id: "DUE_SOON", label: "Due soon", count: loading ? undefined : count("DUE_SOON") },
-              { id: "UP_TO_DATE", label: "Up to date", count: loading ? undefined : count("UP_TO_DATE") },
+              { id: "ALL", label: tr("All"), count: loading ? undefined : items.length },
+              { id: "OVERDUE", label: tr("Overdue"), count: loading ? undefined : count("OVERDUE") },
+              { id: "DUE_SOON", label: tr("Due soon"), count: loading ? undefined : count("DUE_SOON") },
+              { id: "UP_TO_DATE", label: tr("On schedule"), count: loading ? undefined : count("UP_TO_DATE") },
             ]}
             active={activeTab}
             onChange={(value) => { setActiveTab(value); setPage(1); }}
@@ -420,7 +438,18 @@ export default function CareSchedulePage() {
               <Input
                 type="date"
                 value={adminDate}
-                onChange={(e) => setAdminDate(e.target.value)}
+                onChange={(e) => {
+                  const newAdmin = e.target.value;
+                  setAdminDate(newAdmin);
+                  if (newAdmin && selectedCare) {
+                    const interval = DEFAULT_INTERVAL_DAYS[selectedCare.category] || 180;
+                    const parsed = new Date(newAdmin);
+                    if (!isNaN(parsed.getTime())) {
+                      const nextDate = new Date(parsed.getTime() + interval * 24 * 60 * 60 * 1000);
+                      setNextDue(nextDate.toISOString().split("T")[0]);
+                    }
+                  }
+                }}
               />
             </Field>
 
@@ -532,6 +561,7 @@ export default function CareSchedulePage() {
               <Field label={tr("Due Date *")}>
                 <Input
                   type="date"
+                  min={new Date().toISOString().split("T")[0]}
                   value={createDueDate}
                   onChange={(e) => setCreateDueDate(e.target.value)}
                 />
