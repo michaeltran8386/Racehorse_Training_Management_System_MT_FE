@@ -80,8 +80,6 @@ export default function CareSchedulePage() {
   const [adminDate, setAdminDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
   const [adminBy, setAdminBy] = useState<string>(user?.fullName || "");
   const [performedByMode, setPerformedByMode] = useState<"SELF" | "EXTERNAL">("SELF");
-  const [productAdministered, setProductAdministered] = useState<string>("");
-  const [batchNumber, setBatchNumber] = useState<string>("");
   const [nextDue, setNextDue] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [submitting, setSubmitting] = useState<boolean>(false);
@@ -183,8 +181,6 @@ export default function CareSchedulePage() {
     setAdminDate(todayStr);
     setAdminBy(user?.fullName || "");
     setPerformedByMode("SELF");
-    setProductAdministered("");
-    setBatchNumber("");
     setNextDue(defaultNextDue);
     setNotes("");
   };
@@ -205,8 +201,6 @@ export default function CareSchedulePage() {
         nextDueDate: nextDue,
         notes: notes.trim() || undefined,
         performedByMode,
-        productAdministered: productAdministered.trim() || undefined,
-        batchNumber: batchNumber.trim() || undefined,
       });
       toast.show(`Recorded completion: ${selectedCare.type}`, "ok");
       setSelectedCare(null);
@@ -466,28 +460,9 @@ export default function CareSchedulePage() {
                 value={performedByMode}
                 onChange={(e) => setPerformedByMode(e.target.value as "SELF" | "EXTERNAL")}
                 options={[
-                  { value: "SELF", label: "Self (Internal Vet / Staff)" },
-                  { value: "EXTERNAL", label: "External (External Clinic / Partner)" },
+                  { value: "SELF", label: tr("Self (Internal Vet / Staff)") },
+                  { value: "EXTERNAL", label: tr("External (External Clinic / Partner)") },
                 ]}
-              />
-            </Field>
-
-            <Field label={tr("Product / Vaccine Administered")}>
-              <Input
-                value={productAdministered}
-                onChange={(e) => setProductAdministered(e.target.value)}
-                placeholder={tr("e.g., Equi-Flu Standard Formulation")}
-              />
-            </Field>
-
-            <Field
-              label={tr("Batch / Lot Number (Optional)")}
-              hint={tr("Leave blank if not applicable or unavailable")}
-            >
-              <Input
-                value={batchNumber}
-                onChange={(e) => setBatchNumber(e.target.value)}
-                placeholder={tr("e.g., LOT-2026-VACC-091 (optional)")}
               />
             </Field>
 

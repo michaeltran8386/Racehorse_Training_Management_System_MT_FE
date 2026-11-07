@@ -342,11 +342,6 @@ export function NutritionPlanDetailModal({
                   {mealIcons[meal.mealType] && <><Icon name={mealIcons[meal.mealType]} inline size={14} />{' '}</>}
                   {mealNames[meal.mealType] || meal.mealType}
                 </span>
-                {meal.time && (
-                  <span style={{ color: 'var(--color-text-secondary)', fontWeight: 400 }}>
-                    {meal.time}
-                  </span>
-                )}
               </div>
 
               <div style={{ padding: '0.75rem' }}>

@@ -112,26 +112,93 @@ const GENERIC: Record<string, string> = {
   TOO_MANY_REPEATS: "At most 60 workouts can be created at once.",
   TIME_REQUIRED: "Running time is required for this workout type.",
   RECOVERY_ABOVE_PEAK: "Heart rate after 10 minutes cannot exceed the peak heart rate.",
+  // Flow 4: Ca trực, Tồn kho, Vật tư, Khẩu phần ăn
+  GROOM_ALREADY_ASSIGNED_IN_SHIFT: "Each groom can only be assigned to 1 barn zone per shift.",
+  SHIFT_NOT_AVAILABLE: "The shift is unavailable or has been deactivated.",
+  ZONE_NOT_AVAILABLE: "The barn zone is unavailable or has been deactivated.",
+  INVALID_GROOMS_SELECTED: "One or more selected staff are invalid or inactive.",
+  COPY_TARGET_WEEK_IN_PAST: "Cannot copy rosters into a past week.",
+  ROSTER_NOT_FOUND: "Shift roster entry no longer exists. Reload the page.",
+  ROWS_OUT_OF_RANGE: "Rows must be between 1 and 4.",
+  COLS_OUT_OF_RANGE: "Columns must be between 1 and 4.",
+  SUPPLY_NOT_FOUND: "This supply item no longer exists. Reload the list.",
+  SUPPLY_CODE_ALREADY_EXISTS: "This supply code already exists.",
+  SUPPLY_NAME_ALREADY_EXISTS: "This supply name already exists.",
+  CAPACITY_EXCEEDED: "The quantity exceeds the storage capacity of the barn zone.",
+  DUPLICATE_PENDING_REQUEST: "A restock request for this item in this zone is already pending or delivering.",
+  REQUEST_NOT_FOUND: "This restock request no longer exists. Reload the list.",
+  REQUEST_ALREADY_REVIEWED: "This restock request has already been processed.",
+  REJECTION_REASON_REQUIRED: "Please enter a reason for rejection.",
+  INVALID_APPROVED_QUANTITY: "Approved quantity must be greater than 0.",
+  REQUEST_NOT_DELIVERABLE: "Only approved restock requests can be marked as delivered.",
+  DELIVERY_REQUIRES_APPROVER: "The delivery and reviewer details are invalid.",
+  NUTRITION_PLAN_NOT_FOUND: "This nutrition plan no longer exists. Reload the page.",
+  NUTRITION_PLAN_ALREADY_EXISTS: "This horse already has an active or pending nutrition plan.",
+  NUTRITION_PLAN_NOT_EDITABLE: "Only draft or rejected nutrition plans can be edited.",
+  NUTRITION_PLAN_NOT_SUBMITTABLE: "Only draft nutrition plans can be submitted for approval.",
+  NUTRITION_PLAN_NOT_APPROVABLE: "Only pending nutrition plans can be approved.",
+  NUTRITION_PLAN_NOT_REJECTABLE: "Only pending nutrition plans can be rejected.",
+  NUTRITION_PLAN_NOT_ARCHIVABLE: "Only approved nutrition plans can be archived.",
 };
 
-// Câu có chèn dữ liệu BE gửi kèm (data), ví dụ tên ngựa đang ở ô chuồng.
-const DYNAMIC: Record<string, (d: Record<string, unknown>) => string | undefined> = {
+import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
+
+function localizeShift(shift: unknown, isVi: boolean): string {
+  const s = String(shift || "").trim();
+  if (!s) return isVi ? "ca trực" : "the shift";
+  if (!isVi) {
+    if (/ca sáng|morning/i.test(s)) return "Morning shift";
+    if (/ca chiều|afternoon/i.test(s)) return "Afternoon shift";
+    if (/ca đêm|night/i.test(s)) return "Night shift";
+    return s;
+  }
+  if (/morning/i.test(s)) return "Ca sáng";
+  if (/afternoon/i.test(s)) return "Ca chiều";
+  if (/night/i.test(s)) return "Ca đêm";
+  return s;
+}
+
+// Câu có chèn dữ liệu BE gửi kèm (data), ví dụ tên ngựa đang ở ô chuồng - Tiếng Anh
+const DYNAMIC_EN: Record<string, (d: Record<string, unknown>) => string | undefined> = {
   STALL_OCCUPIED: (d) =>
-    d.horseName ? `Stall ${d.stallCode ?? ""} already houses ${d.horseName}. Move that horse first.`.replace("  ", " ") : undefined,
+    d.horseName ? `Stall ${d.stallCode ? `${d.stallCode} ` : ""}already houses ${d.horseName}. Move that horse first.` : undefined,
   HORSE_HAS_STALL: (d) => (d.stallCode ? `The horse is already in stall ${d.stallCode}. Use Move stall instead.` : undefined),
   ZONE_HAS_HORSES: (d) => (d.count ? `The zone still houses ${d.count} horse(s). Move them out first.` : undefined),
   ZONE_ROWS_TOO_SMALL: (d) => `Rows cannot be fewer than ${d.min}: a stall already sits in row ${d.min}.`,
   ZONE_COLS_TOO_SMALL: (d) => `Columns cannot be fewer than ${d.min}: a stall already sits in column ${d.min}.`,
   ROW_OUT_OF_RANGE: (d) => `Row must be between 1 and ${d.max}.`,
   COL_OUT_OF_RANGE: (d) => `Column must be between 1 and ${d.max}.`,
-  POSITION_TAKEN: (d) => `This grid position is already used by stall ${d.stallCode}.`,
+  POSITION_TAKEN: (d) => `This grid position is already used by stall ${d.stallCode ?? ""}.`,
   GROOM_TIME_CONFLICT: (d) =>
     d.groom
       ? `Groom ${d.groom} is already assigned to ${d.horse}'s workout at ${d.time} on ${d.date}. Choose another groom or move the time by at least 30 minutes.`
       : undefined,
+  GROOM_ALREADY_ASSIGNED_IN_SHIFT: (d) =>
+    d.groomName
+      ? `Staff ${d.groomName} is already assigned to ${d.zoneName} for ${localizeShift(d.shiftName, false)} on ${d.date}. Each groom can only be assigned to 1 barn zone per shift.`
+      : "This groom is already assigned to another barn zone in this shift.",
 };
 
-import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
+// Câu có chèn dữ liệu BE gửi kèm (data) - Tiếng Việt
+const DYNAMIC_VI: Record<string, (d: Record<string, unknown>) => string | undefined> = {
+  STALL_OCCUPIED: (d) =>
+    d.horseName ? `Ô chuồng ${d.stallCode ? `${d.stallCode} ` : ""}đang có ngựa ${d.horseName}. Vui lòng chuyển ngựa trước.` : undefined,
+  HORSE_HAS_STALL: (d) => (d.stallCode ? `Ngựa đã ở trong ô chuồng ${d.stallCode}. Vui lòng dùng chức năng Chuyển ô chuồng.` : undefined),
+  ZONE_HAS_HORSES: (d) => (d.count ? `Khu chuồng vẫn còn ${d.count} ngựa. Vui lòng chuyển ngựa ra ngoài trước.` : undefined),
+  ZONE_ROWS_TOO_SMALL: (d) => `Số hàng không thể ít hơn ${d.min}: đã có ô chuồng ở hàng ${d.min}.`,
+  ZONE_COLS_TOO_SMALL: (d) => `Số cột không thể ít hơn ${d.min}: đã có ô chuồng ở cột ${d.min}.`,
+  ROW_OUT_OF_RANGE: (d) => `Hàng phải từ 1 đến ${d.max}.`,
+  COL_OUT_OF_RANGE: (d) => `Cột phải từ 1 đến ${d.max}.`,
+  POSITION_TAKEN: (d) => `Vị trí này trên sơ đồ đã được sử dụng bởi ô chuồng ${d.stallCode ?? ""}.`,
+  GROOM_TIME_CONFLICT: (d) =>
+    d.groom
+      ? `Nhân viên ${d.groom} đã được phân công buổi tập cho ngựa ${d.horse} lúc ${d.time} ngày ${d.date}. Vui lòng chọn nhân viên khác hoặc dời giờ ít nhất 30 phút.`
+      : undefined,
+  GROOM_ALREADY_ASSIGNED_IN_SHIFT: (d) =>
+    d.groomName
+      ? `Nhân viên ${d.groomName} đã được phân công trực tại ${d.zoneName} trong ${localizeShift(d.shiftName, true)} ngày ${d.date}. Trong một ca trực, mỗi Groom chỉ được phân công trực tại 1 khu chuồng.`
+      : "Nhân viên này đã được phân công trực tại một khu chuồng khác trong ca này.",
+};
 
 const VI_TO_EN: Record<string, string> = {
   "Ngày tập là bắt buộc.": "Scheduled date is required.",
@@ -167,6 +234,35 @@ const VI_TO_EN: Record<string, string> = {
   "Ngựa đang bị Khóa huấn luyện y tế.": "The horse is currently under a Medical Training Lock.",
   "Chưa chọn người chăm sóc.": "Please select an assigned groom.",
   "Chưa chọn giai đoạn giáo án.": "Please select a training phase.",
+  // Flow 4: Ca trực, khu chuồng, vật tư, tồn kho, khẩu phần ăn
+  "Ca trực không tồn tại hoặc đã ngừng dùng.": "The shift is unavailable or has been deactivated.",
+  "Khu chuồng không tồn tại hoặc đã ngừng dùng.": "The barn zone is unavailable or has been deactivated.",
+  "Một hoặc nhiều nhân viên không hợp lệ hoặc không ở trạng thái hoạt động.": "One or more selected staff are invalid or inactive.",
+  "Không thể sao chép vào tuần đã qua.": "Cannot copy rosters into a past week.",
+  "Bản ghi phân ca không tồn tại.": "Shift roster entry no longer exists. Reload the page.",
+  "Số hàng phải từ 1 đến 4.": "Rows must be between 1 and 4.",
+  "Số cột phải từ 1 đến 4.": "Columns must be between 1 and 4.",
+  "Hàng phải từ 1 đến 4.": "Row must be between 1 and 4.",
+  "Cột phải từ 1 đến 4.": "Column must be between 1 and 4.",
+  "Vật tư không tồn tại.": "This supply item no longer exists. Reload the list.",
+  "Mã vật tư đã tồn tại.": "This supply code already exists.",
+  "Tên vật tư đã tồn tại.": "This supply name already exists.",
+  "Số lượng vượt quá sức chứa của khu chuồng.": "The quantity exceeds the storage capacity of the barn zone.",
+  "Khu chuồng này đã có một yêu cầu bổ sung vật tư đang chờ duyệt hoặc đang giao.": "A restock request for this item in this zone is already pending or delivering.",
+  "Phiếu đề xuất không tồn tại.": "This restock request no longer exists. Reload the list.",
+  "Phiếu đề xuất đã được xử lý trước đó.": "This restock request has already been processed.",
+  "Vui lòng nhập lý do từ chối.": "Please enter a reason for rejection.",
+  "Số lượng duyệt phải lớn hơn 0.": "Approved quantity must be greater than 0.",
+  "Chỉ phiếu đã duyệt mới có thể hoàn tất nhập kho.": "Only approved restock requests can be marked as delivered.",
+  "Người duyệt và người giao không hợp lệ.": "The delivery and reviewer details are invalid.",
+  "Không tìm thấy khẩu phần ăn.": "This nutrition plan no longer exists. Reload the page.",
+  "Ngựa này đã có khẩu phần ăn đang hoạt động hoặc đang chờ duyệt.": "This horse already has an active or pending nutrition plan.",
+  "Chỉ có thể chỉnh sửa khẩu phần ăn ở trạng thái bản nháp hoặc bị từ chối.": "Only draft or rejected nutrition plans can be edited.",
+  "Chỉ có thể gửi duyệt khẩu phần ăn ở trạng thái bản nháp.": "Only draft nutrition plans can be submitted for approval.",
+  "Chỉ có thể duyệt khẩu phần ăn đang chờ duyệt.": "Only pending nutrition plans can be approved.",
+  "Chỉ có thể từ chối khẩu phần ăn đang chờ duyệt.": "Only pending nutrition plans can be rejected.",
+  "Chỉ có thể lưu trữ khẩu phần ăn đã được duyệt.": "Only approved nutrition plans can be archived.",
+  "Trong một ca trực, mỗi Groom chỉ được phân công trực tại 1 khu chuồng.": "Each groom can only be assigned to 1 barn zone per shift.",
 };
 
 // Lỗi kiểm tra dữ liệu có thể gồm nhiều dòng: dịch từng dòng theo ngôn ngữ đang chọn.
@@ -180,32 +276,43 @@ function localizeLines(text: string): string {
 export function messageFor(err: unknown): string {
   if (err instanceof ApiError) {
     if (err.status >= 500) return isVietnamese() ? tr(GENERIC.SERVER_ERROR) : GENERIC.SERVER_ERROR;
-    const dynamicMsg = DYNAMIC[err.code]?.(err.data as Record<string, unknown>);
-    if (dynamicMsg) return isVietnamese() ? tr(dynamicMsg) : dynamicMsg;
-    const enGeneric = GENERIC[err.code];
+
     if (isVietnamese()) {
+      const dynamicVi = DYNAMIC_VI[err.code]?.(err.data as Record<string, unknown>);
+      if (dynamicVi) return dynamicVi;
+
       if (
         err.message &&
         err.message !== err.code &&
         err.message !== "Not Found" &&
         err.message !== "Bad Request" &&
-        err.message !== "Forbidden resource"
+        err.message !== "Forbidden resource" &&
+        err.message !== "Internal Server Error"
       ) {
         return localizeLines(err.message);
       }
+
+      const enGeneric = GENERIC[err.code];
       return enGeneric ? tr(enGeneric) : tr("Something went wrong. Try again.");
     } else {
-      // English mode: prefer English generic by error code if available
+      // English mode
+      const dynamicEn = DYNAMIC_EN[err.code]?.(err.data as Record<string, unknown>);
+      if (dynamicEn) return dynamicEn;
+
+      const enGeneric = GENERIC[err.code];
       if (enGeneric) return enGeneric;
+
       if (
         err.message &&
         err.message !== err.code &&
         err.message !== "Not Found" &&
         err.message !== "Bad Request" &&
-        err.message !== "Forbidden resource"
+        err.message !== "Forbidden resource" &&
+        err.message !== "Internal Server Error"
       ) {
         return VI_TO_EN[err.message] ?? localizeLines(err.message);
       }
+
       return "Something went wrong. Try again.";
     }
   }

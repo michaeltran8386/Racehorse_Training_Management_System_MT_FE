@@ -15,7 +15,7 @@ import { STALL_STATUS_OPTIONS } from "../types";
 import { tr } from "@/shared/i18n/tr";
 
 function confirmDiscard(dirty: boolean) {
-  return !dirty || window.confirm("Discard the changes you entered?");
+  return !dirty || window.confirm(tr("Discard the changes you entered?"));
 }
 
 /** DL-1.14 Thêm / Sửa khu chuồng (Modal). */
@@ -41,12 +41,12 @@ export function ZoneDialog({
   const [dirty, setDirty] = useState(false);
 
   const errors = {
-    code: zone || /^[A-Z0-9-]{1,20}$/.test(code) ? "" : "Zone code: upper-case letters, digits and hyphens, at most 20 characters.",
-    name: name.trim().length >= 2 && name.trim().length <= 100 ? "" : "Zone name must be 2 to 100 characters.",
-    rows: Number(rows) >= 1 && Number(rows) <= 30 && Number.isInteger(Number(rows)) ? "" : "Rows must be between 1 and 30.",
-    cols: Number(cols) >= 1 && Number(cols) <= 30 && Number.isInteger(Number(cols)) ? "" : "Columns must be between 1 and 30.",
-    description: description.length <= 500 ? "" : "Description can be at most 500 characters.",
-    sortOrder: Number(sortOrder) >= 0 && Number(sortOrder) <= 9999 ? "" : "Display order must be between 0 and 9999.",
+    code: zone || /^[A-Z0-9-]{1,20}$/.test(code) ? "" : tr("Zone code: upper-case letters, digits and hyphens, at most 20 characters."),
+    name: name.trim().length >= 2 && name.trim().length <= 100 ? "" : tr("Zone name must be 2 to 100 characters."),
+    rows: Number(rows) >= 1 && Number(rows) <= 4 && Number.isInteger(Number(rows)) ? "" : tr("Rows must be between 1 and 4."),
+    cols: Number(cols) >= 1 && Number(cols) <= 4 && Number.isInteger(Number(cols)) ? "" : tr("Columns must be between 1 and 4."),
+    description: description.length <= 500 ? "" : tr("Description can be at most 500 characters."),
+    sortOrder: Number(sortOrder) >= 0 && Number(sortOrder) <= 9999 ? "" : tr("Display order must be between 0 and 9999."),
   };
   const valid = Object.values(errors).every((e) => !e);
   const touch = <T,>(set: (v: T) => void) => (v: T) => {
@@ -99,11 +99,11 @@ export function ZoneDialog({
           <Input value={name} onChange={(e) => touch(setName)(e.target.value)} />
         </Field>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12 }}>
-          <Field label={tr("Rows")} required error={errors.rows || undefined}>
-            <Input type="number" min={1} max={30} value={rows} onChange={(e) => touch(setRows)(e.target.value)} />
+          <Field label={tr("Rows")} required error={errors.rows || undefined} hint={tr("1 to 4 rows")}>
+            <Input type="number" min={1} max={4} value={rows} onChange={(e) => touch(setRows)(e.target.value)} />
           </Field>
-          <Field label={tr("Columns")} required error={errors.cols || undefined}>
-            <Input type="number" min={1} max={30} value={cols} onChange={(e) => touch(setCols)(e.target.value)} />
+          <Field label={tr("Columns")} required error={errors.cols || undefined} hint={tr("1 to 4 columns (max 16 stalls)")}>
+            <Input type="number" min={1} max={4} value={cols} onChange={(e) => touch(setCols)(e.target.value)} />
           </Field>
         </div>
         {!zone && (
@@ -158,15 +158,15 @@ export function StallDialog({
   const [dirty, setDirty] = useState(false);
   const occupied = !!stall?.allocations.length;
 
-  const maxRows = activeZone?.rows ?? 30;
-  const maxCols = activeZone?.cols ?? 30;
+  const maxRows = activeZone?.rows ?? 4;
+  const maxCols = activeZone?.cols ?? 4;
 
   const errors = {
-    zone: activeZone ? "" : "Please select a barn zone.",
-    code: /^[A-Z0-9-]{2,20}$/.test(code) ? "" : "Stall code: 2 to 20 upper-case letters, digits or hyphens.",
-    row: Number(row) >= 1 && Number(row) <= maxRows ? "" : `Row must be between 1 and ${maxRows}.`,
-    col: Number(col) >= 1 && Number(col) <= maxCols ? "" : `Column must be between 1 and ${maxCols}.`,
-    notes: notes.length <= 500 ? "" : "Notes can be at most 500 characters.",
+    zone: activeZone ? "" : tr("Please select a barn zone."),
+    code: /^[A-Z0-9-]{2,20}$/.test(code) ? "" : tr("Stall code: 2 to 20 upper-case letters, digits or hyphens."),
+    row: Number(row) >= 1 && Number(row) <= maxRows ? "" : tr("Row must be between 1 and {{max}}.", { max: maxRows }),
+    col: Number(col) >= 1 && Number(col) <= maxCols ? "" : tr("Column must be between 1 and {{max}}.", { max: maxCols }),
+    notes: notes.length <= 500 ? "" : tr("Notes can be at most 500 characters."),
   };
   const valid = Object.values(errors).every((e) => !e);
   const touch = <T,>(set: (v: T) => void) => (v: T) => {
