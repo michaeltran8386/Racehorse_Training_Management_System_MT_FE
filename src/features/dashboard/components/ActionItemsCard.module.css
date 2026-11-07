@@ -372,19 +372,20 @@
   }
 }
 .card { border-radius: 0; box-shadow: none; }
-.headerIconBox, :global([data-theme="dark"]) .headerIconBox { border-radius: 0; background: var(--surface-2); color: var(--text-2); }
+.headerIconBox, :global([data-theme="dark"]) .headerIconBox { border-radius: 50%; background: var(--surface-2); color: var(--text-2); }
 .title { font-family: var(--font-display); font-size: 24px; font-weight: 800; text-transform: uppercase; }
-.tabBtn { border-radius: 0; }
+.tabBtn { border-radius: var(--r-pill, 999px); }
 @media (max-width: 520px) { .card { padding: 16px; } }
-.taskCard, :global([data-theme="dark"]) .taskCard, :global(.theme-dark) .taskCard { border-radius: 0; background: var(--surface-2); border-color: var(--border); box-shadow: none; }
-.iconCircle, .actionBtn, :global([data-theme="dark"]) .actionBtn, :global(.theme-dark) .actionBtn { border-radius: 0; }
+.taskCard, :global([data-theme="dark"]) .taskCard, :global(.theme-dark) .taskCard { border-radius: var(--r, 8px); background: var(--surface-2); border-color: var(--border); box-shadow: none; }
+.iconCircle { border-radius: 50%; }
+.actionBtn, :global([data-theme="dark"]) .actionBtn, :global(.theme-dark) .actionBtn { border-radius: var(--r-pill, 999px); }
 .iconAccount, :global([data-theme="dark"]) .iconAccount, :global(.theme-dark) .iconAccount { background: var(--info-bg); color: var(--info); }
 .iconStable, :global([data-theme="dark"]) .iconStable, :global(.theme-dark) .iconStable { background: var(--warn-bg); color: var(--warn); }
 .iconHealth, :global([data-theme="dark"]) .iconHealth, :global(.theme-dark) .iconHealth { background: var(--danger-bg); color: var(--danger); }
 .tabBtnActive, :global([data-theme="dark"]) .tabBtnActive, :global(.theme-dark) .tabBtnActive { color: var(--text); background: var(--brand-50); border-color: var(--brand); }
 .actionBtn, :global([data-theme="dark"]) .actionBtn, :global(.theme-dark) .actionBtn { background: var(--surface); border-color: var(--border-strong); }
 .tabBtn:focus-visible, .actionBtn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-.badge { border-radius: 0; background: var(--brand); color: var(--text-on-brand); }
+.badge { border-radius: 999px; background: var(--brand); color: var(--text-on-brand); }
 .partialNotice { margin: 12px 0 0; color: var(--text-muted); font-size: var(--fs-caption); line-height: 1.5; }
 .taskCard { flex-wrap: wrap; }
 .cardLeft { flex: 1 1 220px; }

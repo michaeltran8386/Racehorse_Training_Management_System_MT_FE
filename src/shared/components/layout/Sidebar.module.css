@@ -431,11 +431,12 @@
 .nav { border-color: var(--nav-line); }
 .brandText strong, .userText strong { color: var(--nav-text); }
 .brandText span, .userText span { color: var(--nav-text-2); }
-.logo, .collapsed .item, .collapseBtn { border-radius: 0; }
+.logo, .collapsed .item { border-radius: 0; }
+.collapseBtn { border-radius: 50%; }
 .logo img { filter: brightness(0); }
 .collapseBtn { background: var(--nav-item-hover); border-color: var(--nav-line); color: var(--nav-text); }
 .item:hover { color: var(--nav-text); transform: none; }
-.activePill { border-radius: 0; box-shadow: none; animation: none; }
+.activePill { border-radius: 999px; box-shadow: none; animation: none; }
 .user { border-color: var(--nav-line); }
 .userAvatar { background: var(--nav-item-hover); color: var(--nav-text); }
 .clickRipple, .iconBounce, .itemClicked { animation: none; }

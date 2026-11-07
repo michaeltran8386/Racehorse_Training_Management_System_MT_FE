@@ -149,7 +149,7 @@
 }
 .badge { color: #fff; }
 @media (max-width: 520px) { .bar { padding-inline: 12px; } .leftGroup { flex: 1 1 auto; } .tools { flex: 0 0 auto; gap: 2px; } .currentLabel { max-width: 22vw; } }
-.badge { border-radius: 0; background: var(--danger-bg); color: var(--danger); }
+.badge { border-radius: 999px; background: var(--danger-bg); color: var(--danger); }
 .actionBtn:focus-visible, .clear:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
 /* Breadcrumb dài ở màn hẹp: cắt bằng dấu "…" thay vì đè lên nhau; đoạn cha co trước đoạn hiện tại. */

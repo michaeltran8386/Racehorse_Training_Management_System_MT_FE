@@ -500,7 +500,10 @@
 @media (max-width: 640px) { .popover { border-radius: 0; } }
 /* EquiFlow search palette and controls */
 .popover { border-radius: 0; box-shadow: var(--shadow-pop); }
-.headerIconBox, .escBadge, .tabBtn, .resultRow, .itemIconBox, .statusBadge { border-radius: 0; }
+.headerIconBox, .itemIconBox { border-radius: 50%; }
+.tabBtn { border-radius: var(--r-pill, 999px); }
+.statusBadge, .escBadge { border-radius: 999px; }
+.resultRow { border-radius: 0; }
 .headerTitle { font: 800 24px/1.1 var(--font-display); text-transform: uppercase; }
 .tabBtnActive, :global([data-theme="dark"]) .tabBtnActive, :global(.theme-dark) .tabBtnActive { background: var(--brand); color: var(--text-on-brand); border-color: var(--brand); }
 .tabBtn:focus-visible, .footerLink:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }

@@ -273,18 +273,18 @@
 .clearAllTextBtn:hover {
   color: var(--brand-700);
 }
-.filterToggleBtn, :global([data-theme="dark"]) .filterToggleBtn { border-radius: 0; background: var(--surface); color: var(--text); border-color: var(--border-strong); box-shadow: none; }
+.filterToggleBtn, :global([data-theme="dark"]) .filterToggleBtn { border-radius: var(--r-pill, 999px); background: var(--surface); color: var(--text); border-color: var(--border-strong); box-shadow: none; }
 .filterToggleBtn:hover, :global([data-theme="dark"]) .filterToggleBtn:hover { background: var(--surface-2); color: var(--text); border-color: var(--border-field); }
 .filterActive, :global([data-theme="dark"]) .filterActive { background: var(--bg-inverse) !important; color: #f6f1e4 !important; border-color: var(--bg-inverse) !important; box-shadow: none; }
-.filterBadge { background: var(--brand); color: var(--text-on-brand); }
+.filterBadge { background: var(--brand); color: var(--text-on-brand); border-radius: 999px; }
 .toolbarContainer { border-radius: 0; }
 @media (max-width: 520px) { .filterGrid { grid-template-columns: minmax(0, 1fr); } }
 
 :global([data-theme="dark"]) .filterDrawer, :global([data-theme="dark"]) .chipsRow { background: var(--surface-2); border-color: var(--border); }
 :global([data-theme="dark"]) .fieldLabel { color: var(--text-2); }
 :global([data-theme="dark"]) .drawerFooter { border-color: var(--border); }
-.chip, :global([data-theme="dark"]) .chip { border-radius: 0; background: var(--surface); border-color: var(--border-strong); color: var(--text); box-shadow: none; }
-:global([data-theme="dark"]) .chipCloseBtn { background: var(--surface-3); color: var(--text-2); }
+.chip, :global([data-theme="dark"]) .chip { border-radius: var(--r-pill, 999px); background: var(--surface); border-color: var(--border-strong); color: var(--text); box-shadow: none; }
+:global([data-theme="dark"]) .chipCloseBtn { background: var(--surface-3); color: var(--text-2); border-radius: 50%; }
 .leftControls { flex-wrap: wrap; }
 .searchWrap { min-width: min(100%, 200px); }
 @media (max-width: 520px) { .mainBar, .filterDrawer, .chipsRow { padding-inline: 16px; } .leftControls, .rightControls { width: 100%; } .searchWrap { max-width: none; flex: 1 1 100%; } .sortWrap { flex: 1; width: auto; } .drawerFooter { gap: 12px; flex-wrap: wrap; } }

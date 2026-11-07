@@ -329,7 +329,7 @@
 .selectedCard { outline: 2px solid var(--brand); box-shadow: none; }
 .cardTop { flex-wrap: wrap; }
 .todayColumn .weekdayLabel, .hasWorkoutsPill { color: var(--text); }
-.dateCircle, .workoutCountPill { border-radius: 0; }
+.dateCircle { border-radius: 50%; } .workoutCountPill { border-radius: 999px; }
 .todayCircle { box-shadow: none; }
 .todayColumn .weekdayLabel, .hasWorkoutsPill { color: var(--text); }
 .calendarLayout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }

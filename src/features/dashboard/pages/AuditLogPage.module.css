@@ -15,7 +15,8 @@
 .changeTable tr:last-child td { border-bottom: none; }
 .valPillOld { display: inline-block; padding: 3px 8px; border-radius: 4px; background: color-mix(in srgb, var(--danger) 10%, transparent); color: var(--danger); font-weight: 500; font-size: var(--fs-caption); }
 .valPillNew { display: inline-block; padding: 3px 8px; border-radius: 4px; background: color-mix(in srgb, var(--ok) 12%, transparent); color: var(--ok); font-weight: 600; font-size: var(--fs-caption); }
-.changeTableWrapper, .valPillOld, .valPillNew { border-radius: 0; }
+.changeTableWrapper { border-radius: 0; }
+.valPillOld, .valPillNew { border-radius: 999px; }
 .changeTable th { text-transform: uppercase; letter-spacing: .08em; }
 @media (max-width: 600px) { .metadata { grid-template-columns: 1fr; } .changeTableWrapper { overflow-x: auto; } }
 @media (max-width: 520px) { .filters { padding: 16px; } .filters label { flex-basis: 100%; } .pagination { padding-inline: 16px; } .pagination .actions { width: 100%; } .pagination .actions > * { flex: 1 1 auto; } }
