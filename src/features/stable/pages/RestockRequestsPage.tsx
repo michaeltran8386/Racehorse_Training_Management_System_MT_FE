@@ -67,8 +67,14 @@ export default function RestockRequestsPage() {
     async function loadMaster() {
       try {
         const [zList, sList] = await Promise.all([
-          getZones(true),
-          getSupplies({ status: 'ACTIVE' }),
+          getZones(true).catch((err) => {
+            console.error('Failed to load zones:', err);
+            return [];
+          }),
+          getSupplies({ status: 'ACTIVE' }).catch((err) => {
+            console.error('Failed to load supplies:', err);
+            return [];
+          }),
         ]);
         setZones(zList);
         setSupplies(sList);

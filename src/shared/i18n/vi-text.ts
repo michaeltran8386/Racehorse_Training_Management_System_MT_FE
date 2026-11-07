@@ -2646,6 +2646,7 @@ export const VI_TEXT: Record<string, string> = {
   "Manage supply details, prices and availability in the catalog.": "Quản lý thông tin, đơn giá và trạng thái sử dụng của vật tư.",
   "Look up medicines, units and withdrawal periods before treatment.": "Tra cứu thuốc, đơn vị và thời gian ngưng thuốc trước khi điều trị.",
   "Look up available feed, medicines and equipment.": "Tra cứu thức ăn, thuốc và thiết bị đang sử dụng.",
+  "Look up available feed, medicines and supplements.": "Tra cứu thức ăn, thuốc và thực phẩm bổ sung đang sử dụng.",
   // Supplies Catalog Page
   "Manage feed, veterinary medicines, supplements and grooming equipment.": "Quản lý danh mục thức ăn, thuốc thú y, chất điện giải và dụng cụ chăm sóc.",
   "+ Add Supply": "+ Thêm vật tư",

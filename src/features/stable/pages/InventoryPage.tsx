@@ -25,9 +25,8 @@ import { type SupplyCatalogItem, formatSupplyUnit, getFriendlyCategoryName, form
 
 const CATEGORY_NAMES: Record<SupplyCategory, string> = {
   FEED: 'Feed & Forage',
-  MEDICINE: 'Medications & Vaccines',
-  CARE: 'Daily Care & Supplements',
-  EQUIPMENT: 'Equipment & Tools',
+  MEDICINE: 'Medications',
+  CARE: 'Supplements & Care',
 };
 
 export default function InventoryPage() {
@@ -61,8 +60,14 @@ export default function InventoryPage() {
     async function loadMaster() {
       try {
         const [zList, sList] = await Promise.all([
-          getZones(true),
-          getSupplies({ status: 'ACTIVE' }),
+          getZones(true).catch((err) => {
+            console.error('Failed to load zones:', err);
+            return [];
+          }),
+          getSupplies({ status: 'ACTIVE' }).catch((err) => {
+            console.error('Failed to load supplies:', err);
+            return [];
+          }),
         ]);
         setZones(zList);
         setSupplies(sList);
