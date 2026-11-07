@@ -58,6 +58,7 @@ export default function RaceEntryPage() {
   const user = useCurrentUser();
   const isClubManager = user.role === "CLUB_MANAGER";
   const isTrainer = user.role === "HEAD_TRAINER";
+  const isOwner = user.role === "HORSE_OWNER";
   const canManage = isClubManager || isTrainer;
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
@@ -491,7 +492,7 @@ export default function RaceEntryPage() {
                   {/* Actions Footer */}
                   <div className={styles.eventActions}>
                     <div className={styles.eventActionGroup}>
-                      {isTrainer && isOpenReg && (
+                      {(isTrainer || isOwner) && isOpenReg && (
                         <Button
                           tone="primary"
                           icon="horse"

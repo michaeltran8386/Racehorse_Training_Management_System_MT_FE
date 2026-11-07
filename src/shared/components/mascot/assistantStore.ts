@@ -4,6 +4,11 @@ import { useSyncExternalStore } from "react";
 
 export type ChatStatus = "ANSWERED" | "INSUFFICIENT_EVIDENCE" | "REFUSED_UNAUTHORIZED" | "BLOCKED_PROMPT_INJECTION";
 
+export interface ChatCardPayload {
+  type: "HORSE_CARD" | "RACE_CARD" | "SETTLEMENT_CARD" | "BILLING_CARD";
+  data: any;
+}
+
 /** Định dạng output cố định 6 phần do BE trả về (POST /ai/assistant/chat). */
 export interface AssistantAnswer {
   traceId: string;
@@ -23,6 +28,7 @@ export interface AssistantAnswer {
   aiGenerated: boolean;
   cached: boolean;
   quota: { used: number; limit: number };
+  cardPayload?: ChatCardPayload | null;
 }
 
 export type ChatMessage =

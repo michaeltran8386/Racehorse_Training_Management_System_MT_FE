@@ -1,6 +1,7 @@
 import { api } from "@/shared/lib/api";
 import type {
   EligibilityResponse,
+  HorseEligibilityDetail,
   Tournament,
   TournamentRegistration,
   TournamentStatus,
@@ -108,4 +109,11 @@ export async function recordRaceResults(
 
 export async function lockRaceResults(tournamentId: string): Promise<Tournament> {
   return api<Tournament>("POST", `/tournaments/${tournamentId}/lock-results`);
+}
+
+export async function fetchHorseEligibilityDetail(
+  tournamentId: string,
+  horseId: string,
+): Promise<HorseEligibilityDetail> {
+  return api<HorseEligibilityDetail>("GET", `/tournaments/${tournamentId}/eligibility/${horseId}`);
 }

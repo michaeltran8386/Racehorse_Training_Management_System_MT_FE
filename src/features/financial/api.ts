@@ -73,3 +73,53 @@ export async function payInvoice(
   return api<FinancialInvoice>("POST", `/invoices/${id}/pay`, paymentData || {});
 }
 
+
+export interface OwnerStatementBreakdown {
+  level1Summary: {
+    totalBoarding: number;
+    totalFeed: number;
+    totalMedical: number;
+    totalTraining: number;
+    totalRacePayouts: number;
+    grossCharges: number;
+    finalBalanceDue: number;
+    isSurplus: boolean;
+  };
+  level2Drilldown: {
+    invoices: {
+      id: string;
+      billingPeriod: string;
+      horseName: string;
+      boardingFee: number;
+      medicalFee: number;
+      trainingFee: number;
+      prizeCredit: number;
+      netAmount: number;
+      status: string;
+    }[];
+    raceSettlements: {
+      resultId: string;
+      tournamentName: string;
+      raceDate: string | null;
+      horseName: string;
+      rank: number;
+      grossPrize: number;
+      trainerCut: number;
+      jockeyCut: number;
+      entryFeeDeducted: number;
+      netOwnerPayout: number;
+      settledAt: string | null;
+    }[];
+  };
+}
+
+export async function fetchStatementBreakdown(
+  ownerId?: string,
+  billingPeriod?: string,
+): Promise<OwnerStatementBreakdown> {
+  const query = new URLSearchParams();
+  if (ownerId && ownerId !== "ALL") query.set("ownerId", ownerId);
+  if (billingPeriod && billingPeriod !== "ALL") query.set("billingPeriod", billingPeriod);
+  const qs = query.toString();
+  return api<OwnerStatementBreakdown>("GET", `/invoices/statement-breakdown${qs ? `?${qs}` : ""}`);
+}

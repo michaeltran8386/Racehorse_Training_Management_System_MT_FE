@@ -4,7 +4,9 @@ import { tr } from "@/shared/i18n/tr";
 import { api, ApiError } from "@/shared/lib/api";
 import { Icon } from "@/shared/components/ui/Icon";
 import { cx } from "@/shared/lib/cx";
-import { setMessages, useAssistantMessages, type AssistantAnswer } from "./assistantStore";
+import { setMessages, useAssistantMessages, type AssistantAnswer, type ChatCardPayload, type ChatMessage } from "./assistantStore";
+import { vndUnit } from "@/shared/lib/format";
+import { Badge } from "@/shared/components/ui/Badge";
 import styles from "./MascotAssistant.module.css";
 
 // Hỏi đáp với Trợ lý TMEC (POST /ai/assistant/chat): số liệu do BE tính qua công cụ chỉ đọc, AI chỉ diễn giải.
@@ -38,14 +40,15 @@ const SUGGESTIONS: Record<string, string[]> = {
     "How do I report an incident?",
   ],
   HORSE_OWNER: [
-    "What is the total cost of keeping my horses?",
-    "List my horses",
-    "What is the health status of my horses?",
-    "How do I export an invoice to PDF?",
+    "Báo cáo chi phí nuôi ngựa tháng này?",
+    "Chiến mã của tôi có đủ điều kiện thi đấu giải sắp tới không?",
+    "Tổng kết tiền thưởng các giải đua đã tham gia?",
+    "Tình trạng sức khỏe và lịch tập của đàn ngựa?",
   ],
 };
 
 const ALERT_ICON = { danger: "alert", warn: "alert", info: "info" } as const;
+const formatVND = (n: number | string) => `${Number(n || 0).toLocaleString("vi-VN")} ${vndUnit()}`;
 
 export function AssistantChat({ role, onNavigate, variant = "panel" }: { role: string; onNavigate?: () => void; variant?: "panel" | "page" }) {
   const messages = useAssistantMessages();
@@ -60,6 +63,48 @@ export function AssistantChat({ role, onNavigate, variant = "panel" }: { role: s
       .then(setQuota)
       .catch(() => setQuota(null));
   }, []);
+
+  // Load conversation history for HORSE_OWNER
+  useEffect(() => {
+    if (role === "HORSE_OWNER") {
+      api<any[]>("GET", "/ai/concierge/history", undefined, { silent: true })
+        .then((history) => {
+          if (Array.isArray(history) && history.length > 0) {
+            const parsed: ChatMessage[] = history.map((h) =>
+              h.sender === "USER"
+                ? { id: h.id, role: "user", text: h.content }
+                : {
+                    id: h.id,
+                    role: "assistant",
+                    result: {
+                      traceId: h.id,
+                      status: "ANSWERED",
+                      summary: h.content,
+                      data: [],
+                      alerts: [],
+                      actions: [{ label: "Mở Báo cáo tài chính", route: "/financial-reports" }],
+                      sources: [],
+                      disclaimer: null,
+                      aiGenerated: true,
+                      cached: false,
+                      quota: { used: 0, limit: 50 },
+                      cardPayload: h.cardType ? { type: h.cardType, data: h.cardData } : null,
+                    },
+                  },
+            );
+            setMessages((prev) => (prev.length === 0 ? parsed : prev));
+          }
+        })
+        .catch(() => {});
+    }
+  }, [role]);
+
+  const handleClear = () => {
+    if (role === "HORSE_OWNER") {
+      api("POST", "/ai/concierge/clear", undefined, { silent: true }).catch(() => {});
+    }
+    setMessages(() => []);
+  };
 
   // Giữ tin mới nhất trong khung (khung có chiều cao cố định, không kéo dài trang).
   useEffect(() => {
@@ -108,7 +153,7 @@ export function AssistantChat({ role, onNavigate, variant = "panel" }: { role: s
             ? tr("{{left}}/{{limit}} questions left today", { left: Math.max(0, quota.limit - quota.used), limit: quota.limit })
             : tr("Read-only assistant")}
         </span>
-        <button type="button" className={styles.linkBtn} disabled={messages.length === 0 || sending} onClick={() => setMessages(() => [])}>
+        <button type="button" className={styles.linkBtn} disabled={messages.length === 0 || sending} onClick={handleClear}>
           <Icon name="refresh" size={14} />
           {tr("New conversation")}
         </button>
@@ -192,6 +237,7 @@ function AnswerCard({ answer, onNavigate }: { answer: AssistantAnswer; onNavigat
         </span>
       )}
       <p className={styles.msgText}>{answer.summary}</p>
+      {answer.cardPayload && <InteractiveConciergeCard payload={answer.cardPayload} onNavigate={onNavigate} />}
 
       {answer.data.map((block) => (
         <section key={block.tool} className={styles.dataBlock} aria-label={block.title}>
@@ -263,4 +309,134 @@ function AnswerCard({ answer, onNavigate }: { answer: AssistantAnswer; onNavigat
       {answer.disclaimer && <small className={styles.msgNote}>{answer.disclaimer}</small>}
     </div>
   );
+}
+
+
+function InteractiveConciergeCard({ payload, onNavigate }: { payload: ChatCardPayload; onNavigate?: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const data = payload.data;
+  if (!data) return null;
+
+  if (payload.type === "BILLING_CARD" && data.level1Summary) {
+    const s = data.level1Summary;
+    const settlements = data.level2Drilldown?.raceSettlements || [];
+    return (
+      <div style={{ margin: "0.5rem 0", padding: "0.75rem", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <strong style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--ink)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+            <Icon name="file" size={14} />
+            Sao kê tài chính 4 trụ cột
+          </strong>
+          <Badge tone={s.isSurplus ? "ok" : "warn"}>
+            {s.isSurplus ? "Thặng dư (+)" : "Phải thanh toán"}
+          </Badge>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.375rem", fontSize: "var(--fs-xs, 0.75rem)" }}>
+          <div style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "var(--surface-muted)" }}>
+            <span style={{ color: "var(--muted)", display: "block" }}>Nuôi dưỡng:</span>
+            <strong>{formatVND(s.totalBoarding)}</strong>
+          </div>
+          <div style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "var(--surface-muted)" }}>
+            <span style={{ color: "var(--muted)", display: "block" }}>Thức ăn:</span>
+            <strong>{formatVND(s.totalFeed)}</strong>
+          </div>
+          <div style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "var(--surface-muted)" }}>
+            <span style={{ color: "var(--muted)", display: "block" }}>Thú y:</span>
+            <strong>{formatVND(s.totalMedical)}</strong>
+          </div>
+          <div style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "rgba(16, 185, 129, 0.08)" }}>
+            <span style={{ color: "var(--ok)", display: "block" }}>Thưởng giải đua:</span>
+            <strong style={{ color: "var(--ok)" }}>-{formatVND(s.totalRacePayouts)}</strong>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.5rem 0.625rem", borderRadius: "6px", background: s.isSurplus ? "rgba(16, 185, 129, 0.12)" : "rgba(245, 158, 11, 0.12)" }}>
+          <span style={{ fontSize: "var(--fs-xs)", fontWeight: 600 }}>Tổng quyết toán cuối:</span>
+          <strong style={{ fontSize: "var(--fs-sm)", color: s.isSurplus ? "var(--ok)" : "var(--brand)" }}>
+            {formatVND(s.finalBalanceDue)}
+          </strong>
+        </div>
+
+        {settlements.length > 0 && (
+          <div style={{ borderTop: "1px dashed var(--border)", paddingTop: "0.375rem" }}>
+            <button
+              type="button"
+              onClick={() => setExpanded(!expanded)}
+              style={{ background: "none", border: "none", padding: 0, color: "var(--brand)", fontSize: "var(--fs-xs)", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem" }}
+            >
+              <Icon name={expanded ? "chevronUp" : "chevronDown"} size={12} />
+              {expanded ? "Thu gọn đối soát giải đua" : `Xem ${settlements.length} đối soát giải đua`}
+            </button>
+            {expanded && (
+              <div style={{ marginTop: "0.375rem", display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+                {settlements.map((st: any) => (
+                  <div key={st.resultId} style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", border: "1px solid var(--border)", fontSize: "var(--fs-xs)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 600 }}>
+                      <span>{st.tournamentName}</span>
+                      <span>Hạng #{st.rank}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "var(--muted)", fontSize: "0.7rem" }}>
+                      <span>Tổng giải: {formatVND(st.grossPrize)} · HLV: -{formatVND(st.trainerCut)} · Kỵ sĩ: -{formatVND(st.jockeyCut)}</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "var(--ok)", fontWeight: 600, fontSize: "0.75rem" }}>
+                      <span>Thực nhận:</span>
+                      <span>+{formatVND(st.netOwnerPayout)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (payload.type === "SETTLEMENT_CARD" && Array.isArray(data.rows)) {
+    return (
+      <div style={{ margin: "0.5rem 0", padding: "0.75rem", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+        <strong style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--ink)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+          <Icon name="medal" size={14} />
+          {data.title || "Đối soát tiền thưởng thi đấu"}
+        </strong>
+        {data.rows.map((r: any, idx: number) => (
+          <div key={idx} style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "var(--surface-muted)", fontSize: "var(--fs-xs)", display: "flex", justifyContent: "space-between" }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>{r.tournament}</div>
+              <div style={{ color: "var(--muted)", fontSize: "0.7rem" }}>{r.horse} · {r.rank}</div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ color: "var(--ok)", fontWeight: 700 }}>{r.netPayout}</div>
+              <div style={{ color: "var(--muted)", fontSize: "0.7rem" }}>Tổng: {r.grossPrize}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (payload.type === "HORSE_CARD" && Array.isArray(data.horses)) {
+    return (
+      <div style={{ margin: "0.5rem 0", padding: "0.75rem", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+        <strong style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--ink)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+          <Icon name="horse" size={14} />
+          {data.title || "Tình trạng chiến mã"}
+        </strong>
+        {data.horses.map((h: any, idx: number) => (
+          <div key={idx} style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "var(--surface-muted)", fontSize: "var(--fs-xs)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>{h.name}</div>
+              <div style={{ color: "var(--muted)", fontSize: "0.7rem" }}>Ô chuồng: {h.stall || "—"}</div>
+            </div>
+            <Badge tone={h.lock === "Có" ? "danger" : "ok"}>
+              {h.lock === "Có" ? "Khóa y tế" : (h.status || "Sẵn sàng")}
+            </Badge>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return null;
 }

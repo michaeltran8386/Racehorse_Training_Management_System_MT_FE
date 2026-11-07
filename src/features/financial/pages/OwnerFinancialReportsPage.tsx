@@ -21,12 +21,13 @@ import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
-import { fetchOwnerSummary, changeInvoiceStatus, generateMonthlyInvoices, payInvoice } from "../api";
+import { fetchOwnerSummary, changeInvoiceStatus, generateMonthlyInvoices, payInvoice, fetchStatementBreakdown, type OwnerStatementBreakdown } from "../api";
 import type { FinancialInvoice, InvoiceStatus, OwnerSummaryResponse } from "../types";
 import { exportStatementXlsx, printStatement } from "../statementExport";
 import { invoiceStatusLabel } from "../invoiceStatus";
 
 const PAGE_SIZE = 10;
+const formatVND = (n: number | string) => `${Number(n || 0).toLocaleString("vi-VN")} ${vndUnit()}`;
 
 export default function OwnerFinancialReportsPage() {
   useScreenTranslation();
@@ -65,6 +66,8 @@ export default function OwnerFinancialReportsPage() {
   // Statement details modal state
   const [selectedInvoice, setSelectedInvoice] = useState<FinancialInvoice | null>(null);
   const [confirmPayment, setConfirmPayment] = useState(false);
+  const [breakdown, setBreakdown] = useState<OwnerStatementBreakdown | null>(null);
+  const [showDrilldown, setShowDrilldown] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -75,8 +78,15 @@ export default function OwnerFinancialReportsPage() {
     setLoadError("");
     setSummary(null);
     try {
-      const data = await fetchOwnerSummary();
+      const [data, breakdownData] = await Promise.all([
+        fetchOwnerSummary(),
+        fetchStatementBreakdown(
+          ownerFilter !== "ALL" ? ownerFilter : undefined,
+          selectedPeriod !== "ALL" ? selectedPeriod : undefined
+        ).catch(() => null),
+      ]);
       setSummary(data);
+      if (breakdownData) setBreakdown(breakdownData);
       setSelectedPeriod((period) => period === "ALL" || data.invoices.some((invoice) => invoice.billingPeriod === period) ? period : "ALL");
     } catch (err) {
       setLoadError(messageFor(err));
