@@ -41,13 +41,19 @@ npm run dev
 
 Toàn bộ tài khoản có mật khẩu chung: **`EquiFlow@2026`**
 
-| Vai Trò | Email Đăng Nhập | Mật Khẩu | Khu Vực Làm Việc |
+| Vai Trò | Email Đăng Nhập | Mật Khẩu | Khu Vực Làm Việc & Chiến Mã |
 | :--- | :--- | :---: | :--- |
-| **Quản Lý (Club Manager)** | `manager@gmail.com` | `EquiFlow@2026` | Phê duyệt thành viên, cấu hình chuồng trại, phân quyền, xem Audit Log |
-| **HLV Trưởng (Head Trainer)** | `trainer@gmail.com` | `EquiFlow@2026` | Lập giáo án thông minh, theo dõi bài tập, giám sát nhịp tim và thể lực |
-| **Bác Sĩ Thú Y (Veterinarian)**| `vet@gmail.com` | `EquiFlow@2026` | Khám chữa bệnh, cấp Khóa Y Tế, sơ đồ chấn thương 2D, lịch tiêm phòng |
-| **Nhân Viên Chuồng (Groom)** | `groom@gmail.com` | `EquiFlow@2026` | Danh sách công việc hàng ngày, tiếp tế kho vật tư, phân bổ ca trực |
-| **Chủ Ngựa (Horse Owner)** | `owner@gmail.com` | `EquiFlow@2026` | Theo dõi sức khỏe ngựa sở hữu, xem hóa đơn & xuất báo cáo tài chính PDF |
+| **Quản Lý (Club Manager)** | `manager@gmail.com` | `EquiFlow@2026` | Quản trị tài khoản, phân quyền, cấu hình chuồng trại, Audit Log, sao kê tài chính |
+| **HLV Trưởng 1 (Head Trainer)**| `trainer@gmail.com` | `EquiFlow@2026` | Lập giáo án thông minh, xếp lịch buổi tập, giám sát thể lực & nhịp tim |
+| **HLV Trưởng 2 (Head Trainer)**| `trainer2@gmail.com`| `EquiFlow@2026` | Phụ trách nhóm ngựa đua Barn 2 & Cúp cự ly kinh điển |
+| **Bác Sĩ Thú Y (Veterinarian)**| `vet@gmail.com` | `EquiFlow@2026` | Khám lâm sàng, cấp/mở Khóa Y Tế, sơ đồ chấn thương 2D, lịch tiêm phòng |
+| **Nhân Viên Chuồng (Groom 1)** | `groom@gmail.com` | `EquiFlow@2026` | Chăm sóc Barn 1 (A01-A08), tiếp tế kho vật tư, danh sách công việc ca trực |
+| **Nhân Viên Chuồng (Groom 2)** | `groom2@gmail.com` | `EquiFlow@2026` | Chăm sóc Barn 2 (B01-B08), xử lý sự cố chuồng trại |
+| **Nhân Viên Chuồng (Groom 3)** | `groom3@gmail.com` | `EquiFlow@2026` | Phụ trách Khu Cách Ly (C01) và Khu Lưu Giữ nợ phí (Zone H) |
+| **Chủ Ngựa 1 (Horse Owner)** | `owner@gmail.com` | `EquiFlow@2026` | Sở hữu: Bạch Long Mã, Xích Thố, Kim Long, Vân Tiêu |
+| **Chủ Ngựa 2 (Horse Owner)** | `owner2@gmail.com` | `EquiFlow@2026` | Sở hữu: Thần Phong, Lão Tướng, Tuyết Ảnh, Lôi Chấn |
+| **Chủ Ngựa 3 (VIP Owner)** | `owner3@gmail.com` | `EquiFlow@2026` | Chủ ngựa VIP — Sở hữu: Hắc Báo, Hồng Kỳ |
+| **Chủ Ngựa 4 (Debt-risk Owner)**| `owner4@gmail.com` | `EquiFlow@2026` | Có ngựa nợ phí lưu giữ tại Zone H: Dạ Nguyệt, Thanh Loan |
 
 ---
 
@@ -55,11 +61,12 @@ Toàn bộ tài khoản có mật khẩu chung: **`EquiFlow@2026`**
 
 ### 📋 Flow 1: Hồ Sơ Chiến Mã & Sơ Đồ Chuồng Trại 2D (`/horses`, `/stalls`, `/stable-map`)
 - **Hồ sơ ngựa 6 tab chuyên sâu:** Thông tin chung, gia phả 3 đời, theo dõi cân nặng (`weightKg`), lịch sử trạng thái, chỉ số thể lực và phân quyền chủ sở hữu.
-- **Sơ đồ chuồng trại 2D tương tác:** Bản đồ ô chuồng dạng lưới trực quan cho Barn 1, Barn 2 và Khu cách ly y tế. Hỗ trợ điều chuyển, bảo trì chuồng và hiển thị bong bóng ngựa nghỉ ngơi.
+- **Sơ đồ chuồng trại 2D tương tác:** Bản đồ ô chuồng dạng lưới trực quan cho Barn 1, Barn 2, Khu cách ly y tế và **Khu Lưu giữ nợ phí (Zone H)**. Hỗ trợ điều chuyển, bảo trì chuồng và hiển thị bong bóng ngựa nghỉ ngơi.
 
 ### ⏱️ Flow 2: Lập Giáo Án & Giám Sát Huấn Luyện (`/training/*`)
 - **Thuật toán Plan Wizard:** Phân chia chu kỳ huấn luyện (Base, Speed, Tapering, Recovery), tự động gán bài tập theo từng cự ly và mặt đường đua (Cỏ Turf / Cát Dirt).
 - **Lịch tập tuần kéo thả (Weekly Calendar):** Quản lý bài tập theo ngày, gán nài ngựa và Groom hỗ trợ.
+- **Công cụ tìm kiếm thông minh `SearchSelect`:** Tìm kiếm ngựa nhanh chóng kết hợp dropdown và gõ tiếng Việt không dấu.
 - **Cơ chế Khóa Huấn Luyện An Toàn (`RULE-MED-01`):** Ngựa đang có Khóa Y Tế sẽ tự động bị chặn các bài tập nặng (`BREEZE`, `TRIAL_RUN`), chỉ cho phép phục hồi nhẹ.
 - **Biểu đồ thể lực (Fitness Chart):** Giám sát nhịp tim phục hồi, tốc độ tối đa và cảnh báo quá tải cơ bắp.
 
@@ -75,12 +82,15 @@ Toàn bộ tài khoản có mật khẩu chung: **`EquiFlow@2026`**
 - **Lịch làm việc ca trực (Shift Roster):** Phân bổ ca sáng/chiều/tối cho nhân viên chăm sóc.
 
 ### 🏆 Flow 5: Trường Đua, Giải Đấu & Báo Cáo Tài Chính (`/racing/*`, `/financial/*`)
-- **Đăng ký giải đấu & Phân làn thi đấu:** Kiểm tra điều kiện y tế trước khi cho phép ghi danh thi đấu.
-- **Kế toán & Báo cáo tài chính chủ ngựa:** Lập hóa đơn chi phí lưu chuồng, ăn uống, dịch vụ thú y; hỗ trợ **In / Xuất hóa đơn PDF & CSV**.
+- **Đăng ký giải đấu & Phân trang số chuẩn (`RaceEntryPage`):** Phân trang 10 giải/trang loại bỏ scroll vô tận; tích hợp `SearchSelect` lọc nhanh ngựa đủ điều kiện thi đấu.
+- **Kế toán & Báo cáo tài chính chủ ngựa (`CostReportPage`, `OwnerFinancialReportsPage`):**
+  - Chuỗi dữ liệu sao kê **6 tháng liên tục (07/2026 – 12/2026)** gồm 31 hóa đơn với 4 trạng thái: Đã thanh toán (`PAID`), Đã gửi (`SENT`), Chưa gửi (`DRAFT`), và Quá hạn (`OVERDUE`).
+  - Lập hóa đơn chi phí lưu chuồng tính tự động theo ngày thực tế (`prorated by days`), ăn uống, dịch vụ thú y và bù trừ tiền thưởng giải đua.
+  - Hỗ trợ **In / Xuất hóa đơn PDF & Excel (.xlsx)**.
 
-### 🤖 Flow 6: Trợ Lý AI & Hệ Thống Đa Ngôn Ngữ
-- **Trợ lý AI Thông Minh:** Chatbot hỏi đáp kỹ thuật cưỡi ngựa và tra cứu thông tin theo tài liệu câu lạc bộ.
-- **Song ngữ Anh - Việt 100%:** Chuyển đổi ngôn ngữ linh hoạt với bộ từ điển chuẩn hóa toàn diện.
+### 🤖 Flow 6: Trợ Lý AI Chuyên Biệt & Hệ Thống Đa Ngôn Ngữ
+- **Trợ lý AI TMEC Assistant:** Định hướng phục vụ chuyên sâu cho **Chủ Ngựa (`HORSE_OWNER`)** để tra cứu tình trạng chiến mã, lịch tập và sao kê cá nhân hóa; giao diện nhân viên nội bộ tinh giản để tối ưu thao tác chuyên môn.
+- **Song ngữ Anh - Việt 100%:** Chuyển đổi ngôn ngữ tức thời, đồng nhất nhãn trạng thái ("Đã gửi" / "Chưa gửi") và định dạng tiền tệ dấu chấm phân cách hàng nghìn (`6.000.000 đ`).
 
 ---
 

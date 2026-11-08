@@ -1,4 +1,4 @@
-import { vndUnit } from "@/shared/lib/format";
+import { vndUnit, formatVND } from "@/shared/lib/format";
 import { useState, useEffect } from "react";
 import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
@@ -327,7 +327,7 @@ export function RecordResultsModal({
                     <td style={{ padding: "0.5rem", wordBreak: "break-word" }}>
                       {isReadOnly ? (
                         <span style={{ fontWeight: 600, color: row.prizeMoneyWon !== "" && row.prizeMoneyWon > 0 ? "var(--brand-700)" : "var(--muted)", whiteSpace: "nowrap" }}>
-                          {row.prizeMoneyWon === "" ? "—" : `${row.prizeMoneyWon.toLocaleString()} ${vndUnit()}`}
+                          {row.prizeMoneyWon === "" ? "—" : formatVND(row.prizeMoneyWon)}
                         </span>
                       ) : (
                         <input

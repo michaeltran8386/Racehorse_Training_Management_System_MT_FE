@@ -1,4 +1,4 @@
-import { vndUnit } from "@/shared/lib/format";
+import { vndUnit, formatCurrency, formatVND } from "@/shared/lib/format";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -11,6 +11,7 @@ import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { KpiTile } from "@/shared/components/ui/KpiTile";
 import { Pagination } from "@/shared/components/ui/Pagination";
 import { SkeletonTable } from "@/shared/components/ui/Skeleton";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { tr } from "@/shared/i18n/tr";
 import { messageFor } from "@/shared/lib/messages";
 import { useAppLanguage } from "@/shared/lib/language";
@@ -29,6 +30,7 @@ export default function CostReportPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [period, setPeriod] = useState("ALL");
+  const [horseFilter, setHorseFilter] = useState("ALL");
   const [page, setPage] = useState(1);
   const [retry, setRetry] = useState(0);
 
@@ -51,7 +53,16 @@ export default function CostReportPage() {
 
   const invoices = summary?.invoices ?? [];
   const periods = [...new Set(invoices.map((invoice) => invoice.billingPeriod))].sort().reverse();
-  const rows = period === "ALL" ? invoices : invoices.filter((invoice) => invoice.billingPeriod === period);
+  const uniqueHorses = Array.from(new Map(invoices.map((i) => [i.horse.id, i.horse])).values());
+  const horseOptions = [
+    { value: "ALL", label: tr("All Horses") },
+    ...uniqueHorses.map((h) => ({ value: h.id, label: `${h.name} (${h.horseCode || "—"})` })),
+  ];
+  const rows = invoices.filter((invoice) => {
+    const matchPeriod = period === "ALL" || invoice.billingPeriod === period;
+    const matchHorse = horseFilter === "ALL" || invoice.horse.id === horseFilter;
+    return matchPeriod && matchHorse;
+  });
   const currentPage = Math.min(page, Math.max(1, Math.ceil(rows.length / PAGE_SIZE)));
   const visible = rows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
   const boarding = rows.reduce((sum, row) => sum + row.boardingFee, 0);
@@ -67,6 +78,15 @@ export default function CostReportPage() {
         <>
           <Card pad={16}>
             <div className={styles.filter}>
+              <div style={{ minWidth: 260 }}>
+                <SearchSelect
+                  id="cost-horse"
+                  options={horseOptions}
+                  value={horseFilter}
+                  onChange={(val) => { setHorseFilter(val); setPage(1); }}
+                  placeholder={tr("All Horses")}
+                />
+              </div>
               <label htmlFor="cost-period">{tr("Billing Period:")}</label>
               <select id="cost-period" value={period} onChange={(event) => { setPeriod(event.target.value); setPage(1); }}>
                 <option value="ALL">{tr("All Billing Periods")}</option>
@@ -76,10 +96,10 @@ export default function CostReportPage() {
             </div>
           </Card>
           <div className={styles.metrics}>
-            <KpiTile label={tr("Stall Boarding")} value={boarding.toLocaleString(locale)} unit="VND" />
-            <KpiTile label={tr("Medical & Vet")} value={medical.toLocaleString(locale)} unit="VND" />
-            <KpiTile label={tr("Conditioning")} value={training.toLocaleString(locale)} unit="VND" />
-            <KpiTile label={tr("Total Upkeep Expenses")} value={(boarding + medical + training).toLocaleString(locale)} unit="VND" />
+            <KpiTile label={tr("Stall Boarding")} value={formatCurrency(boarding)} unit="VND" />
+            <KpiTile label={tr("Medical & Vet")} value={formatCurrency(medical)} unit="VND" />
+            <KpiTile label={tr("Conditioning")} value={formatCurrency(training)} unit="VND" />
+            <KpiTile label={tr("Total Upkeep Expenses")} value={formatCurrency(boarding + medical + training)} unit="VND" />
           </div>
           <Card pad={20}>
             {rows.length === 0 ? <EmptyState title={tr("No Financial Statements Found")} description={tr(period === "ALL" ? "Monthly billing statements and tournament earnings credits will appear here." : "No statements match the selected billing period.")} /> : (
@@ -90,8 +110,8 @@ export default function CostReportPage() {
                   <tbody>{visible.map((row) => <tr key={row.id}>
                     <td>{row.billingPeriod}</td><td><strong>{row.horse.name}</strong><br /><span>{row.horse.horseCode || "—"}</span></td>
                     {user.role === "CLUB_MANAGER" && <td>{row.owner?.fullName || "—"}</td>}
-                    <td>{row.boardingFee.toLocaleString(locale)} {vndUnit()}</td><td>{row.medicalFee.toLocaleString(locale)} {vndUnit()}</td><td>{row.trainingFee.toLocaleString(locale)} {vndUnit()}</td>
-                    <td><strong>{(row.boardingFee + row.medicalFee + row.trainingFee).toLocaleString(locale)} {vndUnit()}</strong></td><td><Badge tone={row.status === "PAID" ? "ok" : row.status === "SENT" ? "warn" : row.status === "OVERDUE" ? "danger" : "neutral"}>{invoiceStatusLabel(row.status)}</Badge></td>
+                    <td>{formatVND(row.boardingFee)}</td><td>{formatVND(row.medicalFee)}</td><td>{formatVND(row.trainingFee)}</td>
+                    <td><strong>{formatVND(row.boardingFee + row.medicalFee + row.trainingFee)}</strong></td><td><Badge tone={row.status === "PAID" ? "ok" : row.status === "SENT" ? "warn" : row.status === "OVERDUE" ? "danger" : "neutral"}>{invoiceStatusLabel(row.status)}</Badge></td>
                   </tr>)}</tbody>
                 </table>
               </div>

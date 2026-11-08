@@ -96,7 +96,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <MascotAssistant user={user} />
+      {user.role === "HORSE_OWNER" && <MascotAssistant user={user} />}
 
       {/* Hộp thoại nằm NGOÀI RoleGuard: vẫn hiện được khi trang bên trong bị chặn (403). */}
       {logoutOpen && (

@@ -240,7 +240,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("catalog", "Supplies Catalog", "package"),
       ],
     },
-    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
   ],
   VETERINARIAN: [
     {
@@ -264,7 +264,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("incidents", "Incident Reports", "camera", { requires: "viewMedical" }),
       ],
     },
-    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
   ],
   GROOM: [
     { label: "WORKSPACE", items: [item("dashboard", "Dashboard", "home"), item("horses", "Horses", "horse", { requires: "viewHorses" })] },
@@ -287,7 +287,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
         item("catalog", "Supplies Catalog", "package"),
       ],
     },
-    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
   ],
   HORSE_OWNER: [
     { label: "WORKSPACE", items: [item("dashboard", "Dashboard", "home"), item("my-horses", "My Horses", "horse", { requires: "viewHorses" })] },
@@ -358,7 +358,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
       ],
     },
     { label: "RACING", items: [item("races", "Race Entries", "trophy")] },
-    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
   ],
 };
 
@@ -376,24 +376,24 @@ const masterData = ["horses", "stalls", "rations", "stable/shifts"];
 const supply = ["supplies/inventory", "supplies/requests", "catalog"];
 const sidebarOrder: Record<Role, [string, string[]][]> = {
   CLUB_MANAGER: [
-    ["WORKSPACE", ["dashboard", "assistant", "races"]],
+    ["WORKSPACE", ["dashboard", "races"]],
     ["ADMINISTRATION", ["accounts", "staff"]],
     ["MASTER DATA", ["horses", "stalls", "stable/shifts"]],
     ["SUPPLIES", supply],
     ["REPORTS", ["performance", "financial-reports", "costs", "audit"]],
   ],
   HEAD_TRAINER: [
-    ["WORKSPACE", ["dashboard", "assistant", "races"]],
+    ["WORKSPACE", ["dashboard", "races"]],
     ["MASTER DATA", ["horses", "stalls", "stable/shifts", "rations"]],
     ["TRAINING", ["training", "plans", "calendar", "trials", "metrics", "monitor", "alerts"]],
   ],
   VETERINARIAN: [
-    ["WORKSPACE", ["dashboard", "assistant"]],
+    ["WORKSPACE", ["dashboard"]],
     ["MASTER DATA", ["horses", "stalls", "rations"]],
     ["MEDICAL", ["herd", "records", "locks", "alerts", "vaccine", "incidents"]],
   ],
   GROOM: [
-    ["WORKSPACE", ["dashboard", "assistant"]],
+    ["WORKSPACE", ["dashboard"]],
     ["MASTER DATA", masterData],
     ["DAILY", ["tasks", "my-training", "incidents"]],
     ["SUPPLIES", supply],

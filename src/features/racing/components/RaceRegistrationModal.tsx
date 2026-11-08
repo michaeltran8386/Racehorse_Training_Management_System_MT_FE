@@ -3,10 +3,12 @@ import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
-import { fetchEligibility, registerHorseForRace, scratchHorseFromRace, fetchTournamentDetail } from "../api";
-import type { EligibilityResponse, Tournament } from "../types";
+import { fetchEligibility, registerHorseForRace, scratchHorseFromRace, fetchTournamentDetail, fetchHorseEligibilityDetail } from "../api";
+import { vndUnit } from "@/shared/lib/format";
+import type { EligibilityResponse, Tournament, HorseEligibilityDetail } from "../types";
 
 function formatIneligibleReason(reason: string, isVi: boolean): string {
   if (!isVi) return reason;
@@ -71,6 +73,20 @@ export function RaceRegistrationModal({
   const [selectedHorseId, setSelectedHorseId] = useState<string>("");
   const [notes, setNotes] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [eligibilityDetail, setEligibilityDetail] = useState<HorseEligibilityDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  useEffect(() => {
+    if (selectedHorseId && currentTournament?.id) {
+      setDetailLoading(true);
+      fetchHorseEligibilityDetail(currentTournament.id, selectedHorseId)
+        .then(setEligibilityDetail)
+        .catch(() => setEligibilityDetail(null))
+        .finally(() => setDetailLoading(false));
+    } else {
+      setEligibilityDetail(null);
+    }
+  }, [selectedHorseId, currentTournament?.id]);
 
   // Scratch states
   const [scratchingRegId, setScratchingRegId] = useState<string | null>(null);
@@ -166,7 +182,7 @@ export function RaceRegistrationModal({
           ? (isVietnamese() ? "Quản lý danh sách thi đấu & Rút ngựa" : tr("Manage Entries & Scratch"))
           : tr("Register Horse for Tournament")
       }
-      subtitle={`${currentTournament.name} · ${currentTournament.distanceMeters}m (${tr(currentTournament.trackType)})`}
+      subtitle={`${currentTournament.name} · ${currentTournament.distanceMeters}m (${tr(currentTournament.trackType)})${currentTournament.entryFee ? ` · ${isVietnamese() ? "Phí:" : "Fee:"} ${Number(currentTournament.entryFee).toLocaleString("vi-VN")} ${vndUnit()}` : ""}`}
       width={720}
       onClose={onClose}
       foot={
@@ -367,6 +383,28 @@ export function RaceRegistrationModal({
                 <Badge tone="ok">{tr("Safe to Compete")}</Badge>
               </div>
 
+              {/* Quick Search & Select (Zone Inventory style) */}
+              {data.eligible.length > 0 && (
+                <div style={{ marginBottom: "0.875rem" }}>
+                  <SearchSelect
+                    aria-label={isVietnamese() ? "Tìm và chọn chiến mã" : tr("Search and select horse")}
+                    placeholder={isVietnamese() ? "Gõ tìm hoặc chọn chiến mã từ danh sách..." : tr("Type or select horse from list...")}
+                    options={[
+                      { value: "", label: isVietnamese() ? "— Tìm kiếm & chọn ngựa nhanh —" : "— Search & select horse —" },
+                      ...data.eligible.map((h) => ({
+                        value: h.id,
+                        label: `${h.name} (${h.horseCode || "N/A"})${h.isRegistered ? (isVietnamese() ? " [Đã đăng ký]" : " [Registered]") : ""}`,
+                        disabled: h.isRegistered,
+                      })),
+                    ]}
+                    value={selectedHorseId}
+                    onChange={(val) => {
+                      if (val) setSelectedHorseId(val);
+                    }}
+                  />
+                </div>
+              )}
+
               {data.eligible.length === 0 ? (
                 <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--muted)", fontStyle: "italic" }}>
                   {tr("No horses currently meet the safe ACWR and medical requirements for this distance.")}
@@ -428,6 +466,86 @@ export function RaceRegistrationModal({
                 </div>
               )}
             </div>
+
+            {/* 6-Tier Eligibility Checklist Card */}
+            {selectedHorseId && (
+              <div
+                style={{
+                  padding: "0.875rem",
+                  borderRadius: "var(--r-md, 8px)",
+                  background: "var(--surface-muted, #f8fafc)",
+                  border: "1px solid var(--border)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "0.625rem",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <strong style={{ fontSize: "var(--fs-sm, 0.875rem)", color: "var(--ink)", display: "flex", alignItems: "center", gap: "0.375rem" }}>
+                    <Icon name="shield" size={16} />
+                    {isVietnamese() ? "Bảng kiểm tra 6 tiêu chí hợp lệ thi đấu:" : tr("6-Tier Race Eligibility Checklist:")}
+                  </strong>
+                  {eligibilityDetail && (
+                    <Badge tone={eligibilityDetail.isEligible ? "ok" : "danger"}>
+                      {eligibilityDetail.isEligible ? (isVietnamese() ? "Đủ điều kiện xuất phát" : "Eligible") : (isVietnamese() ? "Không đủ điều kiện" : "Ineligible")}
+                    </Badge>
+                  )}
+                </div>
+
+                {detailLoading ? (
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", fontStyle: "italic" }}>
+                    {isVietnamese() ? "Đang kiểm tra rà soát 6 tiêu chí y tế, độ tuổi, nợ phí và thể lực..." : "Checking 6-tier criteria..."}
+                  </div>
+                ) : eligibilityDetail ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "0.5rem" }}>
+                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.statusCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.statusCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "1. Trạng thái hoạt động" : "1. Status"}</div>
+                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.statusCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                        {eligibilityDetail.checklist.statusCheck.pass ? "✓ " : "✗ "}
+                        {eligibilityDetail.checklist.statusCheck.value}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.ageCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.ageCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "2. Độ tuổi tối thiểu" : "2. Minimum Age"}</div>
+                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.ageCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                        {eligibilityDetail.checklist.ageCheck.pass ? "✓ " : "✗ "}
+                        {eligibilityDetail.checklist.ageCheck.ageYears} {isVietnamese() ? "tuổi" : "yo"} (≥ {eligibilityDetail.checklist.ageCheck.minRequired})
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.medicalLockCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.medicalLockCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "3. Khóa y tế thú y" : "3. Medical Lock"}</div>
+                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.medicalLockCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                        {eligibilityDetail.checklist.medicalLockCheck.pass ? (isVietnamese() ? "✓ Không có khóa" : "✓ Clear") : (isVietnamese() ? "✗ Đang bị khóa y tế" : "✗ Locked")}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.debtCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.debtCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "4. Công nợ / Lưu giữ" : "4. Debt Impoundment"}</div>
+                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.debtCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                        {eligibilityDetail.checklist.debtCheck.pass ? (isVietnamese() ? "✓ Sạch công nợ" : "✓ Clear") : (isVietnamese() ? "✗ Bị lưu giữ do nợ" : "✗ Impounded")}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.withdrawalCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.withdrawalCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "5. Thời gian thải trừ thuốc" : "5. Doping Clearance"}</div>
+                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.withdrawalCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                        {eligibilityDetail.checklist.withdrawalCheck.pass ? (isVietnamese() ? "✓ Đã qua thải trừ" : "✓ Clear") : (isVietnamese() ? "✗ Trong kỳ thải trừ" : "✗ In withdrawal")}
+                      </div>
+                    </div>
+
+                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.fitnessCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.fitnessCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "6. Thể lực tập luyện" : "6. Training Fitness"}</div>
+                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.fitnessCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                        {eligibilityDetail.checklist.fitnessCheck.pass ? "✓ " : "✗ "}
+                        {eligibilityDetail.checklist.fitnessCheck.completedWorkouts}/{eligibilityDetail.checklist.fitnessCheck.required} {isVietnamese() ? "buổi" : "workouts"}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {/* Tactical Notes Input */}
             {selectedHorseId && (
