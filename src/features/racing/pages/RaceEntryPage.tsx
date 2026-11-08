@@ -10,12 +10,13 @@ import { Badge } from "@/shared/components/ui/Badge";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { KpiTile } from "@/shared/components/ui/KpiTile";
 import { Tabs } from "@/shared/components/ui/Tabs";
+import { Pagination } from "@/shared/components/ui/Pagination";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { tr, isVietnamese } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { messageFor } from "@/shared/lib/messages";
-import { formatDate, vndUnit } from "@/shared/lib/format";
+import { formatDate, vndUnit, formatCurrency, formatVND } from "@/shared/lib/format";
 
 const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
   UPCOMING: "Sắp diễn ra",
@@ -66,6 +67,8 @@ export default function RaceEntryPage() {
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -205,6 +208,11 @@ export default function RaceEntryPage() {
     return t.name.toLowerCase().includes(term) || t.location.toLowerCase().includes(term);
   });
 
+  const paginatedTournaments = filtered.slice(
+    (currentPage - 1) * PAGE_SIZE,
+    currentPage * PAGE_SIZE,
+  );
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <PageHeader
@@ -236,7 +244,7 @@ export default function RaceEntryPage() {
         />
         <KpiTile
           label={tr("Total Prize Pool")}
-          value={loading || error ? "—" : totalPrize.toLocaleString(locale)}
+          value={loading || error ? "—" : formatCurrency(totalPrize)}
           unit="VND"
           caption={tr("Purse in the current results")}
         />
@@ -301,7 +309,10 @@ export default function RaceEntryPage() {
               { id: "CANCELLED", label: tr("Cancelled") },
             ]}
             active={statusFilter}
-            onChange={(v) => setStatusFilter(v)}
+            onChange={(v) => {
+              setStatusFilter(v);
+              setCurrentPage(1);
+            }}
           />
 
           <div className={styles.searchBar}>
@@ -310,7 +321,10 @@ export default function RaceEntryPage() {
               aria-label={tr("Search by name or location...")}
               placeholder={tr("Search by name or location...")}
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               onKeyDown={(e) => {
                 if (e.key === "Enter") loadData();
               }}
@@ -356,7 +370,7 @@ export default function RaceEntryPage() {
         </Card>
       ) : (
         <div className={styles.events}>
-          {filtered.map((tourney) => {
+          {paginatedTournaments.map((tourney) => {
             const registeredCount = tourney.registeredCount ?? tourney.registrations?.length ?? 0;
             const isCompleted = tourney.status === "COMPLETED";
             const isOpenReg = tourney.status === "OPEN_REGISTRATION";
@@ -448,7 +462,7 @@ export default function RaceEntryPage() {
                           {tr("Purse Pool")}
                         </span>
                         <strong style={{ fontSize: "var(--fs-sm)", color: "var(--brand-700)" }}>
-                          {tourney.prizePool.toLocaleString(locale)} {vndUnit()}
+                          {formatVND(tourney.prizePool)}
                         </strong>
                       </div>
                     </div>
@@ -576,6 +590,17 @@ export default function RaceEntryPage() {
             );
           })}
         </div>
+      )}
+
+      {/* Numeric Pagination (10 items / page) */}
+      {!loading && !error && filtered.length > PAGE_SIZE && (
+        <Pagination
+          page={currentPage}
+          pageSize={PAGE_SIZE}
+          total={filtered.length}
+          noun={isVi ? "giải đấu" : "tournaments"}
+          onPage={setCurrentPage}
+        />
       )}
 
       {/* Modal 1: Create Tournament */}

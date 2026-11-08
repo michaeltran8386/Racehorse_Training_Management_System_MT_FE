@@ -1,4 +1,4 @@
-import { vndUnit } from "@/shared/lib/format";
+import { vndUnit, formatVND } from "@/shared/lib/format";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
@@ -200,7 +200,7 @@ export default function SuppliesCatalogPage() {
                   key: 'unitPrice',
                   header: tr('Unit Price (VND)'),
                   render: (it: SupplyCatalogItem) =>
-                    it.unitPrice !== null ? it.unitPrice.toLocaleString(isVietnamese() ? 'vi-VN' : 'en-US') + ' ' + vndUnit() : '—',
+                    it.unitPrice !== null ? formatVND(it.unitPrice) : '—',
                 },
               ]
             : []),

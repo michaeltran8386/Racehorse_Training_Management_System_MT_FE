@@ -11,6 +11,7 @@ import { Paged } from "@/shared/components/ui/Pagination";
 import { Checkbox } from "@/shared/components/form/Checkbox";
 import { Input } from "@/shared/components/form/Input";
 import { Select } from "@/shared/components/form/Select";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { HEALTH_STATUS } from "@/shared/lib/status";
 import { messageFor } from "@/shared/lib/messages";
@@ -36,7 +37,7 @@ export default function TrainingOverviewPage() {
   const user = useCurrentUser();
   const [data, setData] = useState<TrainingOverview | null>(null);
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState("ALL");
   const [planFilter, setPlanFilter] = useState("ALL");
   const [spikeOnly, setSpikeOnly] = useState(false);
   const [sort, setSort] = useState<SortKey>("name");
@@ -54,6 +55,10 @@ export default function TrainingOverviewPage() {
     }
     if (f === "SPIKE") {
       setSpikeOnly(true);
+    }
+    const h = searchParams.get("horse");
+    if (h) {
+      setSearch(h);
     }
   }, [searchParams]);
 
@@ -79,7 +84,17 @@ export default function TrainingOverviewPage() {
   }
   if (!data) return <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>{tr("Loading overview...")}</div>;
 
-  const q = search.toLowerCase();
+  const horseOptions = [
+    { value: "ALL", label: tr("All Horses") },
+    ...Array.from(
+      new Map(
+        (data?.rows ?? []).map((r) => [
+          r.horse.id,
+          `${r.horse.name} (${r.horse.horseCode || "—"})`,
+        ]),
+      ).entries(),
+    ).map(([id, label]) => ({ value: id, label })),
+  ];
   const pct = (r: OverviewRow) =>
     r.progress && (r.progress.total || r.progress.due)
       ? r.progress.completed / (r.progress.total || r.progress.due)
@@ -87,7 +102,7 @@ export default function TrainingOverviewPage() {
   const rows = data.rows
     .filter(
       (r) =>
-        (r.horse.name.toLowerCase().includes(q) || (r.horse.horseCode ?? "").toLowerCase().includes(q)) &&
+        (search === "ALL" || !search || r.horse.id === search) &&
         (planFilter === "ALL" ||
           (planFilter === "ACTIVE" && r.plan?.status === "ACTIVE") ||
           (planFilter === "DRAFT" && r.plan?.status === "DRAFT") ||
@@ -198,7 +213,15 @@ export default function TrainingOverviewPage() {
 
       <Card pad={16}>
         <div className={styles.filters}>
-          <Input aria-label={tr("Horse name or code")} placeholder={tr("Horse name or code")} value={search} onChange={(e) => setSearch(e.target.value)} className={styles.search} />
+          <div className={styles.search}>
+            <SearchSelect
+              aria-label={tr("Horse")}
+              placeholder={tr("Horse name or code")}
+              options={horseOptions}
+              value={search}
+              onChange={setSearch}
+            />
+          </div>
           <div className={styles.filter}>
             <Select
               aria-label={tr("Filter by plan")}

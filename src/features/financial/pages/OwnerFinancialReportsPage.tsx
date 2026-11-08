@@ -1,4 +1,4 @@
-import { vndUnit } from "@/shared/lib/format";
+import { vndUnit, formatCurrency, formatVND } from "@/shared/lib/format";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useState, useEffect } from "react";
@@ -27,7 +27,6 @@ import { exportStatementXlsx, printStatement } from "../statementExport";
 import { invoiceStatusLabel } from "../invoiceStatus";
 
 const PAGE_SIZE = 10;
-const formatVND = (n: number | string) => `${Number(n || 0).toLocaleString("vi-VN")} ${vndUnit()}`;
 
 export default function OwnerFinancialReportsPage() {
   useScreenTranslation();
@@ -232,26 +231,26 @@ export default function OwnerFinancialReportsPage() {
       {statusMessage && <Alert tone="ok" onDismiss={() => setStatusMessage(null)}>{statusMessage}</Alert>}
       {actionError && <Alert tone="danger" title={tr("Failed to update invoice status")} onDismiss={() => setActionError("")}>{actionError}</Alert>}
 
-      {summary && <div role="status"><Badge tone={summary.outstandingDebt > 0 ? "danger" : "ok"}>{tr("Outstanding balance")}: {summary.outstandingDebt == null ? "—" : summary.outstandingDebt.toLocaleString(locale) + " VND"}</Badge></div>}
+      {summary && <div role="status"><Badge tone={summary.outstandingDebt > 0 ? "danger" : "ok"}>{tr("Outstanding balance")}: {summary.outstandingDebt == null ? "—" : formatCurrency(summary.outstandingDebt) + " VND"}</Badge></div>}
 
       {/* KPI Tiles */}
       <div className={styles.metrics}>
         <KpiTile
           label={tr("Total Upkeep Expenses")}
-          value={summary ? totalExpense.toLocaleString(locale) : "—"}
+          value={summary ? formatCurrency(totalExpense) : "—"}
           unit="VND"
           caption={tr("Boarding, medical & conditioning fees")}
         />
         <KpiTile
           label={tr("Tournament Prize Credits")}
-          value={summary ? `+${totalPrizeCredit.toLocaleString(locale)}` : "—"}
+          value={summary ? `+${formatCurrency(totalPrizeCredit)}` : "—"}
           unit="VND"
           caption={tr("Prize credits recorded on statements")}
           accent={totalPrizeCredit > 0}
         />
         <KpiTile
           label={tr("Net total across statements")}
-          value={summary ? totalNet.toLocaleString(locale) : "—"}
+          value={summary ? formatCurrency(totalNet) : "—"}
           unit="VND"
           caption={tr("Includes unissued and paid statements; not an outstanding balance.")}
         />
@@ -375,16 +374,16 @@ export default function OwnerFinancialReportsPage() {
                       </td>
                       {isClubManager && <td style={{ padding: "0.75rem 0.5rem" }}>{inv.owner?.fullName || "—"}</td>}
                       <td style={{ padding: "0.75rem 0.5rem" }}>
-                        {inv.boardingFee.toLocaleString(locale)} {vndUnit()}
+                        {formatVND(inv.boardingFee)}
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
-                        {inv.medicalFee.toLocaleString(locale)} {vndUnit()}
+                        {formatVND(inv.medicalFee)}
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
-                        {inv.trainingFee.toLocaleString(locale)} {vndUnit()}
+                        {formatVND(inv.trainingFee)}
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem", color: "var(--brand-700)", fontWeight: 700 }}>
-                        {inv.prizeCredit > 0 ? `+${inv.prizeCredit.toLocaleString(locale)} ${vndUnit()}` : "—"}
+                        {inv.prizeCredit > 0 ? `+${formatVND(inv.prizeCredit)}` : "—"}
                       </td>
                       <td
                         style={{
@@ -394,8 +393,8 @@ export default function OwnerFinancialReportsPage() {
                         }}
                       >
                         {isCredit
-                          ? `${tr("Payout:")} ${Math.abs(inv.netAmount).toLocaleString(locale)} ${vndUnit()}`
-                          : `${inv.netAmount.toLocaleString(locale)} ${vndUnit()}`}
+                          ? `${tr("Payout:")} ${formatVND(Math.abs(inv.netAmount))}`
+                          : formatVND(inv.netAmount)}
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
                         {inv.dueAt ? new Date(inv.dueAt).toLocaleString(locale, { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" }) : tr("No payment deadline")}
@@ -579,7 +578,7 @@ export default function OwnerFinancialReportsPage() {
             {isClubManager && <div>{tr("Owner")}: {selectedInvoice.owner?.fullName || "—"}</div>}
             <div>{tr("Payment deadline")}: {selectedInvoice.dueAt ? new Date(selectedInvoice.dueAt).toLocaleString(locale, { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" }) : tr("No payment deadline")}</div>
             {selectedInvoice.boardingDays != null && <div>{tr("Boarding days: {{count}}", { count: selectedInvoice.boardingDays })}</div>}
-            {selectedInvoice.boardingMonthlyRate != null && <div>{tr("Monthly boarding rate")}: {selectedInvoice.boardingMonthlyRate.toLocaleString(locale)} VND</div>}
+            {selectedInvoice.boardingMonthlyRate != null && <div>{tr("Monthly boarding rate")}: {formatCurrency(selectedInvoice.boardingMonthlyRate)} VND</div>}
             {/* Bill Summary */}
             <div
               style={{
@@ -595,20 +594,20 @@ export default function OwnerFinancialReportsPage() {
             >
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--muted)" }}>{tr("Stall Boarding:")}</span>
-                <strong>{selectedInvoice.boardingFee.toLocaleString(locale)} {vndUnit()}</strong>
+                <strong>{formatVND(selectedInvoice.boardingFee)}</strong>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--muted)" }}>{tr("Medical & Veterinary:")}</span>
-                <strong>{selectedInvoice.medicalFee.toLocaleString(locale)} {vndUnit()}</strong>
+                <strong>{formatVND(selectedInvoice.medicalFee)}</strong>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ color: "var(--muted)" }}>{tr("Conditioning & Training:")}</span>
-                <strong>{selectedInvoice.trainingFee.toLocaleString(locale)} {vndUnit()}</strong>
+                <strong>{formatVND(selectedInvoice.trainingFee)}</strong>
               </div>
               {selectedInvoice.prizeCredit > 0 && (
                 <div style={{ display: "flex", justifyContent: "space-between", color: "var(--brand-700)" }}>
                   <span>{tr("Tournament Prize Credits:")}</span>
-                  <strong>-{selectedInvoice.prizeCredit.toLocaleString(locale)} {vndUnit()}</strong>
+                  <strong>-{formatVND(selectedInvoice.prizeCredit)}</strong>
                 </div>
               )}
               <div
@@ -625,7 +624,7 @@ export default function OwnerFinancialReportsPage() {
               >
                 <span>{tr("Net Amount")}</span>
                 <span style={{ color: "var(--brand-700)" }}>
-                  {selectedInvoice.netAmount.toLocaleString(locale)} {vndUnit()}
+                  {formatVND(selectedInvoice.netAmount)}
                 </span>
               </div>
             </div>
@@ -650,7 +649,7 @@ export default function OwnerFinancialReportsPage() {
           busy={updatingInvoice !== null} onConfirm={handlePayInvoice}
           onCancel={() => { setActionError(""); setConfirmPayment(false); }}>
           {actionError && <Alert tone="danger">{actionError}</Alert>}
-          <p><strong>{tr("Net Amount")}: {selectedInvoice.netAmount.toLocaleString(locale)} VND</strong></p>
+          <p><strong>{tr("Net Amount")}: {formatCurrency(selectedInvoice.netAmount)} VND</strong></p>
           <dl className={styles.paymentDetails}>
             <dt>{tr("Bank (sample)")}</dt><dd>DEMO BANK</dd>
             <dt>{tr("Account (sample)")}</dt><dd>DEMO — EQUIFLOW CLUB</dd>

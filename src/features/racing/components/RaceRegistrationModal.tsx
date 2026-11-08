@@ -3,6 +3,7 @@ import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
+import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { fetchEligibility, registerHorseForRace, scratchHorseFromRace, fetchTournamentDetail, fetchHorseEligibilityDetail } from "../api";
@@ -381,6 +382,28 @@ export function RaceRegistrationModal({
                 </h4>
                 <Badge tone="ok">{tr("Safe to Compete")}</Badge>
               </div>
+
+              {/* Quick Search & Select (Zone Inventory style) */}
+              {data.eligible.length > 0 && (
+                <div style={{ marginBottom: "0.875rem" }}>
+                  <SearchSelect
+                    aria-label={isVietnamese() ? "Tìm và chọn chiến mã" : tr("Search and select horse")}
+                    placeholder={isVietnamese() ? "Gõ tìm hoặc chọn chiến mã từ danh sách..." : tr("Type or select horse from list...")}
+                    options={[
+                      { value: "", label: isVietnamese() ? "— Tìm kiếm & chọn ngựa nhanh —" : "— Search & select horse —" },
+                      ...data.eligible.map((h) => ({
+                        value: h.id,
+                        label: `${h.name} (${h.horseCode || "N/A"})${h.isRegistered ? (isVietnamese() ? " [Đã đăng ký]" : " [Registered]") : ""}`,
+                        disabled: h.isRegistered,
+                      })),
+                    ]}
+                    value={selectedHorseId}
+                    onChange={(val) => {
+                      if (val) setSelectedHorseId(val);
+                    }}
+                  />
+                </div>
+              )}
 
               {data.eligible.length === 0 ? (
                 <p style={{ margin: 0, fontSize: "var(--fs-sm)", color: "var(--muted)", fontStyle: "italic" }}>

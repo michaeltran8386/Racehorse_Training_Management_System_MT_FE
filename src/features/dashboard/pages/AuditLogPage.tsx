@@ -217,7 +217,7 @@ function translateDetail(detail: string, isVi: boolean) {
   if (!isVi) return toEnglish(detail);
   return detail
     .replace(/^Generated (\d+) unissued invoices for billing period (\d{4}-\d{2})$/, (_, count: string, period: string) =>
-      "Đã tự động tạo " + count + " hóa đơn chờ gửi cho kỳ thanh toán tháng " + (periodLabel(period) || period))
+      "Đã tự động tạo " + count + " hóa đơn chưa gửi cho kỳ thanh toán tháng " + (periodLabel(period) || period))
     .replace(/^Invoice \S+ \((\d{4}-\d{2})\) for horse (.+) was paid via (.+)$/, (_, period: string, horse: string, method: string) =>
       "Đã ghi nhận thanh toán hóa đơn kỳ " + (periodLabel(period) || period) + " của ngựa " + horse + " qua " + method)
     .replace(/^Created tournament (.+) \((\d+)m\)$/, "Đã tạo giải đua $1 (cự ly $2 m)")
