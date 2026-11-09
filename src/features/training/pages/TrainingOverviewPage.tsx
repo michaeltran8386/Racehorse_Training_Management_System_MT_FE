@@ -242,7 +242,7 @@ export default function TrainingOverviewPage() {
             <table className={styles.table}>
               <thead>
                 <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
-                  {["Horse", "Current plan", "Current phase", "Progress", "Latest score", "7-day load", "Next workout", ""].map((h) => (
+                  {["Horse", "Current plan", "Trainer", "Current phase", "Progress", "Latest score", "7-day load", "Next workout", ""].map((h) => (
                     <th key={h} style={{ padding: "0.6rem 0.75rem" }}>{h ? tr(h) : ""}</th>
                   ))}
                 </tr>
@@ -315,6 +315,9 @@ export default function TrainingOverviewPage() {
                           </div>
                         )}
                       </td>
+                      <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>
+                        {r.plan?.trainerName ?? "—"}
+                      </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.currentPhase ? tr(`${r.currentPhase.name} · week ${r.currentPhase.week}/${r.currentPhase.weeks}`) : "—"}
                       </td>
@@ -325,6 +328,7 @@ export default function TrainingOverviewPage() {
                             total={r.progress.total ?? r.progress.due}
                             due={r.progress.due}
                             overdue={r.progress.overdue}
+                            overdueHref={r.plan ? `/training/plans/${r.plan.id}?status=OVERDUE` : undefined}
                           />
                         ) : (
                           "—"

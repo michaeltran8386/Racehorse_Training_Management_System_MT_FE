@@ -78,7 +78,7 @@ function validatePlanForm(
   end: string,
   phases: TrainingPhase[],
   isVietnamese: boolean,
-  editing: boolean,
+  originalStart: string | null,
 ): FormErrors {
   const errors: FormErrors = {};
 
@@ -100,10 +100,9 @@ function validatePlanForm(
   const tomorrow = addDays(todayClub(), 1);
   if (!start) {
     errors.startDate = isVietnamese ? "Vui lòng chọn ngày bắt đầu." : tr("Please select a start date.");
-  } else if (!editing && start < tomorrow) {
+  } else if (start !== originalStart && start < tomorrow) {
+    // Giáo án chỉ bắt đầu từ ngày mai. Khi sửa mà giữ nguyên ngày bắt đầu cũ thì không kiểm lại.
     errors.startDate = isVietnamese ? "Ngày bắt đầu giáo án phải từ ngày mai trở đi." : tr("Plan start date must be from tomorrow onwards.");
-  } else if (start < addDays(todayClub(), -7)) {
-    errors.startDate = isVietnamese ? "Ngày bắt đầu không được sớm hơn 7 ngày trước." : tr("Start date cannot be earlier than 7 days ago.");
   }
 
   if (!end) {
@@ -304,9 +303,9 @@ export default function PlanWizardPage() {
         endDate,
         phases,
         isVietnamese,
-        editing,
+        editing ? (existing?.startDate ?? null) : null,
       ),
-    [horseId, name, objective, notes, startDate, endDate, phases, isVietnamese, editing],
+    [horseId, name, objective, notes, startDate, endDate, phases, isVietnamese, editing, existing],
   );
 
   useEffect(() => {

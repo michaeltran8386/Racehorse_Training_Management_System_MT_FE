@@ -156,7 +156,7 @@ export interface NotifyMeta {
 export const NOTIFY_META: NotifyMeta[] = [
   { key: "thresholdAlert", name: "Threshold Alerts", note: "Heart rate or speed over the plan limit" },
   { key: "lockLifted", name: "Training Lock lifted", note: "A Veterinarian releases a horse back to work" },
-  { key: "dailyDigest", name: "Daily summary at 18:00", note: "Completed sessions and tomorrow’s schedule" },
+  // "Daily summary at 18:00" (dailyDigest) ẩn đi: BE chưa có việc gửi bản tóm tắt nên công tắc không có tác dụng.
   { key: "raceResults", name: "Race results", note: "A result is recorded for a club horse" },
 ];
 

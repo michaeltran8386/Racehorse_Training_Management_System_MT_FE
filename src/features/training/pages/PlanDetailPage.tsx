@@ -59,6 +59,18 @@ function distanceOf(s: ExerciseSession): number {
   return s.result?.actualDistanceMeters ?? s.targetDistanceMeters * s.repetitions;
 }
 
+/** Trễ ghi kết quả: đã Bỏ lỡ, hoặc Đã lên lịch mà đã qua giờ (khớp con số "Trễ ghi kết quả" của BE). */
+function isOverdue(s: ExerciseSession): boolean {
+  return s.status === "MISSED" || (s.status === "SCHEDULED" && Date.parse(s.scheduledAt) <= Date.now());
+}
+
+/** Hạn ghi bù buổi Bỏ lỡ: hết ngày tập + 7 ngày (LATE_RESULT_DAYS ở BE), dạng dd/mm. */
+function lateResultDeadline(sessionDate: string): string {
+  const d = new Date(`${sessionDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 7);
+  return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
 /** SC-2.04 Chi tiết giáo án. HT thao tác; CM, VET, OWNER chỉ xem. */
 export default function PlanDetailPage() {
   useScreenTranslation();
@@ -72,10 +84,11 @@ export default function PlanDetailPage() {
 
   const [plan, setPlan] = useState<PlanWithSessions | null>(null);
   const [error, setError] = useState("");
-  const [tab, setTab] = useState("phases");
+  // ?status=OVERDUE (bấm "Trễ ghi kết quả" hoặc thông báo Bỏ lỡ) -> mở thẳng tab Buổi tập, lọc sẵn.
+  const [tab, setTab] = useState(() => (params.get("status") ? "workouts" : "phases"));
   const [dialog, setDialog] = useState<Dialog>(null);
   const [phaseFilter, setPhaseFilter] = useState("ALL");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState(() => params.get("status") ?? "ALL");
   const [commentLimit, setCommentLimit] = useState(20);
 
   const load = useCallback(async () => {
@@ -117,7 +130,10 @@ export default function PlanDetailPage() {
 
   const open = plan.status === "DRAFT" || plan.status === "ACTIVE";
   const shownSessions = sessions.filter(
-    (s) => (phaseFilter === "ALL" || s.phaseId === phaseFilter) && (statusFilter === "ALL" || s.status === statusFilter),
+    (s) =>
+      (phaseFilter === "ALL" || s.phaseId === phaseFilter) &&
+      (statusFilter === "ALL" ||
+        (statusFilter === "OVERDUE" ? isOverdue(s) : s.status === statusFilter)),
   );
   const comments = [...completed].sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt));
 
@@ -263,6 +279,7 @@ export default function PlanDetailPage() {
                 onChange={(e) => setStatusFilter(e.target.value)}
                 options={[
                   { value: "ALL", label: tr("All statuses") },
+                  { value: "OVERDUE", label: tr("Overdue results") },
                   ...(Object.keys(SESSION_STATUS_LABEL) as SessionStatus[]).map((s) => ({ value: s, label: tr(SESSION_STATUS_LABEL[s]) })),
                 ]}
               />
@@ -300,6 +317,11 @@ export default function PlanDetailPage() {
                         <td style={{ padding: "0.6rem 0.75rem" }}>{s.groomName || "—"}</td>
                         <td style={{ padding: "0.6rem 0.75rem" }}>
                           <Badge tone={sessionStatusTone(s)}>{tr(sessionStatusLabel(s))}</Badge>
+                          {s.status === "MISSED" && (
+                            <div style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: 2, whiteSpace: "nowrap" }}>
+                              {tr("Late results by {{date}}", { date: lateResultDeadline(s.sessionDate) })}
+                            </div>
+                          )}
                         </td>
                         <td style={{ padding: "0.6rem 0.75rem" }}>
                           {s.result ? tr(`${s.result.performanceScore ?? "—"}/10 · ${s.result.avgSpeedKmh ?? "—"} km/h`) : s.status === "CANCELLED" ? "—" : (isVietnamese ? "Chưa ghi kết quả" : "Result not recorded")}

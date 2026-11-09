@@ -7,6 +7,7 @@ const NAME_RE = /^[\p{L}\p{M} ]+$/u;
 export function fullNameError(name: string): string {
   const v = name.trim();
   if (!v) return i18n.t("nameValidation.required");
+  if (v.length < 2 || v.length > 100) return i18n.t("nameValidation.length");
   if (!NAME_RE.test(v)) return i18n.t("nameValidation.lettersOnly");
   return "";
 }

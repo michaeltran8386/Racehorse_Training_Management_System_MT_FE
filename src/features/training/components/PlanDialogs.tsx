@@ -13,7 +13,7 @@ import { ApiError } from "@/shared/lib/api";
 import { messageFor } from "@/shared/lib/messages";
 import { getHorses } from "@/features/horses/api";
 import type { Horse } from "@/features/horses/types";
-import { todayClub, trainingApi } from "../api";
+import { todayClub, tomorrowClub, trainingApi } from "../api";
 import type { TrainingPlan } from "../types";
 import { Icon } from "@/shared/components/ui/Icon";
 
@@ -195,7 +195,7 @@ export function ClonePlanDialog({ plan, onClose, onDone }: DialogProps) {
   const [horses, setHorses] = useState<Horse[]>([]);
   const [horseId, setHorseId] = useState("");
   const [name, setName] = useState(`${plan.name} (copy)`);
-  const [startDate, setStartDate] = useState(todayClub());
+  const [startDate, setStartDate] = useState(tomorrowClub());
   const [copyWorkouts, setCopyWorkouts] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -248,7 +248,7 @@ export function ClonePlanDialog({ plan, onClose, onDone }: DialogProps) {
           <Input value={name} maxLength={150} onChange={(e) => setName(e.target.value)} />
         </Field>
         <Field label={tr("New start date")} required>
-          <Input type="date" min={todayClub()} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <Input type="date" min={tomorrowClub()} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
         </Field>
         <Checkbox label={tr("Copy workouts (dates shift with the new start date, results are not copied)")} checked={copyWorkouts} onChange={setCopyWorkouts} />
       </div>

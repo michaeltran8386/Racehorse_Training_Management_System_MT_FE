@@ -334,7 +334,14 @@ export interface OverviewRow {
     gender?: string | null;
     stallCode?: string | null;
   };
-  plan: { id: string; planCode?: string | null; name: string; status?: PlanStatus } | null;
+  plan: {
+    id: string;
+    planCode?: string | null;
+    name: string;
+    status?: PlanStatus;
+    /** HLV phụ trách giáo án. */
+    trainerName?: string | null;
+  } | null;
   currentPhase: { name: string; week: number; weeks: number } | null;
   progress: { completed: number; total?: number; due: number; overdue?: number } | null;
   latestScore: number | null;

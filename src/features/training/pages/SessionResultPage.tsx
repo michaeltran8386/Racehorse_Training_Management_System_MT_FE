@@ -256,15 +256,15 @@ export default function SessionResultPage() {
 
     if (peakHr) {
       const p = Number(peakHr);
-      if (isNaN(p) || p < 20 || p > 260) {
-        errs.peakHr = tr("Peak heart rate must be 20 to 260 bpm.");
+      if (isNaN(p) || p < 60 || p > 260) {
+        errs.peakHr = tr("Peak heart rate must be 60 to 260 bpm.");
       }
     }
 
     if (recoveryHr) {
       const rec = Number(recoveryHr);
-      if (isNaN(rec) || rec < 20 || rec > 200) {
-        errs.recoveryHr = tr("Recovery heart rate must be 20 to 200 bpm.");
+      if (isNaN(rec) || rec < 25 || rec > 200) {
+        errs.recoveryHr = tr("Recovery heart rate must be 25 to 200 bpm.");
       } else if (peakHr && rec > Number(peakHr)) {
         errs.recoveryHr = tr("Recovery heart rate cannot exceed peak heart rate.");
       }
@@ -272,6 +272,13 @@ export default function SessionResultPage() {
 
     if (topSpeed && (isNaN(Number(topSpeed)) || Number(topSpeed) < 0 || Number(topSpeed) > 80)) {
       errs.topSpeed = tr("Top speed must be 0 to 80 km/h.");
+    } else if (topSpeed && avgSpeed != null && Number(topSpeed) < avgSpeed) {
+      errs.topSpeed = tr("Top speed cannot be lower than the average speed.");
+    }
+
+    // Kỷ lục ngựa đua ≈ 70 km/h: tốc độ tính ra vượt 75 km/h nghĩa là cự ly hoặc thời gian nhập sai.
+    if (!errs.time && avgSpeed != null && avgSpeed > 75) {
+      errs.time = tr("The calculated speed looks wrong. Please check the distance and time.");
     }
 
     if (!score) {
@@ -502,10 +509,10 @@ export default function SessionResultPage() {
                   ]}
                 />
               </Field>
-              <Field label={tr("Peak heart rate (bpm)")} error={fieldErrors.peakHr} hint="20 – 260 bpm">
+              <Field label={tr("Peak heart rate (bpm)")} error={fieldErrors.peakHr} hint="60 – 260 bpm">
                 <Input data-testid="result-peak-hr" type="number" inputMode="numeric" value={peakHr} onChange={(e) => set(setPeakHr, "peakHr")(e.target.value)} />
               </Field>
-              <Field label={tr("Heart rate after 10 min rest (bpm)")} error={fieldErrors.recoveryHr} hint="20 – 200 bpm">
+              <Field label={tr("Heart rate after 10 min rest (bpm)")} error={fieldErrors.recoveryHr} hint="25 – 200 bpm">
                 <Input data-testid="result-recovery-hr" type="number" inputMode="numeric" value={recoveryHr} onChange={(e) => set(setRecoveryHr, "recoveryHr")(e.target.value)} />
               </Field>
               <Field label={tr("Top speed (km/h)")} error={fieldErrors.topSpeed} hint={tr("0 – 80 km/h")}>
