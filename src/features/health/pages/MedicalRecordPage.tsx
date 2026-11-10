@@ -424,7 +424,7 @@ export default function MedicalRecordPage() {
                   }}
                 />
                 <h3 style={{ margin: 0, fontSize: "var(--fs-section)", fontWeight: 700 }}>
-                  {tr("2D Musculoskeletal Anatomical Model (SC-3.05)")}
+                  {tr("2D Musculoskeletal Anatomical Model")}
                 </h3>
               </div>
               <p style={{ margin: 0, fontSize: "var(--fs-body)", color: "var(--text-muted)", lineHeight: 1.5 }}>

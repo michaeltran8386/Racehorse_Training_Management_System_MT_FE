@@ -20,6 +20,12 @@ export interface TournamentResult {
   finishTimeSeconds: number;
   avgSpeedKmh: number;
   prizeMoneyWon: number;
+  grossPrize?: number;
+  trainerCut?: number;
+  jockeyCut?: number;
+  entryFeeDeducted?: number;
+  netOwnerPayout?: number;
+  settledAt?: string;
   officialNotes?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -56,6 +62,11 @@ export interface Tournament {
   distanceMeters: number;
   trackType: TrackSurface;
   prizePool: number;
+  code?: string;
+  entryFee?: number;
+  trackCondition?: string;
+  maxFieldSize?: number;
+  minAgeYears?: number;
   registrationDeadline: string;
   status: TournamentStatus;
   createdAt: string;
@@ -93,4 +104,21 @@ export interface EligibilityResponse {
   ineligible: EligibilityHorse[];
   totalEligible: number;
   totalIneligible: number;
+}
+
+export interface HorseEligibilityChecklist {
+  statusCheck: { pass: boolean; value: string; required: string };
+  ageCheck: { pass: boolean; ageYears: number; minRequired: number };
+  medicalLockCheck: { pass: boolean; locked: boolean; details?: string };
+  debtCheck: { pass: boolean; impounded: boolean };
+  withdrawalCheck: { pass: boolean; clearDate?: string; activeMeds?: string[] };
+  fitnessCheck: { pass: boolean; completedWorkouts: number; required: number };
+}
+
+export interface HorseEligibilityDetail {
+  horseId: string;
+  horseName: string;
+  isEligible: boolean;
+  reasons: string[];
+  checklist: HorseEligibilityChecklist;
 }

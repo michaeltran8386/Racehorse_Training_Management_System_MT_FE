@@ -54,7 +54,7 @@ const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replac
 
 export function printStatement(invoices: FinancialInvoice[], periodLabel: string, ownerName?: string) {
   const t = totals(invoices);
-  const money = (n: number) => n.toLocaleString(isVietnamese() ? "vi-VN" : "en-US");
+  const money = (n: number) => Math.round(n).toLocaleString("vi-VN");
   const rows = invoices
     .map((i) => `<tr>${invoiceRow(i).map((v) => `<td${typeof v === "number" ? ' class="num"' : ""}>${esc(typeof v === "number" ? money(v) : String(v ?? ""))}</td>`).join("")}</tr>`)
     .join("");

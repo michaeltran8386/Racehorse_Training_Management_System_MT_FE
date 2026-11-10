@@ -1,4 +1,4 @@
-import { vndUnit } from "@/shared/lib/format";
+import { vndUnit, formatVND } from "@/shared/lib/format";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useState } from 'react';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
@@ -25,8 +25,8 @@ import {
   type SupplyCategory,
 } from '../types/supplies';
 
-// Chỉ thuốc, vắc-xin, thuốc tẩy giun có thời gian ngưng thuốc; thức ăn/dụng cụ thì cột này vô nghĩa.
-const WITHDRAWAL_CATEGORIES = new Set<string>(['MEDICINE', 'VACCINE', 'DEWORMER']);
+// Chỉ thuốc có thời gian ngưng thuốc; thức ăn/thực phẩm bổ sung thì cột này vô nghĩa.
+const WITHDRAWAL_CATEGORIES = new Set<string>(['MEDICINE']);
 
 export default function SuppliesCatalogPage() {
   useScreenTranslation();
@@ -88,11 +88,10 @@ export default function SuppliesCatalogPage() {
 
   const categoryOptions = [
     { value: 'ALL', label: tr('All Categories') },
-    // Cùng bộ nhóm với Tồn kho khu chuồng (BE gom nhóm theo FEED/MEDICINE/CARE/EQUIPMENT).
+    // Cùng bộ nhóm với Tồn kho khu chuồng (BE gom nhóm theo FEED/MEDICINE/CARE).
     { value: 'FEED', label: tr('Feed & Forage') },
-    { value: 'MEDICINE', label: tr('Medications & Vaccines') },
-    { value: 'CARE', label: tr('Daily Care & Supplements') },
-    { value: 'EQUIPMENT', label: tr('Equipment & Tools') },
+    { value: 'MEDICINE', label: tr('Medications') },
+    { value: 'CARE', label: tr('Supplements & Care') },
   ];
   const showWithdrawal = items.some((it) => WITHDRAWAL_CATEGORIES.has(it.category));
 
@@ -106,7 +105,7 @@ export default function SuppliesCatalogPage() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
       <PageHeader
         title={tr('Supplies Catalog')}
-        description={tr(isManager ? 'Manage supply details, prices and availability in the catalog.' : currentUser.role === 'VETERINARIAN' ? 'Look up medicines, units and withdrawal periods before treatment.' : 'Look up available feed, medicines and equipment.')}
+        description={tr(isManager ? 'Manage supply details, prices and availability in the catalog.' : currentUser.role === 'VETERINARIAN' ? 'Look up medicines, units and withdrawal periods before treatment.' : 'Look up available feed, medicines and supplements.')}
         action={
           isManager ? (
             <Button tone="primary" icon="plus" onClick={() => setEditingItem(null)}>
@@ -201,7 +200,7 @@ export default function SuppliesCatalogPage() {
                   key: 'unitPrice',
                   header: tr('Unit Price (VND)'),
                   render: (it: SupplyCatalogItem) =>
-                    it.unitPrice !== null ? it.unitPrice.toLocaleString(isVietnamese() ? 'vi-VN' : 'en-US') + ' ' + vndUnit() : '—',
+                    it.unitPrice !== null ? formatVND(it.unitPrice) : '—',
                 },
               ]
             : []),

@@ -44,7 +44,7 @@ export function SupplyModal({ item, onClose, onSaved }: SupplyModalProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const isMedical = category === 'MEDICINE' || category === 'VACCINE' || category === 'DEWORMER';
+  const isMedical = category === 'MEDICINE';
 
   const categoryOptions = Object.entries(SUPPLY_CATEGORY_LABELS).map(([value, label]) => ({ value, label: tr(label) }));
   const unitOptions = Object.entries(SUPPLY_UNIT_LABELS).map(([value, label]) => ({ value, label: `${tr(label)} (${value})` }));

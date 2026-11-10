@@ -1,4 +1,5 @@
 import { useState, useSyncExternalStore } from "react";
+import { Navigate } from "react-router-dom";
 import { tr } from "@/shared/i18n/tr";
 import { useAuth } from "@/shared/components/layout/AuthProvider";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -13,6 +14,10 @@ export default function AssistantPage() {
   const { user } = useAuth();
   const [tab, setTab] = useState<"chat" | "inbox">("chat");
   const unreadCount = useSyncExternalStore(subscribeNotifications, getNotifications).filter((n) => !n.read).length;
+
+  if (user && user.role !== "HORSE_OWNER") {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   return (
     <div className={styles.page}>

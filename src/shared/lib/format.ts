@@ -99,3 +99,22 @@ export function capitalize(text: string): string {
 export function vndUnit(): string {
   return isVietnamese() ? "đ" : "VND";
 }
+
+/**
+ * Định dạng số tiền đồng nhất dùng dấu chấm (.) phân cách hàng nghìn cho cả tiếng Anh và tiếng Việt.
+ * Ví dụ: 774194 -> "774.194"
+ */
+export function formatCurrency(amount: number | string | null | undefined): string {
+  if (amount == null || amount === "") return "0";
+  const num = typeof amount === "number" ? amount : Number(amount);
+  if (isNaN(num)) return "0";
+  return Math.round(num).toLocaleString("vi-VN");
+}
+
+/**
+ * Định dạng số tiền kèm đơn vị tiền tệ đồng nhất: "774.194 đ" (vi) hoặc "774.194 VND" (en).
+ */
+export function formatVND(amount: number | string | null | undefined): string {
+  return `${formatCurrency(amount)} ${vndUnit()}`;
+}
+

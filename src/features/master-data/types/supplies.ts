@@ -1,3 +1,4 @@
+
 export type SupplyCategory =
   | 'FEED_HAY'
   | 'FEED_GRAIN'
@@ -5,11 +6,7 @@ export type SupplyCategory =
   | 'SUPPLEMENT_MINERAL'
   | 'SUPPLEMENT_ELECTROLYTE'
   | 'SUPPLEMENT_GENERAL'
-  | 'MEDICINE'
-  | 'VACCINE'
-  | 'DEWORMER'
-  | 'TOOL_EQUIPMENT'
-  | 'CLEANING_SUPPLY';
+  | 'MEDICINE';
 
 export type SupplyUnit =
   | 'KG'
@@ -31,10 +28,6 @@ export const SUPPLY_CATEGORY_LABELS: Record<SupplyCategory, string> = {
   SUPPLEMENT_ELECTROLYTE: 'Electrolytes',
   SUPPLEMENT_GENERAL: 'Supplements',
   MEDICINE: 'Medicine',
-  VACCINE: 'Vaccine',
-  DEWORMER: 'Dewormer',
-  TOOL_EQUIPMENT: 'Tools & Equipment',
-  CLEANING_SUPPLY: 'Cleaning Supplies',
 };
 
 import { tr } from '@/shared/i18n/tr';
@@ -59,23 +52,13 @@ export function formatSupplyUnit(unit?: string): string {
   return tr(label);
 }
 
-export type SupplyMajorGroup = 'FEED' | 'MEDICINE_SUPPLEMENT' | 'EQUIPMENT';
+export type SupplyMajorGroup = 'FEED' | 'MEDICINE_SUPPLEMENT';
 
 export function getSupplyMajorGroup(category?: string): SupplyMajorGroup {
   if (!category) return 'FEED';
   const c = category.toUpperCase();
   if (c.startsWith('FEED') || c === 'FEED') return 'FEED';
-  if (
-    c.startsWith('MED') ||
-    c.startsWith('SUPPLEMENT') ||
-    c === 'VACCINE' ||
-    c === 'DEWORMER' ||
-    c === 'MEDICINE' ||
-    c === 'CARE'
-  ) {
-    return 'MEDICINE_SUPPLEMENT';
-  }
-  return 'EQUIPMENT';
+  return 'MEDICINE_SUPPLEMENT';
 }
 
 export function formatSupplyName(name?: string): string {
@@ -89,14 +72,10 @@ export function getFriendlyCategoryName(category?: string): string {
   if (c === 'FEED_GRAIN') return tr('Grain');
   if (c.startsWith('FEED') || c === 'FEED') return tr('Feed & Forage');
   if (c === 'MEDICINE' || c.startsWith('MED')) return tr('Medicine');
-  if (c === 'VACCINE') return tr('Vaccine');
-  if (c === 'DEWORMER') return tr('Dewormer');
   if (c.startsWith('SUPPLEMENT_VITAMIN')) return tr('Vitamins');
   if (c.startsWith('SUPPLEMENT_MINERAL')) return tr('Minerals');
   if (c.startsWith('SUPPLEMENT_ELECTROLYTE')) return tr('Electrolytes');
   if (c.startsWith('SUPPLEMENT') || c === 'CARE') return tr('Supplements');
-  if (c.startsWith('TOOL') || c === 'EQUIPMENT') return tr('Tools & Equipment');
-  if (c.startsWith('CLEANING')) return tr('Cleaning Supplies');
   const label = SUPPLY_CATEGORY_LABELS[category as SupplyCategory];
   return label ? tr(label) : category;
 }

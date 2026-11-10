@@ -2,7 +2,7 @@ export type StockHealthStatus = 'SUFFICIENT' | 'LOW_STOCK' | 'OUT_OF_STOCK';
 
 export type RestockStatus = 'PENDING' | 'APPROVED' | 'DELIVERING' | 'DELIVERED' | 'REJECTED';
 
-export type SupplyCategory = 'FEED' | 'MEDICINE' | 'CARE' | 'EQUIPMENT';
+export type SupplyCategory = 'FEED' | 'MEDICINE' | 'CARE';
 
 export interface StockItemRow {
   id: string;
