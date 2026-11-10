@@ -358,8 +358,12 @@ export const trainingApi = {
     return toSession(await api<BeWorkout>("POST", `/training/workouts/${id}/result`, input));
   },
 
-  async getGrooms(): Promise<Groom[]> {
-    return api<Groom[]>("GET", "/training/grooms");
+  async getGrooms(horseId?: string, date?: string): Promise<Groom[]> {
+    const params = new URLSearchParams();
+    if (horseId) params.set("horseId", horseId);
+    if (date) params.set("date", date);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    return api<Groom[]>("GET", `/training/grooms${qs}`);
   },
 
   // Lượt chạy thử = buổi tập loại TRIAL

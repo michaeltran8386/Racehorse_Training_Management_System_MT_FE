@@ -226,13 +226,14 @@ export default function RecordListPage() {
             <table className={styles.dataTable} style={{ tableLayout: "fixed", width: "100%" }}>
               <thead>
                 <tr>
-                  <th style={{ width: "14%" }}>{tr("Record No.")}</th>
-                  <th style={{ width: "18%" }}>{tr("Horse")}</th>
-                  <th style={{ width: "12%" }}>{tr("Exam Date")}</th>
-                  <th style={{ width: "13%" }}>{tr("Exam Type")}</th>
-                  <th style={{ width: "21%" }}>{tr("Diagnosis")}</th>
-                  <th style={{ width: "11%" }}>{tr("Severity")}</th>
-                  <th style={{ width: "11%" }}>{tr("Status")}</th>
+                  <th style={{ width: "13%" }}>{tr("Record No.")}</th>
+                  <th style={{ width: "16%" }}>{tr("Horse")}</th>
+                  <th style={{ width: "11%" }}>{tr("Exam Date")}</th>
+                  <th style={{ width: "12%" }}>{tr("Exam Type")}</th>
+                  <th style={{ width: "18%" }}>{tr("Diagnosis")}</th>
+                  <th style={{ width: "10%" }}>{tr("Severity")}</th>
+                  <th style={{ width: "10%" }}>{tr("Status")}</th>
+                  <th style={{ width: "10%" }}>{tr("Follow-up")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -275,6 +276,22 @@ export default function RecordListPage() {
                       >
                         {r.status === "OPEN" ? tr("In Treatment") : r.status === "CLOSED" ? tr("Closed") : tr("Draft")}
                       </Badge>
+                    </td>
+                    <td className="num nowrap">
+                      {r.followUpDate ? (
+                        <div style={{ display: "grid" }}>
+                          <span>{formatDate(r.followUpDate)}</span>
+                          {new Date(r.followUpDate) < new Date() && r.status === "OPEN" && (
+                            <span style={{ fontSize: "var(--fs-caption)", color: "var(--danger)", fontWeight: 600 }}>
+                              {tr("Overdue")}
+                            </span>
+                          )}
+                        </div>
+                      ) : r.requiresFollowUp ? (
+                        <Badge tone="warn">{tr("Required")}</Badge>
+                      ) : (
+                        <span style={{ color: "var(--muted)" }}>—</span>
+                      )}
                     </td>
                   </tr>
                 ))}
