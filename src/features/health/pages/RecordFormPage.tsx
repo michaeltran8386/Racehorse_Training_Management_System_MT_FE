@@ -21,12 +21,13 @@ import {
   createRecord,
   getLatestExamSimulation,
   getRecordDetail,
+  listRecords,
   startExamSimulation,
   updateRecord,
 } from "../api";
 import { isHeartRateWarning, isRespiratoryWarning, isTempWarning } from "../components/VitalsDisplay";
 import { parseMedicalErrors } from "../lib/medical-errors";
-import type { LabTestItem, SeverityLevel } from "../types";
+import type { LabTestItem, MedicalRecord, SeverityLevel } from "../types";
 import styles from "./MedicalRecordPage.module.css";
 
 const EXAM_TYPE_OPTIONS = [
@@ -179,6 +180,8 @@ export default function RecordFormPage() {
   const [severity, setSeverity] = useState<SeverityLevel | undefined>(undefined);
   const [proposedStatus, setProposedStatus] = useState("UNDER_OBSERVATION");
   const [proposeMedicalLock, setProposeMedicalLock] = useState(false);
+  const [recordStatus, setRecordStatus] = useState<string>("DRAFT");
+  const [openRecordForSelectedHorse, setOpenRecordForSelectedHorse] = useState<MedicalRecord | null>(null);
 
   const [busy, setBusy] = useState(false);
   const [examBusy, setExamBusy] = useState(false);
@@ -187,6 +190,30 @@ export default function RecordFormPage() {
   const [errorDetails, setErrorDetails] = useState<string[]>([]);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [dirty, setDirty] = useState(false);
+
+  // Khi tạo mới: kiểm tra xem ngựa đang chọn có bệnh án ở trạng thái mở hay không
+  useEffect(() => {
+    if (isEdit || !horseId) {
+      setOpenRecordForSelectedHorse(null);
+      return;
+    }
+    let active = true;
+    listRecords({ horseId, status: "OPEN", limit: 1 })
+      .then((res) => {
+        if (!active) return;
+        if (res.records && res.records.length > 0) {
+          setOpenRecordForSelectedHorse(res.records[0]);
+        } else {
+          setOpenRecordForSelectedHorse(null);
+        }
+      })
+      .catch(() => {
+        if (active) setOpenRecordForSelectedHorse(null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [horseId, isEdit]);
 
   function clearFieldError(field: string) {
     if (fieldErrors[field]) {
@@ -218,6 +245,12 @@ export default function RecordFormPage() {
     if (isEdit && id) {
       void getRecordDetail(id).then((res) => {
         const r = res.record;
+        setRecordStatus(r.status);
+        if (r.status === "CLOSED") {
+          toast.show(tr("Cannot edit a closed medical record."), "danger");
+          navigate(`/medical/records/${r.id}`, { replace: true });
+          return;
+        }
         setHorseId(r.horseId);
         if (r.examinationDate) {
           const d = new Date(r.examinationDate);
@@ -242,7 +275,7 @@ export default function RecordFormPage() {
         setProposeMedicalLock(Boolean(r.proposeMedicalLock));
       });
     }
-  }, [isEdit, id]);
+  }, [isEdit, id, navigate, toast]);
 
   function addLabTest() {
     setLabTests([
@@ -283,6 +316,8 @@ export default function RecordFormPage() {
 
     if (!horseId) {
       errs.horseId = tr("Please select a horse to examine.");
+    } else if (!isEdit && openRecordForSelectedHorse) {
+      errs.horseId = tr("This horse already has an active open medical record. Please close or conclude it before creating a new one.");
     }
 
     if (!examinationDate) {
@@ -448,7 +483,11 @@ export default function RecordFormPage() {
         const updated = await updateRecord(id, payload);
         toast.show(tr("Medical record updated successfully."), "ok");
         setDirty(false);
-        navigate(`/medical/records/${updated.record.id}${finalizeQuery}`);
+        if (recordStatus === "OPEN") {
+          navigate(`/medical/records/${updated.record.id}`);
+        } else {
+          navigate(`/medical/records/${updated.record.id}${finalizeQuery}`);
+        }
       } else {
         const created = await createRecord(payload);
         toast.show(tr("Draft medical record saved successfully."), "ok");
@@ -633,6 +672,30 @@ export default function RecordFormPage() {
               disabled={isEdit || loadingHorses}
             />
           </Field>
+
+          {openRecordForSelectedHorse && (
+            <div style={{ gridColumn: "1 / -1" }}>
+              <Alert tone="warn" icon="alert" title={tr("Horse already has an active open medical record")}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <span>
+                    {tr(
+                      "This horse is currently undergoing treatment under open medical record #{{recordNumber}}. Only one open record is permitted per horse at a time.",
+                      { recordNumber: openRecordForSelectedHorse.recordNumber || openRecordForSelectedHorse.id },
+                    )}
+                  </span>
+                  <div>
+                    <Button
+                      size="sm"
+                      tone="primary"
+                      onClick={() => navigate(`/medical/records/${openRecordForSelectedHorse.id}/edit`)}
+                    >
+                      {tr("Edit Open Medical Record")}
+                    </Button>
+                  </div>
+                </div>
+              </Alert>
+            </div>
+          )}
 
           <Field
             label={tr("Examination Date & Time *")}
@@ -1032,12 +1095,30 @@ export default function RecordFormPage() {
         </Button>
 
         <div style={{ display: "flex", gap: 12 }}>
-          <Button tone="ghost" icon="file" onClick={() => void handleSave(true)} disabled={busy}>
-            {tr("Save Draft (DRAFT)")}
-          </Button>
-          <Button tone="primary" icon="checkCircle" onClick={() => void handleSave(false)} disabled={busy}>
-            {tr("Save & Finalize (OPEN)")}
-          </Button>
+          {isEdit && recordStatus === "OPEN" ? (
+            <Button tone="primary" icon="checkCircle" onClick={() => void handleSave(false)} disabled={busy}>
+              {tr("Save Changes")}
+            </Button>
+          ) : (
+            <>
+              <Button
+                tone="ghost"
+                icon="file"
+                onClick={() => void handleSave(true)}
+                disabled={busy || Boolean(openRecordForSelectedHorse)}
+              >
+                {tr("Save Draft (DRAFT)")}
+              </Button>
+              <Button
+                tone="primary"
+                icon="checkCircle"
+                onClick={() => void handleSave(false)}
+                disabled={busy || Boolean(openRecordForSelectedHorse)}
+              >
+                {tr("Save & Finalize (OPEN)")}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </div>
