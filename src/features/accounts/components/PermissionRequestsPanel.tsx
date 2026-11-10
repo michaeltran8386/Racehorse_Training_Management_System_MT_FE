@@ -80,7 +80,8 @@ export function PermissionRequestsPanel() {
           <li key={r.id} className={styles.item}>
             <div className={styles.who}>
               <strong>{r.account?.fullName ?? tr("Deleted account")}</strong>
-              {r.account ? ` · ${ROLE_LABEL[r.account.role]}` : ""} {tr("asks for")}{" "}<strong>{r.screen}</strong>
+              {r.account ? ` · ${tr(ROLE_LABEL[r.account.role])}` : ""} {tr("asks for")}{" "}
+              <strong>{r.screen.split(" / ").map((p) => tr(p)).join(" / ")}</strong>
               <span className={styles.meta}>
                 {formatDateTime(r.at)} {tr("· reference")}{" "}{r.reference}
               </span>

@@ -104,13 +104,13 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
 
   useEffect(() => {
     trainingApi
-      .getGrooms(plan?.horseId, date)
+      .getGrooms(plan?.horseId, date, time)
       .then((g) => {
         setGrooms(g);
-        setGroomId((current) => current || g[0]?.id || "");
+        setGroomId((current) => (g.some((x) => x.id === current) ? current : g[0]?.id || ""));
       })
       .catch((err) => setError(messageFor(err)));
-  }, [plan?.horseId, date]);
+  }, [plan?.horseId, date, time]);
   // Giai đoạn mặc định: giai đoạn chứa ngày đã chọn, nếu không thì giai đoạn đầu.
   useEffect(() => {
     if (phases.length === 0 || phases.some((p) => p.id === phaseId)) return;
@@ -486,7 +486,8 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
             options={grooms.map((g) => {
               const badges: string[] = [];
               if (g.isAssignedToHorse) badges.push(isVietnamese ? "Phụ trách ô" : "Assigned stall");
-              if (g.hasShift === false) badges.push(isVietnamese ? "Không có ca trực" : "No shift");
+              if (g.shiftInfo) badges.push(g.shiftInfo);
+              else if (g.hasShift === false) badges.push(isVietnamese ? "Không có ca trực" : "No shift");
               return {
                 value: g.id,
                 label: badges.length > 0 ? `${g.fullName} (${badges.join(", ")})` : g.fullName,
@@ -694,11 +695,11 @@ export function GeneratePhaseScheduleDialog({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    trainingApi.getGrooms().then((g) => {
+    trainingApi.getGrooms(plan.horseId, phase.startDate, time).then((g) => {
       setGrooms(g);
-      if (g[0]) setGroomId(g[0].id);
+      setGroomId((current) => (g.some((x) => x.id === current) ? current : g[0]?.id || ""));
     });
-  }, []);
+  }, [plan.horseId, phase.startDate, time]);
 
   const maxDays = phase.sessionsPerWeek || 5;
   const toggleDay = (d: number) => {
@@ -949,7 +950,8 @@ export function GeneratePhaseScheduleDialog({
                 options={grooms.map((g) => {
                   const badges: string[] = [];
                   if (g.isAssignedToHorse) badges.push(isVietnamese ? "Phụ trách ô" : "Assigned stall");
-                  if (g.hasShift === false) badges.push(isVietnamese ? "Không có ca trực" : "No shift");
+                  if (g.shiftInfo) badges.push(g.shiftInfo);
+                  else if (g.hasShift === false) badges.push(isVietnamese ? "Không có ca trực" : "No shift");
                   return {
                     value: g.id,
                     label: badges.length > 0 ? `${g.fullName} (${badges.join(", ")})` : g.fullName,

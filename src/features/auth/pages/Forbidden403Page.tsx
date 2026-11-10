@@ -99,12 +99,12 @@ export default function Forbidden403Page({ access }: Forbidden403PageProps) {
         <dl className={styles.facts}>
           <div>
             <dt>{tr("Screen")}</dt>
-            <dd>{screen}</dd>
+            <dd>{access?.label ? `${tr(capitalize(access.group ?? ""))} / ${tr(access.label)}` : tr("Unknown screen")}</dd>
           </div>
           <div>
             <dt>{tr("Signed in as")}</dt>
             <dd>
-              {user.fullName}, {ROLE_LABEL[user.role]}
+              {user.fullName}, {tr(ROLE_LABEL[user.role])}
             </dd>
           </div>
           <div>

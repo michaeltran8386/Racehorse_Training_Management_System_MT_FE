@@ -16,15 +16,15 @@ import { fullNameError } from "@/shared/lib/name";
 import { tr } from "@/shared/i18n/tr";
 import { EMAIL_RE } from "@/shared/lib/email";
 
-// Horse Owner tự đăng ký ở trang Sign Up, nên không có trong danh sách tạo tài khoản.
-const STAFF_ROLES: Role[] = ["HEAD_TRAINER", "VETERINARIAN", "GROOM", "CLUB_MANAGER"];
+// Club Manager có thể tạo/mời nhân viên hoặc chủ ngựa.
+const CREATABLE_ROLES: Role[] = ["HEAD_TRAINER", "VETERINARIAN", "GROOM", "HORSE_OWNER", "CLUB_MANAGER"];
 
 interface CreateAccountModalProps {
   onClose: () => void;
   onCreated: (account: PublicAccount) => void;
 }
 
-// Club Manager mời nhân viên: tài khoản ở trạng thái INVITED, người được mời nhận email để đặt mật khẩu.
+// Club Manager mời nhân viên hoặc chủ ngựa: tài khoản ở trạng thái INVITED, người được mời nhận email để đặt mật khẩu.
 export function CreateAccountModal({ onClose, onCreated }: CreateAccountModalProps) {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -38,7 +38,7 @@ export function CreateAccountModal({ onClose, onCreated }: CreateAccountModalPro
     const mail = email.trim().toLowerCase();
     const found: typeof errors = {};
     if (fullNameError(fullName)) found.name = fullNameError(fullName);
-    if (!mail) found.email = tr("Club email is required.");
+    if (!mail) found.email = tr("Email is required.");
     else if (!EMAIL_RE.test(mail)) found.email = tr("Email must be a @gmail.com address.");
     if (found.name || found.email) return setErrors(found);
 
@@ -57,7 +57,7 @@ export function CreateAccountModal({ onClose, onCreated }: CreateAccountModalPro
 
   return (
     <Modal
-      title={tr("Add staff account")}
+      title={tr("Create account")}
       subtitle={tr("An invitation email will be sent to activate the account.")}
       width={460}
       onClose={onClose}
@@ -67,14 +67,14 @@ export function CreateAccountModal({ onClose, onCreated }: CreateAccountModalPro
         <Field label={tr("Full name")} required error={errors.name}>
           <Input icon="user" placeholder="John Doe" value={fullName} data-autofocus onChange={(e) => setFullName(e.target.value)} />
         </Field>
-        <Field label={tr("Club email")} required error={errors.email}>
+        <Field label={tr("Email")} required error={errors.email}>
           <Input type="email" icon="mail" placeholder={EMAIL_PLACEHOLDER} value={email} onChange={(e) => setEmail(e.target.value)} />
         </Field>
-        <Field label={tr("Role")} required hint={tr("Horse Owners request their own account on the sign-up page.")}>
+        <Field label={tr("Role")} required>
           <Select
             value={role}
             onChange={(e) => setRole(e.target.value as Role)}
-            options={STAFF_ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] }))}
+            options={CREATABLE_ROLES.map((r) => ({ value: r, label: tr(ROLE_LABEL[r]) }))}
           />
         </Field>
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 9 }}>

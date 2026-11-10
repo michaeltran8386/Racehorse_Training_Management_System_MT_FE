@@ -34,6 +34,7 @@ export const en = {
     markAsRead: "Mark all as read",
     confirmLogoutTitle: "Log out of TMEC?",
     confirmLogoutSubtitle: "Unsaved changes on open forms are discarded.",
+    confirmLogoutBody: "The session for {{name}} · {{role}} closes and the browser returns to the sign-in page.",
     staySignedIn: "Stay signed in",
   },
   nav: {

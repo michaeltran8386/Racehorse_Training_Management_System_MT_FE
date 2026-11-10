@@ -196,6 +196,7 @@ export default function AccountListPage() {
         <CellPrimary
           title={r.id === me.id ? `${r.fullName} ${tr("(you)")}` : r.fullName}
           meta={r.email}
+          sub={tr("Joined {{date}}", { date: formatDate(r.createdAt) })}
           avatar={<Avatar name={r.fullName} size={32} tone={r.id === me.id ? "brand" : "neutral"} />}
         />
       ),
@@ -478,7 +479,7 @@ export default function AccountListPage() {
 
       {dialog?.kind === "decline" && (
         <ReasonConfirmModal
-          title={tr(`Decline the request of ${dialog.target.fullName}?`)}
+          title={tr("Decline the request of {{fullName}}?", { fullName: dialog.target.fullName })}
           subtitle={`${tr(ROLE_LABEL[dialog.target.role])} · ${dialog.target.email}`}
           tone="warn"
           confirmLabel={tr("Decline request")}

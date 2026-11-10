@@ -26,6 +26,8 @@ function compilePatterns(): Pattern[] {
   const out: Pattern[] = [];
   for (const [en, vi] of Object.entries(VI_TEXT)) {
     if (!en.includes("{{")) continue;
+    // Bỏ qua mẫu "{{on}} of {{total}}" vì quá lỏng lẻo, sẽ nuốt nhầm các câu tiếng Anh có " of "
+    if (en === "{{on}} of {{total}}") continue;
     const names: string[] = [];
     const source = en
       .split(VAR)
