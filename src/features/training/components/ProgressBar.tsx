@@ -1,4 +1,5 @@
 
+import { Link } from "react-router-dom";
 import { tr } from "@/shared/i18n/tr";
 
 export interface ProgressBarProps {
@@ -6,10 +7,12 @@ export interface ProgressBarProps {
   total: number;
   due?: number;
   overdue?: number;
+  /** Trang mở khi bấm dòng "Trễ ghi kết quả" (chi tiết giáo án, lọc sẵn các buổi trễ). */
+  overdueHref?: string;
 }
 
 /** Thanh tiến độ giáo án (T1): Hoàn thành / Tổng buổi, hiển thị Đúng tiến độ & Trễ ghi kết quả. */
-export function ProgressBar({ done, total, due, overdue }: ProgressBarProps) {
+export function ProgressBar({ done, total, due, overdue, overdueHref }: ProgressBarProps) {
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
   const onTrackPct = due != null && due > 0 ? Math.round((done / due) * 100) : null;
   const overdueCount = overdue ?? (due != null ? Math.max(0, due - done) : 0);
@@ -56,7 +59,20 @@ export function ProgressBar({ done, total, due, overdue }: ProgressBarProps) {
       </div>
       {overdueCount > 0 && (
         <div style={{ fontSize: "11px", color: "var(--danger)", marginTop: 2, fontWeight: 600 }}>
-          {tr("Overdue results")}: {overdueCount} {tr("session(s)")}
+          {overdueHref ? (
+            <Link
+              to={overdueHref}
+              title={tr("Open the overdue workouts")}
+              style={{ color: "inherit", textDecoration: "underline" }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {tr("Overdue results")}: {overdueCount} {tr("session(s)")}
+            </Link>
+          ) : (
+            <>
+              {tr("Overdue results")}: {overdueCount} {tr("session(s)")}
+            </>
+          )}
         </div>
       )}
     </div>

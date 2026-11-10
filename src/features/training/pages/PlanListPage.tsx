@@ -176,6 +176,7 @@ export default function PlanListPage() {
                         total={plan.progress.total ?? plan.progress.due}
                         due={plan.progress.due}
                         overdue={plan.progress.overdue}
+                        overdueHref={`/training/plans/${plan.id}?status=OVERDUE`}
                       />
                     </td>
                     <td className={styles.colStatus}>

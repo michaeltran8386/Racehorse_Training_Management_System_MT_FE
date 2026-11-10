@@ -44,6 +44,13 @@ export function todayClub(): string {
   return clubParts(new Date().toISOString()).date;
 }
 
+/** Ngày mai theo giờ câu lạc bộ: giáo án chỉ được bắt đầu từ ngày này. */
+export function tomorrowClub(): string {
+  const d = new Date(`${todayClub()}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
 // ------------------------------------------------------------ Dạng dữ liệu BE
 
 interface BeHorse {

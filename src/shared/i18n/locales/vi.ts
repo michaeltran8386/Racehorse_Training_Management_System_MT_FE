@@ -276,6 +276,7 @@ export const vi: TranslationResources = {
   },
   nameValidation: {
     required: "Họ và tên không được để trống.",
+    length: "Họ và tên phải từ 2 đến 100 ký tự.",
     lettersOnly: "Họ và tên chỉ được gồm chữ cái và khoảng trắng.",
   },
   phoneValidation: {

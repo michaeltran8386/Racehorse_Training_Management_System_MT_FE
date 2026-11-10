@@ -1,6 +1,7 @@
 // Mã lỗi từ API → câu thông báo tiếng Anh dễ hiểu. Nêu điều kiện, không trách người dùng.
 
 import { ApiError } from "@/shared/lib/api";
+import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
 
 export type AlertTone = "ok" | "warn" | "danger" | "info";
 
@@ -72,13 +73,13 @@ const GENERIC: Record<string, string> = {
   PLAN_CLOSED: "This plan is completed or cancelled, so it cannot be changed.",
   INVALID_PLAN_TRANSITION: "The plan's current status does not allow this action.",
   HORSE_HAS_ACTIVE_PLAN: "This horse already has an active plan. Complete or cancel it first.",
+  HORSE_HAS_OTHER_TRAINER: "This horse is managed by another trainer's draft or active plan.",
   PLAN_HAS_NO_WORKOUTS: "Add at least one workout before activating the plan.",
   PLAN_ENDED: "The plan's end date has passed.",
   PHASES_REQUIRED: "A plan needs at least one phase.",
   PLAN_NOT_DELETABLE: "Only a draft without completed workouts can be deleted. Cancel the plan instead.",
   VET_CONFIRMATION_REQUIRED: "The horse is in a medical status. Confirm that you have discussed this with the Veterinarian.",
   SUMMARY_REQUIRED: "Summary must be 10 to 2000 characters.",
-  START_DATE_IN_PAST: "The start date cannot be before today.",
   DATE_IN_PAST: "A workout cannot be scheduled on a past date.",
   OUTSIDE_TRAINING_HOURS: "Start time must be between 04:00 and 20:00.",
   OUTSIDE_PLAN_DATES: "The workout date must be within the plan's dates.",
@@ -99,7 +100,7 @@ const GENERIC: Record<string, string> = {
   NOTE_REQUIRED: "Note must be 10 to 500 characters.",
   WORKOUT_NOT_BLOCKED: "Only blocked workouts can be restored.",
   ALERT_NOT_FOUND: "This alert no longer exists. Reload the list.",
-  START_DATE_TOO_EARLY: "The start date cannot be more than 7 days ago.",
+  START_DATE_TOO_EARLY: "Plan start date must be from tomorrow onwards.",
   PLAN_TOO_LONG: "A plan can last at most 52 weeks.",
   TOO_MANY_PHASES: "A plan can have at most 12 phases.",
   INVALID_PHASE: "A phase is not valid: check its name, dates, quotas and surface.",
@@ -141,7 +142,7 @@ const GENERIC: Record<string, string> = {
   NUTRITION_PLAN_NOT_ARCHIVABLE: "Only approved nutrition plans can be archived.",
 };
 
-import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
+const SURFACE_EN: Record<string, string> = { TURF: "Turf", DIRT: "Dirt", SYNTHETIC: "Synthetic" };
 
 function localizeShift(shift: unknown, isVi: boolean): string {
   const s = String(shift || "").trim();
@@ -168,10 +169,24 @@ const DYNAMIC_EN: Record<string, (d: Record<string, unknown>) => string | undefi
   ZONE_COLS_TOO_SMALL: (d) => `Columns cannot be fewer than ${d.min}: a stall already sits in column ${d.min}.`,
   ROW_OUT_OF_RANGE: (d) => `Row must be between 1 and ${d.max}.`,
   COL_OUT_OF_RANGE: (d) => `Column must be between 1 and ${d.max}.`,
-  POSITION_TAKEN: (d) => `This grid position is already used by stall ${d.stallCode ?? ""}.`,
-  GROOM_TIME_CONFLICT: (d) =>
-    d.groom
-      ? `Groom ${d.groom} is already assigned to ${d.horse}'s workout at ${d.time} on ${d.date}. Choose another groom or move the time by at least 30 minutes.`
+  POSITION_TAKEN: (d) => `This grid position is already used by stall ${d.stallCode}.`,
+  GROOM_TIME_CONFLICT: (d) => {
+    if (!d.groom) return undefined;
+    return d.before
+      ? `Groom ${d.groom} is already assigned to ${d.horse}'s workout at ${d.time} on ${d.date} (trainer ${d.trainer}). Choose another groom, or a start time at or before ${d.before} or from ${d.after}.`
+      : `Groom ${d.groom} is already assigned to ${d.horse}'s workout at ${d.time} on ${d.date}. Choose another groom or move the time by at least 30 minutes.`;
+  },
+  HORSE_WORKOUT_TIME_CONFLICT: (d) =>
+    d.before
+      ? `The horse already has another workout at ${d.time} on ${d.date} (trainer ${d.trainer}). Choose a start time at or before ${d.before} or from ${d.after}.`
+      : undefined,
+  TRIAL_SLOT_TAKEN: (d) =>
+    d.before
+      ? `The ${SURFACE_EN[String(d.surface)] ?? d.surface} track already has ${d.horse}'s trial run at ${d.time} on ${d.date} (trainer ${d.trainer}). Choose a start time at or before ${d.before} or from ${d.after}.`
+      : undefined,
+  HORSE_HAS_OTHER_TRAINER: (d) =>
+    d.trainer
+      ? `${d.horse} is managed by trainer ${d.trainer} (plan ${d.planCode}). Contact that trainer or the Club Manager.`
       : undefined,
   GROOM_ALREADY_ASSIGNED_IN_SHIFT: (d) =>
     d.groomName

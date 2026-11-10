@@ -12,6 +12,7 @@ import { Select } from "@/shared/components/form/Select";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useToast } from "@/shared/components/ui/Toast";
 import { messageFor } from "@/shared/lib/messages";
+import { fullNameError } from "@/shared/lib/name";
 import { clubIso, todayClub, trainingApi } from "../api";
 import {
   ALWAYS_HEAVY,
@@ -162,12 +163,18 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
     }
     if (forcedHeavy && !jockey.trim()) {
       errs.jockey = isVietnamese ? "Vui lòng nhập tên nài ngựa." : tr("Jockey name is required for breeze and trial runs.");
+    } else if (jockey.trim() && fullNameError(jockey)) {
+      errs.jockey = isVietnamese ? "Tên nài ngựa chỉ được gồm chữ cái và khoảng trắng." : tr("Jockey name can only contain letters and spaces.");
     }
     if (!distance || distance < 100 || distance > 5000) {
       errs.distance = isVietnamese ? "Cự ly phải từ 100 đến 5000 m." : tr("Distance must be 100 to 5000 m.");
     }
     if (!reps || reps < 1 || reps > 10) {
       errs.reps = isVietnamese ? "Số hiệp phải từ 1 đến 10." : tr("Reps must be 1 to 10.");
+    } else if (!errs.distance && distance * reps > 10000) {
+      errs.reps = isVietnamese
+        ? "Tổng cự ly (cự ly mỗi hiệp × số hiệp) không được vượt quá 10 000 m."
+        : tr("Total distance (distance per rep × repetitions) cannot exceed 10 000 m.");
     }
     const today = todayClub();
     if (date === today) {
@@ -668,7 +675,7 @@ export function GeneratePhaseScheduleDialog({
   const [type, setType] = useState<ExerciseType>(defaultType);
   const [intensity, setIntensity] = useState<ExerciseIntensity>(defaultIntensity);
   const [distance, setDistance] = useState(
-    String(Math.max(500, Math.round(phase.maxWeeklyDistance / (phase.sessionsPerWeek || 5)))),
+    String(Math.min(5000, Math.max(500, Math.round(phase.maxWeeklyDistance / (phase.sessionsPerWeek || 5))))),
   );
   const [repetitions, setRepetitions] = useState(1);
   const [surface, setSurface] = useState<TrackType>((phase.surface as TrackType) || "TURF");
@@ -727,16 +734,41 @@ export function GeneratePhaseScheduleDialog({
       return;
     }
     const distNum = Number(distance);
-    if (!distNum || distNum < 200 || distNum > 10000) {
-      setError(isVietnamese ? "Cự ly phải từ 200 đến 10 000 m." : tr("Distance must be 200 to 10 000 m."));
+    if (!distNum || distNum < 100 || distNum > 5000) {
+      setError(isVietnamese ? "Cự ly phải từ 100 đến 5000 m." : tr("Distance must be 100 to 5000 m."));
+      return;
+    }
+    if (!Number.isInteger(repetitions) || repetitions < 1 || repetitions > 10) {
+      setError(isVietnamese ? "Số hiệp phải từ 1 đến 10." : tr("Reps must be 1 to 10."));
+      return;
+    }
+    if (distNum * repetitions > 10000) {
+      setError(
+        isVietnamese
+          ? "Tổng cự ly (cự ly mỗi hiệp × số hiệp) không được vượt quá 10 000 m."
+          : tr("Total distance (distance per rep × repetitions) cannot exceed 10 000 m."),
+      );
       return;
     }
     if (!groomId) {
       setError(isVietnamese ? "Vui lòng chọn nhân viên chăm sóc." : tr("Please select an assigned groom."));
       return;
     }
-    if ((type === "BREEZE" || type === "TRIAL") && !jockey.trim()) {
+    const needsSpeedAndJockey = type === "BREEZE" || type === "TRIAL";
+    if (needsSpeedAndJockey && phase.targetSpeedKmh == null) {
+      setError(
+        isVietnamese
+          ? "Giai đoạn này chưa có tốc độ mục tiêu. Hãy đặt tốc độ mục tiêu cho giai đoạn trước khi sinh lịch chạy tốc độ / chạy thử."
+          : tr("This phase has no target speed. Set the phase target speed before generating breeze or trial runs."),
+      );
+      return;
+    }
+    if (needsSpeedAndJockey && !jockey.trim()) {
       setError(tr("Jockey name is required for breeze and trial runs."));
+      return;
+    }
+    if (jockey.trim() && fullNameError(jockey)) {
+      setError(isVietnamese ? "Tên nài ngựa chỉ được gồm chữ cái và khoảng trắng." : tr("Jockey name can only contain letters and spaces."));
       return;
     }
     setSubmitting(true);
@@ -890,11 +922,11 @@ export function GeneratePhaseScheduleDialog({
             </Field>
           </div>
           <div className={formLayout.columns}>
-            <Field label={tr("Distance (m)")} required hint="200 – 10 000 m">
-              <Input type="number" min={200} max={10000} step={100} value={distance} onChange={(e) => setDistance(e.target.value)} />
+            <Field label={tr("Distance (m)")} required hint="100 – 5000 m">
+              <Input type="number" min={100} max={5000} step={100} value={distance} onChange={(e) => setDistance(e.target.value)} />
             </Field>
             <Field label={tr("Repetitions")} required hint="1 – 10">
-              <Input type="number" min={1} max={10} value={repetitions} onChange={(e) => setRepetitions(Math.max(1, Number(e.target.value)))} />
+              <Input type="number" min={1} max={10} value={repetitions} onChange={(e) => setRepetitions(Math.min(10, Math.max(1, Math.round(Number(e.target.value)) || 1)))} />
             </Field>
           </div>
         </section>

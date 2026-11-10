@@ -88,7 +88,11 @@ export default function WeeklyCalendarPage() {
   const [params] = useSearchParams();
   const isTrainer = user.role === "HEAD_TRAINER";
 
-  const [date, setDate] = useState(() => mondayOf(todayClub()));
+  // ?date=YYYY-MM-DD (thông báo Bỏ lỡ) -> mở đúng tuần có buổi bị bỏ lỡ.
+  const [date, setDate] = useState(() => {
+    const wanted = params.get("date");
+    return mondayOf(wanted && /^\d{4}-\d{2}-\d{2}$/.test(wanted) ? wanted : todayClub());
+  });
   const [sessions, setSessions] = useState<ExerciseSession[]>([]);
   const [plans, setPlans] = useState<TrainingPlan[]>([]);
   const [loading, setLoading] = useState(true);

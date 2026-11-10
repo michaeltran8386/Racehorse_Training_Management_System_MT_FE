@@ -274,6 +274,7 @@ export const en = {
   },
   nameValidation: {
     required: "Full name is required.",
+    length: "Full name must be 2 to 100 characters.",
     lettersOnly: "Full name can only contain letters and spaces.",
   },
   phoneValidation: {
