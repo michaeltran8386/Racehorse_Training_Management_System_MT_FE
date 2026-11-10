@@ -1,6 +1,7 @@
 // Mã lỗi từ API → câu thông báo tiếng Anh dễ hiểu. Nêu điều kiện, không trách người dùng.
 
 import { ApiError } from "@/shared/lib/api";
+import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
 
 export type AlertTone = "ok" | "warn" | "danger" | "info";
 
@@ -143,8 +144,23 @@ const GENERIC: Record<string, string> = {
 
 const SURFACE_EN: Record<string, string> = { TURF: "Turf", DIRT: "Dirt", SYNTHETIC: "Synthetic" };
 
-// Câu có chèn dữ liệu BE gửi kèm (data), ví dụ tên ngựa đang ở ô chuồng.
-const DYNAMIC: Record<string, (d: Record<string, unknown>) => string | undefined> = {
+function localizeShift(shift: unknown, isVi: boolean): string {
+  const s = String(shift || "").trim();
+  if (!s) return isVi ? "ca trực" : "the shift";
+  if (!isVi) {
+    if (/ca sáng|morning/i.test(s)) return "Morning shift";
+    if (/ca chiều|afternoon/i.test(s)) return "Afternoon shift";
+    if (/ca đêm|night/i.test(s)) return "Night shift";
+    return s;
+  }
+  if (/morning/i.test(s)) return "Ca sáng";
+  if (/afternoon/i.test(s)) return "Ca chiều";
+  if (/night/i.test(s)) return "Ca đêm";
+  return s;
+}
+
+// Câu có chèn dữ liệu BE gửi kèm (data), ví dụ tên ngựa đang ở ô chuồng - Tiếng Anh
+const DYNAMIC_EN: Record<string, (d: Record<string, unknown>) => string | undefined> = {
   STALL_OCCUPIED: (d) =>
     d.horseName ? `Stall ${d.stallCode ? `${d.stallCode} ` : ""}already houses ${d.horseName}. Move that horse first.` : undefined,
   HORSE_HAS_STALL: (d) => (d.stallCode ? `The horse is already in stall ${d.stallCode}. Use Move stall instead.` : undefined),
