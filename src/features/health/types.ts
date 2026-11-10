@@ -26,7 +26,9 @@ export interface LabTestItem {
 export interface CareInstructionItem {
   id?: string;
   activity: string;
-  frequency: string;
+  frequency?: string | number;
+  frequencyPerDay?: number;
+  notes?: string;
 }
 
 export interface TreatmentPhase {
@@ -90,6 +92,8 @@ export interface MedicalRecord {
   treatmentPhases?: TreatmentPhase[];
   prescriptions?: PrescriptionItem[];
   followUps?: FollowUpItem[];
+  followUpDate?: string;
+  requiresFollowUp?: boolean;
   conclusion?: string;
   treatmentResult?: string;
   closedAt?: string;

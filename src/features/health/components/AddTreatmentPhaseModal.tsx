@@ -36,16 +36,19 @@ export function AddTreatmentPhaseModal({ onClose, onSubmit }: AddTreatmentPhaseM
   const [error, setError] = useState<string | null>(null);
 
   function addInstruction() {
-    setInstructions([...instructions, { activity: "", frequency: "" }]);
+    setInstructions([...instructions, { activity: "", frequency: "1", frequencyPerDay: 1, notes: "" }]);
   }
 
   function removeInstruction(index: number) {
     setInstructions(instructions.filter((_, i) => i !== index));
   }
 
-  function updateInstruction(index: number, key: keyof CareInstructionItem, value: string) {
+  function updateInstruction(index: number, key: keyof CareInstructionItem, value: any) {
     const next = [...instructions];
     next[index] = { ...next[index], [key]: value };
+    if (key === "frequency") {
+      next[index].frequencyPerDay = Math.min(3, Math.max(1, Number(value) || 1));
+    }
     setInstructions(next);
   }
 
@@ -71,7 +74,15 @@ export function AddTreatmentPhaseModal({ onClose, onSubmit }: AddTreatmentPhaseM
         allowedActivity,
         careInstructions: instructions
           .filter((i) => i.activity.trim() !== "")
-          .map((i) => (i.frequency && i.frequency.trim() ? `${i.activity.trim()} (${i.frequency.trim()})` : i.activity.trim())) as any,
+          .map((i) => {
+            const freq = Math.min(3, Math.max(1, Number(i.frequency || i.frequencyPerDay) || 1));
+            return {
+              activity: i.activity.trim(),
+              frequency: `${freq} lần/ngày`,
+              frequencyPerDay: freq,
+              notes: i.notes?.trim() || undefined,
+            };
+          }),
       });
       onClose();
     } catch (err: unknown) {
@@ -152,16 +163,26 @@ export function AddTreatmentPhaseModal({ onClose, onSubmit }: AddTreatmentPhaseM
 
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {instructions.map((item, idx) => (
-              <div key={idx} style={{ display: "grid", gridTemplateColumns: "2fr 1.2fr auto", gap: 8, alignItems: "center" }}>
+              <div key={idx} style={{ display: "grid", gridTemplateColumns: "1.8fr 1.3fr 1.6fr auto", gap: 8, alignItems: "center" }}>
                 <Input
                   value={item.activity}
                   onChange={(e) => updateInstruction(idx, "activity", e.target.value)}
                   placeholder={tr("Care activity (e.g., Ice boot therapy)")}
+                  required
+                />
+                <Select
+                  value={String(item.frequencyPerDay || item.frequency || "1")}
+                  onChange={(e) => updateInstruction(idx, "frequency", e.target.value)}
+                  options={[
+                    { value: "1", label: tr("1 time/day") },
+                    { value: "2", label: tr("2 times/day") },
+                    { value: "3", label: tr("3 times/day") },
+                  ]}
                 />
                 <Input
-                  value={item.frequency}
-                  onChange={(e) => updateInstruction(idx, "frequency", e.target.value)}
-                  placeholder={tr("Frequency (e.g., 2 times/day)")}
+                  value={item.notes || ""}
+                  onChange={(e) => updateInstruction(idx, "notes", e.target.value)}
+                  placeholder={tr("Notes (e.g., 15 mins)")}
                 />
                 {instructions.length > 0 && (
                   <button

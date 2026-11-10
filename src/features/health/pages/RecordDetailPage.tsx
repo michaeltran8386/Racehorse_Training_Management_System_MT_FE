@@ -429,7 +429,7 @@ export default function RecordDetailPage() {
                                 <strong>{c}</strong>
                               ) : (
                                 <>
-                                  <strong>{c.activity}</strong> {c.frequency ? `(${c.frequency})` : ""}
+                                  <strong>{c.activity}</strong> {c.frequency ? `(${c.frequency})` : ""}{c.notes ? ` — ${c.notes}` : ""}
                                 </>
                               )}
                             </li>

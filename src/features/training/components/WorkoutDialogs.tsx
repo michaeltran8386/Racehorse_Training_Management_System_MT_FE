@@ -99,18 +99,18 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
   const markTouched = (k: string) => setTouched((cur) => (cur[k] ? cur : { ...cur, [k]: true }));
   const isFieldVisible = (k: string) => submitted || Boolean(touched[k]);
 
+  const plan = fixedPlan ?? plans?.find((p) => p.id === planId);
+  const phases = useMemo(() => plan?.phases ?? [], [plan]);
+
   useEffect(() => {
     trainingApi
-      .getGrooms()
+      .getGrooms(plan?.horseId, date)
       .then((g) => {
         setGrooms(g);
         setGroomId((current) => current || g[0]?.id || "");
       })
       .catch((err) => setError(messageFor(err)));
-  }, []);
-
-  const plan = fixedPlan ?? plans?.find((p) => p.id === planId);
-  const phases = useMemo(() => plan?.phases ?? [], [plan]);
+  }, [plan?.horseId, date]);
   // Giai đoạn mặc định: giai đoạn chứa ngày đã chọn, nếu không thì giai đoạn đầu.
   useEffect(() => {
     if (phases.length === 0 || phases.some((p) => p.id === phaseId)) return;
@@ -483,7 +483,15 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
               setGroomId(val);
               markTouched("groomId");
             }}
-            options={grooms.map((g) => ({ value: g.id, label: g.fullName }))}
+            options={grooms.map((g) => {
+              const badges: string[] = [];
+              if (g.isAssignedToHorse) badges.push(isVietnamese ? "Phụ trách ô" : "Assigned stall");
+              if (g.hasShift === false) badges.push(isVietnamese ? "Không có ca trực" : "No shift");
+              return {
+                value: g.id,
+                label: badges.length > 0 ? `${g.fullName} (${badges.join(", ")})` : g.fullName,
+              };
+            })}
           />
         </Field>
         <Field label={tr("Instructions")} hint={tr("Up to 500 characters")}>
@@ -935,7 +943,19 @@ export function GeneratePhaseScheduleDialog({
           <h3 className={gen.sectionTitle}>{tr("Assignment")}</h3>
           <div className={needsJockey ? formLayout.columns : undefined}>
             <Field label={tr("Assigned groom")} required>
-              <Select value={groomId} onChange={(e) => setGroomId(e.target.value)} options={grooms.map((g) => ({ value: g.id, label: g.fullName }))} />
+              <Select
+                value={groomId}
+                onChange={(e) => setGroomId(e.target.value)}
+                options={grooms.map((g) => {
+                  const badges: string[] = [];
+                  if (g.isAssignedToHorse) badges.push(isVietnamese ? "Phụ trách ô" : "Assigned stall");
+                  if (g.hasShift === false) badges.push(isVietnamese ? "Không có ca trực" : "No shift");
+                  return {
+                    value: g.id,
+                    label: badges.length > 0 ? `${g.fullName} (${badges.join(", ")})` : g.fullName,
+                  };
+                })}
+              />
             </Field>
             {needsJockey && (
               <Field label={tr("Jockey name")} required>
