@@ -99,6 +99,8 @@ export const PERMISSIONS: PermissionMeta[] = [
   },
   {
     key: "viewAudit", group: "ADMINISTRATION", name: "View the Audit Log", note: "Read-only history of every change",
+    ownerRoles: ["CLUB_MANAGER"], ownerReason: "Only the Club Manager can view the Audit Log.",
+    alwaysOnFor: { roles: ["CLUB_MANAGER"], reason: "The Club Manager always keeps audit log access." },
     revokeEffect: "The Audit Log is no longer readable by this account.",
   },
 ];
@@ -500,14 +502,6 @@ const OPEN_PREFIXES = [
   "/notifications",
   "/forbidden",
   "/session-expired",
-  "/alerts",
-  "/training/alerts",
-  "/injuries",
-  "/tasks",
-  "/incidents",
-  "/supplies",
-  "/inventory",
-  "/restock-requests",
 ];
 
 function findByHref(groups: NavGroup[], href: string): { group: string; item: NavItem } | undefined {

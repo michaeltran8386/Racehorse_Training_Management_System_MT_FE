@@ -184,6 +184,7 @@ export const router = createBrowserRouter([
           { path: "/session-expired", element: <SessionExpiredPage /> },
 
           // ---- Phân hệ Y tế & Sức khỏe (Flow 3: P2-01 -> P2-05)
+          { path: "/medical", element: <Navigate to="/records" replace /> },
           { path: "/records", element: <RecordListPage /> },
           { path: "/medical/records", element: <RecordListPage /> },
           { path: "/medical/records/new", element: <RecordFormPage /> },
