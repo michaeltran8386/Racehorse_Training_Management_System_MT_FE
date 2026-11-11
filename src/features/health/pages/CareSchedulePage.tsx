@@ -373,6 +373,21 @@ export default function CareSchedulePage() {
           </div>
           <div style={{ width: 200 }}>
             <Select
+              aria-label={tr("Status")}
+              value={activeTab}
+              options={[
+                { value: "ALL", label: tr("Status: All") },
+                { value: "OVERDUE", label: tr("Overdue") },
+                { value: "DUE_SOON", label: tr("Due soon") },
+                { value: "UP_TO_DATE", label: tr("On schedule") },
+                { value: "COMPLETED", label: tr("Completed") },
+                { value: "NO_DATA", label: tr("No history") },
+              ]}
+              onChange={(e) => { setActiveTab(e.target.value); setPage(1); }}
+            />
+          </div>
+          <div style={{ width: 200 }}>
+            <Select
               aria-label={tr("Category")}
               value={selectedCategory}
               options={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label: value === "ALL" ? "Category: All" : label }))}
