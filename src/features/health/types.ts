@@ -5,7 +5,7 @@ export type SeverityLevel = "MILD" | "MODERATE" | "SEVERE" | "CRITICAL";
 export type ObservationUrgency = "NORMAL" | "ATTENTION" | "URGENT";
 export type AllowedActivity = "Strict stall rest" | "Hand walk 10-15 mins" | "Light exercise" | "Full training" | string;
 export type PrescriptionStatus = "ACTIVE" | "STOPPED" | "COMPLETED";
-export type PreventiveStatus = "UP_TO_DATE" | "DUE_SOON" | "OVERDUE" | "NO_DATA";
+export type PreventiveStatus = "UP_TO_DATE" | "DUE_SOON" | "OVERDUE" | "COMPLETED" | "NO_DATA";
 export type InjuryStage = "ACUTE" | "SUBACUTE" | "RECOVERING" | "HEALED";
 
 export interface VitalSigns {
