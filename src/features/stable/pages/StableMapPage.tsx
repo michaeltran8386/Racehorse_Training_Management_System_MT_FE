@@ -187,6 +187,7 @@ export default function StableMapPage() {
     const a = s.allocations[0];
     const canOpenProfile = !isGroom || isMine(s);
     const alloc = allocationOf(s);
+    const canViewOwner = user.role === "CLUB_MANAGER" || user.role === "HEAD_TRAINER";
     return (
       <Modal
         title={`${tr("Stall")} ${s.code}`}
@@ -202,19 +203,23 @@ export default function StableMapPage() {
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               <HealthBadge status={a.horse.status as HealthStatus} />
-              {a.horse.isMedicalLocked && <Badge tone="warn" icon="lock">{tr("Khóa y tế")}</Badge>}
+              {a.horse.isMedicalLocked && <Badge tone="warn" icon="lock">{tr("Medical Lock")}</Badge>}
               {a.horse.isDebtImpounded && (
                 <Badge tone="danger" icon="alert-circle" title={a.horse.debtImpoundReason ?? undefined}>
-                  {tr("Lưu giữ do nợ phí")}
+                  {tr("Debt Impounded")}
                 </Badge>
               )}
             </div>
-            <div style={{ fontSize: "var(--fs-body)" }}>{tr("Groom:")}{" "}<strong>{a.assignedGroom?.fullName ?? tr("Chưa chọn nhân viên")}</strong></div>
-            <div style={{ fontSize: "var(--fs-body)" }}>{tr("Chủ sở hữu:")}{" "}<strong>{a.horse.owner?.fullName ?? tr("Chưa gán")}</strong></div>
+            <div style={{ fontSize: "var(--fs-body)" }}>{tr("Groom:")}{" "}<strong>{a.assignedGroom?.fullName ?? tr("Unassigned")}</strong></div>
+            {canViewOwner && (
+              <div style={{ fontSize: "var(--fs-body)" }}>
+                {tr("Owner:")}{" "}<strong>{a.horse.owner?.fullName ?? tr("Unassigned")}</strong>
+              </div>
+            )}
             <div style={{ fontSize: "var(--fs-body)" }}>{tr("In this stall since {{date}}", { date: formatDate(a.startDate) })}</div>
             {a.notes && (
               <div style={{ fontSize: "var(--fs-body)", color: "var(--text-2)", background: "var(--surface-subtle)", padding: "6px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-subtle)" }}>
-                <strong style={{ color: "var(--text)" }}>{tr("Ghi chú:")}</strong> {a.notes}
+                <strong style={{ color: "var(--text)" }}>{tr("Notes:")}</strong> {a.notes}
               </div>
             )}
             {canOpenProfile && (
@@ -308,8 +313,8 @@ export default function StableMapPage() {
             </div>
             {canSetStatus && (
               <div style={{ display: "flex", gap: 8 }}>
-                <Button tone="primary" onClick={() => setZoneModalOpen(true)}>+ {tr("Thêm khu chuồng")}</Button>
-                <Button tone="secondary" onClick={() => setStallModalOpen(true)}>+ {tr("Thêm ô chuồng")}</Button>
+                <Button tone="primary" onClick={() => setZoneModalOpen(true)}>+ {tr("Add Barn Zone")}</Button>
+                <Button tone="secondary" onClick={() => setStallModalOpen(true)}>+ {tr("Add Stall")}</Button>
               </div>
             )}
             <Segmented
@@ -336,7 +341,7 @@ export default function StableMapPage() {
           <p>{tr("No barn zones have been set up yet.")}</p>
           {user.role === "CLUB_MANAGER" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Button tone="primary" onClick={() => setZoneModalOpen(true)}>+ {tr("Thêm khu chuồng đầu tiên")}</Button>
+              <Button tone="primary" onClick={() => setZoneModalOpen(true)}>+ {tr("Add First Barn Zone")}</Button>
               <LinkButton to="/catalogs/stalls" tone="secondary">{tr("Go to the stall catalogue")}</LinkButton>
             </div>
           )}
@@ -365,11 +370,11 @@ export default function StableMapPage() {
             </li>
             <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: "var(--r-xs)", border: "2px solid var(--warn)" }} />
-              {tr("Khóa y tế")}
+              {tr("Medical Lock")}
             </li>
             <li style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
               <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: "var(--r-xs)", border: "2px solid var(--danger)" }} />
-              {tr("Lưu giữ do nợ phí")}
+              {tr("Debt Impounded")}
             </li>
           </ul>
 

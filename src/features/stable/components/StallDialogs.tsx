@@ -97,7 +97,7 @@ function GroomField({ value, onChange }: { value: string; onChange: (v: string) 
         value={value}
         onChange={onChange}
         options={[
-          { value: "", label: "— Choose a groom —" },
+          { value: "", label: tr("— No groom (optional) —") },
           ...grooms.map((g) => ({ value: g.id, label: `${g.fullName} · caring for ${g.horseCount} horse(s)` })),
         ]}
       />

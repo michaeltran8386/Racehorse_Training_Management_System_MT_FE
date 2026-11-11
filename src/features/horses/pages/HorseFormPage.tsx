@@ -113,7 +113,10 @@ export default function HorseFormPage() {
     Promise.all([
       getHorseCatalog("BREED", "ACTIVE"),
       getHorseCatalog("COLOR", "ACTIVE"),
-      api<{ accounts: PublicAccount[] }>("GET", "/accounts").catch(() => ({ accounts: [] })),
+      api<{ accounts: PublicAccount[] }>("GET", "/accounts").catch((err) => {
+        console.error("Failed to load accounts for owners dropdown:", err);
+        throw new Error("COULD_NOT_LOAD_OWNERS");
+      }),
     ])
       .then(([b, c, accs]) => {
         setBreeds(b);
@@ -123,7 +126,13 @@ export default function HorseFormPage() {
           .map((a) => ({ id: a.id, fullName: a.fullName, email: a.email }));
         setOwners(activeOwners);
       })
-      .catch(() => setGeneralError("Could not load form lists. Reload the page."));
+      .catch((err) => {
+        if (err?.message === "COULD_NOT_LOAD_OWNERS") {
+          setGeneralError(tr("Could not load owner accounts. Please check your permissions or network."));
+        } else {
+          setGeneralError(tr("Could not load form lists. Reload the page."));
+        }
+      });
   }, []);
 
   // Cảnh báo người dùng khi reload hoặc tắt tab mà có thay đổi chưa lưu (FR-1.26)
@@ -187,14 +196,14 @@ export default function HorseFormPage() {
 
     // Microchip: như thẻ CCCD của ngựa, bắt buộc nhập, không tự sinh ngẫu nhiên
     if (!microchip.trim()) {
-      errs.microchip = "Số vi mạch là bắt buộc (như CCCD của ngựa).";
+      errs.microchip = "Microchip number is required.";
     } else if (!/^\d{15}$/.test(microchip.trim())) {
-      errs.microchip = "Số vi mạch phải gồm đúng 15 chữ số theo chuẩn ISO.";
+      errs.microchip = "Microchip number must consist of exactly 15 digits.";
     }
 
     // Chủ sở hữu: bắt buộc chọn khi tiếp nhận ngựa vào CLB
     if (!isEdit && !ownerId) {
-      errs.ownerId = "Vui lòng chọn chủ sở hữu cho ngựa.";
+      errs.ownerId = "Please select an owner for the horse.";
     }
 
     setErrors(errs);
@@ -356,11 +365,11 @@ export default function HorseFormPage() {
 
             <Field
               label={tr("Microchip Number *")}
-              error={errors.microchip}
-              hint={tr("15-digit ISO microchip number (CCCD của ngựa)")}
+              error={errors.microchip ? tr(errors.microchip) : undefined}
+              hint={tr("15-digit ISO standard electronic microchip")}
             >
               <Input
-                placeholder={tr("Nhập đúng 15 chữ số vi mạch...")}
+                placeholder={tr("Enter 15-digit microchip number...")}
                 value={microchip}
                 invalid={Boolean(errors.microchip)}
                 onChange={(e) => {
@@ -373,17 +382,17 @@ export default function HorseFormPage() {
             </Field>
 
             <Field
-              label={tr("Chủ sở hữu *")}
-              error={errors.ownerId}
-              hint={isEdit ? tr("Đổi chủ sở hữu được thực hiện qua chức năng Chuyển nhượng ở trang chi tiết") : tr("Chọn chủ sở hữu đã được duyệt của ngựa")}
+              label={tr("Owner *")}
+              error={errors.ownerId ? tr(errors.ownerId) : undefined}
+              hint={isEdit ? tr("Ownership transfer is performed via Transfer function on the detail page") : tr("Select an approved owner account for this horse")}
             >
               {isEdit ? (
-                <Input value={ownerName || tr("Chưa xác định")} disabled readOnly />
+                <Input value={ownerName || tr("Unassigned")} disabled readOnly />
               ) : (
                 <Select
                   value={ownerId}
                   options={[
-                    { value: "", label: tr("— Chọn chủ sở hữu —") },
+                    { value: "", label: tr("— Select owner —") },
                     ...owners.map((o) => ({ value: o.id, label: `${o.fullName} (${o.email})` })),
                   ]}
                   onChange={(e) => {

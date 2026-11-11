@@ -4268,6 +4268,21 @@ export const VI_TEXT: Record<string, string> = {
   "The session for {{name}} · {{role}} closes and the browser returns to the sign-in page.": "Phiên làm việc của {{name}} · {{role}} sẽ kết thúc và trình duyệt sẽ quay về trang đăng nhập.",
   "The session for {{fullName}} · {{role}} closes and the browser returns to the sign-in page.": "Phiên làm việc của {{fullName}} · {{role}} sẽ kết thúc và trình duyệt sẽ quay về trang đăng nhập.",
   "Log out of TMEC?": "Đăng xuất khỏi TMEC?",
+  // F1 Horse Profile & Stables i18n
+  "Owner *": "Chủ sở hữu *",
+  "— Select owner —": "— Chọn chủ sở hữu —",
+  "Select an approved owner account for this horse": "Chọn chủ sở hữu đã được duyệt của ngựa",
+  "Ownership transfer is performed via Transfer function on the detail page": "Đổi chủ sở hữu được thực hiện qua chức năng Chuyển nhượng ở trang chi tiết",
+  "15-digit ISO standard electronic microchip": "Số vi mạch 15 chữ số chuẩn ISO",
+  "Enter 15-digit microchip number...": "Nhập đúng 15 chữ số vi mạch...",
+  "Please select an owner for the horse.": "Vui lòng chọn chủ sở hữu cho ngựa.",
+  "Could not load owner accounts. Please check your permissions or network.": "Không thể tải danh sách tài khoản chủ ngựa. Vui lòng kiểm tra quyền hoặc kết nối mạng.",
+  "Owner:": "Chủ sở hữu:",
+  "Debt Impounded": "Lưu giữ do nợ phí",
+  "Add Barn Zone": "Thêm khu chuồng",
+  "Add Stall": "Thêm ô chuồng",
+  "Add First Barn Zone": "Thêm khu chuồng đầu tiên",
+  "— No groom (optional) —": "— Không giao (tùy chọn) —",
 };
 
 
