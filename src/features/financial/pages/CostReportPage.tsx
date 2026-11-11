@@ -15,13 +15,23 @@ import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { tr } from "@/shared/i18n/tr";
 import { messageFor } from "@/shared/lib/messages";
 import { useAppLanguage } from "@/shared/lib/language";
+import { ClubCashflowReportView } from "../components/ClubCashflowReportView";
 import { fetchOwnerSummary } from "../api";
 import { invoiceStatusLabel } from "../invoiceStatus";
 import type { OwnerSummaryResponse } from "../types";
 import styles from "./CostReportPage.module.css";
 
 const PAGE_SIZE = 10;
+
 export default function CostReportPage() {
+  const user = useCurrentUser();
+  if (user.role === "CLUB_MANAGER") {
+    return <ClubCashflowReportView />;
+  }
+  return <OwnerCostReportView />;
+}
+
+function OwnerCostReportView() {
   useTranslation();
   const { isVietnamese } = useAppLanguage();
   const locale = isVietnamese ? "vi-VN" : "en-US";

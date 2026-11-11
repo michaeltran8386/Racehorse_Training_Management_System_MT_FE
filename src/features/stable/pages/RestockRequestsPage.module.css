@@ -1,6 +1,6 @@
 .statusFilters { display: flex; flex-wrap: wrap; gap: .5rem; border-bottom: 1px solid var(--border); padding-bottom: .85rem; }
-.statusFilter { min-height: 40px; padding: .55rem .9rem; border: 1px solid transparent; background: transparent; color: var(--text); font: 600 13px var(--font); cursor: pointer; }
-.statusFilter:hover { background: var(--surface-2); }
+.statusFilter { min-height: 36px; padding: .45rem 1rem; border: 1px solid var(--border); border-radius: var(--r-pill, 999px); background: var(--surface); color: var(--muted); font: 600 13px var(--font); cursor: pointer; transition: background .15s ease, color .15s ease, border-color .15s ease; }
+.statusFilter:hover { background: var(--surface-2); color: var(--text); }
 .statusFilter:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 .selected, .selected:hover { background: var(--brand); color: var(--text-on-brand); border-color: var(--brand); }
 .searchFilters { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }

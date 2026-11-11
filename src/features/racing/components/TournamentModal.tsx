@@ -284,6 +284,7 @@ export function TournamentModal({
             >
               <option value="TURF">{tr("Grass / Turf")}</option>
               <option value="DIRT">{tr("Sand / Dirt")}</option>
+              <option value="SYNTHETIC">{tr("SYNTHETIC")}</option>
             </select>
           </div>
         </div>

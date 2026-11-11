@@ -11,7 +11,7 @@ export type RegistrationStatus =
   | 'CONFIRMED'
   | 'DISQUALIFIED';
 
-export type TrackSurface = 'TURF' | 'DIRT';
+export type TrackSurface = 'TURF' | 'DIRT' | 'SYNTHETIC';
 
 export interface TournamentResult {
   id: string;

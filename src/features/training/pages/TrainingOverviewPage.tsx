@@ -25,6 +25,7 @@ import { PageHeader } from "@/shared/components/layout/PageHeader";
 import styles from "./TrainingOverviewPage.module.css";
 
 import { tr } from "@/shared/i18n/tr";
+import { formatScore } from "@/shared/lib/format";
 import { useAppLanguage } from "@/shared/lib/language";
 type SortKey = "name" | "progress" | "score" | "load" | "next";
 
@@ -367,7 +368,7 @@ export default function TrainingOverviewPage() {
                             }
                             style={{ cursor: "help" }}
                           >
-                            {r.latestScore}/10{" "}
+                            {formatScore(r.latestScore)}/10{" "}
                             {trend && (
                               <Icon name={trend === "up" ? "trend" : "trendDown"} inline size={14} style={{ color: trend === "up" ? "var(--ok)" : "var(--danger)" }} />
                             )}

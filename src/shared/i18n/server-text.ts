@@ -37,6 +37,7 @@ export const SERVER_TEXT: Record<string, string> = {
   "Cannot lock results: {{count}} registered horse(s) still lack finish results.": "Không thể chốt kết quả: còn {{count}} ngựa đã đăng ký chưa có kết quả về đích.",
   "Cannot lock tournament without any registered participants.": "Không thể chốt giải đua chưa có ngựa đăng ký.",
   "Cannot modify an invoice that has already been marked as PAID.": "Không thể sửa hóa đơn đã thanh toán.",
+  "Only DRAFT invoices can have service fees edited.": "Chỉ hóa đơn ở trạng thái Nháp (DRAFT) mới được sửa chi phí.",
   "Cannot record result for registration {{id}} with status {{status}}. Results may only be recorded for active registrations.": "Không thể ghi kết quả cho lượt đăng ký {{id}} ở trạng thái {{status}}. Chỉ ghi kết quả cho lượt đăng ký còn hiệu lực.",
   "Cannot record results for a cancelled tournament.": "Không thể ghi kết quả cho giải đua đã hủy.",
   "Cannot register horse {{horse}}: Medical Lock is currently in force by Veterinarian.": "Không thể đăng ký ngựa {{horse}}: Bác sĩ thú y đang đặt Khóa y tế.",
