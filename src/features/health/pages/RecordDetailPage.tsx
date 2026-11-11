@@ -220,11 +220,14 @@ export default function RecordDetailPage() {
 
           {/* Action buttons */}
           <div className={styles.actions}>
+            {isVet && (isDraft || isOpen) && (
+              <Button tone="ghost" icon="edit" onClick={() => navigate(`/medical/records/${record.id}/edit`)}>
+                {tr("Edit Record")}
+              </Button>
+            )}
+
             {isVet && isDraft && (
               <>
-                <Button tone="ghost" icon="edit" onClick={() => navigate(`/medical/records/${record.id}/edit`)}>
-                  {tr("Edit Record")}
-                </Button>
                 <Button tone="danger" icon="trash" onClick={() => setShowDeleteModal(true)}>
                   {tr("Delete Draft")}
                 </Button>
@@ -429,7 +432,7 @@ export default function RecordDetailPage() {
                                 <strong>{c}</strong>
                               ) : (
                                 <>
-                                  <strong>{c.activity}</strong> {c.frequency ? `(${c.frequency})` : ""}
+                                  <strong>{c.activity}</strong> {c.frequency ? `(${c.frequency})` : ""}{c.notes ? ` — ${c.notes}` : ""}
                                 </>
                               )}
                             </li>

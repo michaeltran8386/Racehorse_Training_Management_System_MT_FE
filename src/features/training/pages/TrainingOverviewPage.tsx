@@ -455,7 +455,7 @@ export default function TrainingOverviewPage() {
                 {isVietnamese ? "Đóng" : tr("Close")}
               </Button>
               <LinkButton
-                to={`/medical?horseId=${lockedHorseModal.id}`}
+                to={`/records/horse/${lockedHorseModal.id}`}
                 tone="primary"
               >
                 {isVietnamese ? "Xem hồ sơ bệnh án" : tr("View medical records")}

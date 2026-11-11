@@ -40,7 +40,7 @@ import { tr } from "@/shared/i18n/tr";
 const PAGE_SIZE = 10;
 
 // Hộp thoại đang mở (một lúc chỉ một): sửa tài khoản, hoặc xác nhận một hành động.
-type Dialog = { kind: "edit" | "decline" | "lock" | "deactivate" | "delete"; target: PublicAccount };
+type Dialog = { kind: "edit" | "decline" | "lock" | "unlock" | "deactivate" | "delete"; target: PublicAccount };
 
 // Trạng thái có lý do do Club Manager ghi => hiện dưới badge ở cột Status.
 const SHOW_REASON: PublicAccount["status"][] = ["LOCKED", "INACTIVE", "REJECTED"];
@@ -196,6 +196,7 @@ export default function AccountListPage() {
         <CellPrimary
           title={r.id === me.id ? `${r.fullName} ${tr("(you)")}` : r.fullName}
           meta={r.email}
+          sub={tr("Joined {{date}}", { date: formatDate(r.createdAt) })}
           avatar={<Avatar name={r.fullName} size={32} tone={r.id === me.id ? "brand" : "neutral"} />}
         />
       ),
@@ -293,7 +294,7 @@ export default function AccountListPage() {
             </Button>
           )}
           {r.status === "LOCKED" && (
-            <Button tone="secondary" size="sm" icon="unlock" disabled={busy} onClick={() => run(r, "unlock")}>
+            <Button tone="secondary" size="sm" icon="unlock" disabled={busy} onClick={() => setDialog({ kind: "unlock", target: r })}>
               {tr("Unlock")}
             </Button>
           )}
@@ -324,6 +325,13 @@ export default function AccountListPage() {
                 hidden: !(r.status === "ACTIVE" && r.id !== me.id),
                 disabledReason:
                   r.role === "CLUB_MANAGER" && activeManagers <= 1 ? "The club must keep at least one active Club Manager." : undefined,
+              },
+              {
+                label: "Unlock account…",
+                icon: "unlock",
+                divider: true,
+                onSelect: () => setDialog({ kind: "unlock", target: r }),
+                hidden: r.status !== "LOCKED",
               },
             ]}
           />
@@ -451,6 +459,7 @@ export default function AccountListPage() {
               rowKey={(r) => r.id}
               loading={accounts === null}
               empty={empty}
+              onRowClick={(r) => setDialog({ kind: "edit", target: r })}
             />
           )}
         </div>
@@ -473,12 +482,49 @@ export default function AccountListPage() {
           }}
           onDeactivate={() => setDialog({ kind: "deactivate", target: dialog.target })}
           onDelete={() => setDialog({ kind: "delete", target: dialog.target })}
+          onUnlock={() => setDialog({ kind: "unlock", target: dialog.target })}
         />
+      )}
+
+      {dialog?.kind === "unlock" && (
+        <ConfirmModal
+          title={tr("Unlock the account of {{fullName}}?", { fullName: dialog.target.fullName })}
+          subtitle={`${tr(ROLE_LABEL[dialog.target.role])} · ${dialog.target.email}`}
+          tone="info"
+          confirmIcon="unlock"
+          confirmLabel={tr("Unlock account")}
+          cancelLabel={tr("Keep locked")}
+          busy={busy}
+          onCancel={() => setDialog(null)}
+          onConfirm={() => run(dialog.target, "unlock")}
+        >
+          {dialog.target.statusReason && (
+            <div
+              style={{
+                marginBottom: "14px",
+                padding: "10px 14px",
+                background: "var(--surface-sunken)",
+                borderRadius: "var(--r-sm)",
+                border: "1px solid var(--border-soft)",
+              }}
+            >
+              <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-2)", fontWeight: 600, marginBottom: "4px" }}>
+                {tr("Lock reason:")}
+              </div>
+              <div style={{ fontSize: "var(--fs-body)", color: "var(--text)" }}>
+                {dialog.target.statusReason}
+              </div>
+            </div>
+          )}
+          <p style={{ margin: 0 }}>
+            {tr("The account will be unlocked and able to sign in again immediately. The user will be notified.")}
+          </p>
+        </ConfirmModal>
       )}
 
       {dialog?.kind === "decline" && (
         <ReasonConfirmModal
-          title={tr(`Decline the request of ${dialog.target.fullName}?`)}
+          title={tr("Decline the request of {{fullName}}?", { fullName: dialog.target.fullName })}
           subtitle={`${tr(ROLE_LABEL[dialog.target.role])} · ${dialog.target.email}`}
           tone="warn"
           confirmLabel={tr("Decline request")}
@@ -494,7 +540,7 @@ export default function AccountListPage() {
 
       {dialog?.kind === "lock" && (
         <ReasonConfirmModal
-          title={tr(`Lock the account of ${dialog.target.fullName}?`)}
+          title={tr("Lock the account of {{fullName}}?", { fullName: dialog.target.fullName })}
           subtitle={`${tr(ROLE_LABEL[dialog.target.role])} · ${dialog.target.email}`}
           tone="danger"
           confirmLabel={tr("Lock account")}
@@ -510,7 +556,7 @@ export default function AccountListPage() {
 
       {dialog?.kind === "deactivate" && (
         <ReasonConfirmModal
-          title={tr(`Deactivate the account of ${dialog.target.fullName}?`)}
+          title={tr("Deactivate the account of {{fullName}}?", { fullName: dialog.target.fullName })}
           subtitle={`${tr(ROLE_LABEL[dialog.target.role])} · ${dialog.target.email}`}
           tone="danger"
           confirmLabel={tr("Deactivate account")}
@@ -526,7 +572,7 @@ export default function AccountListPage() {
 
       {dialog?.kind === "delete" && (
         <ConfirmModal
-          title={tr(`Delete the account of ${dialog.target.fullName}?`)}
+          title={tr("Delete the account of {{fullName}}?", { fullName: dialog.target.fullName })}
           subtitle={`${tr(ACCOUNT_STATUS[dialog.target.status].label)} · ${dialog.target.email}`}
           tone="danger"
           confirmLabel={tr("Delete account")}

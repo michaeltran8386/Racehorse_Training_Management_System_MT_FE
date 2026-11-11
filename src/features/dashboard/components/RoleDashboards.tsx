@@ -7,9 +7,10 @@ import { Card } from "@/shared/components/ui/Card";
 import { Icon } from "@/shared/components/ui/Icon";
 import { HealthBadge } from "@/shared/components/ui/HealthBadge";
 import { Skeleton } from "@/shared/components/ui/Skeleton";
+import { formatDate } from "@/shared/lib/format";
 import type { HealthStatus } from "@/shared/types/enums";
 import type { AuthUser } from "@/shared/types/auth";
-import { getHealthBoard } from "@/features/health/api";
+import { getHealthBoard, healthApi } from "@/features/health/api";
 import { todayClub, clubParts, trainingApi } from "@/features/training/api";
 import { EXERCISE_TYPE_LABEL, SESSION_STATUS_LABEL, INTENSITY_LABEL, TRACK_LABEL } from "@/features/training/types";
 import { getZones } from "@/features/stable/api";
@@ -994,6 +995,189 @@ export function TrainerDashboard() {
 }
 
 // ------------------------------------------------------------------
+// Upcoming Follow-ups & Rechecks Widget (Veterinarian Dashboard)
+// ------------------------------------------------------------------
+interface FollowUpDashboardItem {
+  id: string;
+  horseId: string;
+  horseName: string;
+  horseCode?: string;
+  type: "RECORD" | "LOCK";
+  title: string;
+  date: string;
+  detail: string;
+  link: string;
+  isOverdue: boolean;
+}
+
+function UpcomingFollowUpsWidget() {
+  const { isVietnamese: isVi } = useAppLanguage();
+  const [items, setItems] = useState<FollowUpDashboardItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    Promise.all([
+      healthApi.listRecords({ status: "OPEN", limit: 50 }).catch(() => ({ records: [] })),
+      healthApi.getLocks().catch(() => []),
+    ])
+      .then(([recordsRes, locksRes]) => {
+        if (cancelled) return;
+        const now = new Date();
+        const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const list: FollowUpDashboardItem[] = [];
+
+        // 1. Hồ sơ bệnh án có lịch tái khám
+        for (const r of (recordsRes.records || [])) {
+          if (r.followUpDate) {
+            const d = new Date(r.followUpDate);
+            const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+            list.push({
+              id: `rec-${r.id}`,
+              horseId: r.horseId,
+              horseName: r.horseName || (r as any).horse?.name || (isVi ? "Chiến mã" : "Horse"),
+              horseCode: r.horseCode || (r as any).horse?.horseCode,
+              type: "RECORD",
+              title: r.recordNumber ? `${isVi ? "Bệnh án" : "Record"} #${r.recordNumber}` : (isVi ? "Bệnh án lâm sàng" : "Clinical Record"),
+              date: r.followUpDate,
+              detail: r.diagnosis || (isVi ? "Theo dõi điều trị" : "Treatment follow-up"),
+              link: `/medical/records/${r.id}?tab=followups`,
+              isOverdue: dDay < nowDay,
+            });
+          }
+        }
+
+        // 2. Khóa y tế đang hiệu lực có ngày xem xét lại / tái khám
+        for (const l of (locksRes || [])) {
+          if (l.status === "ACTIVE" && l.reviewDate) {
+            const d = new Date(l.reviewDate);
+            const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+            list.push({
+              id: `lock-${l.id}`,
+              horseId: l.horseId,
+              horseName: l.horseName || (isVi ? "Chiến mã" : "Horse"),
+              horseCode: l.horseCode,
+              type: "LOCK",
+              title: l.lockCode ? `${isVi ? "Khóa" : "Lock"} ${l.lockCode}` : (isVi ? "Khóa huấn luyện" : "Training Lock"),
+              date: l.reviewDate,
+              detail: l.lockReason || (isVi ? "Xem xét gỡ khóa" : "Review lock release"),
+              link: "/locks",
+              isOverdue: dDay < nowDay,
+            });
+          }
+        }
+
+        // Sắp xếp: Quá hạn & gần nhất lên trước
+        list.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        setItems(list.slice(0, 5));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isVi]);
+
+  return (
+    <Card pad={20}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <Icon name="calendar" size={18} />
+          <h3 className={styles.widgetTitle}>
+            {isVi ? "Lịch tái khám & Xem xét lại" : tr("Upcoming Follow-ups & Rechecks")}
+          </h3>
+        </div>
+        <Link to="/locks" style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)", fontWeight: 600, textDecoration: "none" }}>
+          {isVi ? "Quản lý khóa →" : tr("Manage locks →")}
+        </Link>
+      </div>
+
+      {loading ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {Array.from({ length: 3 }, (_, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", border: "1px solid var(--border)", borderRadius: "var(--r)" }}>
+              <Skeleton variant="rect" width={42} height={42} borderRadius={8} />
+              <div style={{ flex: 1 }}>
+                <Skeleton variant="text" width="65%" height={14} />
+                <Skeleton variant="text" width="40%" height={10} style={{ marginTop: 4 }} />
+              </div>
+              <Skeleton variant="badge" width={70} height={20} />
+            </div>
+          ))}
+        </div>
+      ) : items.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "28px 0", color: "var(--muted)", fontSize: "var(--fs-sm)" }}>
+          {isVi ? "Hiện không có lịch tái khám hoặc xem xét khóa nào sắp tới." : tr("No upcoming follow-ups or rechecks.")}
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {items.map((it) => (
+            <Link
+              key={it.id}
+              to={it.link}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "10px 12px",
+                border: "1px solid var(--border)",
+                borderRadius: "var(--r)",
+                textDecoration: "none",
+                color: "inherit",
+                background: "var(--surface)",
+                transition: "background 0.15s ease",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 8,
+                    background: it.isOverdue ? "var(--danger-bg)" : "var(--brand-50, #f0fdf4)",
+                    color: it.isOverdue ? "var(--danger)" : "var(--brand-700)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon name={it.type === "LOCK" ? "lock" : "stethoscope"} size={18} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: "var(--fs-body)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {it.horseName}
+                    {it.horseCode ? ` (${it.horseCode})` : ""}
+                  </div>
+                  <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {it.title} · {it.detail}
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "4px", flexShrink: 0, marginLeft: 8 }}>
+                <span className="num nowrap" style={{ fontSize: "var(--fs-xs)", fontWeight: 600 }}>
+                  {formatDate(it.date)}
+                </span>
+                {it.isOverdue ? (
+                  <Badge tone="danger">{isVi ? "Quá hạn" : tr("Overdue")}</Badge>
+                ) : (
+                  <Badge tone={it.type === "LOCK" ? "warn" : "info"}>
+                    {it.type === "LOCK" ? (isVi ? "Xem xét khóa" : tr("Review lock")) : (isVi ? "Tái khám" : tr("Follow-up"))}
+                  </Badge>
+                )}
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </Card>
+  );
+}
+
+// ------------------------------------------------------------------
 // Veterinarian Dashboard
 // ------------------------------------------------------------------
 export function VetDashboard() {
@@ -1054,7 +1238,7 @@ export function VetDashboard() {
           </p>
         </Card>
 
-        <UpcomingTournamentsWidget />
+        <UpcomingFollowUpsWidget />
       </div>
     </div>
   );

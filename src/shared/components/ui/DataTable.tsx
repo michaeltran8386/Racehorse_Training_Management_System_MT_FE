@@ -168,13 +168,14 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
 }
 
 // Ô "chính" của một hàng: avatar + tên đậm + dòng phụ.
-export function CellPrimary({ title, meta, avatar }: { title: string; meta?: string; avatar?: ReactNode }) {
+export function CellPrimary({ title, meta, sub, avatar }: { title: string; meta?: ReactNode; sub?: ReactNode; avatar?: ReactNode }) {
   return (
     <div className={styles.primary}>
       {avatar}
       <div className={styles.primaryText}>
         <strong>{trNode(title)}</strong>
         {meta && <span>{meta}</span>}
+        {sub && <span style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>{sub}</span>}
       </div>
     </div>
   );

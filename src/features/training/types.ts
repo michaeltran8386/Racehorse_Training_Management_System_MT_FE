@@ -416,4 +416,9 @@ export interface TrainingAlert {
 export interface Groom {
   id: string;
   fullName: string;
+  email?: string;
+  isAssignedToHorse?: boolean;
+  hasShift?: boolean;
+  isAvailable?: boolean;
+  shiftInfo?: string;
 }

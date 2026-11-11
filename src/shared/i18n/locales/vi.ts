@@ -36,6 +36,7 @@ export const vi: TranslationResources = {
     markAsRead: "Đánh dấu đã đọc",
     confirmLogoutTitle: "Đăng xuất khỏi TMEC?",
     confirmLogoutSubtitle: "Các thay đổi chưa lưu trên các biểu mẫu đang mở sẽ bị hủy bỏ.",
+    confirmLogoutBody: "Phiên làm việc của {{name}} · {{role}} sẽ kết thúc và trình duyệt sẽ quay về trang đăng nhập.",
     staySignedIn: "Tiếp tục đăng nhập",
   },
   nav: {

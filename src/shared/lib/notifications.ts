@@ -1,6 +1,6 @@
 import type { Role } from "@/shared/types/enums";
 import { api } from "@/shared/lib/api";
-import { isVietnamese, localizeServerText } from "@/shared/i18n/tr";
+import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
 import { formatShortDate } from "./format";
 
 // Thông báo trong ứng dụng (C-01): dữ liệu từ BE GET /notifications, giữ trong bộ nhớ và hỏi lại mỗi 30 giây.
@@ -481,6 +481,15 @@ export function localizeNotification(n: AppNotification, isVi: boolean): Localiz
     };
     const screenVi = screenMap[screen.trim()] || screen;
     message = `${name} đã gửi yêu cầu cấp quyền truy cập màn hình: ${screenVi} (Mã: ${ref}).`;
+  }
+
+  // Pattern: User asked for access to screen (ref XXX).
+  const askedAccessMatch = n.message.match(/^(.*?)\s*asked for access to\s*(.*?)\s*\(ref\s*(.*?)\)\.?$/i);
+  if (askedAccessMatch) {
+    const [, name, scr, ref] = askedAccessMatch;
+    const scrTrim = scr.trim();
+    const scrVi = tr(scrTrim) !== scrTrim ? tr(scrTrim) : scrTrim.split(" / ").map((p) => tr(p.trim())).join(" / ");
+    message = `${name} đã xin quyền truy cập ${scrVi} (mã ${ref}).`;
   }
 
   // Pattern: QX Equine health audit and medication stock verification report ready for sign-off.
