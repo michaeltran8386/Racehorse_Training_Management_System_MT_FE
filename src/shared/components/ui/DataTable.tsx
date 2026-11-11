@@ -123,6 +123,11 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
                       anyRow?.id === highlightId ||
                       anyRow?.code === highlightId ||
                       anyRow?.lockCode === highlightId ||
+                      anyRow?.recordNumber === highlightId ||
+                      anyRow?.requestCode === highlightId ||
+                      anyRow?.horseCode === highlightId ||
+                      anyRow?.planCode === highlightId ||
+                      anyRow?.reference === highlightId ||
                       anyRow?.requestNumber === highlightId ||
                       anyRow?.incidentNumber === highlightId)
                 );
@@ -130,7 +135,7 @@ export function DataTable<T>({ columns, rows, rowKey, loading, empty, caption, s
                   <tr
                     key={rowKey(row)}
                     data-highlight-id={rowKey(row)}
-                    data-highlight-code={anyRow?.code || anyRow?.lockCode || anyRow?.requestNumber || anyRow?.incidentNumber}
+                    data-highlight-code={anyRow?.code || anyRow?.lockCode || anyRow?.recordNumber || anyRow?.requestCode || anyRow?.horseCode || anyRow?.planCode || anyRow?.reference || anyRow?.requestNumber || anyRow?.incidentNumber}
                     className={cx(
                       styles.row,
                       onRowClick && styles.clickable,

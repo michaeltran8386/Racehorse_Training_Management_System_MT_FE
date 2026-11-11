@@ -10,14 +10,44 @@ import { formatShortDate } from "./format";
  * để trang đích tự động cuộn tới và "Gây chú ý" (Attention glow) đúng mục tiêu.
  */
 export function getNotificationTargetUrl(n: AppNotification): string {
-  const baseLink = n.link || "/";
+  let baseLink = n.link;
+
+  // Nếu BE không truyền link, tự động suy luận fallback link dựa trên category / type
+  if (!baseLink || baseLink === "/") {
+    const typeUpper = (n.type || "").toUpperCase();
+    const cat = n.category;
+
+    if (cat === "LOCK" || typeUpper.includes("LOCK")) {
+      baseLink = "/locks";
+    } else if (cat === "ACCOUNT" || typeUpper.includes("ACCOUNT") || typeUpper.includes("PERMISSION") || typeUpper.includes("SIGNUP")) {
+      baseLink = "/accounts";
+    } else if (typeUpper.includes("PREVENTIVE") || typeUpper.includes("VACCINE") || typeUpper.includes("FARRIER") || typeUpper.includes("DEWORM")) {
+      baseLink = "/vaccine";
+    } else if (cat === "MEDICAL" || typeUpper.includes("MEDICAL") || typeUpper.includes("RECORD")) {
+      baseLink = "/medical/records";
+    } else if (typeUpper.includes("NUTRITION") || typeUpper.includes("RATION")) {
+      baseLink = "/rations";
+    } else if (typeUpper.includes("INVOICE") || typeUpper.includes("BILLING") || typeUpper.includes("FINANCIAL")) {
+      baseLink = "/billing";
+    } else if (typeUpper.includes("RESTOCK") || typeUpper.includes("SUPPLY")) {
+      baseLink = "/supplies/requests";
+    } else if (typeUpper.includes("INCIDENT")) {
+      baseLink = "/incidents";
+    } else if (cat === "HORSE" || typeUpper.includes("HORSE")) {
+      baseLink = "/horses";
+    } else if (cat === "TRAINING" || typeUpper.includes("WORKOUT") || typeUpper.includes("PLAN")) {
+      baseLink = "/training/overview";
+    } else {
+      baseLink = "/";
+    }
+  }
 
   if (baseLink.includes("highlight=")) {
     return baseLink;
   }
 
   const p = n.params || {};
-  const candidateId =
+  let candidateId =
     p.incidentId ||
     p.requestId ||
     p.invoiceId ||
@@ -31,9 +61,19 @@ export function getNotificationTargetUrl(n: AppNotification): string {
     p.requestNumber ||
     p.requestCode ||
     p.code ||
+    p.recordNumber ||
     p.reference;
 
+  // Nếu params không có candidateId, trích xuất mã thực thể từ title hoặc message
   if (!candidateId) {
+    const textToScan = `${n.title || ""} ${n.message || ""}`;
+    const codeMatch = textToScan.match(/\b(MLK-\d{4}-\d{3}|MED-\d{4}-\d{3}|REQ-[A-Z0-9-]+|NP-\d{4}-\d{3}|HR-\d{6}|INV-\d{4}-\d{3})\b/i);
+    if (codeMatch) {
+      candidateId = codeMatch[1];
+    }
+  }
+
+  if (!candidateId || baseLink === "/") {
     return baseLink;
   }
 

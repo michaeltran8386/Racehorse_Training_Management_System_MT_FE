@@ -1,6 +1,6 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Input } from "@/shared/components/form/Input";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
@@ -68,6 +68,8 @@ export default function AccountListPage() {
   useScreenTranslation();
   const me = useCurrentUser();
   const toast = useToast();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
 
   const [accounts, setAccounts] = useState<PublicAccount[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null); // giờ lỗi để hiện trong Alert
@@ -183,6 +185,24 @@ export default function AccountListPage() {
     return (accounts ?? []).filter((a) => (roleFilter === "ALL" || a.role === roleFilter) && (!q || a.fullName.toLowerCase().includes(q)));
   }, [accounts, roleFilter, search]);
   const rows = useMemo(() => scoped.filter((a) => tab === "ALL" || tabOf(a.status) === tab), [scoped, tab]);
+
+  useEffect(() => {
+    if (!highlightId || !accounts || accounts.length === 0) return;
+    const target = accounts.find(
+      (a) => a.id === highlightId || (a as any).requestCode === highlightId || a.email === highlightId
+    );
+    if (!target) return;
+    const targetTab = tabOf(target.status);
+    if (tab !== "ALL" && tab !== targetTab) {
+      setTab(targetTab);
+    }
+    const matchingRows = accounts.filter((a) => tab === "ALL" || tabOf(a.status) === targetTab);
+    const idx = matchingRows.findIndex((a) => a.id === target.id);
+    if (idx >= 0) {
+      setPage(Math.floor(idx / PAGE_SIZE) + 1);
+    }
+  }, [highlightId, accounts]);
+
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const current = Math.min(page, pageCount);
   const visible = rows.slice((current - 1) * PAGE_SIZE, current * PAGE_SIZE);

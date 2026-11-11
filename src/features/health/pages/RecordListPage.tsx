@@ -1,6 +1,6 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
@@ -20,6 +20,8 @@ import { tr } from "@/shared/i18n/tr";
 export default function RecordListPage() {
   useScreenTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const highlightId = searchParams.get("highlight");
   const { user } = useAuth();
 
   const [records, setRecords] = useState<MedicalRecord[]>([]);
@@ -28,6 +30,12 @@ export default function RecordListPage() {
   const [loadError, setLoadError] = useState(false);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    if (highlightId && /^MED-/i.test(highlightId) && !search) {
+      setSearch(highlightId);
+    }
+  }, [highlightId]);
   const [status, setStatus] = useState<string>("");
   const [horseId, setHorseId] = useState<string>("");
   const [severity, setSeverity] = useState<string>("");
@@ -237,9 +245,22 @@ export default function RecordListPage() {
                 </tr>
               </thead>
               <tbody>
-                {displayedRecords.map((r) => (
-                  <tr key={r.id}>
-                    <td className="num nowrap" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                {displayedRecords.map((r) => {
+                  const isHighlighted = Boolean(
+                    highlightId &&
+                      (r.id === highlightId ||
+                        r.recordNumber === highlightId ||
+                        (r as any).horseId === highlightId ||
+                        (r as any).horse?.horseCode === highlightId)
+                  );
+                  return (
+                    <tr
+                      key={r.id}
+                      data-highlight-id={r.id}
+                      data-highlight-code={r.recordNumber}
+                      className={isHighlighted ? "highlight-target-attention" : undefined}
+                    >
+                      <td className="num nowrap" style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
                       <Link className={styles.recordLink} to={`/medical/records/${r.id}`}>
                         {r.recordNumber}
                       </Link>
@@ -294,7 +315,8 @@ export default function RecordListPage() {
                       )}
                     </td>
                   </tr>
-                ))}
+                );
+              })}
               </tbody>
             </table>
           </div>

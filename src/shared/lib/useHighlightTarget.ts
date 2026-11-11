@@ -61,6 +61,11 @@ export function useHighlightTarget(paramName = "highlight", durationMs = 4500) {
       }
       if (!el) {
         try {
+          el = document.querySelector<HTMLElement>(`[data-highlight-code*="${CSS.escape(id)}"]`);
+        } catch {}
+      }
+      if (!el) {
+        try {
           el = document.querySelector<HTMLElement>(`[data-row-key="${CSS.escape(id)}"]`);
         } catch {}
       }

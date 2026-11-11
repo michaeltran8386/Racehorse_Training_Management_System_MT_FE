@@ -137,23 +137,27 @@ export default function NotificationsPage() {
           </p>
 
           {/* Action Link Button */}
-          {n.link && (
-            <div style={{ marginTop: 10 }}>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 4,
-                  fontSize: "var(--fs-caption)",
-                  fontWeight: 600,
-                  color: "var(--brand-700)",
-                }}
-              >
-                <span>{tr("View details")}</span>
-                <Icon name="arrowRight" size={13} />
-              </span>
-            </div>
-          )}
+          {(() => {
+            const targetUrl = getNotificationTargetUrl(n);
+            if (!targetUrl || targetUrl === "/") return null;
+            return (
+              <div style={{ marginTop: 10 }}>
+                <span
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    fontSize: "var(--fs-caption)",
+                    fontWeight: 600,
+                    color: "var(--brand-700)",
+                  }}
+                >
+                  <span>{tr("View details")}</span>
+                  <Icon name="arrowRight" size={13} />
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Unread Indicator */}

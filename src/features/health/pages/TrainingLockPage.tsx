@@ -32,6 +32,7 @@ export default function TrainingLockPage() {
   const [searchParams] = useSearchParams();
   const urlHorseId = searchParams.get("horseId");
   const urlAction = searchParams.get("action");
+  const highlightId = searchParams.get("highlight");
 
   const [activeTab, setActiveTab] = useState<string>("ACTIVE");
   const [locks, setLocks] = useState<TrainingLockHistoryItem[]>([]);
@@ -117,6 +118,23 @@ export default function TrainingLockPage() {
     ALL: safeLocks.length,
   };
   const pageSize = 10;
+
+  useEffect(() => {
+    if (!highlightId || safeLocks.length === 0) return;
+    const target = safeLocks.find(
+      (l) => l.id === highlightId || l.lockCode === highlightId || l.horseId === highlightId || l.horseCode === highlightId
+    );
+    if (!target) return;
+    if (activeTab !== "ALL" && target.status !== activeTab) {
+      setActiveTab("ALL");
+    }
+    const matching = safeLocks.filter((l) => (activeTab === "ALL" || target.status === activeTab ? true : l.status === target.status));
+    const idx = matching.findIndex((l) => l.id === target.id);
+    if (idx >= 0) {
+      setPage(Math.floor(idx / pageSize) + 1);
+    }
+  }, [highlightId, safeLocks]);
+
   const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredLocks.length / pageSize)));
   const visibleLocks = filteredLocks.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
