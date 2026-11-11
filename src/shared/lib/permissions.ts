@@ -558,7 +558,10 @@ export function screenAccess(role: Role, permissions: PermissionMap, pathname: s
     if (seg2 === "monitor") {
       return { allowed: role === "HEAD_TRAINER", group: "TRAINING", label: "Live Monitor", ownerRoles: ["HEAD_TRAINER"], inOwnRole: role === "HEAD_TRAINER" };
     }
-    return open;
+    // /training/alerts thuộc thẩm quyền HT & VET, không bỏ qua kiểm tra quyền (được map tới /alerts bên dưới)
+    if (seg2 !== "alerts") {
+      return open;
+    }
   }
 
   // SC-1.05 Hồ sơ ngựa đã xóa: chỉ CM (BE cũng chặn bằng @Roles).
@@ -613,8 +616,30 @@ export function screenAccess(role: Role, permissions: PermissionMap, pathname: s
   }
 
   let href = "/" + (pathname.split("/")[1] ?? "");
-  
-  if (href === "/horses" && role === "HORSE_OWNER") {
+
+  if (
+    pathname === "/training/alerts" ||
+    pathname.startsWith("/training/alerts/") ||
+    pathname === "/alerts" ||
+    pathname.startsWith("/alerts/")
+  ) {
+    href = "/alerts";
+  } else if (
+    pathname === "/supplies/inventory" ||
+    pathname.startsWith("/supplies/inventory/") ||
+    pathname === "/inventory" ||
+    pathname.startsWith("/inventory/") ||
+    pathname === "/supplies"
+  ) {
+    href = "/supplies/inventory";
+  } else if (
+    pathname === "/supplies/requests" ||
+    pathname.startsWith("/supplies/requests/") ||
+    pathname === "/restock-requests" ||
+    pathname.startsWith("/restock-requests/")
+  ) {
+    href = "/supplies/requests";
+  } else if (href === "/horses" && role === "HORSE_OWNER") {
     href = "/my-horses";
   }
   
