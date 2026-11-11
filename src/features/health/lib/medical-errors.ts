@@ -93,6 +93,15 @@ const KNOWN_ERROR_PATTERNS: Array<{
     field: "symptoms",
     message: "Observed symptoms cannot exceed 2,000 characters.",
   },
+  {
+    regex: /horse_has_open_record|chiến mã này đang có bệnh án ở trạng thái mở|bệnh án khác ở trạng thái mở/i,
+    field: "horseId",
+    message: "This horse already has an active open medical record. Please close or conclude it before creating a new one.",
+  },
+  {
+    regex: /record_closed|cannot edit a medical record that has already been closed|không thể chỉnh sửa bệnh án đã/i,
+    message: "Cannot edit a medical record that has already been concluded or closed.",
+  },
 ];
 
 /**
