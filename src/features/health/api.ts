@@ -548,10 +548,51 @@ export const togglePreventiveCatalogStatus = async (id: string) => {
   return api<{ message: string; isActive: boolean }>("POST", `/medical/preventive/catalogs/${id}/toggle-status`);
 };
 
-export const getCareSchedules = async (): Promise<import("./types").PreventiveCareItem[]> => {
-  const rawList = await fetchMedicalPages("/medical/preventive/schedules");
+export interface CareScheduleQueryResult {
+  items: import("./types").PreventiveCareItem[];
+  counts: {
+    overdue: number;
+    upcoming7Days: number;
+    upcoming30Days: number;
+    completed: number;
+    noData: number;
+    total: number;
+  };
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 
-  return rawList.map((item: any) => {
+export const getCareSchedules = async (params: {
+  status?: string;
+  category?: string;
+  search?: string;
+  page?: number;
+  limit?: number;
+} = {}): Promise<CareScheduleQueryResult> => {
+  const query = new URLSearchParams();
+  if (params.status && params.status !== "ALL") query.set("status", params.status);
+  if (params.category && params.category !== "ALL") query.set("category", params.category);
+  if (params.search?.trim()) query.set("search", params.search.trim());
+  if (params.page) query.set("page", String(params.page));
+  if (params.limit) query.set("limit", String(params.limit));
+
+  const qs = query.toString();
+  const endpoint = `/medical/preventive/schedules${qs ? `?${qs}` : ""}`;
+  const res = await api<any>("GET", endpoint);
+
+  const rawList = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+  const counts = res?.counts || {
+    overdue: 0,
+    upcoming7Days: 0,
+    upcoming30Days: 0,
+    completed: 0,
+    noData: 0,
+    total: rawList.length,
+  };
+
+  const items = rawList.map((item: any) => {
     let cat: "VACCINATION" | "DEWORMING" | "FARRIER" | "DENTAL" | "GENERAL" = "VACCINATION";
     const rawCat = item.scheduleType || item.category || item.typeCatalog?.category;
     if (rawCat === "DEWORMING") cat = "DEWORMING";
@@ -560,7 +601,8 @@ export const getCareSchedules = async (): Promise<import("./types").PreventiveCa
     else if (rawCat === "GENERAL") cat = "GENERAL";
 
     let st: import("./types").PreventiveStatus = "UP_TO_DATE";
-    if (item.statusBadge === "OVERDUE" || item.isOverdue) st = "OVERDUE";
+    if (item.status === "COMPLETED" || item.statusBadge === "COMPLETED") st = "COMPLETED";
+    else if (item.statusBadge === "OVERDUE" || item.isOverdue) st = "OVERDUE";
     else if (item.statusBadge === "UPCOMING" || item.isUpcomingNotice) st = "DUE_SOON";
     else if (item.statusBadge === "NODATA") st = "NO_DATA";
 
@@ -585,6 +627,15 @@ export const getCareSchedules = async (): Promise<import("./types").PreventiveCa
       notes: item.notes || item.typeCatalog?.description,
     };
   });
+
+  return {
+    items,
+    counts,
+    total: res?.total ?? items.length,
+    page: res?.page ?? 1,
+    limit: res?.limit ?? 10,
+    totalPages: res?.totalPages ?? 1,
+  };
 };
 
 export const recordCareCompletion = async (
