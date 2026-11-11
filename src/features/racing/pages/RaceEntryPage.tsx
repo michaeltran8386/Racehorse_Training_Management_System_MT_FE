@@ -7,10 +7,13 @@ import { Card } from "@/shared/components/ui/Card";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
+import { DataTable, CellPrimary, type Column } from "@/shared/components/ui/DataTable";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { KpiTile } from "@/shared/components/ui/KpiTile";
+import { Menu, type MenuItem } from "@/shared/components/ui/Menu";
 import { Tabs } from "@/shared/components/ui/Tabs";
 import { Pagination } from "@/shared/components/ui/Pagination";
+import { cx } from "@/shared/lib/cx";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { tr, isVietnamese, localizeServerText } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
@@ -38,6 +41,40 @@ function getTournamentStatusLabel(status: string) {
   return isVietnamese()
     ? (TOURNAMENT_STATUS_LABEL[status] ?? status)
     : (TOURNAMENT_STATUS_LABEL_EN[status] ?? status);
+}
+
+function getTournamentStatusTone(status: string): "ok" | "neutral" | "info" | "warn" | "danger" {
+  switch (status) {
+    case "OPEN_REGISTRATION":
+      return "ok";
+    case "COMPLETED":
+      return "neutral";
+    case "UPCOMING":
+      return "info";
+    case "CLOSED_REGISTRATION":
+      return "warn";
+    default:
+      return "danger";
+  }
+}
+
+function getDraftBadgeText(kind: ReturnType<typeof summarizeDraftResults>["kind"], isVi: boolean): string {
+  if (kind === "SIMULATOR_2D") return isVi ? "Đã chạy mô phỏng 2D" : "2D Simulated";
+  if (kind === "QUICK_SIM") return isVi ? "Đã lấy kết quả nhanh" : "Quick Simulated";
+  return isVi ? "Đã có bản nháp" : "Draft Saved";
+}
+
+function getSurfaceShortLabel(trackType: string, isVi: boolean): string {
+  switch (trackType) {
+    case "TURF":
+      return isVi ? "Mặt cỏ (Turf)" : "Turf";
+    case "DIRT":
+      return isVi ? "Đường cát (Dirt)" : "Dirt";
+    case "SYNTHETIC":
+      return isVi ? "Tổng hợp" : "Synthetic";
+    default:
+      return trackType;
+  }
 }
 
 import { useNavigate } from "react-router-dom";
@@ -77,6 +114,7 @@ export default function RaceEntryPage() {
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
   const PAGE_SIZE = 10;
 
   // Modals state
@@ -115,6 +153,7 @@ export default function RaceEntryPage() {
       fetchTournaments({
         status: statusFilter,
         search: searchTerm,
+        limit: 100,
       })
         .then((res) => {
           setTournaments(res.items);
@@ -154,6 +193,7 @@ export default function RaceEntryPage() {
     fetchTournaments({
       status: statusFilter,
       search: searchTerm,
+      limit: 100,
     })
       .then((res) => {
         if (active) {
@@ -319,12 +359,267 @@ export default function RaceEntryPage() {
   const filtered = tournaments.filter((t) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
-    return t.name.toLowerCase().includes(term) || t.location.toLowerCase().includes(term);
+    return (
+      t.name.toLowerCase().includes(term) ||
+      t.location.toLowerCase().includes(term) ||
+      (t.code ?? "").toLowerCase().includes(term)
+    );
   });
 
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
   const paginatedTournaments = filtered.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE,
+    (safePage - 1) * PAGE_SIZE,
+    safePage * PAGE_SIZE,
+  );
+
+  function getTournamentMenuItems(tourney: Tournament, registeredCount: number): MenuItem[] {
+    const isCompleted = tourney.status === "COMPLETED";
+    const isClosedReg = tourney.status === "CLOSED_REGISTRATION";
+    const isCancelled = tourney.status === "CANCELLED";
+    const simBusy = simulatingId === tourney.id || quickSimulatingId === tourney.id;
+    const items: MenuItem[] = [
+      {
+        label: isVi ? "Mở mô phỏng 2D" : "Run 2D Simulation",
+        icon: "play",
+        hidden: !(canManage && isClosedReg && registeredCount > 0),
+        disabledReason: simBusy ? (isVi ? "Đang xử lý mô phỏng..." : "Simulation in progress...") : undefined,
+        onSelect: () => handleLaunchSimulator(tourney),
+      },
+      {
+        label: isVi ? "Lấy kết quả nhanh" : "Quick Result Import",
+        icon: "zap",
+        hidden: !(canManage && isClosedReg && registeredCount > 0),
+        disabledReason: simBusy ? (isVi ? "Đang xử lý mô phỏng..." : "Simulation in progress...") : undefined,
+        onSelect: () => handleQuickSimulate(tourney),
+      },
+      {
+        label: isVi ? "Quản lý danh sách ngựa" : tr("Manage Entries / Scratch"),
+        icon: "users",
+        hidden: !(canManage && isClosedReg && registeredCount > 0),
+        onSelect: () => setRegisteringTournament(tourney),
+      },
+      {
+        label: isVi ? "Báo cáo tài chính & Quyết toán" : "Financial Reports",
+        icon: "chart",
+        hidden: !(isClubManager && isCompleted && registeredCount > 0),
+        onSelect: () => navigate("/financial-reports"),
+      },
+      {
+        label: tr("Edit Tournament"),
+        icon: "edit",
+        hidden: !(isClubManager && !isCancelled && !isCompleted),
+        onSelect: () => setEditingTournament(tourney),
+      },
+      {
+        label: isVi ? "Đóng đăng ký" : tr("Close Registration"),
+        icon: "lock",
+        hidden: !(isClubManager && tourney.status === "OPEN_REGISTRATION"),
+        onSelect: () => setCloseTarget(tourney),
+      },
+      {
+        label: isVi ? "Hủy giải" : tr("Cancel Event"),
+        icon: "ban",
+        danger: true,
+        divider: true,
+        hidden: !(isClubManager && !isCompleted && !isCancelled),
+        onSelect: () => setCancelTarget(tourney),
+      },
+      {
+        label: isVi ? "Xóa giải" : tr("Delete Unused Event"),
+        icon: "trash",
+        danger: true,
+        hidden: !(
+          isClubManager &&
+          registeredCount === 0 &&
+          (tourney.status === "UPCOMING" || tourney.status === "OPEN_REGISTRATION")
+        ),
+        onSelect: () => setDeleteTarget(tourney),
+      },
+    ];
+    return items.filter((item) => !item.hidden);
+  }
+
+  function renderPrimaryTableAction(tourney: Tournament, registeredCount: number) {
+    if ((isTrainer || isOwner) && tourney.status === "OPEN_REGISTRATION") {
+      return (
+        <Button size="sm" tone="primary" onClick={() => setRegisteringTournament(tourney)}>
+          {isVi ? "Đăng ký" : "Register"}
+        </Button>
+      );
+    }
+    if (isClubManager && tourney.status === "UPCOMING") {
+      return (
+        <Button size="sm" tone="primary" onClick={() => setOpenRegTarget(tourney)}>
+          {isVi ? "Mở ĐK" : "Open Reg"}
+        </Button>
+      );
+    }
+    if (isClubManager && tourney.status === "CLOSED_REGISTRATION" && registeredCount > 0) {
+      return (
+        <Button size="sm" tone="primary" onClick={() => setResultsTournament(tourney)}>
+          {isVi ? "Ghi KQ" : "Record"}
+        </Button>
+      );
+    }
+    if (registeredCount > 0 && tourney.status === "COMPLETED") {
+      return (
+        <Button size="sm" tone="secondary" onClick={() => setResultsTournament(tourney)}>
+          {isVi ? "Xem KQ" : "Results"}
+        </Button>
+      );
+    }
+    return null;
+  }
+
+  const columns: Column<Tournament>[] = [
+    {
+      key: "tournament",
+      header: isVi ? "Giải đua" : "Tournament",
+      render: (tourney) => {
+        const draftSummary = summarizeDraftResults(tourney.registrations);
+        const podium =
+          tourney.status === "COMPLETED" && tourney.registrations
+            ? tourney.registrations
+                .filter((r) => r.result)
+                .sort((a, b) => (a.result?.finalRank ?? 99) - (b.result?.finalRank ?? 99))
+                .slice(0, 3)
+            : [];
+        const subLine =
+          podium.length > 0
+            ? podium
+                .map((r) => `#${r.result?.finalRank} ${r.horse?.name ?? "—"}`)
+                .join(" · ")
+            : tourney.status === "CLOSED_REGISTRATION" && draftSummary.kind !== "NONE"
+              ? `${getDraftBadgeText(draftSummary.kind, isVi)} (${draftSummary.recordedCount}/${draftSummary.activeCount})`
+              : undefined;
+
+        return (
+          <div style={{ minWidth: 210 }}>
+            <CellPrimary
+              title={tourney.name}
+              meta={tourney.code ? `${tourney.code} · ${tourney.location}` : tourney.location}
+              sub={subLine}
+            />
+          </div>
+        );
+      },
+    },
+    {
+      key: "schedule",
+      header: isVi ? "Ngày thi đấu" : "Schedule",
+      render: (tourney) => (
+        <div style={{ display: "grid", gap: 2 }}>
+          <span className="num nowrap" style={{ fontWeight: 600 }}>
+            {formatDate(tourney.raceDate)}
+          </span>
+          <span className="num nowrap" style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>
+            {isVi ? "Hạn ĐK:" : "Reg:"} {formatDate(tourney.registrationDeadline)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "specs",
+      header: isVi ? "Cự ly & Sân" : "Specs",
+      render: (tourney) => (
+        <div style={{ display: "grid", gap: 2 }}>
+          <span className="num nowrap" style={{ fontWeight: 600 }}>
+            {tourney.distanceMeters}m
+          </span>
+          <span
+            className="nowrap"
+            title={tr(tourney.trackType)}
+            style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}
+          >
+            {getSurfaceShortLabel(tourney.trackType, isVi)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: "prizePool",
+      header: tr("Purse Pool"),
+      align: "right",
+      render: (tourney) => (
+        <strong className="num nowrap" style={{ color: "var(--brand-700)" }}>
+          {formatVND(tourney.prizePool)}
+        </strong>
+      ),
+    },
+    {
+      key: "entries",
+      header: isVi ? "Ngựa ĐK" : "Entries",
+      align: "right",
+      render: (tourney) => {
+        const registeredCount = tourney.registeredCount ?? tourney.registrations?.length ?? 0;
+        return (
+          <span className="num nowrap">
+            <strong>{registeredCount}</strong>
+            {tourney.maxFieldSize ? ` / ${tourney.maxFieldSize}` : ""}
+          </span>
+        );
+      },
+    },
+    {
+      key: "status",
+      header: tr("Status"),
+      render: (tourney) => {
+        const draftSummary = summarizeDraftResults(tourney.registrations);
+        const hasDraft = draftSummary.kind !== "NONE" && tourney.status !== "COMPLETED";
+        return (
+          <div style={{ display: "inline-flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+            <Badge tone={getTournamentStatusTone(tourney.status)}>
+              {getTournamentStatusLabel(tourney.status)}
+            </Badge>
+            {hasDraft && (
+              <Badge tone={draftSummary.kind === "MANUAL" ? "info" : "ok"}>
+                {getDraftBadgeText(draftSummary.kind, isVi)}
+              </Badge>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      render: (tourney) => {
+        const registeredCount = tourney.registeredCount ?? tourney.registrations?.length ?? 0;
+        const primaryAction = renderPrimaryTableAction(tourney, registeredCount);
+        const menuItems = getTournamentMenuItems(tourney, registeredCount);
+        if (!primaryAction && menuItems.length === 0) {
+          return <span style={{ color: "var(--muted)" }}>—</span>;
+        }
+        return (
+          <div className={styles.rowActions}>
+            {primaryAction}
+            {menuItems.length > 0 && (
+              <Menu
+                label={isVi ? `Thao tác cho ${tourney.name}` : `Actions for ${tourney.name}`}
+                items={menuItems}
+              />
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
+  const emptyStateNode = (
+    <EmptyState
+      icon="trophy"
+      title={tr("No Tournaments Found")}
+      description={tr("No championship events match your current filter parameters.")}
+      action={
+        isClubManager ? (
+          <Button tone="primary" onClick={() => setIsCreateOpen(true)}>
+            + {tr("Create New Tournament")}
+          </Button>
+        ) : undefined
+      }
+    />
   );
 
   return (
@@ -402,93 +697,145 @@ export default function RaceEntryPage() {
         </div>
       </div>
 
-      {/* Filter and Tab Bar */}
-      <Card pad={16}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            flexWrap: "wrap",
-            gap: "1rem",
-          }}
-        >
-          <Tabs
-            items={[
-              { id: "ALL", label: tr("All Events") },
-              { id: "OPEN_REGISTRATION", label: tr("Open for Registration") },
-              { id: "UPCOMING", label: tr("Upcoming") },
-              { id: "CLOSED_REGISTRATION", label: isVietnamese() ? "Đã đóng đăng ký" : tr("Registration Closed") },
-              { id: "COMPLETED", label: tr("Completed") },
-              { id: "CANCELLED", label: tr("Cancelled") },
-            ]}
-            active={statusFilter}
-            onChange={(v) => {
-              setStatusFilter(v);
-              setCurrentPage(1);
-            }}
-          />
-
-          <div className={styles.searchBar}>
-            <input
-              type="text"
-              aria-label={tr("Search by name or location...")}
-              placeholder={tr("Search by name or location...")}
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
+      {/* Filter, View Mode Toggle, and Table / Card List */}
+      <Card pad={0}>
+        <div className={styles.toolbarWrap}>
+          <div className={styles.statusStrip}>
+            <Tabs
+              items={[
+                { id: "ALL", label: tr("All Events") },
+                { id: "OPEN_REGISTRATION", label: tr("Open for Registration") },
+                { id: "UPCOMING", label: tr("Upcoming") },
+                { id: "CLOSED_REGISTRATION", label: isVietnamese() ? "Đã đóng đăng ký" : tr("Registration Closed") },
+                { id: "COMPLETED", label: tr("Completed") },
+                { id: "CANCELLED", label: tr("Cancelled") },
+              ]}
+              active={statusFilter}
+              onChange={(v) => {
+                setStatusFilter(v);
                 setCurrentPage(1);
               }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") loadData();
-              }}
-              style={{
-                padding: "0.5rem 0.875rem",
-                borderRadius: "var(--r-sm, 6px)",
-                border: "1px solid var(--border)",
-                background: "var(--surface)",
-                color: "var(--ink)",
-                fontSize: "var(--fs-sm)",
-                width: "min(240px, 100%)",
-              }}
             />
-            <Button tone="secondary" onClick={() => loadData()}>
-              {tr("Filter")}
-            </Button>
+          </div>
+
+          <div className={styles.mainBar}>
+            <div className={styles.searchBar}>
+              <input
+                type="text"
+                aria-label={tr("Search by name or location...")}
+                placeholder={tr("Search by name or location...")}
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") loadData();
+                }}
+                style={{
+                  padding: "0.5rem 0.875rem",
+                  borderRadius: "var(--r-sm, 6px)",
+                  border: "1px solid var(--border)",
+                  background: "var(--surface)",
+                  color: "var(--ink)",
+                  fontSize: "var(--fs-sm)",
+                  width: "min(240px, 100%)",
+                }}
+              />
+              <Button tone="secondary" onClick={() => loadData()}>
+                {tr("Filter")}
+              </Button>
+            </div>
+
+            <div className={styles.toolbarActions}>
+              <div
+                className={styles.viewToggle}
+                role="group"
+                aria-label={isVi ? "Chế độ hiển thị" : "View mode"}
+              >
+                <button
+                  type="button"
+                  className={cx(styles.viewBtn, viewMode === "table" && styles.viewBtnActive)}
+                  aria-pressed={viewMode === "table"}
+                  onClick={() => setViewMode("table")}
+                >
+                  <Icon name="list" size={14} />
+                  <span>{tr("Table")}</span>
+                </button>
+                <button
+                  type="button"
+                  className={cx(styles.viewBtn, viewMode === "cards" && styles.viewBtnActive)}
+                  aria-pressed={viewMode === "cards"}
+                  onClick={() => setViewMode("cards")}
+                >
+                  <Icon name="grid" size={14} />
+                  <span>{tr("Cards")}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
+
+        {viewMode === "table" && (
+          error ? (
+            <div style={{ padding: "16px 20px 20px", borderTop: "1px solid var(--border)" }}>
+              <Alert
+                tone="danger"
+                title={tr("Could not load data")}
+                action={
+                  <Button tone="secondary" onClick={loadData}>
+                    {tr("Try again")}
+                  </Button>
+                }
+              >
+                {error}
+              </Alert>
+            </div>
+          ) : (
+            <>
+              <div className={styles.tableWrap}>
+                <DataTable
+                  caption={tr("Tournaments & Entries")}
+                  columns={columns}
+                  rows={paginatedTournaments}
+                  rowKey={(t) => t.id}
+                  loading={loading}
+                  pageSize={PAGE_SIZE}
+                  empty={emptyStateNode}
+                />
+              </div>
+              {!loading && filtered.length > PAGE_SIZE && (
+                <Pagination
+                  page={safePage}
+                  pageSize={PAGE_SIZE}
+                  total={filtered.length}
+                  noun="tournaments"
+                  onPage={setCurrentPage}
+                />
+              )}
+            </>
+          )
+        )}
       </Card>
 
-      {/* Tournaments List */}
-      {loading ? (
-        <Card pad={32}>
-          <div style={{ textAlign: "center", color: "var(--muted)" }}>{tr("Loading tournaments...")}</div>
-        </Card>
-      ) : error ? (
-        <Alert tone="danger" title={tr("Could not load data")} action={<Button tone="secondary" onClick={loadData}>{tr("Try again")}</Button>}>
-          {error}
-        </Alert>
-      ) : filtered.length === 0 ? (
-        <Card pad={32}>
-          <EmptyState
-            title={tr("No Tournaments Found")}
-            description={tr("No championship events match your current filter parameters.")}
-            action={
-              isClubManager ? (
-                <Button tone="primary" onClick={() => setIsCreateOpen(true)}>
-                  + {tr("Create New Tournament")}
-                </Button>
-              ) : undefined
-            }
-          />
-        </Card>
-      ) : (
-        <div className={styles.events}>
+      {/* Tournaments Card Grid (10 items / page) */}
+      {viewMode === "cards" && (
+        loading ? (
+          <Card pad={32}>
+            <div style={{ textAlign: "center", color: "var(--muted)" }}>{tr("Loading tournaments...")}</div>
+          </Card>
+        ) : error ? (
+          <Alert tone="danger" title={tr("Could not load data")} action={<Button tone="secondary" onClick={loadData}>{tr("Try again")}</Button>}>
+            {error}
+          </Alert>
+        ) : filtered.length === 0 ? (
+          <Card pad={32}>{emptyStateNode}</Card>
+        ) : (
+          <div className={styles.events}>
           {paginatedTournaments.map((tourney) => {
             const registeredCount = tourney.registeredCount ?? tourney.registrations?.length ?? 0;
             const isCompleted = tourney.status === "COMPLETED";
             const isOpenReg = tourney.status === "OPEN_REGISTRATION";
-            const isUpcoming = tourney.status === "UPCOMING";
             const isClosedReg = tourney.status === "CLOSED_REGISTRATION";
             const draftSummary = summarizeDraftResults(tourney.registrations);
             const hasSimResults = draftSummary.kind !== "NONE";
@@ -508,34 +855,12 @@ export default function RaceEntryPage() {
                         </p>
                       </div>
                       <div className={styles.eventHeaderActions}>
-                        <Badge
-                          tone={
-                            isOpenReg
-                              ? "ok"
-                              : isCompleted
-                              ? "neutral"
-                              : isUpcoming
-                              ? "info"
-                              : tourney.status === "CLOSED_REGISTRATION"
-                              ? "warn"
-                              : "danger"
-                          }
-                        >
+                        <Badge tone={getTournamentStatusTone(tourney.status)}>
                           {getTournamentStatusLabel(tourney.status)}
                         </Badge>
                         {hasSimResults && !isCompleted && (
                           <Badge tone={draftSummary.kind === "MANUAL" ? "info" : "ok"}>
-                            {draftSummary.kind === "SIMULATOR_2D"
-                              ? isVi
-                                ? "Đã chạy mô phỏng 2D"
-                                : "2D Simulated"
-                              : draftSummary.kind === "QUICK_SIM"
-                                ? isVi
-                                  ? "Đã lấy kết quả nhanh"
-                                  : "Quick Simulated"
-                                : isVi
-                                  ? "Đã có bản nháp"
-                                  : "Draft Saved"}
+                            {getDraftBadgeText(draftSummary.kind, isVi)}
                           </Badge>
                         )}
                         {isClubManager && tourney.status !== "CANCELLED" && !isCompleted && (
@@ -843,16 +1168,17 @@ export default function RaceEntryPage() {
               </Card>
             );
           })}
-        </div>
+          </div>
+        )
       )}
 
       {/* Numeric Pagination (10 items / page) */}
-      {!loading && !error && filtered.length > PAGE_SIZE && (
+      {viewMode === "cards" && !loading && !error && filtered.length > PAGE_SIZE && (
         <Pagination
-          page={currentPage}
+          page={safePage}
           pageSize={PAGE_SIZE}
           total={filtered.length}
-          noun={isVi ? "giải đấu" : "tournaments"}
+          noun="tournaments"
           onPage={setCurrentPage}
         />
       )}

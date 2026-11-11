@@ -118,3 +118,13 @@ export function formatVND(amount: number | string | null | undefined): string {
   return `${formatCurrency(amount)} ${vndUnit()}`;
 }
 
+/**
+ * Định dạng điểm đánh giá cố định số chữ số thập phân (tránh lỗi số thực JS như 8.799999999999999).
+ */
+export function formatScore(score: number | null | undefined, digits = 2): string {
+  if (score == null) return "—";
+  const num = typeof score === "number" ? score : Number(score);
+  if (!Number.isFinite(num)) return "—";
+  return num.toFixed(digits);
+}
+

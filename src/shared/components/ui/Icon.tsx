@@ -4,7 +4,7 @@ import {
   ChevronDown, ChevronLeft, ChevronRight, ChevronUp, CircleCheck, CircleX, ClipboardList, Clock, CloudSun, Columns2, DollarSign,
   Download, Droplet, Ellipsis, Eye, EyeOff, FileText, Filter, Flag, Flame, GitBranch, Globe, Heart, HeartPulse, History,
   House, Image, Inbox, Info, Key, Layers, LayoutGrid, Lightbulb, List, Lock, LockOpen, LogOut, Mail, Map, MapPin, Monitor, Moon,
-  Package, Pencil, Phone, Pill, Play, Plus, Printer, RefreshCw, Scale, Search, Settings, Shield, SlidersHorizontal,
+  Package, Pencil, Phone, Pill, Play, Plus, Printer, RefreshCw, Scale, Search, Send, Settings, Shield, SlidersHorizontal,
   Sparkles, Star, Stethoscope, Sun, Syringe, Trash2, TrendingDown, TrendingUp, TriangleAlert, Trophy, Upload, User, Users, Video,
   Wheat, X, Zap, type LucideIcon,
 } from "lucide-react";
@@ -33,7 +33,7 @@ const LUCIDE: Record<string, LucideIcon> = {
   chevronLeft: ChevronLeft, chevronUp: ChevronUp, more: Ellipsis, dollar: DollarSign, flag: Flag, zap: Zap, star: Star,
   branch: GitBranch, monitor: Monitor, printer: Printer, image: Image, sparkles: Sparkles, scale: Scale, map: Map,
   bath: Bath, broom: Brush, fire: Flame, barChart: ChartColumn, inbox: Inbox, columns: Columns2, cube: Box,
-  sliders: SlidersHorizontal, archive: Archive,
+  sliders: SlidersHorizontal, archive: Archive, send: Send,
 };
 
 // Icon luôn ẩn với trình đọc màn hình (aria-hidden): nghĩa nằm ở nhãn chữ đi kèm.

@@ -1,4 +1,4 @@
-import { vndUnit, formatCurrency, formatVND } from "@/shared/lib/format";
+import { formatCurrency, formatVND } from "@/shared/lib/format";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useState, useEffect } from "react";
@@ -17,16 +17,28 @@ import { KpiTile } from "@/shared/components/ui/KpiTile";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Pagination } from "@/shared/components/ui/Pagination";
 import { SkeletonTable } from "@/shared/components/ui/Skeleton";
+import { Tabs, type TabItem } from "@/shared/components/ui/Tabs";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { messageFor } from "@/shared/lib/messages";
-import { fetchOwnerSummary, changeInvoiceStatus, generateMonthlyInvoices, payInvoice, fetchStatementBreakdown, type OwnerStatementBreakdown } from "../api";
+import { getHorses } from "@/features/horses/api";
+import type { Horse } from "@/features/horses/types";
+import { SingleInvoiceModal } from "../components/SingleInvoiceModal";
+import { fetchOwnerSummary, changeInvoiceStatus, generateMonthlyInvoices, payInvoice } from "../api";
 import type { FinancialInvoice, InvoiceStatus, OwnerSummaryResponse } from "../types";
 import { exportStatementXlsx, printStatement } from "../statementExport";
 import { invoiceStatusLabel } from "../invoiceStatus";
 
 const PAGE_SIZE = 10;
+const STATUS_FILTER_OPTIONS: readonly InvoiceStatus[] = ["DRAFT", "SENT", "PAID", "OVERDUE", "CANCELLED"];
+
+function defaultClosedMonth(): string {
+  const now = new Date(Date.now() + 7 * 3600000);
+  now.setUTCDate(1);
+  now.setUTCMonth(now.getUTCMonth() - 1);
+  return now.toISOString().slice(0, 7);
+}
 
 export default function OwnerFinancialReportsPage() {
   useScreenTranslation();
@@ -46,27 +58,28 @@ export default function OwnerFinancialReportsPage() {
   const [ownerFilter, setOwnerFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState<InvoiceStatus | "ALL">("ALL");
   const [page, setPage] = useState(1);
-  const [lastHighlightPage, setLastHighlightPage] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState("");
   const [updatingInvoice, setUpdatingInvoice] = useState<string | null>(null);
 
   // Generate monthly invoices modal state
   const [isGenerateOpen, setIsGenerateOpen] = useState(false);
-  const [billingPeriodInput, setBillingPeriodInput] = useState(() => {
-    const now = new Date(Date.now() + 7 * 3600000);
-    now.setUTCDate(1);
-    now.setUTCMonth(now.getUTCMonth() - 1);
-    return now.toISOString().slice(0, 7);
-  });
+  const [billingPeriodInput, setBillingPeriodInput] = useState(defaultClosedMonth);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+
+  // Create single statement modal + confirm status modal
+  const [isCreateSingleOpen, setIsCreateSingleOpen] = useState(false);
+  const [horses, setHorses] = useState<Horse[]>([]);
+  const [horsesLoading, setHorsesLoading] = useState(false);
+  const [pendingTransition, setPendingTransition] = useState<{
+    invoice: FinancialInvoice;
+    targetStatus: "PAID" | "CANCELLED";
+  } | null>(null);
 
   // Statement details modal state
   const [selectedInvoice, setSelectedInvoice] = useState<FinancialInvoice | null>(null);
   const [confirmPayment, setConfirmPayment] = useState(false);
-  const [breakdown, setBreakdown] = useState<OwnerStatementBreakdown | null>(null);
-  const [showDrilldown, setShowDrilldown] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -77,15 +90,8 @@ export default function OwnerFinancialReportsPage() {
     setLoadError("");
     setSummary(null);
     try {
-      const [data, breakdownData] = await Promise.all([
-        fetchOwnerSummary(),
-        fetchStatementBreakdown(
-          ownerFilter !== "ALL" ? ownerFilter : undefined,
-          selectedPeriod !== "ALL" ? selectedPeriod : undefined
-        ).catch(() => null),
-      ]);
+      const data = await fetchOwnerSummary();
       setSummary(data);
-      if (breakdownData) setBreakdown(breakdownData);
       setSelectedPeriod((period) => period === "ALL" || data.invoices.some((invoice) => invoice.billingPeriod === period) ? period : "ALL");
     } catch (err) {
       setLoadError(messageFor(err));
@@ -137,6 +143,47 @@ export default function OwnerFinancialReportsPage() {
     setIsGenerateOpen(true);
   }
 
+  async function handleOpenCreateSingle() {
+    setIsCreateSingleOpen(true);
+    if (horses.length > 0 || horsesLoading) return;
+    setHorsesLoading(true);
+    try {
+      const all: Horse[] = [];
+      for (let nextPage = 1; ; nextPage += 1) {
+        const res = await getHorses({ page: nextPage, limit: 100 });
+        all.push(...res.items);
+        if (nextPage >= res.totalPages) break;
+      }
+      setHorses(all);
+    } catch (err) {
+      toast.show(messageFor(err), "danger");
+    } finally {
+      setHorsesLoading(false);
+    }
+  }
+
+  async function handleConfirmTransition() {
+    if (!pendingTransition || updatingInvoice) return;
+    const { invoice, targetStatus } = pendingTransition;
+    setUpdatingInvoice(invoice.id);
+    setActionError("");
+    setStatusMessage(null);
+    try {
+      await changeInvoiceStatus(invoice.id, targetStatus);
+      const msg =
+        targetStatus === "PAID" ? tr("Statement marked as paid.") : tr("Statement cancelled.");
+      setStatusMessage(msg);
+      toast.show(msg, "ok");
+      setPendingTransition(null);
+      await loadData();
+    } catch (err) {
+      setActionError(messageFor(err));
+      setPendingTransition(null);
+    } finally {
+      setUpdatingInvoice(null);
+    }
+  }
+
   async function handleConfirmGenerate() {
     if (!billingPeriodInput.match(/^(?!0000)\d{4}-(0[1-9]|1[0-2])$/)) {
       setGenerateError(tr("Please enter a valid billing period in YYYY-MM format (e.g. 2026-11)"));
@@ -176,6 +223,20 @@ export default function OwnerFinancialReportsPage() {
   const ownerOptions = [
     { value: "ALL", label: tr("All Owners") },
     ...uniqueOwners.map((o) => ({ value: o.id, label: `${o.fullName} (${o.email || ""})` })),
+  ];
+  const statusScopedInvoices = invoices.filter(
+    (i) =>
+      (selectedPeriod === "ALL" || i.billingPeriod === selectedPeriod) &&
+      (horseFilter === "ALL" || i.horseId === horseFilter) &&
+      (!isClubManager || ownerFilter === "ALL" || i.ownerId === ownerFilter),
+  );
+  const statusTabItems: TabItem<InvoiceStatus | "ALL">[] = [
+    { id: "ALL", label: "All", count: statusScopedInvoices.length },
+    ...(["DRAFT", "SENT", "OVERDUE", "PAID", "CANCELLED"] as const).map((st) => ({
+      id: st,
+      label: invoiceStatusLabel(st),
+      count: statusScopedInvoices.filter((i) => i.status === st).length,
+    })),
   ];
   const filteredInvoices = invoices.filter((i) =>
     i.id === highlightId || ((selectedPeriod === "ALL" || i.billingPeriod === selectedPeriod) &&
@@ -223,7 +284,16 @@ export default function OwnerFinancialReportsPage() {
             <Button tone="secondary" icon="download" disabled={filteredInvoices.length === 0} onClick={() => exportStatementXlsx(filteredInvoices, periodLabel)}>
               {tr("Export Excel")}
             </Button>
-            {isClubManager && <Button tone="primary" onClick={handleOpenGenerate}>+ {tr("Create monthly statements")}</Button>}
+            {isClubManager && (
+              <>
+                <Button tone="secondary" icon="plus" onClick={handleOpenCreateSingle}>
+                  {tr("Create single statement")}
+                </Button>
+                <Button tone="primary" onClick={handleOpenGenerate}>
+                  + {tr("Create monthly statements")}
+                </Button>
+              </>
+            )}
           </div>
         }
       />
@@ -291,38 +361,53 @@ export default function OwnerFinancialReportsPage() {
         </div>
       </Card>
 
-      {/* Billing period filter */}
-      <Card pad={16}>
-        <div className={styles.billingFilter}>
-          <div className={styles.searchField}>
-            <label htmlFor="invoice-horse" className={styles.filterLabel}>{tr("Horse")}</label>
-            <SearchSelect id="invoice-horse" options={horseOptions} value={horseFilter}
-              onChange={(value) => { setHorseFilter(value); setPage(1); }} />
+      {/* Billing period & status workflow filter */}
+      <Card pad={0}>
+        {isClubManager && (
+          <div className={styles.statusTabsWrap}>
+            <Tabs
+              items={statusTabItems}
+              active={statusFilter}
+              onChange={(next) => {
+                setStatusFilter(next);
+                setPage(1);
+              }}
+              label="Invoice workflow status"
+            />
           </div>
-          {isClubManager && (
+        )}
+        <div style={{ padding: 16 }}>
+          <div className={styles.billingFilter}>
             <div className={styles.searchField}>
-              <label htmlFor="invoice-owner" className={styles.filterLabel}>{tr("Owner")}</label>
-              <SearchSelect id="invoice-owner" options={ownerOptions} value={ownerFilter}
-                onChange={(value) => { setOwnerFilter(value); setPage(1); }} />
+              <label htmlFor="invoice-horse" className={styles.filterLabel}>{tr("Horse")}</label>
+              <SearchSelect id="invoice-horse" options={horseOptions} value={horseFilter}
+                onChange={(value) => { setHorseFilter(value); setPage(1); }} />
             </div>
-          )}
-          <div className={styles.filterField}>
-            <label htmlFor="invoice-status" className={styles.filterLabel}>{tr("Status")}</label>
-            <select id="invoice-status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as InvoiceStatus | "ALL"); setPage(1); }} className={styles.periodSelect}>
-              <option value="ALL">{tr("All statuses")}</option>
-              {(["DRAFT", "SENT", "PAID", "OVERDUE"] as const).map((status) => <option key={status} value={status}>{invoiceStatusLabel(status)}</option>)}
-            </select>
+            {isClubManager && (
+              <div className={styles.searchField}>
+                <label htmlFor="invoice-owner" className={styles.filterLabel}>{tr("Owner")}</label>
+                <SearchSelect id="invoice-owner" options={ownerOptions} value={ownerFilter}
+                  onChange={(value) => { setOwnerFilter(value); setPage(1); }} />
+              </div>
+            )}
+            <div className={styles.filterField}>
+              <label htmlFor="invoice-status" className={styles.filterLabel}>{tr("Status")}</label>
+              <select id="invoice-status" value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value as InvoiceStatus | "ALL"); setPage(1); }} className={styles.periodSelect}>
+                <option value="ALL">{tr("All statuses")}</option>
+                {STATUS_FILTER_OPTIONS.map((status) => <option key={status} value={status}>{invoiceStatusLabel(status)}</option>)}
+              </select>
+            </div>
+            <div className={styles.filterField}>
+              <label htmlFor="billing-period" className={styles.filterLabel}>{tr("Billing Period:")}</label>
+              <select id="billing-period" value={summary ? selectedPeriod : "ALL"} disabled={!summary} onChange={(e) => { setSelectedPeriod(e.target.value); setPage(1); }} className={styles.periodSelect}>
+                <option value="ALL">{tr("All Billing Periods")}</option>
+                {periods.map((period) => <option key={period} value={period}>{period}</option>)}
+              </select>
+            </div>
+            {hasFilters && <Button tone="secondary" onClick={resetFilters}>{tr("Clear filters")}</Button>}
           </div>
-          <div className={styles.filterField}>
-          <label htmlFor="billing-period" className={styles.filterLabel}>{tr("Billing Period:")}</label>
-          <select id="billing-period" value={summary ? selectedPeriod : "ALL"} disabled={!summary} onChange={(e) => { setSelectedPeriod(e.target.value); setPage(1); }} className={styles.periodSelect}>
-            <option value="ALL">{tr("All Billing Periods")}</option>
-            {periods.map((period) => <option key={period} value={period}>{period}</option>)}
-          </select>
-          </div>
-          {hasFilters && <Button tone="secondary" onClick={resetFilters}>{tr("Clear filters")}</Button>}
+          <p className={styles.filterHelp}>{tr("Filters apply to the table and exports; totals include all statements.")}</p>
         </div>
-        <p className={styles.filterHelp}>{tr("Filters apply to the table and exports; totals include all statements.")}</p>
       </Card>
 
       {/* Invoices List Table */}
@@ -415,40 +500,61 @@ export default function OwnerFinancialReportsPage() {
                         </Badge>
                       </td>
                       <td style={{ padding: "0.75rem 0.5rem" }}>
-                        <div style={{ display: "flex", gap: "0.375rem", alignItems: "center", flexWrap: "wrap" }}>
+                        <div className={styles.rowActions}>
                           {isClubManager && inv.status === "DRAFT" && (
                             <Button
                               tone="secondary"
                               size="sm"
+                              icon="send"
+                              className={styles.rowActionBtn}
+                              title={tr("Send statement to owner")}
                               disabled={updatingInvoice !== null}
                               onClick={() => handleStatusChange(inv.id, "SENT")}
                             >
                               {tr("Send")}
                             </Button>
                           )}
-                          {isClubManager && inv.status === "SENT" && (
+                          {isClubManager && (inv.status === "SENT" || inv.status === "OVERDUE") && (
                             <Button
-                              tone="secondary"
+                              tone="primary"
                               size="sm"
+                              icon="check"
+                              className={styles.rowActionBtn}
+                              title={tr("Mark Paid")}
                               disabled={updatingInvoice !== null}
-                              onClick={() => handleStatusChange(inv.id, "PAID")}
+                              onClick={() => setPendingTransition({ invoice: inv, targetStatus: "PAID" })}
                             >
                               {tr("Mark Paid")}
                             </Button>
                           )}
-                          <Button tone="secondary" size="sm" onClick={() => handleOpenStatement(inv)}>
-                            {tr("View statement")}
-                          </Button>
-                          {(inv.status === "SENT" || inv.status === "OVERDUE") && inv.netAmount <= 0 && (
-                            <span style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)", fontWeight: 600 }}>
-                              {inv.netAmount < 0 ? tr("Payout Pending") : tr("No balance on this statement")}
-                            </span>
+                          {isClubManager && (inv.status === "DRAFT" || inv.status === "SENT" || inv.status === "OVERDUE") && (
+                            <Button
+                              tone="danger"
+                              size="sm"
+                              icon="ban"
+                              className={styles.rowActionBtn}
+                              title={tr("Cancel statement")}
+                              disabled={updatingInvoice !== null}
+                              onClick={() => setPendingTransition({ invoice: inv, targetStatus: "CANCELLED" })}
+                            >
+                              {tr("Cancel")}
+                            </Button>
                           )}
                           {inv.status === "PAID" && (
-                            <span style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)", fontWeight: 600 }}>
-                              <Icon name="check" inline size={12} /> {tr("Settled")}
+                            <span className={styles.settledTag}>
+                              <Icon name="check" inline size={13} /> {tr("Settled")}
                             </span>
                           )}
+                          <Button
+                            tone="secondary"
+                            size="sm"
+                            icon="eye"
+                            className={styles.rowActionBtn}
+                            title={tr("View statement")}
+                            onClick={() => handleOpenStatement(inv)}
+                          >
+                            {tr("Statement")}
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -657,6 +763,63 @@ export default function OwnerFinancialReportsPage() {
           </dl>
           <Alert tone="warn">{tr("Sample details only. Do not transfer money using these details. Contact the club for verified bank details.")}</Alert>
           <p>{tr("Confirm only after you have transferred the invoice amount to the club. This records your bank transfer confirmation.")}</p>
+        </ConfirmModal>
+      )}
+
+      <SingleInvoiceModal
+        open={isCreateSingleOpen}
+        defaultPeriod={billingPeriodInput}
+        horses={horses}
+        horsesLoading={horsesLoading}
+        onClose={() => setIsCreateSingleOpen(false)}
+        onCreated={async () => {
+          setIsCreateSingleOpen(false);
+          const msg = tr("Statement created.");
+          toast.show(msg, "ok");
+          setStatusMessage(msg);
+          await loadData();
+        }}
+      />
+
+      {pendingTransition && (
+        <ConfirmModal
+          title={
+            pendingTransition.targetStatus === "PAID"
+              ? tr("Confirm payment receipt")
+              : tr("Cancel statement?")
+          }
+          subtitle={`${pendingTransition.invoice.horse.name} · ${pendingTransition.invoice.billingPeriod}`}
+          tone={pendingTransition.targetStatus === "CANCELLED" ? "danger" : "info"}
+          confirmLabel={
+            pendingTransition.targetStatus === "PAID"
+              ? tr("Confirm settlement")
+              : tr("Confirm cancel")
+          }
+          cancelLabel={tr("Back")}
+          confirmIcon={pendingTransition.targetStatus === "PAID" ? "check" : undefined}
+          busy={updatingInvoice !== null}
+          onConfirm={() => void handleConfirmTransition()}
+          onCancel={() => setPendingTransition(null)}
+        >
+          <p>
+            <strong>
+              {tr("Net Amount")}: {formatVND(pendingTransition.invoice.netAmount)}
+            </strong>
+          </p>
+          {pendingTransition.targetStatus === "CANCELLED" ? (
+            <p>{tr("This statement will be voided and excluded from collectible club revenue.")}</p>
+          ) : null}
+          {pendingTransition.invoice.status === "OVERDUE" && (
+            <Alert tone={pendingTransition.targetStatus === "CANCELLED" ? "warn" : "info"}>
+              {pendingTransition.targetStatus === "CANCELLED"
+                ? tr(
+                    "Cancelling an OVERDUE statement will automatically re-check and release debt sanctions if no other overdue invoices remain.",
+                  )
+                : tr(
+                    "Marking an OVERDUE statement as PAID will automatically release debt impound locks if all overdue statements are settled.",
+                  )}
+            </Alert>
+          )}
         </ConfirmModal>
       )}
     </div>

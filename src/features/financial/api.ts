@@ -38,6 +38,16 @@ export async function fetchOwnerSummary(ownerId?: string): Promise<OwnerSummaryR
   return api<OwnerSummaryResponse>("GET", `/invoices/owner-summary${query}`);
 }
 
+export async function fetchClubCashflow(
+  billingPeriod?: string,
+): Promise<import("./types").ClubCashflowResponse> {
+  const query =
+    billingPeriod && billingPeriod !== "ALL"
+      ? `?billingPeriod=${encodeURIComponent(billingPeriod)}`
+      : "";
+  return api<import("./types").ClubCashflowResponse>("GET", `/invoices/club-cashflow${query}`);
+}
+
 export async function fetchInvoiceDetail(id: string): Promise<FinancialInvoice> {
   return api<FinancialInvoice>("GET", `/invoices/${id}`);
 }
