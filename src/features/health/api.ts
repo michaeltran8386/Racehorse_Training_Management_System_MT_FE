@@ -536,6 +536,7 @@ export interface CareScheduleQueryResult {
     overdue: number;
     upcoming7Days: number;
     upcoming30Days: number;
+    upToDate: number;
     completed: number;
     noData: number;
     total: number;
@@ -565,14 +566,26 @@ export const getCareSchedules = async (params: {
   const res = await api<any>("GET", endpoint);
 
   const rawList = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-  const counts = res?.counts || {
-    overdue: 0,
-    upcoming7Days: 0,
-    upcoming30Days: 0,
-    completed: 0,
-    noData: 0,
-    total: rawList.length,
-  };
+  const rawCounts = res?.counts;
+  const counts = rawCounts
+    ? {
+        overdue: rawCounts.overdue ?? 0,
+        upcoming7Days: rawCounts.upcoming7Days ?? 0,
+        upcoming30Days: rawCounts.upcoming30Days ?? 0,
+        upToDate: rawCounts.upToDate ?? 0,
+        completed: rawCounts.completed ?? 0,
+        noData: rawCounts.noData ?? 0,
+        total: rawCounts.total ?? rawList.length,
+      }
+    : {
+        overdue: 0,
+        upcoming7Days: 0,
+        upcoming30Days: 0,
+        upToDate: 0,
+        completed: 0,
+        noData: 0,
+        total: rawList.length,
+      };
 
   const items = rawList.map((item: any) => {
     let cat: "VACCINATION" | "DEWORMING" | "FARRIER" | "DENTAL" | "GENERAL" = "VACCINATION";

@@ -49,7 +49,7 @@ const STATUS_BADGES: Record<PreventiveStatus, { label: string; tone: BadgeTone; 
   DUE_SOON: { label: "Due soon", tone: "warn", icon: "alert" },
   OVERDUE: { label: "Overdue", tone: "danger", icon: "alert" },
   COMPLETED: { label: "Completed", tone: "ok", icon: "checkCircle" },
-  NO_DATA: { label: "No data", tone: "neutral", icon: "info" },
+  NO_DATA: { label: "No history", tone: "neutral", icon: "info" },
 };
 
 export default function CareSchedulePage() {
@@ -65,6 +65,7 @@ export default function CareSchedulePage() {
     overdue: number;
     upcoming7Days: number;
     upcoming30Days: number;
+    upToDate: number;
     completed: number;
     noData: number;
     total: number;
@@ -72,6 +73,7 @@ export default function CareSchedulePage() {
     overdue: 0,
     upcoming7Days: 0,
     upcoming30Days: 0,
+    upToDate: 0,
     completed: 0,
     noData: 0,
     total: 0,
@@ -85,12 +87,13 @@ export default function CareSchedulePage() {
   const [serverTotal, setServerTotal] = useState(0);
 
   useEffect(() => {
+    if (searchInput === search) return;
     const timer = setTimeout(() => {
       setSearch(searchInput);
       setPage(1);
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchInput]);
+  }, [searchInput, search]);
 
   // Create Preventive Care Schedule Modal (Bác sĩ thú y thêm Preventive Care)
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
@@ -364,7 +367,7 @@ export default function CareSchedulePage() {
               { id: "ALL", label: tr("All"), count: loading ? undefined : counts.total },
               { id: "OVERDUE", label: tr("Overdue"), count: loading ? undefined : counts.overdue },
               { id: "DUE_SOON", label: tr("Due soon"), count: loading ? undefined : counts.upcoming7Days },
-              { id: "UP_TO_DATE", label: tr("On schedule"), count: loading ? undefined : Math.max(0, counts.total - counts.overdue - counts.upcoming7Days - counts.completed - counts.noData) },
+              { id: "UP_TO_DATE", label: tr("On schedule"), count: loading ? undefined : counts.upToDate },
               { id: "COMPLETED", label: tr("Completed"), count: loading ? undefined : counts.completed },
               { id: "NO_DATA", label: tr("No history"), count: loading ? undefined : counts.noData },
             ]}
