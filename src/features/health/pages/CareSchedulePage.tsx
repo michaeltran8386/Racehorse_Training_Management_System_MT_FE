@@ -79,9 +79,18 @@ export default function CareSchedulePage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState(false);
   const [loadingHorses, setLoadingHorses] = useState(false);
+  const [searchInput, setSearchInput] = useState<string>("");
   const [search, setSearch] = useState<string>("");
   const [page, setPage] = useState(1);
   const [serverTotal, setServerTotal] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearch(searchInput);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
 
   // Create Preventive Care Schedule Modal (Bác sĩ thú y thêm Preventive Care)
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
@@ -317,9 +326,11 @@ export default function CareSchedulePage() {
             align: "right" as const,
             render: (item: PreventiveCareItem) => (
               <div className={styles.actionCell}>
-                <Button tone="secondary" size="sm" icon="check" onClick={() => handleOpenCompleteModal(item)}>
-                  {tr("Record completion")}
-                </Button>
+                {item.status !== "COMPLETED" && (
+                  <Button tone="secondary" size="sm" icon="check" onClick={() => handleOpenCompleteModal(item)}>
+                    {tr("Record completion")}
+                  </Button>
+                )}
               </div>
             ),
           },
@@ -367,8 +378,8 @@ export default function CareSchedulePage() {
               icon="search"
               aria-label={tr("Search care items")}
               placeholder={tr("Service, horse or note")}
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
             />
           </div>
           <div style={{ width: 200 }}>
@@ -390,7 +401,10 @@ export default function CareSchedulePage() {
             <Select
               aria-label={tr("Category")}
               value={selectedCategory}
-              options={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label: value === "ALL" ? "Category: All" : label }))}
+              options={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({
+                value,
+                label: value === "ALL" ? tr("Category: All") : tr(label),
+              }))}
               onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}
             />
           </div>
@@ -406,7 +420,7 @@ export default function CareSchedulePage() {
             empty={
               <EmptyState
                 icon="syringe"
-                title={search || selectedCategory !== "ALL" || activeTab !== "ALL" ? "No care items match these filters" : "No preventive care scheduled yet"}
+                title={searchInput || selectedCategory !== "ALL" || activeTab !== "ALL" ? "No care items match these filters" : "No preventive care scheduled yet"}
                 description="Scheduled vaccinations, deworming, farrier and dental care appear here with their due dates."
               />
             }
