@@ -16,6 +16,7 @@ export interface StallAllocation {
   startDate: string;
   endDate?: string | null;
   isActive: boolean;
+  notes?: string | null;
   horse: {
     id: string;
     horseCode?: string | null;
@@ -24,6 +25,11 @@ export interface StallAllocation {
     isMedicalLocked?: boolean;
     isDebtImpounded?: boolean;
     debtImpoundReason?: string | null;
+    owner?: {
+      id: string;
+      fullName: string;
+      email: string;
+    } | null;
   };
   assignedGroom?: {
     id: string;

@@ -81,7 +81,7 @@ export interface CreateHorsePayload {
   color: string;
   weightKg: number;
   microchip: string;
-  ownerId?: string;
+  ownerId: string;
   avatarUrl?: string;
   stallId?: string;
 }
