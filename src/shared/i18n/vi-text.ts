@@ -3,6 +3,8 @@
 // Thêm câu mới: thêm một dòng "English": "Tiếng Việt". Câu không có ở đây sẽ hiện tiếng Anh.
 import { SERVER_TEXT } from "./server-text";
 export const VI_TEXT: Record<string, string> = {
+  "No history": "Chưa có lịch sử",
+  "Status: All": "Trạng thái: Tất cả",
   "Pending Activation": "Chờ kích hoạt",
   "Plan name cannot be only numbers.": "Tên giáo án không được đặt hoàn toàn bằng số.",
   "Plan name must contain letters.": "Tên giáo án phải chứa chữ cái.",
