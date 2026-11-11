@@ -61,6 +61,13 @@ const PROPOSED_STATUS_OPTIONS = [
   { value: "ISOLATED", label: "Quarantined" },
 ];
 
+const LEGACY_PROPOSED_STATUS_LABELS: Record<string, string> = {
+  ACTIVE: "Fit",
+  RESTING: "Resting",
+  IN_TRAINING: "In Training",
+  RETIRED: "Retired",
+};
+
 function getInitialExamDate(): string {
   const now = new Date();
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -271,7 +278,14 @@ export default function RecordFormPage() {
         setLabTests(r.labTests || []);
         setDiagnosis(r.diagnosis || "");
         setSeverity(r.severity || undefined);
-        setProposedStatus(r.proposedStatus || "");
+        const isAllowedMedicalOption = PROPOSED_STATUS_OPTIONS.some((o) => o.value === r.proposedStatus);
+        const nextProposedStatus =
+          r.status === "OPEN"
+            ? r.proposedStatus || ""
+            : isAllowedMedicalOption && r.proposedStatus
+              ? r.proposedStatus
+              : "UNDER_OBSERVATION";
+        setProposedStatus(nextProposedStatus);
         setInitialProposedStatus(r.proposedStatus || "");
         setProposeMedicalLock(Boolean(r.proposeMedicalLock));
       });
@@ -1054,7 +1068,22 @@ export default function RecordFormPage() {
             <Field label={tr("Proposed Horse Status")}>
               <Select
                 options={[
-                  ...(isEdit && recordStatus === "OPEN" ? [{ value: "", label: tr("-- Keep Current Status --") }] : []),
+                  ...(isEdit && recordStatus === "OPEN"
+                    ? [
+                        { value: "", label: tr("-- Keep Current Status --") },
+                        ...(initialProposedStatus &&
+                        !PROPOSED_STATUS_OPTIONS.some((o) => o.value === initialProposedStatus)
+                          ? [
+                              {
+                                value: initialProposedStatus,
+                                label: tr("{{status}} (current recorded value — keep unchanged)", {
+                                  status: tr(LEGACY_PROPOSED_STATUS_LABELS[initialProposedStatus] || initialProposedStatus),
+                                }),
+                              },
+                            ]
+                          : []),
+                      ]
+                    : []),
                   ...proposedStatusOptions,
                 ]}
                 value={proposedStatus}
