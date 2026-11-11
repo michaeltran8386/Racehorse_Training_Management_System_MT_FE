@@ -57,9 +57,8 @@ const LAB_TYPE_OPTIONS = [
 const PROPOSED_STATUS_OPTIONS = [
   { value: "UNDER_OBSERVATION", label: "Under Observation" },
   { value: "INJURED", label: "Injured" },
-  // Giá trị phải là HorseStatus của BE: "Cách ly" = ISOLATED, "Khỏe" = ACTIVE (QUARANTINED/FIT bị BE bỏ qua).
+  // Giá trị phải là HorseStatus của BE: "Cách ly" = ISOLATED (Bác sĩ thú y chỉ được đưa ngựa vào nhóm y tế).
   { value: "ISOLATED", label: "Quarantined" },
-  { value: "ACTIVE", label: "Fit" },
 ];
 
 function getInitialExamDate(): string {
@@ -179,6 +178,7 @@ export default function RecordFormPage() {
   const [diagnosis, setDiagnosis] = useState("");
   const [severity, setSeverity] = useState<SeverityLevel | undefined>(undefined);
   const [proposedStatus, setProposedStatus] = useState("UNDER_OBSERVATION");
+  const [initialProposedStatus, setInitialProposedStatus] = useState<string | undefined>(undefined);
   const [proposeMedicalLock, setProposeMedicalLock] = useState(false);
   const [recordStatus, setRecordStatus] = useState<string>("DRAFT");
   const [openRecordForSelectedHorse, setOpenRecordForSelectedHorse] = useState<MedicalRecord | null>(null);
@@ -271,7 +271,8 @@ export default function RecordFormPage() {
         setLabTests(r.labTests || []);
         setDiagnosis(r.diagnosis || "");
         setSeverity(r.severity || undefined);
-        setProposedStatus(r.proposedStatus || "UNDER_OBSERVATION");
+        setProposedStatus(r.proposedStatus || "");
+        setInitialProposedStatus(r.proposedStatus || "");
         setProposeMedicalLock(Boolean(r.proposeMedicalLock));
       });
     }
@@ -453,6 +454,14 @@ export default function RecordFormPage() {
     setError(null);
     setErrorDetails([]);
 
+    const isEditingOpen = isEdit && recordStatus === "OPEN";
+    // Khi sửa bệnh án OPEN, chỉ gửi proposedStatus nếu người dùng thực sự chọn thay đổi khác với dữ liệu ban đầu
+    const effectiveProposedStatus = isEditingOpen
+      ? proposedStatus !== initialProposedStatus && proposedStatus
+        ? proposedStatus
+        : undefined
+      : proposedStatus || undefined;
+
     const payload = {
       horseId,
       examinationDate: new Date(examinationDate).toISOString(),
@@ -470,8 +479,8 @@ export default function RecordFormPage() {
       labTests: labTests.filter((t) => t.result.trim() !== ""),
       diagnosis: diagnosis.trim() || undefined,
       severity,
-      proposedStatus,
-      proposeMedicalLock,
+      proposedStatus: effectiveProposedStatus,
+      proposeMedicalLock: isEditingOpen ? false : proposeMedicalLock,
       // "Save & Finalize" cũng lưu nháp trước, rồi mở hộp thoại Chốt ở trang chi tiết:
       // ở đó bác sĩ xác nhận áp trạng thái đề xuất và đặt Khóa huấn luyện (nếu đề xuất).
       saveAsDraft: true,
@@ -1044,22 +1053,27 @@ export default function RecordFormPage() {
           <div className={styles.formPair}>
             <Field label={tr("Proposed Horse Status")}>
               <Select
-                options={proposedStatusOptions}
+                options={[
+                  ...(isEdit && recordStatus === "OPEN" ? [{ value: "", label: tr("-- Keep Current Status --") }] : []),
+                  ...proposedStatusOptions,
+                ]}
                 value={proposedStatus}
                 onChange={(e) => setProposedStatus(e.target.value)}
               />
             </Field>
 
-            <div>
-              <Checkbox
-                label={tr("Propose Training Lock activation")}
-                checked={proposeMedicalLock}
-                onChange={setProposeMedicalLock}
-              />
-              <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)", display: "block", marginTop: 4 }}>
-                {tr("Upon finalizing the medical record, a confirmation step will be prompted to issue a protective training lock.")}
-              </span>
-            </div>
+            {!(isEdit && recordStatus === "OPEN") && (
+              <div>
+                <Checkbox
+                  label={tr("Propose Training Lock activation")}
+                  checked={proposeMedicalLock}
+                  onChange={setProposeMedicalLock}
+                />
+                <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)", display: "block", marginTop: 4 }}>
+                  {tr("Upon finalizing the medical record, a confirmation step will be prompted to issue a protective training lock.")}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
