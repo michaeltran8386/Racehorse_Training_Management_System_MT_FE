@@ -107,18 +107,44 @@ export interface EligibilityResponse {
 }
 
 export interface HorseEligibilityChecklist {
-  statusCheck: { pass: boolean; value: string; required: string };
-  ageCheck: { pass: boolean; ageYears: number; minRequired: number };
-  medicalLockCheck: { pass: boolean; locked: boolean; details?: string };
-  debtCheck: { pass: boolean; impounded: boolean };
-  withdrawalCheck: { pass: boolean; clearDate?: string; activeMeds?: string[] };
-  fitnessCheck: { pass: boolean; completedWorkouts: number; required: number };
+  statusCheck?: { pass: boolean; value: string; required: string };
+  ageCheck?: { pass: boolean; ageYears: number; minRequired: number };
+  medicalLockCheck?: { pass: boolean; locked: boolean; details?: string };
+  debtCheck?: { pass: boolean; impounded: boolean };
+  withdrawalCheck?: { pass: boolean; clearDate?: string; activeMeds?: string[] };
+  fitnessCheck?: { pass: boolean; completedWorkouts: number; required: number };
+}
+
+export interface EligibilityCheckItem {
+  key: string;
+  label: string;
+  passed: boolean;
+  details?: string;
 }
 
 export interface HorseEligibilityDetail {
-  horseId: string;
-  horseName: string;
-  isEligible: boolean;
-  reasons: string[];
-  checklist: HorseEligibilityChecklist;
+  horseId?: string;
+  horseName?: string;
+  isEligible?: boolean;
+  eligible?: boolean;
+  isRegistered?: boolean;
+  reasons?: string[];
+  blockingReasons?: string[];
+  checklist?: HorseEligibilityChecklist;
+  checks?: EligibilityCheckItem[];
+  horse?: {
+    id: string;
+    name: string;
+    horseCode: string;
+    ageYears: number;
+    status: string;
+  };
+  tournament?: {
+    id: string;
+    name: string;
+    raceDate: string;
+    minAgeYears: number;
+    entryFee: number;
+    prizePool: number;
+  };
 }

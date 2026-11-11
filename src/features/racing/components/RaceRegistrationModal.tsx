@@ -6,6 +6,7 @@ import { Badge } from "@/shared/components/ui/Badge";
 import { SearchSelect } from "@/shared/components/form/SearchSelect";
 import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
+import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { fetchEligibility, registerHorseForRace, scratchHorseFromRace, fetchTournamentDetail, fetchHorseEligibilityDetail } from "../api";
 import { vndUnit } from "@/shared/lib/format";
 import type { EligibilityResponse, Tournament, HorseEligibilityDetail } from "../types";
@@ -66,6 +67,9 @@ export function RaceRegistrationModal({
   onSuccess,
 }: RaceRegistrationModalProps) {
   useAppLanguage();
+  const currentUser = useCurrentUser();
+  const canManageScratch =
+    currentUser.role === "CLUB_MANAGER" || currentUser.role === "HEAD_TRAINER";
   const [currentTournament, setCurrentTournament] = useState<Tournament>(tournament);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -262,7 +266,11 @@ export function RaceRegistrationModal({
               {registrations.map((reg) => {
                 const isScratched = reg.status === "SCRATCHED_MEDICAL";
                 const isScratchingThis = scratchingRegId === reg.id;
-                const canScratch = !isScratched && currentTournament.status !== "COMPLETED" && currentTournament.status !== "CANCELLED";
+                const canScratch =
+                  canManageScratch &&
+                  !isScratched &&
+                  currentTournament.status !== "COMPLETED" &&
+                  currentTournament.status !== "CANCELLED";
 
                 return (
                   <div
@@ -280,13 +288,13 @@ export function RaceRegistrationModal({
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                       <div>
                         <div style={{ fontWeight: 700, color: "var(--ink)", display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          {reg.horse.name}
+                          {reg.horse?.name ?? "Chiến mã"}
                           <span style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", fontWeight: 400 }}>
-                            #{reg.horse.horseCode || tr("N/A")}
+                            #{reg.horse?.horseCode || tr("N/A")}
                           </span>
                         </div>
                         <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
-                          {reg.horse.breed} {reg.notes ? `· ${reg.notes}` : ""}
+                          {reg.horse?.breed ?? ""} {reg.notes ? `· ${reg.notes}` : ""}
                         </div>
                       </div>
 
@@ -486,8 +494,10 @@ export function RaceRegistrationModal({
                     {isVietnamese() ? "Bảng kiểm tra 6 tiêu chí hợp lệ thi đấu:" : tr("6-Tier Race Eligibility Checklist:")}
                   </strong>
                   {eligibilityDetail && (
-                    <Badge tone={eligibilityDetail.isEligible ? "ok" : "danger"}>
-                      {eligibilityDetail.isEligible ? (isVietnamese() ? "Đủ điều kiện xuất phát" : "Eligible") : (isVietnamese() ? "Không đủ điều kiện" : "Ineligible")}
+                    <Badge tone={(eligibilityDetail.isEligible ?? eligibilityDetail.eligible) ? "ok" : "danger"}>
+                      {(eligibilityDetail.isEligible ?? eligibilityDetail.eligible)
+                        ? (isVietnamese() ? "Đủ điều kiện xuất phát" : "Eligible")
+                        : (isVietnamese() ? "Không đủ điều kiện" : "Ineligible")}
                     </Badge>
                   )}
                 </div>
@@ -498,50 +508,81 @@ export function RaceRegistrationModal({
                   </div>
                 ) : eligibilityDetail ? (
                   <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: "0.5rem" }}>
-                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.statusCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.statusCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
-                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "1. Trạng thái hoạt động" : "1. Status"}</div>
-                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.statusCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
-                        {eligibilityDetail.checklist.statusCheck.pass ? "✓ " : "✗ "}
-                        {eligibilityDetail.checklist.statusCheck.value}
-                      </div>
-                    </div>
+                    {eligibilityDetail.checks && eligibilityDetail.checks.length > 0 ? (
+                      eligibilityDetail.checks.map((chk, idx) => (
+                        <div
+                          key={chk.key || idx}
+                          style={{
+                            padding: "0.5rem 0.625rem",
+                            borderRadius: "6px",
+                            background: chk.passed ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)",
+                            border: `1px solid ${chk.passed ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}`,
+                          }}
+                        >
+                          <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>
+                            {idx + 1}. {chk.label}
+                          </div>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              fontSize: "var(--fs-xs)",
+                              color: chk.passed ? "var(--ok, #10b981)" : "var(--danger, #ef4444)",
+                              marginTop: "2px",
+                            }}
+                          >
+                            {chk.passed ? "✓ " : "✗ "}
+                            {chk.details || (chk.passed ? (isVietnamese() ? "Đạt chuẩn" : "Passed") : (isVietnamese() ? "Không đạt" : "Failed"))}
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <>
+                        <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist?.statusCheck?.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist?.statusCheck?.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                          <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "1. Trạng thái hoạt động" : "1. Status"}</div>
+                          <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist?.statusCheck?.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                            {eligibilityDetail.checklist?.statusCheck?.pass ? "✓ " : "✗ "}
+                            {eligibilityDetail.checklist?.statusCheck?.value ?? "N/A"}
+                          </div>
+                        </div>
 
-                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.ageCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.ageCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
-                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "2. Độ tuổi tối thiểu" : "2. Minimum Age"}</div>
-                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.ageCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
-                        {eligibilityDetail.checklist.ageCheck.pass ? "✓ " : "✗ "}
-                        {eligibilityDetail.checklist.ageCheck.ageYears} {isVietnamese() ? "tuổi" : "yo"} (≥ {eligibilityDetail.checklist.ageCheck.minRequired})
-                      </div>
-                    </div>
+                        <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist?.ageCheck?.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist?.ageCheck?.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                          <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "2. Độ tuổi tối thiểu" : "2. Minimum Age"}</div>
+                          <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist?.ageCheck?.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                            {eligibilityDetail.checklist?.ageCheck?.pass ? "✓ " : "✗ "}
+                            {eligibilityDetail.checklist?.ageCheck?.ageYears ?? 0} {isVietnamese() ? "tuổi" : "yo"} (≥ {eligibilityDetail.checklist?.ageCheck?.minRequired ?? 2})
+                          </div>
+                        </div>
 
-                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.medicalLockCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.medicalLockCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
-                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "3. Khóa y tế thú y" : "3. Medical Lock"}</div>
-                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.medicalLockCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
-                        {eligibilityDetail.checklist.medicalLockCheck.pass ? (isVietnamese() ? "✓ Không có khóa" : "✓ Clear") : (isVietnamese() ? "✗ Đang bị khóa y tế" : "✗ Locked")}
-                      </div>
-                    </div>
+                        <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist?.medicalLockCheck?.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist?.medicalLockCheck?.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                          <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "3. Khóa y tế thú y" : "3. Medical Lock"}</div>
+                          <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist?.medicalLockCheck?.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                            {eligibilityDetail.checklist?.medicalLockCheck?.pass ? (isVietnamese() ? "✓ Không có khóa" : "✓ Clear") : (isVietnamese() ? "✗ Đang bị khóa y tế" : "✗ Locked")}
+                          </div>
+                        </div>
 
-                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.debtCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.debtCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
-                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "4. Công nợ / Lưu giữ" : "4. Debt Impoundment"}</div>
-                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.debtCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
-                        {eligibilityDetail.checklist.debtCheck.pass ? (isVietnamese() ? "✓ Sạch công nợ" : "✓ Clear") : (isVietnamese() ? "✗ Bị lưu giữ do nợ" : "✗ Impounded")}
-                      </div>
-                    </div>
+                        <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist?.debtCheck?.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist?.debtCheck?.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                          <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "4. Công nợ / Lưu giữ" : "4. Debt Impoundment"}</div>
+                          <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist?.debtCheck?.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                            {eligibilityDetail.checklist?.debtCheck?.pass ? (isVietnamese() ? "✓ Sạch công nợ" : "✓ Clear") : (isVietnamese() ? "✗ Bị lưu giữ do nợ" : "✗ Impounded")}
+                          </div>
+                        </div>
 
-                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.withdrawalCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.withdrawalCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
-                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "5. Thời gian thải trừ thuốc" : "5. Doping Clearance"}</div>
-                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.withdrawalCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
-                        {eligibilityDetail.checklist.withdrawalCheck.pass ? (isVietnamese() ? "✓ Đã qua thải trừ" : "✓ Clear") : (isVietnamese() ? "✗ Trong kỳ thải trừ" : "✗ In withdrawal")}
-                      </div>
-                    </div>
+                        <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist?.withdrawalCheck?.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist?.withdrawalCheck?.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                          <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "5. Thời gian thải trừ thuốc" : "5. Doping Clearance"}</div>
+                          <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist?.withdrawalCheck?.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                            {eligibilityDetail.checklist?.withdrawalCheck?.pass ? (isVietnamese() ? "✓ Đã qua thải trừ" : "✓ Clear") : (isVietnamese() ? "✗ Trong kỳ thải trừ" : "✗ In withdrawal")}
+                          </div>
+                        </div>
 
-                    <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist.fitnessCheck.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist.fitnessCheck.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
-                      <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "6. Thể lực tập luyện" : "6. Training Fitness"}</div>
-                      <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist.fitnessCheck.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
-                        {eligibilityDetail.checklist.fitnessCheck.pass ? "✓ " : "✗ "}
-                        {eligibilityDetail.checklist.fitnessCheck.completedWorkouts}/{eligibilityDetail.checklist.fitnessCheck.required} {isVietnamese() ? "buổi" : "workouts"}
-                      </div>
-                    </div>
+                        <div style={{ padding: "0.5rem 0.625rem", borderRadius: "6px", background: eligibilityDetail.checklist?.fitnessCheck?.pass ? "rgba(16, 185, 129, 0.08)" : "rgba(239, 68, 68, 0.08)", border: `1px solid ${eligibilityDetail.checklist?.fitnessCheck?.pass ? "rgba(16, 185, 129, 0.25)" : "rgba(239, 68, 68, 0.25)"}` }}>
+                          <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)" }}>{isVietnamese() ? "6. Thể lực tập luyện" : "6. Training Fitness"}</div>
+                          <div style={{ fontWeight: 600, fontSize: "var(--fs-xs)", color: eligibilityDetail.checklist?.fitnessCheck?.pass ? "var(--ok, #10b981)" : "var(--danger, #ef4444)" }}>
+                            {eligibilityDetail.checklist?.fitnessCheck?.pass ? "✓ " : "✗ "}
+                            {eligibilityDetail.checklist?.fitnessCheck?.completedWorkouts ?? 0}/{eligibilityDetail.checklist?.fitnessCheck?.required ?? 4} {isVietnamese() ? "buổi" : "workouts"}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : null}
               </div>
