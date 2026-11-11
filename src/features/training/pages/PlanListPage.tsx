@@ -180,7 +180,7 @@ export default function PlanListPage() {
                       />
                     </td>
                     <td className={styles.colStatus}>
-                      <Badge tone={PLAN_STATUS_TONE[plan.status]}>{PLAN_STATUS_LABEL[plan.status]}</Badge>
+                      <Badge tone={PLAN_STATUS_TONE[plan.status]}>{tr(PLAN_STATUS_LABEL[plan.status])}</Badge>
                     </td>
                     {!isTrainer && <td className={styles.colTrainer}>{plan.headTrainerName}</td>}
                     <td className={styles.colActions} onClick={(e) => e.stopPropagation()}>

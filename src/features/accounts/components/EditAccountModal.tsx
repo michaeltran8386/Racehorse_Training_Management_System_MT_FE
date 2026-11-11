@@ -81,7 +81,7 @@ export function EditAccountModal({ account, isSelf, isLastManager, onClose, onSa
         <dl className={styles.facts}>
           <dt>{tr("Status")}</dt>
           <dd>
-            <Badge tone={status.tone}>{status.label}</Badge>
+            <Badge tone={status.tone}>{tr(status.label)}</Badge>
           </dd>
           <dt>{tr("Joined")}</dt>
           <dd>{formatDateTime(account.createdAt)}</dd>

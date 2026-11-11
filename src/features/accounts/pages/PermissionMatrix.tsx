@@ -234,7 +234,7 @@ export default function PermissionMatrix({ accountId }: { accountId: string }) {
               </div>
               <div>
                 <span>{tr("Status")}</span>
-                <Badge tone={status.tone}>{status.label}</Badge>
+                <Badge tone={status.tone}>{tr(status.label)}</Badge>
               </div>
               <div>
                 <span>{tr("Granted")}</span>
