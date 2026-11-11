@@ -244,7 +244,7 @@ export default function AccountListPage() {
         const reason = SHOW_REASON.includes(r.status) ? r.statusReason : null;
         return (
           <div className={styles.status}>
-            <Badge tone={s.tone}>{s.label}</Badge>
+            <Badge tone={s.tone}>{tr(s.label)}</Badge>
             {reason && (
               <span className={styles.reason} title={reason}>
                 {reason}

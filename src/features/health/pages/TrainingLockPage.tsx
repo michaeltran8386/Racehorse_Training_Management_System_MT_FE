@@ -291,12 +291,12 @@ export default function TrainingLockPage() {
           empty={
             <EmptyState
               icon="lock"
-              title={search ? "No locks match this search" : activeTab === "ACTIVE" ? "No active Training Locks" : activeTab === "RELEASED" ? "No released Training Locks" : "No Training Locks yet"}
-              description={
+              title={tr(search ? "No locks match this search" : activeTab === "ACTIVE" ? "No active Training Locks" : activeTab === "RELEASED" ? "No released Training Locks" : "No Training Locks yet")}
+              description={tr(
                 search
                   ? "Try a lock code, a horse name or part of the reason."
                   : "When the Veterinarian places a lock on an injured horse, it appears here."
-              }
+              )}
             />
           }
         />

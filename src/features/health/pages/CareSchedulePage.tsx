@@ -280,7 +280,7 @@ export default function CareSchedulePage() {
       key: "category",
       header: tr("Category"),
       width: 105,
-      render: (item) => <Badge tone="neutral">{CATEGORY_LABELS[item.category] || item.category}</Badge>,
+      render: (item) => <Badge tone="neutral">{tr(CATEGORY_LABELS[item.category] || item.category)}</Badge>,
     },
     {
       key: "last",

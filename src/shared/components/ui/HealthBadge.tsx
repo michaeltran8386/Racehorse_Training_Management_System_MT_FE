@@ -1,5 +1,6 @@
 import { HEALTH_STATUS } from "@/shared/lib/status";
 import type { HealthStatus } from "@/shared/types/enums";
+import { tr } from "@/shared/i18n/tr";
 import { Badge } from "./Badge";
 
 interface HealthBadgeProps {
@@ -13,7 +14,7 @@ export function HealthBadge({ status, withIcon = true }: HealthBadgeProps) {
   const h = HEALTH_STATUS[status];
   return (
     <Badge tone={h.tone} icon={withIcon ? h.icon : undefined} dot={!withIcon}>
-      {h.label}
+      {tr(h.label)}
     </Badge>
   );
 }

@@ -4373,6 +4373,27 @@ export const VI_TEXT: Record<string, string> = {
   "Add Stall": "Thêm ô chuồng",
   "Add First Barn Zone": "Thêm khu chuồng đầu tiên",
   "— No groom (optional) —": "— Không giao (tùy chọn) —",
+  // Medical & Health Examination Types, Discovery Sources & Categories
+  "ROUTINE": "Khám thường quy",
+  "CLINICAL": "Khám lâm sàng",
+  "EMERGENCY": "Cấp cứu",
+  "PREVENTIVE": "Khám định kỳ",
+  "Clinical": "Khám lâm sàng",
+  "Emergency": "Cấp cứu",
+  "IN_WORKOUT": "Trong lúc tập luyện",
+  "DAILY_CARE": "Chăm sóc hàng ngày",
+  "In Workout": "Trong lúc tập luyện",
+  "Daily Care": "Chăm sóc hàng ngày",
+  "Rehabilitation": "Phục hồi chức năng",
+  "REHABILITATION": "Phục hồi chức năng",
+  "ACUTE": "Cấp tính",
+  "SUBACUTE": "Bán cấp",
+  "HEALED": "Đã lành",
+  "VACCINATION": "Tiêm phòng",
+  "DEWORMING": "Tẩy giun",
+  "FARRIER": "Chăm sóc móng",
+  "DENTAL": "Chăm sóc răng",
+  "GENERAL": "Khám định kỳ",
 };
 
 
