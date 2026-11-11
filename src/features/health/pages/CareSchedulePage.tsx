@@ -45,9 +45,10 @@ const DEFAULT_INTERVAL_DAYS: Record<string, number> = {
 
 // Trạng thái lịch dự phòng -> tông Badge chung (một màu một nghĩa trong toàn app).
 const STATUS_BADGES: Record<PreventiveStatus, { label: string; tone: BadgeTone; icon: string }> = {
-  UP_TO_DATE: { label: "On schedule", tone: "ok", icon: "checkCircle" },
-  DUE_SOON: { label: "Due soon", tone: "warn", icon: "clock" },
+  UP_TO_DATE: { label: "On schedule", tone: "brand", icon: "clock" },
+  DUE_SOON: { label: "Due soon", tone: "warn", icon: "alert" },
   OVERDUE: { label: "Overdue", tone: "danger", icon: "alert" },
+  COMPLETED: { label: "Completed", tone: "ok", icon: "checkCircle" },
   NO_DATA: { label: "No data", tone: "neutral", icon: "info" },
 };
 
@@ -60,11 +61,27 @@ export default function CareSchedulePage() {
   const [activeTab, setActiveTab] = useState<string>("ALL");
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [items, setItems] = useState<PreventiveCareItem[]>([]);
+  const [counts, setCounts] = useState<{
+    overdue: number;
+    upcoming7Days: number;
+    upcoming30Days: number;
+    completed: number;
+    noData: number;
+    total: number;
+  }>({
+    overdue: 0,
+    upcoming7Days: 0,
+    upcoming30Days: 0,
+    completed: 0,
+    noData: 0,
+    total: 0,
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const [loadError, setLoadError] = useState(false);
   const [loadingHorses, setLoadingHorses] = useState(false);
   const [search, setSearch] = useState<string>("");
   const [page, setPage] = useState(1);
+  const [serverTotal, setServerTotal] = useState(0);
 
   // Create Preventive Care Schedule Modal (Bác sĩ thú y thêm Preventive Care)
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
@@ -88,15 +105,23 @@ export default function CareSchedulePage() {
     try {
       setLoading(true);
       setLoadError(false);
-      const data = await healthApi.getCareSchedules();
-      setItems(data);
+      const res = await healthApi.getCareSchedules({
+        status: activeTab,
+        category: selectedCategory,
+        search,
+        page,
+        limit: 10,
+      });
+      setItems(res.items);
+      setCounts(res.counts);
+      setServerTotal(res.total);
     } catch {
       setItems([]);
       setLoadError(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [activeTab, selectedCategory, search, page]);
 
   useEffect(() => {
     void loadData();
@@ -213,32 +238,8 @@ export default function CareSchedulePage() {
     }
   };
 
-  const filteredItems = items.filter((item) => {
-    const matchesTab =
-      activeTab === "ALL"
-        ? true
-        : activeTab === "OVERDUE"
-        ? item.status === "OVERDUE"
-        : activeTab === "DUE_SOON"
-        ? item.status === "DUE_SOON"
-        : item.status === "UP_TO_DATE";
-
-    const matchesCategory = selectedCategory === "ALL" ? true : item.category === selectedCategory;
-
-    const q = search.trim().toLowerCase();
-    const matchesSearch =
-      !q ||
-      item.horseId.toLowerCase().includes(q) ||
-      item.type.toLowerCase().includes(q) ||
-      (item.notes && item.notes.toLowerCase().includes(q));
-
-    return matchesTab && matchesCategory && matchesSearch;
-  });
-
-  const count = (st: PreventiveStatus) => items.filter((i) => i.status === st).length;
   const pageSize = 10;
-  const currentPage = Math.min(page, Math.max(1, Math.ceil(filteredItems.length / pageSize)));
-  const visibleItems = filteredItems.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+  const visibleItems = items;
 
   const columns: Column<PreventiveCareItem>[] = [
     {
@@ -349,10 +350,12 @@ export default function CareSchedulePage() {
           <Tabs
             label={tr("Filter by status")}
             items={[
-              { id: "ALL", label: tr("All"), count: loading ? undefined : items.length },
-              { id: "OVERDUE", label: tr("Overdue"), count: loading ? undefined : count("OVERDUE") },
-              { id: "DUE_SOON", label: tr("Due soon"), count: loading ? undefined : count("DUE_SOON") },
-              { id: "UP_TO_DATE", label: tr("On schedule"), count: loading ? undefined : count("UP_TO_DATE") },
+              { id: "ALL", label: tr("All"), count: loading ? undefined : counts.total },
+              { id: "OVERDUE", label: tr("Overdue"), count: loading ? undefined : counts.overdue },
+              { id: "DUE_SOON", label: tr("Due soon"), count: loading ? undefined : counts.upcoming7Days },
+              { id: "UP_TO_DATE", label: tr("On schedule"), count: loading ? undefined : Math.max(0, counts.total - counts.overdue - counts.upcoming7Days - counts.completed - counts.noData) },
+              { id: "COMPLETED", label: tr("Completed"), count: loading ? undefined : counts.completed },
+              { id: "NO_DATA", label: tr("No history"), count: loading ? undefined : counts.noData },
             ]}
             active={activeTab}
             onChange={(value) => { setActiveTab(value); setPage(1); }}
@@ -366,6 +369,21 @@ export default function CareSchedulePage() {
               placeholder={tr("Service, horse or note")}
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            />
+          </div>
+          <div style={{ width: 200 }}>
+            <Select
+              aria-label={tr("Status")}
+              value={activeTab}
+              options={[
+                { value: "ALL", label: tr("Status: All") },
+                { value: "OVERDUE", label: tr("Overdue") },
+                { value: "DUE_SOON", label: tr("Due soon") },
+                { value: "UP_TO_DATE", label: tr("On schedule") },
+                { value: "COMPLETED", label: tr("Completed") },
+                { value: "NO_DATA", label: tr("No history") },
+              ]}
+              onChange={(e) => { setActiveTab(e.target.value); setPage(1); }}
             />
           </div>
           <div style={{ width: 200 }}>
@@ -393,9 +411,9 @@ export default function CareSchedulePage() {
               />
             }
           />
-          {!loading && filteredItems.length > 0 && (
+          {!loading && serverTotal > 0 && (
             <div style={{ borderTop: "1px solid var(--border)" }}>
-              <Pagination page={currentPage} pageSize={pageSize} total={filteredItems.length} noun="care items" onPage={setPage} />
+              <Pagination page={page} pageSize={pageSize} total={serverTotal} noun="care items" onPage={setPage} />
             </div>
           )}
         </div>
