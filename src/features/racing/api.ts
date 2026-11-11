@@ -117,3 +117,51 @@ export async function fetchHorseEligibilityDetail(
 ): Promise<HorseEligibilityDetail> {
   return api<HorseEligibilityDetail>("GET", `/tournaments/${tournamentId}/eligibility/${horseId}`);
 }
+
+export async function startTournamentSimulation(tournamentId: string): Promise<{
+  sessionId: string;
+  status: string;
+  launchUrl: string;
+}> {
+  return api<{ sessionId: string; status: string; launchUrl: string }>(
+    "POST",
+    `/simulator/tournaments/${tournamentId}/start`,
+  );
+}
+
+export interface QuickSimulatedRunner {
+  registrationId: string;
+  horseId: string;
+  horseName: string;
+  horseCode: string;
+  lane: number;
+  finalRank: number;
+  finishTimeSeconds: number;
+  avgSpeedKmh: number;
+  prizeMoneyWon: number;
+  peakHeartRateBpm: number;
+  officialNotes: string;
+}
+
+export interface QuickRaceSimulationResponse {
+  sessionId: string;
+  status: string;
+  source: string;
+  capturedAt: string;
+  tournamentId: string;
+  tournamentName: string;
+  distanceMeters: number;
+  prizePool: number;
+  results: QuickSimulatedRunner[];
+}
+
+export async function quickSimulateTournamentRace(
+  tournamentId: string,
+): Promise<QuickRaceSimulationResponse> {
+  return api<QuickRaceSimulationResponse>(
+    "POST",
+    `/simulator/tournaments/${tournamentId}/quick-result`,
+  );
+}
+
+

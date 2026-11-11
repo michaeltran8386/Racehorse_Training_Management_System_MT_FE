@@ -75,34 +75,38 @@ export async function payInvoice(
 
 
 export interface OwnerStatementBreakdown {
-  level1Summary: {
+  summary: {
+    billingPeriod: string;
     totalBoarding: number;
-    totalFeed: number;
     totalMedical: number;
     totalTraining: number;
-    totalRacePayouts: number;
-    grossCharges: number;
+    totalExpense: number;
+    totalRaceNet: number;
     finalBalanceDue: number;
     isSurplus: boolean;
+    surplusAmount: number;
+    invoiceCount: number;
   };
-  level2Drilldown: {
+  drilldown: {
     invoices: {
       id: string;
       billingPeriod: string;
       horseName: string;
       boardingFee: number;
+      boardingDays: number;
       medicalFee: number;
       trainingFee: number;
       prizeCredit: number;
       netAmount: number;
       status: string;
+      dueAt: string;
     }[];
     raceSettlements: {
-      resultId: string;
+      tournamentId: string;
       tournamentName: string;
       raceDate: string | null;
       horseName: string;
-      rank: number;
+      finalRank: number;
       grossPrize: number;
       trainerCut: number;
       jockeyCut: number;

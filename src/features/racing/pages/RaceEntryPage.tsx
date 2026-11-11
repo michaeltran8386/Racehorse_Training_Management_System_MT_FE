@@ -12,7 +12,7 @@ import { KpiTile } from "@/shared/components/ui/KpiTile";
 import { Tabs } from "@/shared/components/ui/Tabs";
 import { Pagination } from "@/shared/components/ui/Pagination";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
-import { tr, isVietnamese } from "@/shared/i18n/tr";
+import { tr, isVietnamese, localizeServerText } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { messageFor } from "@/shared/lib/messages";
@@ -40,20 +40,27 @@ function getTournamentStatusLabel(status: string) {
     : (TOURNAMENT_STATUS_LABEL_EN[status] ?? status);
 }
 
+import { useNavigate } from "react-router-dom";
+import { useToast } from "@/shared/components/ui/Toast";
 import {
   fetchTournaments,
   createTournament,
   updateTournament,
   changeTournamentStatus,
   deleteTournament,
+  startTournamentSimulation,
+  quickSimulateTournamentRace,
 } from "../api";
 import type { Tournament } from "../types";
+import { summarizeDraftResults } from "../resultDraftSummary";
 import { TournamentModal } from "../components/TournamentModal";
 import { RaceRegistrationModal } from "../components/RaceRegistrationModal";
 import { RecordResultsModal } from "../components/RecordResultsModal";
 
 export default function RaceEntryPage() {
   useScreenTranslation();
+  const navigate = useNavigate();
+  const toast = useToast();
   const { isVietnamese: isVi } = useAppLanguage();
   const locale = isVi ? "vi-VN" : "en-US";
   const user = useCurrentUser();
@@ -63,6 +70,8 @@ export default function RaceEntryPage() {
   const canManage = isClubManager || isTrainer;
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [simulatingId, setSimulatingId] = useState<string | null>(null);
+  const [quickSimulatingId, setQuickSimulatingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -86,6 +95,57 @@ export default function RaceEntryPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const reload = useCallback(() => setRefreshKey((k) => k + 1), []);
   const loadData = reload;
+  const launchedSimRef = useRef<{
+    tournamentId: string;
+    tournamentName: string;
+    prevSignature: string;
+  } | null>(null);
+  const lastSimSyncRef = useRef(0);
+
+  // Tự động đồng bộ card giải đấu & thông báo khi người dùng quay về từ tab Simulator 2D
+  useEffect(() => {
+    if (resultsTournament !== null) return;
+    const syncFromSimulator = () => {
+      const pending = launchedSimRef.current;
+      if (!pending || document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (now - lastSimSyncRef.current < 800) return;
+      lastSimSyncRef.current = now;
+
+      fetchTournaments({
+        status: statusFilter,
+        search: searchTerm,
+      })
+        .then((res) => {
+          setTournaments(res.items);
+          const updated = res.items.find((t) => t.id === pending.tournamentId);
+          if (!updated) return;
+          const nextSummary = summarizeDraftResults(updated.registrations);
+          if (
+            nextSummary.kind !== "NONE" &&
+            nextSummary.signature !== pending.prevSignature
+          ) {
+            launchedSimRef.current = null;
+            toast.show(
+              isVietnamese()
+                ? `Đã chạy xong mô phỏng 2D cho giải "${pending.tournamentName}" (${nextSummary.recordedCount}/${nextSummary.activeCount} ngựa)! Hệ thống đã tự động nhập số liệu vào bản nháp — bấm "Ghi nhận & Chốt kết quả" để kiểm tra và khóa chính thức.`
+                : `2D simulation completed for "${pending.tournamentName}" (${nextSummary.recordedCount}/${nextSummary.activeCount} entries)! Draft results were imported — click "Record & Lock Results" to review.`,
+              "ok",
+              { durationMs: 6500 },
+            );
+          }
+        })
+        .catch(() => {
+          // Bỏ qua lỗi mạng thoáng qua khi tự động đồng bộ lại danh sách
+        });
+    };
+    window.addEventListener("focus", syncFromSimulator);
+    document.addEventListener("visibilitychange", syncFromSimulator);
+    return () => {
+      window.removeEventListener("focus", syncFromSimulator);
+      document.removeEventListener("visibilitychange", syncFromSimulator);
+    };
+  }, [resultsTournament, statusFilter, searchTerm, toast]);
 
   useEffect(() => {
     let active = true;
@@ -199,6 +259,60 @@ export default function RaceEntryPage() {
       console.error("Failed to open tournament registration", err);
     } finally {
       setActionBusy(false);
+    }
+  }
+
+  async function handleLaunchSimulator(tourney: Tournament) {
+    setSimulatingId(tourney.id);
+    const existingDraft = summarizeDraftResults(tourney.registrations);
+    try {
+      const res = await startTournamentSimulation(tourney.id);
+      launchedSimRef.current = {
+        tournamentId: tourney.id,
+        tournamentName: tourney.name,
+        prevSignature: existingDraft.signature,
+      };
+      window.open(res.launchUrl, "_blank");
+      toast.show(
+        existingDraft.kind !== "NONE"
+          ? isVietnamese()
+            ? `Đã mở trường đua 2D (${tourney.distanceMeters}m). Lưu ý: giải này đang có bản nháp (${existingDraft.recordedCount}/${existingDraft.activeCount} ngựa) — khi cuộc đua 2D mới hoàn tất, số liệu mới sẽ tự động cập nhật thay thế.`
+            : `Launched 2D race simulation (${tourney.distanceMeters}m). Note: existing draft (${existingDraft.recordedCount}/${existingDraft.activeCount} entries) will be updated automatically upon completion.`
+          : isVietnamese()
+            ? `Đã khởi tạo phiên đua mô phỏng 6 làn (${tourney.distanceMeters}m). Kết quả và thời gian thi đấu sẽ tự động đồng bộ vào giải đấu khi chặng đua kết thúc!`
+            : `Launched 6-lane race simulation (${tourney.distanceMeters}m). Results will auto-sync to this tournament upon completion!`,
+        "ok",
+        { durationMs: 6000 },
+      );
+    } catch (err: any) {
+      toast.show(
+        localizeServerText(err?.message) || (isVietnamese() ? "Không thể khởi động mô phỏng giải đấu" : "Failed to launch simulation"),
+        "danger",
+      );
+    } finally {
+      setSimulatingId(null);
+    }
+  }
+
+  async function handleQuickSimulate(tourney: Tournament) {
+    setQuickSimulatingId(tourney.id);
+    try {
+      await quickSimulateTournamentRace(tourney.id);
+      toast.show(
+        isVietnamese()
+          ? "Đã lấy kết quả đua nhanh từ Simulator và tự động chia thưởng dự kiến! Bạn có thể kiểm tra hoặc chỉnh sửa số liệu thực tế trước khi Chốt."
+          : "Quick race results loaded from Simulator with auto-distributed prizes! Review or edit before locking.",
+        "ok",
+      );
+      setRefreshKey((k) => k + 1);
+      setResultsTournament(tourney);
+    } catch (err: any) {
+      toast.show(
+        localizeServerText(err?.message) || (isVietnamese() ? "Không thể lấy kết quả đua nhanh từ Simulator" : "Failed to load quick race results"),
+        "danger",
+      );
+    } finally {
+      setQuickSimulatingId(null);
     }
   }
 
@@ -376,6 +490,8 @@ export default function RaceEntryPage() {
             const isOpenReg = tourney.status === "OPEN_REGISTRATION";
             const isUpcoming = tourney.status === "UPCOMING";
             const isClosedReg = tourney.status === "CLOSED_REGISTRATION";
+            const draftSummary = summarizeDraftResults(tourney.registrations);
+            const hasSimResults = draftSummary.kind !== "NONE";
 
             return (
               <Card key={tourney.id} pad={20}>
@@ -407,6 +523,21 @@ export default function RaceEntryPage() {
                         >
                           {getTournamentStatusLabel(tourney.status)}
                         </Badge>
+                        {hasSimResults && !isCompleted && (
+                          <Badge tone={draftSummary.kind === "MANUAL" ? "info" : "ok"}>
+                            {draftSummary.kind === "SIMULATOR_2D"
+                              ? isVi
+                                ? "Đã chạy mô phỏng 2D"
+                                : "2D Simulated"
+                              : draftSummary.kind === "QUICK_SIM"
+                                ? isVi
+                                  ? "Đã lấy kết quả nhanh"
+                                  : "Quick Simulated"
+                                : isVi
+                                  ? "Đã có bản nháp"
+                                  : "Draft Saved"}
+                          </Badge>
+                        )}
                         {isClubManager && tourney.status !== "CANCELLED" && !isCompleted && (
                           <Button
                             tone="secondary"
@@ -486,7 +617,7 @@ export default function RaceEntryPage() {
                           fontSize: "var(--fs-xs)",
                         }}
                       >
-                        <div style={{ fontWeight: 700, color: "var(--brand-700)" }}><Icon name="trophy" inline size={14} /> {tr("Official Results:")}</div>
+                        <div style={{ fontWeight: 700, color: "var(--brand-700)" }}>{tr("Official Results:")}</div>
                         {tourney.registrations
                           .filter((r) => r.result)
                           .sort((a, b) => (a.result?.finalRank ?? 99) - (b.result?.finalRank ?? 99))
@@ -494,11 +625,125 @@ export default function RaceEntryPage() {
                           .map((r) => (
                             <div key={r.id} style={{ display: "flex", justifyContent: "space-between", marginTop: "2px" }}>
                               <span>
-                                #{r.result?.finalRank} {r.horse.name}
+                                #{r.result?.finalRank} {r.horse?.name ?? "Chiến mã"}
                               </span>
                               <span style={{ fontWeight: 600 }}>{r.result?.avgSpeedKmh} km/h</span>
                             </div>
                           ))}
+                      </div>
+                    )}
+
+                    {/* Draft Results / Simulation Status Banner */}
+                    {isClosedReg && draftSummary.kind !== "NONE" && (
+                      <div
+                        style={{
+                          marginTop: "0.75rem",
+                          padding: "0.65rem 0.75rem",
+                          borderRadius: "var(--r-sm, 6px)",
+                          background:
+                            draftSummary.kind === "MANUAL"
+                              ? "rgba(59, 130, 246, 0.08)"
+                              : "rgba(16, 185, 129, 0.1)",
+                          border:
+                            draftSummary.kind === "MANUAL"
+                              ? "1px solid rgba(59, 130, 246, 0.25)"
+                              : "1px solid rgba(16, 185, 129, 0.28)",
+                          fontSize: "var(--fs-xs, 0.75rem)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "0.25rem",
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "0.5rem" }}>
+                          <strong style={{ color: draftSummary.kind === "MANUAL" ? "#1d4ed8" : "#047857" }}>
+                            {draftSummary.kind === "SIMULATOR_2D"
+                              ? isVi
+                                ? `Đã chạy mô phỏng 2D · Có bản nháp (${draftSummary.recordedCount}/${draftSummary.activeCount} ngựa)`
+                                : `2D simulation completed · Draft saved (${draftSummary.recordedCount}/${draftSummary.activeCount})`
+                              : draftSummary.kind === "QUICK_SIM"
+                                ? isVi
+                                  ? `Đã chạy lấy kết quả nhanh · Có bản nháp (${draftSummary.recordedCount}/${draftSummary.activeCount} ngựa)`
+                                  : `Quick result imported · Draft saved (${draftSummary.recordedCount}/${draftSummary.activeCount})`
+                                : isVi
+                                  ? `Đã lưu bản nháp kết quả (${draftSummary.recordedCount}/${draftSummary.activeCount} ngựa)`
+                                  : `Draft results saved (${draftSummary.recordedCount}/${draftSummary.activeCount})`}
+                          </strong>
+                          <span style={{ color: "var(--muted)", whiteSpace: "nowrap" }}>
+                            {isVi ? "Chưa khóa chính thức" : "Pending lock"}
+                          </span>
+                        </div>
+                        {draftSummary.podium.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem 0.75rem", color: "var(--ink)" }}>
+                            {draftSummary.podium.map((entry) => (
+                              <span key={entry.registrationId}>
+                                {entry.isDnf
+                                  ? `DNF ${entry.horseName}`
+                                  : `#${entry.finalRank} ${entry.horseName} (${entry.finishTimeSeconds.toFixed(2)}s)`}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        <span style={{ color: "var(--muted)" }}>
+                          {isClubManager
+                            ? isVi
+                              ? 'Số liệu đã tự động nhập vào biểu mẫu — bấm "Ghi nhận & Chốt kết quả" để kiểm tra và chốt.'
+                              : 'Auto-imported into the results form — click "Record Results" to review and lock.'
+                            : isVi
+                              ? "Chờ Quản lý câu lạc bộ kiểm tra và khóa kết quả chính thức."
+                              : "Awaiting Club Manager review and official lock."}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Telemetry & Results Collection Section */}
+                    {canManage && isClosedReg && registeredCount > 0 && (
+                      <div
+                        style={{
+                          marginTop: "0.75rem",
+                          padding: "0.75rem",
+                          background: "var(--surface-2, rgba(0, 0, 0, 0.02))",
+                          borderRadius: "var(--r-sm, 6px)",
+                          border: "1px solid var(--border)",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "0.5rem",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            fontSize: "var(--fs-xs, 0.75rem)",
+                            fontWeight: 600,
+                            color: "var(--muted)",
+                          }}
+                        >
+                          <span>{isVietnamese() ? "Thu thập dữ liệu giải đua" : "Race Telemetry & Results"}</span>
+                          <span>{tourney.distanceMeters}m · {registeredCount} {isVietnamese() ? "ngựa" : "entries"}</span>
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
+                          <Button
+                            tone="secondary"
+                            size="sm"
+                            disabled={simulatingId === tourney.id || quickSimulatingId === tourney.id}
+                            onClick={() => handleLaunchSimulator(tourney)}
+                          >
+                            {simulatingId === tourney.id
+                              ? (isVietnamese() ? "Đang mở mô phỏng..." : "Opening...")
+                              : (isVietnamese() ? "Mở mô phỏng 2D" : "Run 2D Simulation")}
+                          </Button>
+                          <Button
+                            tone="primary"
+                            size="sm"
+                            disabled={quickSimulatingId === tourney.id || simulatingId === tourney.id}
+                            onClick={() => handleQuickSimulate(tourney)}
+                          >
+                            {quickSimulatingId === tourney.id
+                              ? (isVietnamese() ? "Đang tính toán..." : "Calculating...")
+                              : (isVietnamese() ? "Lấy kết quả nhanh" : "Quick Result Import")}
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -509,7 +754,6 @@ export default function RaceEntryPage() {
                       {(isTrainer || isOwner) && isOpenReg && (
                         <Button
                           tone="primary"
-                          icon="horse"
                           onClick={() => setRegisteringTournament(tourney)}
                         >
                           {tr("Register Horse")}
@@ -539,24 +783,34 @@ export default function RaceEntryPage() {
                           tone="secondary"
                           onClick={() => setRegisteringTournament(tourney)}
                         >
-                          <Icon name="horse" inline size={14} /> {isVietnamese() ? "Quản lý danh sách / Rút ngựa" : tr("Manage Entries / Scratch")}
+                          {isVietnamese() ? "Quản lý danh sách ngựa" : tr("Manage Entries / Scratch")}
                         </Button>
                       )}
 
                       {registeredCount > 0 &&
                         (isCompleted ? (
-                          <Button
-                            tone="quiet"
-                            onClick={() => setResultsTournament(tourney)}
-                          >
-                            <Icon name="clock" inline size={14} /> {tr("View Results")}
-                          </Button>
+                          <>
+                            <Button
+                              tone="quiet"
+                              onClick={() => setResultsTournament(tourney)}
+                            >
+                              {tr("View Results")}
+                            </Button>
+                            {isClubManager && (
+                              <Button
+                                tone="secondary"
+                                onClick={() => navigate("/financial-reports")}
+                              >
+                                {isVietnamese() ? "Báo cáo tài chính & Quyết toán" : "Financial Reports"}
+                              </Button>
+                            )}
+                          </>
                         ) : isClubManager && isClosedReg ? (
                           <Button
                             tone="primary"
                             onClick={() => setResultsTournament(tourney)}
                           >
-                            <Icon name="clock" inline size={14} /> {tr("Record Results")}
+                            {isVietnamese() ? "Ghi nhận & Chốt kết quả" : tr("Record Results")}
                           </Button>
                         ) : null)}
                     </div>
