@@ -1,4 +1,4 @@
-import { api } from "@/shared/lib/api";
+import { api, ApiError } from "@/shared/lib/api";
 import type {
   CloseRecordInput,
   CreateMedicalRecordInput,
@@ -307,16 +307,11 @@ export const finalizeRecord = async (recordId: string, input: FinalizeRecordInpu
 // P2-02: Thêm giai đoạn điều trị (FR-3.06)
 export const addTreatmentPhase = async (recordId: string, input: TreatmentPhaseInput): Promise<{ phase: TreatmentPhase; record?: MedicalRecord }> => {
   const res = await api<any>("POST", `/medical/records/${recordId}/treatment-phases`, input);
-  const phase: TreatmentPhase = res?.phase || {
-    id: `phase-${Date.now()}`,
-    phaseName: input.phaseName,
-    startDate: input.startDate,
-    endDate: input.endDate,
-    target: input.target,
-    allowedActivity: input.allowedActivity,
-    careInstructions: input.careInstructions || [],
-  };
-  return { phase, record: res?.record };
+  if (!res || (!res.phase && !res.id)) {
+    throw new ApiError(500, "INVALID_RESPONSE", "Không nhận được phản hồi hợp lệ từ máy chủ khi thêm giai đoạn điều trị.");
+  }
+  const phase: TreatmentPhase = res.phase || res;
+  return { phase, record: res.record };
 };
 
 // P2-02: Cập nhật giai đoạn điều trị (FR-3.06)
@@ -351,21 +346,11 @@ export const addPrescription = async (recordId: string, input: PrescriptionInput
   };
 
   const res = await api<any>("POST", `/medical/records/${recordId}/prescriptions`, payload);
-  const prescription: PrescriptionItem = res?.prescription || {
-    id: `rx-${Date.now()}`,
-    medicationName: input.medicationName,
-    dosage: input.dosage,
-    unit: input.unit,
-    route: input.route,
-    frequencyPerDay: input.frequencyPerDay,
-    startDate: input.startDate,
-    endDate: calculatedEndDate,
-    daysCount: input.daysCount,
-    withdrawalDays: input.withdrawalDays || 0,
-    status: "ACTIVE",
-    notes: input.notes,
-  };
-  return { prescription, record: res?.record };
+  if (!res || (!res.prescription && !res.id)) {
+    throw new ApiError(500, "INVALID_RESPONSE", "Không nhận được phản hồi hợp lệ từ máy chủ khi kê đơn thuốc.");
+  }
+  const prescription: PrescriptionItem = res.prescription || res;
+  return { prescription, record: res.record };
 };
 
 // P2-02: Dừng thuốc (FR-3.07)
@@ -386,23 +371,20 @@ export const stopPrescription = async (
     `/medical/records/${recordId}/prescriptions/${prescriptionId}/stop`,
     payload,
   );
-  return { prescription: res?.prescription || res };
+  if (!res || (!res.prescription && !res.id)) {
+    throw new ApiError(500, "INVALID_RESPONSE", "Không nhận được phản hồi hợp lệ từ máy chủ khi dừng đơn thuốc.");
+  }
+  return { prescription: res.prescription || res };
 };
 
 // P2-02: Thêm tái khám (FR-3.05)
 export const addFollowUp = async (recordId: string, input: FollowUpInput): Promise<{ followUp: FollowUpItem; record?: MedicalRecord }> => {
   const res = await api<any>("POST", `/medical/records/${recordId}/follow-ups`, input);
-  const followUp: FollowUpItem = res?.followUp || {
-    id: `fu-${Date.now()}`,
-    followUpDate: input.followUpDate || new Date().toISOString().split("T")[0],
-    temperature: input.temperature,
-    restingHeartRate: input.restingHeartRate,
-    respiratoryRate: input.respiratoryRate,
-    progressNotes: input.progressNotes,
-    adjustments: input.adjustments,
-    vetName: "Veterinarian",
-  };
-  return { followUp, record: res?.record };
+  if (!res || (!res.followUp && !res.id)) {
+    throw new ApiError(500, "INVALID_RESPONSE", "Không nhận được phản hồi hợp lệ từ máy chủ khi ghi nhận tái khám.");
+  }
+  const followUp: FollowUpItem = res.followUp || res;
+  return { followUp, record: res.record };
 };
 
 

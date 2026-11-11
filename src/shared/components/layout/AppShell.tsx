@@ -25,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const highlightedId = useHighlightTarget();
   const { status, user, expired, signOut, refresh } = useAuth();
   const { pathname } = useLocation();
-  const { t } = useAppLanguage();
+  const { t, isVietnamese } = useAppLanguage();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
@@ -113,7 +113,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             navigate("/login", { replace: true });
           }}
         >
-          {t("common.confirmLogoutBody", `The session for ${user.fullName} · ${t(`nav.role_${user.role}`, ROLE_LABEL[user.role])} closes and the browser returns to the sign-in page.`)}
+          {t("common.confirmLogoutBody", {
+            name: user.fullName,
+            role: t(`nav.role_${user.role}`, ROLE_LABEL[user.role]),
+            defaultValue: isVietnamese
+              ? `Phiên làm việc của ${user.fullName} · ${t(`nav.role_${user.role}`, ROLE_LABEL[user.role])} sẽ kết thúc và trình duyệt sẽ quay về trang đăng nhập.`
+              : `The session for ${user.fullName} · ${t(`nav.role_${user.role}`, ROLE_LABEL[user.role])} closes and the browser returns to the sign-in page.`,
+          })}
         </ConfirmModal>
       )}
       {expired && <SessionExpiredModal />}

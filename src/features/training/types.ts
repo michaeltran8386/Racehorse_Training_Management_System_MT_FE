@@ -419,4 +419,6 @@ export interface Groom {
   email?: string;
   isAssignedToHorse?: boolean;
   hasShift?: boolean;
+  isAvailable?: boolean;
+  shiftInfo?: string;
 }

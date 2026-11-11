@@ -160,7 +160,7 @@ export default function PermissionMatrix({ accountId }: { accountId: string }) {
   return (
     <>
       <PageHeader
-        title={tr(`Permissions of ${account.fullName}.`)}
+        title={tr("Permissions for {{fullName}}", { fullName: account.fullName })}
         description={tr("{{role}} · {{email}} · active since {{createdAt}}. Changes take effect at the next page load for that account.", {
           role: tr(ROLE_LABEL[account.role]),
           email: account.email,

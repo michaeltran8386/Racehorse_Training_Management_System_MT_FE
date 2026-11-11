@@ -104,13 +104,17 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
 
   useEffect(() => {
     trainingApi
-      .getGrooms(plan?.horseId, date)
+      .getGrooms(plan?.horseId, date, time, session?.id)
       .then((g) => {
         setGrooms(g);
-        setGroomId((current) => current || g[0]?.id || "");
+        setGroomId((current) => {
+          if (current && g.some((x) => x.id === current)) return current;
+          if (session?.groomId && g.some((x) => x.id === session.groomId)) return session.groomId;
+          return g[0]?.id || "";
+        });
       })
       .catch((err) => setError(messageFor(err)));
-  }, [plan?.horseId, date]);
+  }, [plan?.horseId, date, time, session?.id, session?.groomId]);
   // Giai đoạn mặc định: giai đoạn chứa ngày đã chọn, nếu không thì giai đoạn đầu.
   useEffect(() => {
     if (phases.length === 0 || phases.some((p) => p.id === phaseId)) return;
@@ -486,7 +490,11 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
             options={grooms.map((g) => {
               const badges: string[] = [];
               if (g.isAssignedToHorse) badges.push(isVietnamese ? "Phụ trách ô" : "Assigned stall");
-              if (g.hasShift === false) badges.push(isVietnamese ? "Không có ca trực" : "No shift");
+              if (g.shiftInfo && g.shiftInfo !== "Không có ca trực (Tự do)") {
+                badges.push(g.shiftInfo);
+              } else if (!g.shiftInfo || g.hasShift === false || g.shiftInfo === "Không có ca trực (Tự do)") {
+                badges.push(isVietnamese ? "Không có ca trực (Tự do)" : "No shift (Flexible)");
+              }
               return {
                 value: g.id,
                 label: badges.length > 0 ? `${g.fullName} (${badges.join(", ")})` : g.fullName,
@@ -694,11 +702,12 @@ export function GeneratePhaseScheduleDialog({
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    trainingApi.getGrooms().then((g) => {
+    // Với lịch giai đoạn (nhiều tuần), lấy danh sách groom theo ngựa (ưu tiên người phụ trách ô) mà không lọc trùng ngày/giờ riêng lẻ của ngày đầu tiên
+    trainingApi.getGrooms(plan.horseId).then((g) => {
       setGrooms(g);
-      if (g[0]) setGroomId(g[0].id);
+      setGroomId((current) => (g.some((x) => x.id === current) ? current : g[0]?.id || ""));
     });
-  }, []);
+  }, [plan.horseId]);
 
   const maxDays = phase.sessionsPerWeek || 5;
   const toggleDay = (d: number) => {
@@ -949,7 +958,11 @@ export function GeneratePhaseScheduleDialog({
                 options={grooms.map((g) => {
                   const badges: string[] = [];
                   if (g.isAssignedToHorse) badges.push(isVietnamese ? "Phụ trách ô" : "Assigned stall");
-                  if (g.hasShift === false) badges.push(isVietnamese ? "Không có ca trực" : "No shift");
+                  if (g.shiftInfo && g.shiftInfo !== "Không có ca trực (Tự do)") {
+                    badges.push(g.shiftInfo);
+                  } else if (!g.shiftInfo || g.hasShift === false || g.shiftInfo === "Không có ca trực (Tự do)") {
+                    badges.push(isVietnamese ? "Không có ca trực (Tự do)" : "No shift (Flexible)");
+                  }
                   return {
                     value: g.id,
                     label: badges.length > 0 ? `${g.fullName} (${badges.join(", ")})` : g.fullName,

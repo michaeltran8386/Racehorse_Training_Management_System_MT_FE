@@ -29,11 +29,12 @@ interface EditAccountModalProps {
   onSaved: (account: PublicAccount) => void;
   onDeactivate: () => void; // mở hộp xác nhận vô hiệu hóa (trang cha lo)
   onDelete: () => void; // mở hộp xác nhận xóa hẳn (trang cha lo)
+  onUnlock?: () => void; // mở hộp xác nhận mở khóa (trang cha lo)
 }
 
 // Club Manager sửa họ tên + số điện thoại của một tài khoản, xem ai mời / ai đổi trạng thái gần nhất,
 // và (vùng cuối) vô hiệu hóa hoặc xóa hẳn tài khoản. Email và vai trò chỉ để xem.
-export function EditAccountModal({ account, isSelf, isLastManager, onClose, onSaved, onDeactivate, onDelete }: EditAccountModalProps) {
+export function EditAccountModal({ account, isSelf, isLastManager, onClose, onSaved, onDeactivate, onDelete, onUnlock }: EditAccountModalProps) {
   const { isVietnamese, t } = useAppLanguage();
   const [fullName, setFullName] = useState(account.fullName);
   const [phone, setPhone] = useState(account.phone);
@@ -82,20 +83,27 @@ export function EditAccountModal({ account, isSelf, isLastManager, onClose, onSa
           <dd>
             <Badge tone={status.tone}>{status.label}</Badge>
           </dd>
+          <dt>{tr("Joined")}</dt>
+          <dd>{formatDateTime(account.createdAt)}</dd>
           {account.statusChangedBy && account.statusChangedAt && (
             <>
-              <dt>{tr("Last change")}</dt>
+              <dt>{account.status === "LOCKED" ? tr("Locked by") : tr("Last change")}</dt>
               <dd>
                 {account.statusChangedBy} · {formatDateTime(account.statusChangedAt)}
               </dd>
             </>
           )}
-          {account.statusReason && (
+          {account.status === "LOCKED" ? (
+            <>
+              <dt>{tr("Lock reason")}</dt>
+              <dd>{account.statusReason ? account.statusReason : tr("No reason specified")}</dd>
+            </>
+          ) : account.statusReason ? (
             <>
               <dt>{tr("Reason")}</dt>
               <dd>{account.statusReason}</dd>
             </>
-          )}
+          ) : null}
           {account.invitedBy && (
             <>
               <dt>{tr("Invited by")}</dt>
@@ -154,6 +162,17 @@ export function EditAccountModal({ account, isSelf, isLastManager, onClose, onSa
             </p>
             <Button tone="danger" size="sm" icon="ban" disabled={busy} blockedReason={removeBlocked} onClick={onDeactivate}>
               {tr("Deactivate")}
+            </Button>
+          </div>
+        )}
+        {account.status === "LOCKED" && onUnlock && (
+          <div className={styles.danger}>
+            <p className={styles.dangerText}>
+              <strong>{tr("Unlock this account")}</strong>
+              {tr("The account is currently locked. Unlocking will allow the user to sign in again.")}
+            </p>
+            <Button tone="secondary" size="sm" icon="unlock" disabled={busy} onClick={onUnlock}>
+              {tr("Unlock")}
             </Button>
           </div>
         )}
