@@ -11,7 +11,8 @@ import { Field } from "@/shared/components/form/Field";
 import { Alert } from "@/shared/components/ui/Alert";
 import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { useToast } from "@/shared/components/ui/Toast";
-import { ApiError } from "@/shared/lib/api";
+import { api, ApiError } from "@/shared/lib/api";
+import type { PublicAccount } from "@/shared/types/auth";
 import { getHorseById, createHorse, updateHorse, getHorseCatalog } from "../api";
 import type { Horse, CreateHorsePayload, UpdateHorsePayload, HorseCatalogItem } from "../types";
 
@@ -35,13 +36,6 @@ function catalogOptions(items: HorseCatalogItem[], current: string) {
   return [{ value: "", label: "— Select —" }, ...options];
 }
 
-function generateMicrochip15(): string {
-  const random12 = Math.floor(Math.random() * 1e12)
-    .toString()
-    .padStart(12, "0");
-  return `985${random12}`;
-}
-
 export default function HorseFormPage() {
   useScreenTranslation();
   const { id } = useParams<{ id: string }>();
@@ -55,7 +49,7 @@ export default function HorseFormPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [retiredError, setRetiredError] = useState(false);
 
-  // Form fields (tự sinh mã microchip nếu tạo mới)
+  // Form fields
   const [horseCode, setHorseCode] = useState("");
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
@@ -65,7 +59,10 @@ export default function HorseFormPage() {
   const [gender, setGender] = useState("Stallion");
   const [color, setColor] = useState("");
   const [weightKg, setWeightKg] = useState("");
-  const [microchip, setMicrochip] = useState(() => (isEdit ? "" : generateMicrochip15()));
+  const [microchip, setMicrochip] = useState("");
+  const [ownerId, setOwnerId] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [owners, setOwners] = useState<Array<{ id: string; fullName: string; email: string }>>([]);
 
   // Validation errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -95,6 +92,8 @@ export default function HorseFormPage() {
         setColor(horse.color || "");
         setWeightKg(horse.weightKg != null ? String(horse.weightKg) : "");
         setMicrochip(horse.microchip || horse.microchipRfid || "");
+        setOwnerId(horse.ownerId || (horse.owner as any)?.id || "");
+        setOwnerName(horse.owner?.fullName || horse.ownerName || "");
       })
       .catch((err) => {
         if (!active) return;
@@ -109,14 +108,22 @@ export default function HorseFormPage() {
     };
   }, [id]);
 
-  // Giống / Màu lông lấy từ danh mục SC-1.06 (chỉ mục đang dùng).
+  // Giống / Màu lông lấy từ danh mục SC-1.06 (chỉ mục đang dùng), danh sách Chủ sở hữu active
   useEffect(() => {
-    Promise.all([getHorseCatalog("BREED", "ACTIVE"), getHorseCatalog("COLOR", "ACTIVE")])
-      .then(([b, c]) => {
+    Promise.all([
+      getHorseCatalog("BREED", "ACTIVE"),
+      getHorseCatalog("COLOR", "ACTIVE"),
+      api<{ accounts: PublicAccount[] }>("GET", "/accounts").catch(() => ({ accounts: [] })),
+    ])
+      .then(([b, c, accs]) => {
         setBreeds(b);
         setColors(c);
+        const activeOwners = (accs.accounts || [])
+          .filter((a) => a.role === "HORSE_OWNER" && a.status === "ACTIVE")
+          .map((a) => ({ id: a.id, fullName: a.fullName, email: a.email }));
+        setOwners(activeOwners);
       })
-      .catch(() => setGeneralError("Could not load the breed and coat colour lists. Reload the page."));
+      .catch(() => setGeneralError("Could not load form lists. Reload the page."));
   }, []);
 
   // Cảnh báo người dùng khi reload hoặc tắt tab mà có thay đổi chưa lưu (FR-1.26)
@@ -178,11 +185,16 @@ export default function HorseFormPage() {
       }
     }
 
-    // Microchip: khi tạo, để trống thì hệ thống tự sinh; khi sửa phải giữ số thật (không tự sinh số mới).
-    if (isEdit && !microchip.trim()) {
-      errs.microchip = "Microchip number is required.";
-    } else if (microchip.trim() && !/^\d{15}$/.test(microchip.trim())) {
-      errs.microchip = "Microchip number must consist of exactly 15 digits.";
+    // Microchip: như thẻ CCCD của ngựa, bắt buộc nhập, không tự sinh ngẫu nhiên
+    if (!microchip.trim()) {
+      errs.microchip = "Số vi mạch là bắt buộc (như CCCD của ngựa).";
+    } else if (!/^\d{15}$/.test(microchip.trim())) {
+      errs.microchip = "Số vi mạch phải gồm đúng 15 chữ số theo chuẩn ISO.";
+    }
+
+    // Chủ sở hữu: bắt buộc chọn khi tiếp nhận ngựa vào CLB
+    if (!isEdit && !ownerId) {
+      errs.ownerId = "Vui lòng chọn chủ sở hữu cho ngựa.";
     }
 
     setErrors(errs);
@@ -194,8 +206,7 @@ export default function HorseFormPage() {
     setSubmitting(true);
     setGeneralError("");
 
-    // Chỉ tự sinh khi tạo mới. Khi sửa: giữ nguyên số microchip.
-    const finalMicrochip = isEdit ? microchip.trim() : microchip.trim() || generateMicrochip15();
+    const finalMicrochip = microchip.trim();
 
     try {
       if (isEdit && id) {
@@ -207,6 +218,7 @@ export default function HorseFormPage() {
           color,
           weightKg: weightKg.trim() ? Number(weightKg) : undefined,
           microchip: finalMicrochip,
+          ownerId: ownerId || undefined,
         };
         const saved = await updateHorse(id, payload);
         toast.show(`Horse profile ${saved.name} updated successfully.`, "ok");
@@ -221,6 +233,7 @@ export default function HorseFormPage() {
           color,
           weightKg: Number(weightKg),
           microchip: finalMicrochip,
+          ownerId,
         };
         const saved = await createHorse(payload);
         toast.show(`Horse profile ${saved.name} created successfully.`, "ok");
@@ -229,7 +242,8 @@ export default function HorseFormPage() {
           setName("");
           setDob("");
           setWeightKg("");
-          setMicrochip(generateMicrochip15());
+          setMicrochip("");
+          setOwnerId("");
           setErrors({});
           setIsDirty(false);
         } else {
@@ -343,35 +357,42 @@ export default function HorseFormPage() {
             <Field
               label={tr("Microchip Number *")}
               error={errors.microchip}
-              hint={tr("15-digit ISO microchip number")}
+              hint={tr("15-digit ISO microchip number (CCCD của ngựa)")}
             >
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <Input
-                  placeholder={tr("15 digits")}
-                  value={microchip}
-                  invalid={Boolean(errors.microchip)}
+              <Input
+                placeholder={tr("Nhập đúng 15 chữ số vi mạch...")}
+                value={microchip}
+                invalid={Boolean(errors.microchip)}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 15);
+                  setMicrochip(val);
+                  setIsDirty(true);
+                  if (errors.microchip) setErrors((prev) => ({ ...prev, microchip: "" }));
+                }}
+              />
+            </Field>
+
+            <Field
+              label={tr("Chủ sở hữu *")}
+              error={errors.ownerId}
+              hint={isEdit ? tr("Đổi chủ sở hữu được thực hiện qua chức năng Chuyển nhượng ở trang chi tiết") : tr("Chọn chủ sở hữu đã được duyệt của ngựa")}
+            >
+              {isEdit ? (
+                <Input value={ownerName || tr("Chưa xác định")} disabled readOnly />
+              ) : (
+                <Select
+                  value={ownerId}
+                  options={[
+                    { value: "", label: tr("— Chọn chủ sở hữu —") },
+                    ...owners.map((o) => ({ value: o.id, label: `${o.fullName} (${o.email})` })),
+                  ]}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, "").slice(0, 15);
-                    setMicrochip(val);
+                    setOwnerId(e.target.value);
                     setIsDirty(true);
-                    if (errors.microchip) setErrors((prev) => ({ ...prev, microchip: "" }));
+                    if (errors.ownerId) setErrors((prev) => ({ ...prev, ownerId: "" }));
                   }}
                 />
-                {!isEdit && (
-                  <Button
-                    type="button"
-                    tone="secondary"
-                    onClick={() => {
-                      setMicrochip(generateMicrochip15());
-                      setIsDirty(true);
-                      if (errors.microchip) setErrors((prev) => ({ ...prev, microchip: "" }));
-                    }}
-                    title={tr("Generate a new 15-digit number")}
-                  >
-                    {tr("Generate")}
-                  </Button>
-                )}
-              </div>
+              )}
             </Field>
           </div>
 

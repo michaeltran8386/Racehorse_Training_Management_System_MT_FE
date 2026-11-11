@@ -180,7 +180,8 @@ export default function HorseDetailPage() {
     currentUser.role === "CLUB_MANAGER" || currentUser.role === "HEAD_TRAINER" || currentUser.role === "VETERINARIAN";
   const canManageStall = currentUser.role === "CLUB_MANAGER" || currentUser.role === "HEAD_TRAINER";
   const retiredReason = horse.status === "RETIRED" ? "The horse is no longer managed." : undefined;
-  const canViewOwner = currentUser.role === "CLUB_MANAGER" || currentUser.role === "HEAD_TRAINER" || currentUser.role === "HORSE_OWNER";
+  // Bỏ tab Chủ sở hữu đối với người chủ ngựa (chỉ Club Manager và Head Trainer quản lý xem)
+  const canViewOwner = (currentUser.role === "CLUB_MANAGER" || currentUser.role === "HEAD_TRAINER") && !isOwner;
 
   // 6 Tabs according to SC-1.03 (Hide stable tabs for owners, hide owner tab for VET/GROOM per CL-1.07)
   const tabs = [

@@ -209,8 +209,14 @@ export default function StableMapPage() {
                 </Badge>
               )}
             </div>
-            <div style={{ fontSize: "var(--fs-body)" }}>{tr("Groom:")}{" "}{a.assignedGroom?.fullName ?? "—"}</div>
+            <div style={{ fontSize: "var(--fs-body)" }}>{tr("Groom:")}{" "}<strong>{a.assignedGroom?.fullName ?? tr("Chưa chọn nhân viên")}</strong></div>
+            <div style={{ fontSize: "var(--fs-body)" }}>{tr("Chủ sở hữu:")}{" "}<strong>{a.horse.owner?.fullName ?? tr("Chưa gán")}</strong></div>
             <div style={{ fontSize: "var(--fs-body)" }}>{tr("In this stall since {{date}}", { date: formatDate(a.startDate) })}</div>
+            {a.notes && (
+              <div style={{ fontSize: "var(--fs-body)", color: "var(--text-2)", background: "var(--surface-subtle)", padding: "6px 10px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-subtle)" }}>
+                <strong style={{ color: "var(--text)" }}>{tr("Ghi chú:")}</strong> {a.notes}
+              </div>
+            )}
             {canOpenProfile && (
               <LinkButton to={`/horses/${a.horse.id}`} tone="secondary">{tr("View horse profile")}</LinkButton>
             )}
