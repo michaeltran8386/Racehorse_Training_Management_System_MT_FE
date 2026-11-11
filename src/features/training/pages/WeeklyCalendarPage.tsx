@@ -74,6 +74,20 @@ function formatCalendarDay(dateStr: string, isVi: boolean) {
   };
 }
 
+function formatSessionTimeRange(s: ExerciseSession, isVi: boolean): string {
+  if (!s.startTime) return "—";
+  const [sh, sm] = s.startTime.split(":").map(Number);
+  const duration = s.sessionType === "WALK" || s.sessionType === "SWIM" ? 45 : s.sessionType === "TRIAL" ? 90 : 60;
+  const endMinutes = (sh || 0) * 60 + (sm || 0) + duration;
+  const eh = Math.floor(endMinutes / 60) % 24;
+  const em = endMinutes % 60;
+
+  const startFormatted = isVi ? `${String(sh).padStart(2, "0")}h${String(sm).padStart(2, "0")}` : `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}`;
+  const endFormatted = isVi ? `${String(eh).padStart(2, "0")}h${String(em).padStart(2, "0")}` : `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
+
+  return `${startFormatted}-${endFormatted}`;
+}
+
 type Dialog =
   | { kind: "add" }
   | { kind: "edit" | "cancel" | "restore"; session: ExerciseSession }
@@ -175,14 +189,22 @@ export default function WeeklyCalendarPage() {
       (status === "ALL" || s.status === status),
   );
 
-  // Nhân viên chăm sóc có 2 buổi trùng giờ (cách nhau < 30 phút cùng ngày) -> viền cam.
+  // Nhân viên chăm sóc có 2 buổi trùng giờ (chồng lấn thời lượng + 15 phút đệm chuyển tiếp) -> viền cam.
   const overlapping = useMemo(() => {
     const live = sessions.filter((s) => s.status !== "CANCELLED" && s.groomId);
     const ids = new Set<string>();
+    const getDuration = (type?: string) => (type === "WALK" || type === "SWIM" ? 45 : type === "TRIAL" ? 90 : 60);
+    const BUFFER = 15;
     for (const a of live) {
+      const aStart = minutes(a.startTime);
+      const aEnd = aStart + getDuration(a.sessionType) + BUFFER;
       for (const b of live) {
-        if (a.id !== b.id && a.groomId === b.groomId && a.sessionDate === b.sessionDate && Math.abs(minutes(a.startTime) - minutes(b.startTime)) < 30) {
-          ids.add(a.id);
+        if (a.id !== b.id && a.groomId === b.groomId && a.sessionDate === b.sessionDate) {
+          const bStart = minutes(b.startTime);
+          const bEnd = bStart + getDuration(b.sessionType) + BUFFER;
+          if (aStart < bEnd && bStart < aEnd) {
+            ids.add(a.id);
+          }
         }
       }
     }
@@ -192,46 +214,111 @@ export default function WeeklyCalendarPage() {
   const uniq = <T,>(rows: T[], key: (r: T) => string, label: (r: T) => string) =>
     [...new Map(rows.map((r) => [key(r), label(r)])).entries()].map(([value, l]) => ({ value, label: l }));
 
-  const SessionBlock = ({ s }: { s: ExerciseSession }) => {
+  const SessionCard = ({ s }: { s: ExerciseSession }) => {
     const isSelected = selected?.id === s.id;
     const isBlocked = s.status === "BLOCKED";
     const isCompleted = s.status === "COMPLETED";
     const isCancelled = s.status === "CANCELLED";
+    const isMissed = s.status === "MISSED";
     const isTrial = s.sessionType === "TRIAL";
     const isHeavySession = isHeavy(s.sessionType, s.intensity);
 
-    let cardClass = styles.sessionCard;
-    if (isSelected) cardClass += ` ${styles.selectedCard}`;
-    if (isCancelled) cardClass += ` ${styles.cancelledCard}`;
-    else if (isBlocked) cardClass += ` ${styles.blockedCard}`;
-    else if (isCompleted) cardClass += ` ${styles.completedCard}`;
-    else if (isTrial) cardClass += ` ${styles.trialRunCard}`;
-    else if (isHeavySession) cardClass += ` ${styles.heavyCard}`;
+    let variantClass = styles.itemScheduled;
+    if (isCompleted) variantClass = styles.itemCompleted;
+    else if (isBlocked) variantClass = styles.itemBlocked;
+    else if (isMissed) variantClass = styles.itemMissed;
+    else if (isCancelled) variantClass = styles.itemCancelled;
+    else if (isTrial) variantClass = styles.itemTrial;
+    else if (isHeavySession) variantClass = styles.itemHeavy;
+
+    const timeRange = formatSessionTimeRange(s, isVietnamese);
+    const exerciseLabel = tr(EXERCISE_TYPE_LABEL[s.sessionType]);
+    const surfaceLabel = tr(TRACK_LABEL[s.trackType]);
 
     return (
       <button
         type="button"
         onClick={() => setSelected(s)}
         aria-pressed={isSelected}
-        className={cardClass}
-        title={overlapping.has(s.id) ? (isVietnamese ? tr(`Nhân viên ${s.groomName} có 2 bài tập cùng giờ.`) : tr(`Groom ${s.groomName} has two workouts at the same time.`)) : ""}
+        className={`${styles.timetableCardItem} ${variantClass} ${isSelected ? styles.selectedItem : ""}`}
+        title={
+          overlapping.has(s.id)
+            ? isVietnamese
+              ? tr(`Nhân viên ${s.groomName} có 2 bài tập cùng giờ.`)
+              : tr(`Groom ${s.groomName} has two workouts at the same time.`)
+            : ""
+        }
       >
-        <div className={styles.cardTop}>
-          <span className={styles.timeTag}>{s.startTime}</span>
-          <Badge tone={sessionStatusTone(s)}>{sessionStatusLabel(s)}</Badge>
-        </div>
-        <div className={styles.horseName} title={s.horseName}>
-          {s.horseName}
-        </div>
-        <div className={styles.cardMeta}>
-          <div>
-            <strong>{tr(EXERCISE_TYPE_LABEL[s.sessionType])}</strong>
-            {isHeavySession && (isVietnamese ? " · Nặng" : tr(" · Heavy"))}
+        {/* Hàng 1: Icon + Tên/Mã ngựa + Badge trạng thái */}
+        <div className={styles.itemHeaderRow}>
+          <div className={styles.itemTitle} title={`${s.horseCode ? `${s.horseCode} - ` : ""}${s.horseName}`}>
+            <Icon name="horse" inline size={14} />
+            <span>{s.horseCode ? `${s.horseCode} - ${s.horseName}` : s.horseName}</span>
           </div>
-          <div>{s.targetDistanceMeters}m × {s.repetitions} · {tr(TRACK_LABEL[s.trackType])}</div>
-          <div><Icon name="user" inline size={12} /> {s.groomName ?? (isVietnamese ? "Chưa giao" : "—")}</div>
-          {overlapping.has(s.id) && <div className={styles.overlapAlert}><Icon name="alert" inline size={12} /> {isVietnamese ? "Trùng giờ chăm sóc" : tr("Groom overlap")}</div>}
+          <div className={styles.itemBadgeWrapper}>
+            {isCompleted && (
+              <span className={`${styles.itemBadge} ${styles.badgeOk}`}>
+                <Icon name="check" inline size={10} strokeWidth={2.5} />
+                {isVietnamese ? "Hoàn thành" : tr("Completed")}
+              </span>
+            )}
+            {s.status === "SCHEDULED" && (
+              <span className={`${styles.itemBadge} ${styles.badgeBrand}`}>
+                <Icon name="clock" inline size={10} strokeWidth={2.5} />
+                {isVietnamese ? "Đã xếp lịch" : tr("Scheduled")}
+              </span>
+            )}
+            {isBlocked && (
+              <span className={`${styles.itemBadge} ${styles.badgeDanger}`}>
+                <Icon name="lock" inline size={10} strokeWidth={2.5} />
+                {isVietnamese ? "Khóa y tế" : tr("Blocked")}
+              </span>
+            )}
+            {isMissed && (
+              <span className={`${styles.itemBadge} ${styles.badgeWarn}`}>
+                <Icon name="alert" inline size={10} strokeWidth={2.5} />
+                {isVietnamese ? "Bỏ lỡ" : tr("Missed")}
+              </span>
+            )}
+            {isCancelled && (
+              <span className={`${styles.itemBadge} ${styles.badgeNeutral}`}>
+                <Icon name="x" inline size={10} strokeWidth={2.5} />
+                {isVietnamese ? "Đã hủy" : tr("Cancelled")}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Hàng 2: Thời gian + Cự ly/Kiểu bài tập */}
+        <div className={styles.itemTimeRow}>
+          <Icon name="clock" inline size={12} />
+          <span className={styles.timeValue}>{timeRange}</span>
+          <span className={styles.workoutDetail}>
+            - {exerciseLabel} {s.targetDistanceMeters}m
+          </span>
+        </div>
+
+        {/* Hàng 3: Mặt sân / Địa điểm */}
+        <div className={styles.itemLocationRow}>
+          <Icon name="pin" inline size={12} />
+          <span>
+            {surfaceLabel}
+            {s.stallCode ? ` · Chuồng ${s.stallCode}` : ""}
+          </span>
+        </div>
+
+        {/* Hàng 4: Người phụ trách */}
+        <div className={styles.itemStaffRow}>
+          <Icon name="user" inline size={12} />
+          <span>{s.groomName || (isVietnamese ? "Chưa giao" : "—")}</span>
+          {s.jockeyName && <span> (Nài: {s.jockeyName})</span>}
+        </div>
+
+        {overlapping.has(s.id) && (
+          <div className={styles.overlapAlert}>
+            <Icon name="alert" inline size={11} /> {isVietnamese ? "Trùng giờ chăm sóc" : tr("Groom overlap")}
+          </div>
+        )}
       </button>
     );
   };
@@ -264,31 +351,33 @@ export default function WeeklyCalendarPage() {
       />
 
       <Card pad={16}>
-        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
-          <Button
-            tone="secondary"
-            size="sm"
-            onClick={() => setDate((d) => shiftDay(mondayOf(d), -7))}
-            aria-label={isVietnamese ? "Tuần trước" : tr("Previous week")}
-          >
-            ‹ {isVietnamese ? "Tuần trước" : tr("Previous week")}
-          </Button>
-          <div style={{ minWidth: 280 }}>
-            <Select
-              aria-label={isVietnamese ? "Cụm tuần" : tr("Week range")}
-              value={mondayOf(date)}
-              onChange={(e) => setDate(e.target.value)}
-              options={weekOptions}
-            />
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
+            <Button
+              tone="secondary"
+              size="sm"
+              onClick={() => setDate((d) => shiftDay(mondayOf(d), -7))}
+              aria-label={isVietnamese ? "Tuần trước" : tr("Previous week")}
+            >
+              ‹ {isVietnamese ? "Tuần trước" : tr("Previous week")}
+            </Button>
+            <div style={{ minWidth: 280 }}>
+              <Select
+                aria-label={isVietnamese ? "Cụm tuần" : tr("Week range")}
+                value={mondayOf(date)}
+                onChange={(e) => setDate(e.target.value)}
+                options={weekOptions}
+              />
+            </div>
+            <Button
+              tone="secondary"
+              size="sm"
+              onClick={() => setDate((d) => shiftDay(mondayOf(d), 7))}
+              aria-label={isVietnamese ? "Tuần sau" : tr("Next week")}
+            >
+              {isVietnamese ? "Tuần sau" : tr("Next week")} ›
+            </Button>
           </div>
-          <Button
-            tone="secondary"
-            size="sm"
-            onClick={() => setDate((d) => shiftDay(mondayOf(d), 7))}
-            aria-label={isVietnamese ? "Tuần sau" : tr("Next week")}
-          >
-            {isVietnamese ? "Tuần sau" : tr("Next week")} ›
-          </Button>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 160px), 1fr))", gap: "0.5rem", marginTop: "0.75rem" }}>
           <SearchSelect aria-label={tr("Horse")} value={horse} onChange={setHorse} options={[{ value: "ALL", label: t("calendar.allHorses") }, ...uniq(sessions, (s) => s.horseId, (s) => s.horseName)]} />
@@ -334,7 +423,9 @@ export default function WeeklyCalendarPage() {
               <div className={styles.calendarGrid}>
                 {days.map((d) => {
                   const dayInfo = formatCalendarDay(d, isVietnamese);
-                  const daySessions = shown.filter((s) => s.sessionDate === d);
+                  const daySessions = shown
+                    .filter((s) => s.sessionDate === d)
+                    .sort((a, b) => minutes(a.startTime) - minutes(b.startTime));
                   const isToday = d === todayClub();
                   return (
                     <div key={d} className={`${styles.dayColumn} ${isToday ? styles.todayColumn : ""}`}>
@@ -351,10 +442,12 @@ export default function WeeklyCalendarPage() {
                       </div>
                       <div className={styles.columnBody}>
                         {daySessions.length === 0 ? (
-                          <div className={styles.emptySlot}>{t("calendar.emptyDay")}</div>
+                          <div className={styles.emptySlot}>
+                            <span>{isVietnamese ? "Chưa có bài tập" : t("calendar.emptyDay")}</span>
+                          </div>
                         ) : (
                           daySessions.map((s) => (
-                            <SessionBlock key={s.id} s={s} />
+                            <SessionCard key={s.id} s={s} />
                           ))
                         )}
                       </div>

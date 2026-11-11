@@ -381,6 +381,8 @@ const sidebarOrder: Record<Role, [string, string[]][]> = {
     ["WORKSPACE", ["dashboard", "races"]],
     ["ADMINISTRATION", ["accounts", "staff"]],
     ["MASTER DATA", ["horses", "stalls", "stable/shifts"]],
+    ["TRAINING", ["training", "plans", "calendar"]],
+    ["MEDICAL", ["herd", "records", "locks", "vaccine", "incidents"]],
     ["SUPPLIES", supply],
     ["REPORTS", ["performance", "financial-reports", "costs", "audit"]],
   ],

@@ -76,7 +76,15 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <BreadcrumbContext.Provider value={setCrumbTail}>
       <div className={styles.shell}>
-        <Sidebar user={user} pathname={pathname} note={info.note} accountsAlert={info.accountsAlert} open={menuOpen} onNavigate={() => setMenuOpen(false)} />
+        <Sidebar
+          user={user}
+          pathname={pathname}
+          note={info.note}
+          accountsAlert={info.accountsAlert}
+          open={menuOpen}
+          onNavigate={() => setMenuOpen(false)}
+          onLogout={() => setLogoutOpen(true)}
+        />
         {menuOpen && <button type="button" className={styles.scrim} aria-label={tr("Close menu")} onClick={() => setMenuOpen(false)} />}
         <div className={styles.main}>
           <Topbar

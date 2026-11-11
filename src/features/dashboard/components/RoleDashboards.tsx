@@ -77,63 +77,49 @@ export function InteractiveKpiCard({
   to: string;
 }) {
   return (
-    <Link to={to} className={styles.kpi}>
-      <div style={{ display: "flex", alignItems: "center", gap: "16px", flex: 1, minWidth: 0 }}>
+    <Link to={to} className={styles.kpiCard}>
+      {/* Top row: Icon box on left, Chevron on right */}
+      <div className={styles.kpiTop}>
         <div
+          className={styles.kpiIconBox}
           style={{
-            width: 52,
-            height: 52,
-            borderRadius: "var(--r)",
-            background: iconBg,
-            color: iconColor,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            overflow: "hidden",
+            background: iconBg || "var(--surface-sunken)",
+            color: iconColor || "var(--brand)",
             padding: iconImg ? "6px" : undefined,
           }}
         >
           {iconImg ? (
-            <img
-              src={iconImg}
-              alt=""
-              style={{
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-                display: "block",
-              }}
-            />
+            <img src={iconImg} alt="" className={styles.kpiIconImg} />
           ) : (
-            <Icon name={icon || "info"} size={26} strokeWidth={1.8} />
+            <Icon name={icon || "info"} size={22} strokeWidth={1.9} />
           )}
         </div>
-
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div className={styles.label}>
-            {label}
-          </div>
-          <div className={styles.value}>
-            {value}
-          </div>
-          {progress !== undefined ? (
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
-              <div style={{ flex: 1, height: 6, borderRadius: 999, background: "var(--surface-sunken, #e5e7eb)", overflow: "hidden" }}>
-                <div style={{ width: `${Math.min(100, progress)}%`, height: "100%", background: "var(--brand)", borderRadius: 999 }} />
-              </div>
-              <span style={{ fontSize: "var(--fs-xs, 0.75rem)", fontWeight: 700, color: "var(--muted)" }}>{progress}%</span>
-            </div>
-          ) : trend ? (
-            <div style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--muted)", marginTop: "2px" }}>
-              {trend}
-            </div>
-          ) : null}
+        <div className={styles.kpiChevron}>
+          <Icon name="chevronRight" size={16} />
         </div>
       </div>
 
-      <div style={{ color: "var(--muted)", paddingLeft: "12px", display: "flex", alignItems: "center" }}>
-        <Icon name="chevronRight" size={18} />
+      {/* Body: Left-aligned Label & Big Value */}
+      <div className={styles.kpiBody}>
+        <div className={styles.kpiLabel}>{label}</div>
+        <div className={styles.kpiValue}>{value}</div>
+      </div>
+
+      {/* Footer: Fixed height slot for subtitle / progress bar */}
+      <div className={styles.kpiFooter}>
+        {progress !== undefined ? (
+          <div className={styles.kpiProgressRow}>
+            <div className={styles.kpiProgressBar}>
+              <div
+                className={styles.kpiProgressFill}
+                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+              />
+            </div>
+            <span className={styles.kpiProgressText}>{progress}%</span>
+          </div>
+        ) : trend ? (
+          <div className={styles.kpiTrend}>{trend}</div>
+        ) : null}
       </div>
     </Link>
   );
@@ -287,6 +273,10 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
   const pendingCount = pending.data?.length ?? 0;
   const emptyStallsCount = zoneTotal - zoneUsed;
 
+  const activeHorsesCount = overview.data?.rows?.filter((r) => r.plan?.status === "ACTIVE").length ?? k?.activePlans ?? 0;
+  const totalHorsesCount = s?.total ?? overview.data?.rows?.length ?? 0;
+  const restingOrOtherCount = Math.max(0, totalHorsesCount - activeHorsesCount);
+
   // Attention Horses for Right Column
   const attentionHorses = (board.data?.data ?? [])
     .filter((h) => h.isMedicalLocked || h.healthGroup !== "QUALIFIED")
@@ -295,13 +285,18 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* 1. Top 4 Stat Tiles */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "16px" }}>
+      <div className={styles.kpiGrid}>
         <InteractiveKpiCard
           icon="horse"
           iconBg="var(--ok-bg)"
           iconColor="var(--ok)"
           label={isVi ? "Ngựa đang quản lý" : "Horses under management"}
           value={s?.total ?? "—"}
+          trend={
+            <span>
+              {activeHorsesCount} {isVi ? "đang huấn luyện" : "in training"} · {restingOrOtherCount} {isVi ? "nghỉ ngơi/khác" : "resting/other"}
+            </span>
+          }
           to="/horses"
         />
 
@@ -323,7 +318,7 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
           value={s?.lockedCount != null && s.observationCount != null ? s.lockedCount + s.observationCount : "—"}
           trend={
             <span style={{ color: "var(--danger)", fontWeight: 600 }}>
-              {s?.lockedCount ?? "—"} {isVi ? "khóa huấn luyện" : "locked"} · {s?.observationCount ?? "—"} {isVi ? "cần theo dõi" : "watch"}
+              {s?.lockedCount ?? 0} {isVi ? "khóa huấn luyện" : "locked"} · {s?.observationCount ?? 0} {isVi ? "cần theo dõi" : "watch"}
             </span>
           }
           to="/herd"
@@ -583,7 +578,7 @@ export function TrainerDashboard() {
     k?.horsesInjuredOrLocked ??
     rows.filter((r) => r.horse.isMedicalLocked || r.horse.status === "INJURED" || r.horse.status === "UNDER_OBSERVATION").length;
 
-  const pctInTraining = totalHorses > 0 ? Math.round((inTraining / totalHorses) * 100) : 0;
+  const _pctInTraining = totalHorses > 0 ? Math.round((inTraining / totalHorses) * 100) : 0;
 
   // Thanh phân bổ: mỗi ngựa thuộc đúng một nhóm (khóa y tế được ưu tiên) để tổng luôn là 100%.
   const isLockedRow = (r: (typeof rows)[number]) =>
@@ -609,15 +604,18 @@ export function TrainerDashboard() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
       {/* 4 Thẻ KPI chính */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 190px), 1fr))", gap: "16px" }}>
-        <InteractiveKpiCard icon="horse" label={isVi ? "Ngựa đang quản lý" : "Managed horses"} value={k?.managedHorses ?? "—"} to="/training" />
+      <div className={styles.kpiGrid}>
         <InteractiveKpiCard
           icon="activity"
           iconBg="var(--ok-bg)"
           iconColor="var(--ok)"
           label={isVi ? "Đang huấn luyện" : "In training"}
           value={overview.loading ? "—" : `${inTraining} / ${totalHorses}`}
-          trend={<span>{pctInTraining}% {isVi ? "đàn ngựa" : "of herd"}</span>}
+          trend={
+            <span>
+              {inTraining} {isVi ? "có giáo án" : "with plan"} · {withoutPlan} {isVi ? "chờ xếp lịch" : "unplanned"}
+            </span>
+          }
           to="/training?filter=ACTIVE"
         />
         <InteractiveKpiCard
@@ -628,7 +626,7 @@ export function TrainerDashboard() {
           value={overview.loading ? "—" : withoutPlan}
           trend={
             withoutPlan > 0 ? (
-              <span style={{ color: "var(--warn)", fontWeight: 700 }}>
+              <span style={{ color: "var(--warn)", fontWeight: 600 }}>
                 {isVi ? "⚠️ Cần lập kế hoạch" : "Action needed"}
               </span>
             ) : (
@@ -646,8 +644,8 @@ export function TrainerDashboard() {
           label={isVi ? "Khóa y tế / Chấn thương" : "Medical lock / Injured"}
           value={overview.loading ? "—" : injuredOrLocked}
           trend={
-            <span style={{ color: injuredOrLocked > 0 ? "var(--danger)" : "var(--muted)" }}>
-              {isVi ? "Cấm bài tập nặng" : "Heavy blocked"}
+            <span style={{ color: injuredOrLocked > 0 ? "var(--danger)" : "var(--muted)", fontWeight: injuredOrLocked > 0 ? 600 : 400 }}>
+              {injuredOrLocked > 0 ? (isVi ? "Tạm dừng bài tập nặng" : "Heavy blocked") : (isVi ? "Đàn ngựa an toàn" : "Herd safe")}
             </span>
           }
           to="/locks"
@@ -658,7 +656,12 @@ export function TrainerDashboard() {
           iconColor="var(--info)"
           label={isVi ? "Buổi tập hôm nay" : tr("Today's workouts")}
           value={k ? `${k.todayCompleted}/${k.todayTotal}` : "—"}
-          trend={<span>{isVi ? "Hoàn thành / Kế hoạch" : "Done / Planned"}</span>}
+          trend={
+            <span>
+              {k?.todayTotal ? `${k.todayTotal - k.todayCompleted} ${isVi ? "buổi còn lại hôm nay" : "remaining today"}` : (isVi ? "Chưa có lịch hôm nay" : "No sessions today")}
+            </span>
+          }
+          progress={k && k.todayTotal > 0 ? Math.round((k.todayCompleted / k.todayTotal) * 100) : undefined}
           to="/training/calendar"
         />
       </div>
@@ -1187,13 +1190,18 @@ export function VetDashboard() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "16px" }}>
+      <div className={styles.kpiGrid}>
         <InteractiveKpiCard
           icon="lock"
           iconBg="var(--danger-bg)"
           iconColor="var(--danger)"
           label={isVi ? "Lệnh khóa y tế hiệu lực" : "Training Locks in force"}
           value={s?.lockedCount ?? "—"}
+          trend={
+            <span style={{ color: "var(--danger)", fontWeight: 600 }}>
+              {isVi ? "Tạm ngưng bài tập nặng" : "Heavy workouts paused"}
+            </span>
+          }
           to="/locks"
         />
         <InteractiveKpiCard
@@ -1202,6 +1210,11 @@ export function VetDashboard() {
           iconColor="var(--warn)"
           label={isVi ? "Đang theo dõi đặc biệt" : tr("Under observation")}
           value={s?.observationCount ?? "—"}
+          trend={
+            <span style={{ color: "var(--warn)", fontWeight: 600 }}>
+              {isVi ? "Ghi nhận từ Groom / HLV" : "Noted by groom / trainer"}
+            </span>
+          }
           to="/herd"
         />
         <InteractiveKpiCard
@@ -1210,6 +1223,11 @@ export function VetDashboard() {
           iconColor="var(--violet)"
           label={isVi ? "Chấn thương / Cách ly" : tr("Injured / Isolated")}
           value={s?.injuredCount != null && s.isolatedCount != null ? s.injuredCount + s.isolatedCount : "—"}
+          trend={
+            <span>
+              {s?.injuredCount ?? 0} {isVi ? "chấn thương" : "injured"} · {s?.isolatedCount ?? 0} {isVi ? "cách ly" : "isolated"}
+            </span>
+          }
           to="/herd"
         />
         <InteractiveKpiCard
@@ -1218,7 +1236,7 @@ export function VetDashboard() {
           iconColor="var(--info)"
           label={isVi ? "Chăm sóc quá hạn" : tr("Care overdue")}
           value={s?.overdueCount ?? "—"}
-          trend={<span>{isVi ? "Tiêm phòng / Đóng móng" : "Farrier / Vaccines"}</span>}
+          trend={<span>{isVi ? "Tiêm phòng · Tẩy giun · Móng" : "Vaccines · Deworm · Farrier"}</span>}
           to="/medical/preventive"
         />
       </div>
@@ -1265,7 +1283,7 @@ export function GroomDashboard() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "16px" }}>
+      <div className={styles.kpiGrid}>
         <InteractiveKpiCard
           icon="home"
           iconBg="var(--ok-bg)"
@@ -1291,6 +1309,7 @@ export function GroomDashboard() {
           label={isVi ? "Nhiệm vụ hôm nay" : tr("Daily tasks")}
           value={t ? `${t.completed}/${t.total}` : "—"}
           trend={<span>{isVi ? "Đã xong / tổng việc" : "Done / total"}</span>}
+          progress={t && t.total > 0 ? Math.round((t.completed / t.total) * 100) : undefined}
           to="/tasks"
         />
         <InteractiveKpiCard
@@ -1362,7 +1381,7 @@ export function OwnerDashboard() {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 240px), 1fr))", gap: "16px" }}>
+      <div className={styles.kpiGrid}>
         <InteractiveKpiCard
           icon="horse"
           iconBg="var(--ok-bg)"

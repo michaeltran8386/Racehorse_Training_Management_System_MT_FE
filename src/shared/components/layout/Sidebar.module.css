@@ -340,10 +340,22 @@
   display: none;
 }
 
-.collapsed .user {
+.collapsed .userSection {
   padding: 12px 0;
   justify-content: center;
   gap: 0;
+}
+
+.collapsed .user {
+  padding: 0;
+  margin: 0;
+  justify-content: center;
+  gap: 0;
+  flex: 0;
+}
+
+.collapsed .userLogoutBtn {
+  display: none;
 }
 
 .collapsed .userText {
@@ -379,11 +391,59 @@
 .note span { display: block; font-size: var(--fs-caption); line-height: 18px; color: var(--text-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Người đang đăng nhập: tên trên MỘT dòng, dài thì cắt "…" (di chuột xem đủ). */
-.user { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--border); transition: all 0.25s ease; }
+.userSection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px 14px 12px 18px;
+  border-top: 1px solid var(--border);
+  transition: all 0.25s ease;
+  position: relative;
+}
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+  text-decoration: none;
+  border-radius: var(--r-sm);
+  padding: 4px 6px;
+  margin: -4px -6px;
+  transition: background 0.2s ease;
+}
+.user:hover {
+  background: var(--nav-item-hover);
+  text-decoration: none;
+}
 .userAvatar { width: 32px; height: 32px; border-radius: 999px; background: var(--brand-50); color: var(--brand-600); display: grid; place-items: center; font-size: var(--fs-caption); font-weight: 700; flex-shrink: 0; }
-.userText { min-width: 0; transition: opacity 0.2s ease, max-width 0.25s ease; }
+.userText { min-width: 0; flex: 1; transition: opacity 0.2s ease, max-width 0.25s ease; }
 .userText strong { display: block; font-size: var(--fs-body); line-height: 20px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .userText span { display: block; font-size: var(--fs-caption); line-height: 18px; color: var(--muted); white-space: nowrap; }
+
+.userLogoutBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  background: transparent;
+  border: 0;
+  color: var(--nav-text-2, var(--muted));
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+}
+.userLogoutBtn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  color: var(--danger, #ef4444);
+  transform: scale(1.08);
+}
+.userLogoutBtn:active {
+  transform: scale(0.94);
+}
 
 /* Màn hình hẹp: sidebar trượt ra từ mép trái khi bấm nút menu. */
 @media (max-width: 980px) {
@@ -421,10 +481,20 @@
     gap: 11px;
     margin: 0 0 3px;
   }
+  .collapsed .userSection {
+    padding: 12px 14px 12px 18px;
+    justify-content: space-between;
+    gap: 8px;
+  }
   .collapsed .user {
-    padding: 12px 20px;
+    padding: 4px 6px;
+    margin: -4px -6px;
     justify-content: flex-start;
     gap: 10px;
+    flex: 1;
+  }
+  .collapsed .userLogoutBtn {
+    display: grid;
   }
 }
 
@@ -436,7 +506,7 @@
 .collapseBtn { background: var(--nav-item-hover); border-color: var(--nav-line); color: var(--nav-text); }
 .item:hover { color: var(--nav-text); transform: none; }
 .activePill { border-radius: 0; box-shadow: none; animation: none; }
-.user { border-color: var(--nav-line); }
+.userSection { border-color: var(--nav-line); }
 .userAvatar { background: var(--nav-item-hover); color: var(--nav-text); }
 .clickRipple, .iconBounce, .itemClicked { animation: none; }
 .clickRipple { display: none; }

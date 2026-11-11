@@ -363,12 +363,14 @@ export const trainingApi = {
     date?: string,
     time?: string,
     excludeWorkoutId?: string,
+    workoutType?: string,
   ): Promise<Groom[]> {
     const params = new URLSearchParams();
     if (horseId) params.set("horseId", horseId);
     if (date) params.set("date", date);
     if (time) params.set("time", time);
     if (excludeWorkoutId) params.set("excludeWorkoutId", excludeWorkoutId);
+    if (workoutType) params.set("workoutType", workoutType);
     const qs = params.toString() ? `?${params.toString()}` : "";
     return api<Groom[]>("GET", `/training/grooms${qs}`);
   },
