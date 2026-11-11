@@ -78,14 +78,14 @@ export function AssistantChat({ role, onNavigate, variant = "panel" }: { role: s
                     role: "assistant",
                     result: {
                       traceId: h.id,
-                      status: "ANSWERED",
+                      status: h.cardType ? "ANSWERED" : "INSUFFICIENT_EVIDENCE",
                       summary: h.content,
                       data: [],
                       alerts: [],
-                      actions: [{ label: "Mở Báo cáo tài chính", route: "/financial-reports" }],
+                      actions: historyActionsFor(h.cardType),
                       sources: [],
                       disclaimer: null,
-                      aiGenerated: true,
+                      aiGenerated: Boolean(h.cardType),
                       cached: false,
                       quota: { used: 0, limit: 50 },
                       cardPayload: h.cardType ? { type: h.cardType, data: h.cardData } : null,
@@ -226,17 +226,59 @@ export function AssistantChat({ role, onNavigate, variant = "panel" }: { role: s
   );
 }
 
+function historyActionsFor(cardType?: string | null): { label: string; route: string }[] {
+  if (cardType === "BILLING_CARD" || cardType === "SETTLEMENT_CARD") {
+    return [{ label: "Mở Báo cáo tài chính", route: "/financial-reports" }];
+  }
+  if (cardType === "RACE_CARD") {
+    return [{ label: "Xem Giải đua", route: "/races" }];
+  }
+  if (cardType === "HORSE_CARD") {
+    return [{ label: "Xem Hồ sơ ngựa", route: "/horses" }];
+  }
+  return [];
+}
+
+function renderInlineBold(line: string) {
+  const parts = line.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, idx) =>
+    part.startsWith("**") && part.endsWith("**") && part.length > 4
+      ? <strong key={idx}>{part.slice(2, -2)}</strong>
+      : <span key={idx}>{part}</span>,
+  );
+}
+
 function AnswerCard({ answer, onNavigate }: { answer: AssistantAnswer; onNavigate?: () => void }) {
+  const hasStructuredContent =
+    Boolean(answer.cardPayload) ||
+    answer.data.length > 0 ||
+    answer.sources.length > 0 ||
+    answer.actions.length > 0;
+  const paragraphs = answer.summary
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
   return (
     <div className={styles.msgBot}>
-      {answer.status === "ANSWERED" && (
+      {answer.status === "ANSWERED" && hasStructuredContent && (
         <span className={styles.msgTag}>
           <Icon name={answer.aiGenerated ? "sparkles" : "file"} size={12} />
           {answer.aiGenerated ? tr("AI-explained") : tr("From system data")}
           {answer.cached && ` · ${tr("Cached")}`}
         </span>
       )}
-      <p className={styles.msgText}>{answer.summary}</p>
+      <div className={styles.msgText} style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+        {paragraphs.length > 0 ? (
+          paragraphs.map((p, i) => (
+            <p key={i} style={{ margin: 0 }}>
+              {renderInlineBold(p)}
+            </p>
+          ))
+        ) : (
+          <p style={{ margin: 0 }}>{answer.summary}</p>
+        )}
+      </div>
       {answer.cardPayload && <InteractiveConciergeCard payload={answer.cardPayload} onNavigate={onNavigate} />}
 
       {answer.data.map((block) => (
@@ -317,9 +359,13 @@ function InteractiveConciergeCard({ payload, onNavigate }: { payload: ChatCardPa
   const data = payload.data;
   if (!data) return null;
 
-  if (payload.type === "BILLING_CARD" && data.level1Summary) {
-    const s = data.level1Summary;
-    const settlements = data.level2Drilldown?.raceSettlements || [];
+  const billingSummary = data.summary ?? data.level1Summary;
+  const billingDrilldown = data.drilldown ?? data.level2Drilldown;
+  if (payload.type === "BILLING_CARD" && billingSummary) {
+    const s = billingSummary;
+    const settlements = billingDrilldown?.raceSettlements || [];
+    const trainingAmount = Number(s.totalTraining ?? s.totalFeed ?? 0);
+    const raceNetAmount = Number(s.totalRaceNet ?? s.totalRacePayouts ?? 0);
     return (
       <div style={{ margin: "0.5rem 0", padding: "0.75rem", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -338,8 +384,8 @@ function InteractiveConciergeCard({ payload, onNavigate }: { payload: ChatCardPa
             <strong>{formatVND(s.totalBoarding)}</strong>
           </div>
           <div style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "var(--surface-muted)" }}>
-            <span style={{ color: "var(--muted)", display: "block" }}>Thức ăn:</span>
-            <strong>{formatVND(s.totalFeed)}</strong>
+            <span style={{ color: "var(--muted)", display: "block" }}>Huấn luyện:</span>
+            <strong>{formatVND(trainingAmount)}</strong>
           </div>
           <div style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "var(--surface-muted)" }}>
             <span style={{ color: "var(--muted)", display: "block" }}>Thú y:</span>
@@ -347,7 +393,7 @@ function InteractiveConciergeCard({ payload, onNavigate }: { payload: ChatCardPa
           </div>
           <div style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "rgba(16, 185, 129, 0.08)" }}>
             <span style={{ color: "var(--ok)", display: "block" }}>Thưởng giải đua:</span>
-            <strong style={{ color: "var(--ok)" }}>-{formatVND(s.totalRacePayouts)}</strong>
+            <strong style={{ color: "var(--ok)" }}>-{formatVND(raceNetAmount)}</strong>
           </div>
         </div>
 
@@ -370,11 +416,11 @@ function InteractiveConciergeCard({ payload, onNavigate }: { payload: ChatCardPa
             </button>
             {expanded && (
               <div style={{ marginTop: "0.375rem", display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-                {settlements.map((st: any) => (
-                  <div key={st.resultId} style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", border: "1px solid var(--border)", fontSize: "var(--fs-xs)" }}>
+                {settlements.map((st: any, idx: number) => (
+                  <div key={st.tournamentId || st.resultId || idx} style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", border: "1px solid var(--border)", fontSize: "var(--fs-xs)" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 600 }}>
-                      <span>{st.tournamentName}</span>
-                      <span>Hạng #{st.rank}</span>
+                      <span>{st.tournamentName}{st.horseName ? ` · ${st.horseName}` : ""}</span>
+                      <span>Hạng #{st.finalRank ?? st.rank ?? "—"}</span>
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", color: "var(--muted)", fontSize: "0.7rem" }}>
                       <span>Tổng giải: {formatVND(st.grossPrize)} · HLV: -{formatVND(st.trainerCut)} · Kỵ sĩ: -{formatVND(st.jockeyCut)}</span>
@@ -388,6 +434,40 @@ function InteractiveConciergeCard({ payload, onNavigate }: { payload: ChatCardPa
               </div>
             )}
           </div>
+        )}
+      </div>
+    );
+  }
+
+  if (payload.type === "RACE_CARD" && Array.isArray(data.rows)) {
+    return (
+      <div style={{ margin: "0.5rem 0", padding: "0.75rem", borderRadius: "8px", background: "var(--surface)", border: "1px solid var(--border)", display: "flex", flexDirection: "column", gap: "0.375rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <strong style={{ fontSize: "var(--fs-xs, 0.75rem)", color: "var(--ink)", display: "flex", alignItems: "center", gap: "0.25rem" }}>
+            <Icon name="trophy" size={14} />
+            {data.title || "Giải đua sắp diễn ra"}
+          </strong>
+          <Link to="/races" onClick={onNavigate} style={{ fontSize: "var(--fs-xs)", color: "var(--brand)", fontWeight: 600 }}>
+            Xem lịch đua
+          </Link>
+        </div>
+        {data.rows.length === 0 ? (
+          <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>Hiện chưa có giải đua sắp diễn ra.</div>
+        ) : (
+          data.rows.map((r: any, idx: number) => (
+            <div key={idx} style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "var(--surface-muted)", fontSize: "var(--fs-xs)", display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>
+              <div>
+                <div style={{ fontWeight: 600 }}>{r.tournament}</div>
+                <div style={{ color: "var(--muted)", fontSize: "0.7rem" }}>
+                  {r.date} · {r.distance}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontWeight: 600 }}>{r.fee}</div>
+                <div style={{ color: "var(--muted)", fontSize: "0.7rem" }}>{r.status}</div>
+              </div>
+            </div>
+          ))
         )}
       </div>
     );
@@ -427,10 +507,12 @@ function InteractiveConciergeCard({ payload, onNavigate }: { payload: ChatCardPa
           <div key={idx} style={{ padding: "0.375rem 0.5rem", borderRadius: "4px", background: "var(--surface-muted)", fontSize: "var(--fs-xs)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
               <div style={{ fontWeight: 600 }}>{h.name}</div>
-              <div style={{ color: "var(--muted)", fontSize: "0.7rem" }}>Ô chuồng: {h.stall || "—"}</div>
+              <div style={{ color: "var(--muted)", fontSize: "0.7rem" }}>
+                {h.reason ? `Lý do: ${h.reason}` : `Ô chuồng: ${h.stall || "—"}`}
+              </div>
             </div>
-            <Badge tone={h.lock === "Có" ? "danger" : "ok"}>
-              {h.lock === "Có" ? "Khóa y tế" : (h.status || "Sẵn sàng")}
+            <Badge tone={h.lock === "Có" || Boolean(h.reason) ? "danger" : "ok"}>
+              {h.lock === "Có" || Boolean(h.reason) ? "Khóa y tế" : (h.status || "Sẵn sàng")}
             </Badge>
           </div>
         ))}
