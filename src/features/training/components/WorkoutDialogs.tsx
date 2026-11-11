@@ -104,7 +104,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
 
   useEffect(() => {
     trainingApi
-      .getGrooms(plan?.horseId, date, time, session?.id)
+      .getGrooms(plan?.horseId, date, time, session?.id, type)
       .then((g) => {
         setGrooms(g);
         setGroomId((current) => {
@@ -114,7 +114,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
         });
       })
       .catch((err) => setError(messageFor(err)));
-  }, [plan?.horseId, date, time, session?.id, session?.groomId]);
+  }, [plan?.horseId, date, time, session?.id, session?.groomId, type]);
   // Giai đoạn mặc định: giai đoạn chứa ngày đã chọn, nếu không thì giai đoạn đầu.
   useEffect(() => {
     if (phases.length === 0 || phases.some((p) => p.id === phaseId)) return;
@@ -487,19 +487,10 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
               setGroomId(val);
               markTouched("groomId");
             }}
-            options={grooms.map((g) => {
-              const badges: string[] = [];
-              if (g.isAssignedToHorse) badges.push(isVietnamese ? "Phụ trách ô" : "Assigned stall");
-              if (g.shiftInfo && g.shiftInfo !== "Không có ca trực (Tự do)") {
-                badges.push(g.shiftInfo);
-              } else if (!g.shiftInfo || g.hasShift === false || g.shiftInfo === "Không có ca trực (Tự do)") {
-                badges.push(isVietnamese ? "Không có ca trực (Tự do)" : "No shift (Flexible)");
-              }
-              return {
-                value: g.id,
-                label: badges.length > 0 ? `${g.fullName} (${badges.join(", ")})` : g.fullName,
-              };
-            })}
+            options={grooms.map((g) => ({
+              value: g.id,
+              label: g.fullName,
+            }))}
           />
         </Field>
         <Field label={tr("Instructions")} hint={tr("Up to 500 characters")}>
@@ -955,19 +946,10 @@ export function GeneratePhaseScheduleDialog({
               <Select
                 value={groomId}
                 onChange={(e) => setGroomId(e.target.value)}
-                options={grooms.map((g) => {
-                  const badges: string[] = [];
-                  if (g.isAssignedToHorse) badges.push(isVietnamese ? "Phụ trách ô" : "Assigned stall");
-                  if (g.shiftInfo && g.shiftInfo !== "Không có ca trực (Tự do)") {
-                    badges.push(g.shiftInfo);
-                  } else if (!g.shiftInfo || g.hasShift === false || g.shiftInfo === "Không có ca trực (Tự do)") {
-                    badges.push(isVietnamese ? "Không có ca trực (Tự do)" : "No shift (Flexible)");
-                  }
-                  return {
-                    value: g.id,
-                    label: badges.length > 0 ? `${g.fullName} (${badges.join(", ")})` : g.fullName,
-                  };
-                })}
+                options={grooms.map((g) => ({
+                  value: g.id,
+                  label: g.fullName,
+                }))}
               />
             </Field>
             {needsJockey && (

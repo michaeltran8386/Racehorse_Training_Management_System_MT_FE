@@ -20,11 +20,12 @@ interface SidebarProps {
   accountsAlert: boolean;
   open: boolean; // chỉ có ý nghĩa ở màn hình hẹp (menu trượt ra)
   onNavigate: () => void;
+  onLogout?: () => void;
 }
 
 // Sidebar xây từ danh sách quyền của tài khoản, không chỉ từ tên vai trò:
 // thu hồi quyền => mục tương ứng biến mất ở lần tải trang kế tiếp.
-export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate }: SidebarProps) {
+export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate, onLogout }: SidebarProps) {
   const { t, isVietnamese } = useAppLanguage();
   const groups = sidebarNavFor(user.role, user.permissions);
   const [closedGroups, setClosedGroups] = useState<Record<string, boolean>>(() => {
@@ -198,15 +199,33 @@ export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate 
         </Link>
       )}
 
-      <Link to="/profile" onClick={onNavigate} className={styles.user} title={`${user.fullName} · ${t(`nav.role_${user.role}`, ROLE_LABEL[user.role])}`}>
-        <span className={styles.userAvatar} aria-hidden="true">
-          {initials(user.fullName)}
-        </span>
-        <div className={styles.userText}>
-          <strong>{user.fullName}</strong>
-          <span>{t(`nav.role_${user.role}`, ROLE_LABEL[user.role])}</span>
-        </div>
-      </Link>
+      <div className={styles.userSection}>
+        <Link
+          to="/profile"
+          onClick={onNavigate}
+          className={styles.user}
+          title={`${user.fullName} · ${t(`nav.role_${user.role}`, ROLE_LABEL[user.role])}`}
+        >
+          <span className={styles.userAvatar} aria-hidden="true">
+            {initials(user.fullName)}
+          </span>
+          <div className={styles.userText}>
+            <strong>{user.fullName}</strong>
+            <span>{t(`nav.role_${user.role}`, ROLE_LABEL[user.role])}</span>
+          </div>
+        </Link>
+        {onLogout && (
+          <button
+            type="button"
+            className={styles.userLogoutBtn}
+            onClick={onLogout}
+            title={t("common.logout", "Log out")}
+            aria-label={t("common.logout", "Log out")}
+          >
+            <Icon name="logout" size={17} />
+          </button>
+        )}
+      </div>
     </nav>
   );
 }
