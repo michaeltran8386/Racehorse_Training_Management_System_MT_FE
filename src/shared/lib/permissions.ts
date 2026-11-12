@@ -518,17 +518,6 @@ export function screenAccess(role: Role, permissions: PermissionMap, pathname: s
   const open: ScreenAccess = { allowed: true, ownerRoles: [], inOwnRole: false };
   if (OPEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) return open;
 
-  if (pathname === "/assistant" || pathname.startsWith("/assistant/")) {
-    const allowed = role !== "HORSE_OWNER" && role === "CLUB_MANAGER";
-    return {
-      allowed,
-      group: "OTHER",
-      label: "TMEC Assistant",
-      ownerRoles: ["CLUB_MANAGER"],
-      inOwnRole: false,
-    };
-  }
-
   if (pathname === "/audit" || pathname.startsWith("/audit/")) {
     return { allowed: !!permissions.viewAudit, group: "REPORTS", label: "Audit Log", ownerRoles: ["CLUB_MANAGER"], inOwnRole: role === "CLUB_MANAGER" };
   }

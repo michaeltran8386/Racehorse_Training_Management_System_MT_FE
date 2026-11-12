@@ -45,7 +45,6 @@ export const MyProfilePage = lazy(() => import("@/features/auth/pages/MyProfileP
 export const SessionExpiredPage = lazy(() => import("@/features/auth/pages/SessionExpiredPage"));
 export const ComingSoonPage = lazy(() => import("@/features/dashboard/pages/ComingSoonPage"));
 export const DashboardPage = lazy(() => import("@/features/dashboard/pages/DashboardPage"));
-export const AssistantPage = lazy(() => import("@/features/assistant/pages/AssistantPage"));
 export const NotificationsPage = lazy(() => import("@/features/dashboard/pages/NotificationsPage"));
 export const NotificationSettingsPage = lazy(() => import("@/features/dashboard/pages/NotificationSettingsPage"));
 export const HorseCatalogPage = lazy(() => import("@/features/horses/pages/HorseCatalogPage"));
