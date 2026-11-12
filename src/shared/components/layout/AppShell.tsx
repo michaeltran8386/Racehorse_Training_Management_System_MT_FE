@@ -9,7 +9,6 @@ import { ROLE_LABEL } from "@/shared/lib/permissions";
 import { useAppLanguage } from "@/shared/lib/language";
 import { startNotificationPolling } from "@/shared/lib/notifications";
 import { SkeletonWorkspace } from "@/shared/components/ui/Skeleton";
-import { MascotAssistant } from "@/shared/components/mascot/MascotAssistant";
 import { useAuth } from "./AuthProvider";
 import { BreadcrumbContext } from "./BreadcrumbContext";
 import { Sidebar } from "./Sidebar";
@@ -103,8 +102,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </main>
         </div>
       </div>
-
-      {user.role === "HORSE_OWNER" && <MascotAssistant user={user} />}
 
       {/* Hộp thoại nằm NGOÀI RoleGuard: vẫn hiện được khi trang bên trong bị chặn (403). */}
       {logoutOpen && (

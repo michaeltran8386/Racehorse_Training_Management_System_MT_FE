@@ -303,7 +303,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
       ],
     },
     { label: "RACING", items: [item("races", "Race Entries", "trophy")] },
-    { label: "OTHER", items: [item("assistant", "TMEC Assistant", "sparkles"), item("profile", "My Profile", "user")] },
+    { label: "OTHER", items: [item("profile", "My Profile", "user")] },
   ],
   CLUB_MANAGER: [
     { label: "WORKSPACE", items: [item("dashboard", "Dashboard", "home")] },
@@ -403,7 +403,7 @@ const sidebarOrder: Record<Role, [string, string[]][]> = {
     ["SUPPLIES", supply],
   ],
   HORSE_OWNER: [
-    ["WORKSPACE", ["dashboard", "assistant", "my-horses"]],
+    ["WORKSPACE", ["dashboard", "my-horses"]],
     ["MONITORING", ["progress", "health"]],
     ["REPORTS", ["financial-reports", "costs", "race-record"]],
   ],
@@ -517,6 +517,17 @@ function findByHref(groups: NavGroup[], href: string): { group: string; item: Na
 export function screenAccess(role: Role, permissions: PermissionMap, pathname: string): ScreenAccess {
   const open: ScreenAccess = { allowed: true, ownerRoles: [], inOwnRole: false };
   if (OPEN_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) return open;
+
+  if (pathname === "/assistant" || pathname.startsWith("/assistant/")) {
+    const allowed = role !== "HORSE_OWNER" && role === "CLUB_MANAGER";
+    return {
+      allowed,
+      group: "OTHER",
+      label: "TMEC Assistant",
+      ownerRoles: ["CLUB_MANAGER"],
+      inOwnRole: false,
+    };
+  }
 
   if (pathname === "/audit" || pathname.startsWith("/audit/")) {
     return { allowed: !!permissions.viewAudit, group: "REPORTS", label: "Audit Log", ownerRoles: ["CLUB_MANAGER"], inOwnRole: role === "CLUB_MANAGER" };
