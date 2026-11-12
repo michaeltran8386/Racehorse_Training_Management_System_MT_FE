@@ -39,6 +39,8 @@ const GENERIC: Record<string, string> = {
   ATTEMPTS_EXCEEDED: "Too many wrong passwords. Wait until the sign-in unlocks, or use Forgot password to unlock it now.",
   RATE_LIMITED: "Too many requests from this device. Wait a minute and try again.",
   FORBIDDEN: "This action is not part of your permissions.",
+  TASK_NOT_ASSIGNED_TO_YOU: "You can only complete care tasks assigned to you or in your rostered barn zone.",
+  TASK_UNDO_FORBIDDEN: "You cannot undo a care task completed by another staff member.",
   VET_ONLY: "Only a Veterinarian can change medical data. You can still view it.",
   // Flow 1 - hồ sơ ngựa
   HORSE_NOT_FOUND: "This horse profile no longer exists or was deleted. Reload the list.",
