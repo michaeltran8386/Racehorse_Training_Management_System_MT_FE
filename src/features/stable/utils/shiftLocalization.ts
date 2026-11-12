@@ -96,8 +96,8 @@ export function getLocalizedZoneName(
   zone: { code?: string; name: string },
   isVi: boolean,
 ): string {
-  const code = (zone.code || '').toUpperCase().trim();
-  const n = zone.name || '';
+  const code = (zone.code || '').trim().toUpperCase();
+  const n = (zone.name || '').trim();
 
   const isZoneA =
     code === 'A' ||
@@ -113,18 +113,25 @@ export function getLocalizedZoneName(
     code === 'C' ||
     code === 'ZONE-C' ||
     code === 'ZONE_C' ||
-    /\b(?:zone|khu)\s*c\b|cách ly|isolation/i.test(n);
+    /\b(?:zone|khu)\s*c\b|cách\s*ly|isolation/i.test(n);
+  const isZoneH =
+    code === 'H' ||
+    code === 'ZONE-H' ||
+    code === 'ZONE_H' ||
+    /\b(?:zone|khu)\s*h\b|nợ\s*phí|impound/i.test(n);
 
   if (!isVi) {
     if (isZoneA) return 'Zone A - Barn 1';
     if (isZoneB) return 'Zone B - Barn 2';
     if (isZoneC) return 'Zone C - Isolation';
+    if (isZoneH) return 'Zone H - Overdue Hold';
     return n;
   }
 
   if (isZoneA) return 'Khu A - Chuồng 1';
   if (isZoneB) return 'Khu B - Chuồng 2';
   if (isZoneC) return 'Khu C - Khu Cách ly';
+  if (isZoneH) return 'Khu H - Lưu Giữ Nợ Phí';
   return tr(n);
 }
 

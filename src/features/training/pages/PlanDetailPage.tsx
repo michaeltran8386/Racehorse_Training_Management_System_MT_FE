@@ -10,7 +10,7 @@ import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { Select } from "@/shared/components/form/Select";
 import { Tabs } from "@/shared/components/ui/Tabs";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
-import { formatDateTime } from "@/shared/lib/format";
+import { formatDateTime, formatScore, formatNumber } from "@/shared/lib/format";
 import { messageFor } from "@/shared/lib/messages";
 import { todayClub, trainingApi } from "../api";
 import { ActivatePlanDialog, ClonePlanDialog, ClosePlanDialog } from "../components/PlanDialogs";
@@ -324,7 +324,7 @@ export default function PlanDetailPage() {
                           )}
                         </td>
                         <td style={{ padding: "0.6rem 0.75rem" }}>
-                          {s.result ? tr(`${s.result.performanceScore ?? "—"}/10 · ${s.result.avgSpeedKmh ?? "—"} km/h`) : s.status === "CANCELLED" ? "—" : (isVietnamese ? "Chưa ghi kết quả" : "Result not recorded")}
+                          {s.result ? tr(`${formatScore(s.result.performanceScore, 1)}/10 · ${formatNumber(s.result.avgSpeedKmh, 1)} km/h`) : s.status === "CANCELLED" ? "—" : (isVietnamese ? "Chưa ghi kết quả" : "Result not recorded")}
                         </td>
                         <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>
                           <div style={{ display: "flex", gap: "0.35rem", justifyContent: "flex-end" }}>
@@ -386,7 +386,7 @@ export default function PlanDetailPage() {
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
                   <strong>{s.sessionDate} {s.startTime}</strong>
                   <span>{tr(EXERCISE_TYPE_LABEL[s.sessionType])}</span>
-                  {s.result?.performanceScore != null && <Badge tone="info">{s.result.performanceScore}/10</Badge>}
+                  {s.result?.performanceScore != null && <Badge tone="info">{formatScore(s.result.performanceScore, 1)}/10</Badge>}
                   {s.result?.hasAbnormalSigns && <Badge tone="danger">{tr("Abnormal signs")}</Badge>}
                   <span style={{ color: "var(--text-muted)", fontSize: "var(--fs-body)" }}>by {s.result?.recordedBy ?? "—"}</span>
                 </div>

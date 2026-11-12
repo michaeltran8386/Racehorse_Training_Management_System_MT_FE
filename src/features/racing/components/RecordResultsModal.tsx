@@ -1,4 +1,4 @@
-import { formatVND } from "@/shared/lib/format";
+import { formatNumber, formatVND } from "@/shared/lib/format";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
@@ -577,7 +577,7 @@ export function RecordResultsModal({
                     </td>
                     <td style={{ padding: "0.5rem", fontWeight: 600, color: "var(--brand-700)" }}>
                       {isReadOnly ? (
-                        <span>{row.avgSpeedKmh === "" ? "—" : row.avgSpeedKmh}</span>
+                        <span>{row.avgSpeedKmh === "" ? "—" : typeof row.avgSpeedKmh === "number" ? formatNumber(row.avgSpeedKmh, 2) : row.avgSpeedKmh}</span>
                       ) : (
                         <input
                           type="number"

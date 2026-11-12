@@ -3,7 +3,7 @@ import { Icon } from "@/shared/components/ui/Icon";
 import { cx } from "@/shared/lib/cx";
 import type { VitalSigns } from "../types";
 import styles from "./VitalsDisplay.module.css";
-import { formatDate, formatDateTime } from "@/shared/lib/format";
+import { formatDate, formatDateTime, formatNumber } from "@/shared/lib/format";
 
 import i18n from "@/shared/i18n";
 import { tr } from "@/shared/i18n/tr";
@@ -104,7 +104,7 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
             <Badge tone="neutral">{vitals.weightKg == null ? notRecordedLabel : tr("Routine")}</Badge>
           </div>
           <div className={styles.valueRow}>
-            <span className={styles.value}>{vitals.weightKg ?? "—"}</span>
+            <span className={styles.value}>{formatNumber(vitals.weightKg, 2)}</span>
             <span className={styles.unit}>kg</span>
           </div>
           <span className={styles.reference}>{tr("Standard: 400 – 600 kg")}</span>
@@ -160,7 +160,7 @@ export function VitalsDisplay({ vitals, history, recordedAt }: VitalsDisplayProp
                   <td className={isRespiratoryWarning(h.respiratoryRate) ? styles.abnormal : undefined}>
                     {h.respiratoryRate ?? "—"}
                   </td>
-                  <td>{h.weightKg ?? "—"}</td>
+                  <td>{formatNumber(h.weightKg, 2)}</td>
                 </tr>
               ))}
             </tbody>

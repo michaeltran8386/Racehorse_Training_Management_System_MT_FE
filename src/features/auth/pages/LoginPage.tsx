@@ -74,7 +74,7 @@ function passwordProblem(password: string): string {
 export default function LoginPage() {
   useScreenTranslation();
   const navigate = useNavigate();
-  const { status, signIn, signInWithGoogle } = useAuth();
+  const { status, signIn, signInWithGoogle, signOut } = useAuth();
   const { t } = useAppLanguage();
   const params = useQueryParams();
 
@@ -97,12 +97,39 @@ export default function LoginPage() {
   const next = safeNext(params?.get("next"));
   const justReset = params?.get("reset") === "1";
   const justInvited = params?.get("invited") === "1";
+  const justLogout = params?.get("logout") === "1";
   const mail = email.trim().toLowerCase();
+
+  useEffect(() => {
+    if (justLogout && status === "authenticated") {
+      void signOut();
+    }
+  }, [justLogout, status, signOut]);
+
+  useEffect(() => {
+    const prefill = params?.get("email");
+    const auto = params?.get("auto") === "1";
+    if (prefill) {
+      setEmail(prefill);
+      setPassword("EquiFlow@2026");
+      if (auto) {
+        const timer = setTimeout(() => {
+          setChecking(true);
+          signIn(prefill, "EquiFlow@2026", true)
+            .then(() => {
+              window.location.replace(next);
+            })
+            .catch(() => setChecking(false));
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [params, signIn, next, navigate]);
 
   // Đã đăng nhập rồi mà vào /login thì đưa thẳng vào app.
   useEffect(() => {
-    if (status === "authenticated" && params && !isTransitioning) navigate(next, { replace: true });
-  }, [status, params, next, navigate, isTransitioning]);
+    if (status === "authenticated" && params && !isTransitioning && !justLogout) navigate(next, { replace: true });
+  }, [status, params, next, navigate, isTransitioning, justLogout]);
 
   function onEmailChange(value: string) {
     setEmail(value);

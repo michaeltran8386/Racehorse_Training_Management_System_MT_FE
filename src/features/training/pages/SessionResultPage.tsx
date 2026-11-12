@@ -14,7 +14,7 @@ import { Select } from "@/shared/components/form/Select";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { useToast } from "@/shared/components/ui/Toast";
-import { formatDateTime } from "@/shared/lib/format";
+import { formatDateTime, formatNumber, formatScore } from "@/shared/lib/format";
 import { ApiError } from "@/shared/lib/api";
 import { messageFor } from "@/shared/lib/messages";
 import { trainingApi } from "../api";
@@ -407,12 +407,12 @@ export default function SessionResultPage() {
           <div className={styles.summaryGrid}>
             <div>{tr("Actual distance:")}{" "}<strong>{r.actualDistanceMeters ?? "—"} m</strong></div>
             <div>{tr("Time:")}{" "}<strong>{formatTime(r.actualDurationSeconds) || "—"}</strong></div>
-            <div>{tr("Average speed:")}{" "}<strong>{r.avgSpeedKmh != null ? `${r.avgSpeedKmh} km/h` : "—"}</strong></div>
-            <div>{tr("Top speed:")}{" "}<strong>{r.maxSpeedKmh != null ? `${r.maxSpeedKmh} km/h` : "—"}</strong></div>
+            <div>{tr("Average speed:")}{" "}<strong>{r.avgSpeedKmh != null ? `${formatNumber(r.avgSpeedKmh, 2)} km/h` : "—"}</strong></div>
+            <div>{tr("Top speed:")}{" "}<strong>{r.maxSpeedKmh != null ? `${formatNumber(r.maxSpeedKmh, 2)} km/h` : "—"}</strong></div>
             <div>{tr("Surface:")}{" "}<strong>{r.actualSurface ? tr(TRACK_LABEL[r.actualSurface]) : "—"}</strong>{r.trackCondition ? ` (${tr(TRACK_CONDITION_LABEL[r.trackCondition])})` : ""}</div>
             <div>{tr("Peak HR:")}{" "}<strong>{r.maxHeartRate ?? "—"} {tr("bpm")}</strong></div>
             <div>{tr("HR after 10 min:")}{" "}<strong>{r.recoveryHeartRate ?? "—"} {tr("bpm")}</strong></div>
-            {user.role !== "GROOM" && <div>{tr("Performance:")}{" "}<strong>{r.performanceScore ?? "—"}/10</strong></div>}
+            {user.role !== "GROOM" && <div>{tr("Performance:")}{" "}<strong>{formatScore(r.performanceScore, 1)}/10</strong></div>}
             <div>{tr("Completion:")}{" "}<strong>{r.completionLevel ? tr(COMPLETION_LABEL[r.completionLevel]) : "—"}</strong></div>
           </div>
           <div style={{ marginTop: "0.75rem" }}><strong>{tr("Comment:")}</strong> {r.headTrainerFeedback || "—"}</div>

@@ -11,7 +11,7 @@ import { EmptyState } from "@/shared/components/ui/EmptyState";
 import { SkeletonTable } from "@/shared/components/ui/Skeleton";
 import { tr } from "@/shared/i18n/tr";
 import { messageFor } from "@/shared/lib/messages";
-import { formatDate, formatVND } from "@/shared/lib/format";
+import { formatDate, formatNumber, formatVND } from "@/shared/lib/format";
 import { useAppLanguage } from "@/shared/lib/language";
 import { fetchTournaments, fetchTournamentDetail } from "../api";
 import type { Tournament } from "../types";
@@ -135,7 +135,7 @@ export default function RaceResultsPage() {
                     <span className={styles.podiumLabel}>
                       {tr("CHAMPION / 1ST PLACE")}
                     </span>
-                    <Badge tone="ok">{firstPlace.result?.avgSpeedKmh} km/h</Badge>
+                    <Badge tone="ok">{firstPlace.result?.avgSpeedKmh != null ? `${formatNumber(firstPlace.result.avgSpeedKmh, 2)} km/h` : "—"}</Badge>
                   </div>
                   <div>
                     <h3 style={{ margin: 0, fontSize: "var(--fs-kpi, 1.25rem)", fontWeight: 800, color: "var(--ink)" }}>
@@ -171,7 +171,7 @@ export default function RaceResultsPage() {
                       <span className={styles.podiumLabel}>
                         {tr("RUNNER-UP / 2ND PLACE")}
                       </span>
-                      <Badge tone="neutral">{secondPlace.result?.avgSpeedKmh} km/h</Badge>
+                      <Badge tone="neutral">{secondPlace.result?.avgSpeedKmh != null ? `${formatNumber(secondPlace.result.avgSpeedKmh, 2)} km/h` : "—"}</Badge>
                     </div>
                     <div>
                       <h3 style={{ margin: 0, fontSize: "var(--fs-kpi, 1.25rem)", fontWeight: 800, color: "var(--ink)" }}>
@@ -203,7 +203,7 @@ export default function RaceResultsPage() {
                       <span className={styles.podiumLabel}>
                         {tr("3RD PLACE")}
                       </span>
-                      <Badge tone="neutral">{thirdPlace.result?.avgSpeedKmh} km/h</Badge>
+                      <Badge tone="neutral">{thirdPlace.result?.avgSpeedKmh != null ? `${formatNumber(thirdPlace.result.avgSpeedKmh, 2)} km/h` : "—"}</Badge>
                     </div>
                     <div>
                       <h3 style={{ margin: 0, fontSize: "var(--fs-kpi, 1.25rem)", fontWeight: 800, color: "var(--ink)" }}>
@@ -270,7 +270,7 @@ export default function RaceResultsPage() {
                           {reg.result?.finishTimeSeconds}s
                         </td>
                         <td style={{ padding: "0.75rem 0.5rem", color: "var(--brand-700)", fontWeight: 700 }}>
-                          {reg.result?.avgSpeedKmh} km/h
+                          {reg.result?.avgSpeedKmh != null ? `${formatNumber(reg.result.avgSpeedKmh, 2)} km/h` : "—"}
                         </td>
                         <td style={{ padding: "0.75rem 0.5rem", fontWeight: 600 }}>
                           {reg.result?.prizeMoneyWon != null ? formatVND(reg.result.prizeMoneyWon) : "—"}

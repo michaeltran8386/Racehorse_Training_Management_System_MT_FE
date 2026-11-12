@@ -13,7 +13,7 @@ import { Alert } from '@/shared/components/ui/Alert';
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
 import { useAppLanguage } from '@/shared/lib/language';
 import { tr } from '@/shared/i18n/tr';
-import { formatDate } from '@/shared/lib/format';
+import { formatDate, formatNumber } from '@/shared/lib/format';
 import { messageFor } from '@/shared/lib/messages';
 import { nutritionApi } from '../api/nutritionApi';
 import { getZones } from '../api';
@@ -366,7 +366,7 @@ export default function MealRationsPage() {
 
                       {/* Daily feed */}
                       <td style={{ padding: '0.875rem 1rem', fontWeight: 600 }}>
-                        {p.dailyFeedWeightKg} kg
+                        {formatNumber(p.dailyFeedWeightKg, 2)} kg
                       </td>
 
                       {/* Ratio % with meter */}
@@ -378,7 +378,7 @@ export default function MealRationsPage() {
                               color: p.isWithinSafeRange ? 'var(--ok)' : 'var(--warn)',
                             }}
                           >
-                            {p.targetWeightRatioPct}%
+                            {formatNumber(p.targetWeightRatioPct, 2)}%
                           </span>
                           <span
                             style={{
