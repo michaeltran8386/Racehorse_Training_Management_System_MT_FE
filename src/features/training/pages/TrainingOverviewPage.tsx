@@ -25,7 +25,7 @@ import { PageHeader } from "@/shared/components/layout/PageHeader";
 import styles from "./TrainingOverviewPage.module.css";
 
 import { tr } from "@/shared/i18n/tr";
-import { formatScore } from "@/shared/lib/format";
+import { formatScore, formatNumber } from "@/shared/lib/format";
 import { useAppLanguage } from "@/shared/lib/language";
 type SortKey = "name" | "progress" | "score" | "load" | "next";
 
@@ -390,7 +390,7 @@ export default function TrainingOverviewPage() {
                         }
                       >
                         <span style={{ cursor: "help", whiteSpace: "nowrap" }}>
-                          {r.load7d} {isVietnamese ? "điểm" : tr("pts")}{" "}
+                          {formatNumber(r.load7d, 2)} {isVietnamese ? "điểm" : tr("pts")}{" "}
                           {r.loadSpike && (
                             <Badge tone="danger">
                               {isVietnamese ? "Tăng đột ngột (>130% TB 4 tuần)" : tr("Sudden increase")}

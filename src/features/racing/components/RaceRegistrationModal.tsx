@@ -245,7 +245,7 @@ export function RaceRegistrationModal({
             }}
           >
             ℹ️ {isVietnamese()
-              ? "Đăng ký mới đã đóng (CLOSED_REGISTRATION). Bạn có thể xem danh sách chiến mã đã đăng ký và rút ngựa (Scratch) nếu có sự cố."
+              ? "Đăng ký mới đã đóng. Bạn có thể xem danh sách chiến mã đã đăng ký và rút ngựa nếu có sự cố."
               : tr("New registrations are closed. You can review registered horses or scratch entries with a valid reason.")}
           </div>
         )}
@@ -294,13 +294,13 @@ export function RaceRegistrationModal({
                           </span>
                         </div>
                         <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
-                          {reg.horse?.breed ?? ""} {reg.notes ? `· ${reg.notes}` : ""}
+                          {reg.horse?.breed ? tr(reg.horse.breed) : ""} {reg.notes ? `· ${reg.notes}` : ""}
                         </div>
                       </div>
 
                       <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                         {isScratched ? (
-                          <Badge tone="danger">{isVietnamese() ? "Đã rút (Scratched)" : tr("Scratched")}</Badge>
+                          <Badge tone="danger">{isVietnamese() ? "Đã rút" : tr("Scratched")}</Badge>
                         ) : (
                           <Badge tone="ok">{isVietnamese() ? "Đã đăng ký" : tr("Registered")}</Badge>
                         )}

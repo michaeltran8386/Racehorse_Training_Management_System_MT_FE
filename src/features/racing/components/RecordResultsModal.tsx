@@ -210,8 +210,8 @@ export function RecordResultsModal({
           return {
             ...row,
             finalRank: sim.finalRank,
-            finishTimeSeconds: sim.finishTimeSeconds,
-            avgSpeedKmh: sim.avgSpeedKmh,
+            finishTimeSeconds: typeof sim.finishTimeSeconds === "number" ? Number(sim.finishTimeSeconds.toFixed(2)) : sim.finishTimeSeconds,
+            avgSpeedKmh: typeof sim.avgSpeedKmh === "number" ? Number(sim.avgSpeedKmh.toFixed(2)) : sim.avgSpeedKmh,
             prizeMoneyWon: sim.prizeMoneyWon,
             officialNotes: sim.officialNotes,
           };
@@ -238,7 +238,7 @@ export function RecordResultsModal({
       const next = [...prev];
       const target = { ...next[index], [field]: val };
       if (field === "finishTimeSeconds") {
-        target.avgSpeedKmh = val > 0 ? Math.round(((currentTourney.distanceMeters / Number(val)) * 3.6) * 100) / 100 : "";
+        target.avgSpeedKmh = val > 0 ? Number(((currentTourney.distanceMeters / Number(val)) * 3.6).toFixed(2)) : "";
       } else if (field === "finalRank") {
         const pool = currentTourney.prizePool || 0;
         if (pool > 0) {
@@ -553,7 +553,7 @@ export function RecordResultsModal({
                     </td>
                     <td style={{ padding: "0.5rem" }}>
                       {isReadOnly ? (
-                        <span>{row.finishTimeSeconds === "" ? "—" : `${row.finishTimeSeconds}s`}</span>
+                        <span>{row.finishTimeSeconds === "" ? "—" : `${formatNumber(row.finishTimeSeconds, 2)}s`}</span>
                       ) : (
                         <input
                           type="number"
@@ -577,7 +577,7 @@ export function RecordResultsModal({
                     </td>
                     <td style={{ padding: "0.5rem", fontWeight: 600, color: "var(--brand-700)" }}>
                       {isReadOnly ? (
-                        <span>{row.avgSpeedKmh === "" ? "—" : typeof row.avgSpeedKmh === "number" ? formatNumber(row.avgSpeedKmh, 2) : row.avgSpeedKmh}</span>
+                        <span>{row.avgSpeedKmh === "" ? "—" : `${formatNumber(row.avgSpeedKmh, 2)} km/h`}</span>
                       ) : (
                         <input
                           type="number"

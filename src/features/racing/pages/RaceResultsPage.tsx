@@ -142,12 +142,12 @@ export default function RaceResultsPage() {
                       {firstPlace.horse.name}
                     </h3>
                     <p style={{ margin: "2px 0 0 0", fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
-                      {firstPlace.horse.breed} · #{firstPlace.horse.horseCode || "N/A"}
+                      {tr(firstPlace.horse.breed)} · #{firstPlace.horse.horseCode || "N/A"}
                     </p>
                   </div>
                   <div className={styles.podiumStat}>
                     <span style={{ color: "var(--muted)" }}>{tr("Finish Time:")}</span>
-                    <strong>{firstPlace.result?.finishTimeSeconds}s</strong>
+                    <strong>{firstPlace.result?.finishTimeSeconds != null ? `${formatNumber(firstPlace.result.finishTimeSeconds, 2)}s` : "—"}</strong>
                   </div>
                   <div className={styles.podiumStat}>
                     <span style={{ color: "var(--muted)" }}>{tr("Prize Won:")}</span>
@@ -178,12 +178,12 @@ export default function RaceResultsPage() {
                         {secondPlace.horse.name}
                       </h3>
                       <p style={{ margin: "2px 0 0 0", fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
-                        {secondPlace.horse.breed} · #{secondPlace.horse.horseCode || "N/A"}
+                        {tr(secondPlace.horse.breed)} · #{secondPlace.horse.horseCode || "N/A"}
                       </p>
                     </div>
                     <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Finish Time:")}</span>
-                      <strong>{secondPlace.result?.finishTimeSeconds}s</strong>
+                      <strong>{secondPlace.result?.finishTimeSeconds != null ? `${formatNumber(secondPlace.result.finishTimeSeconds, 2)}s` : "—"}</strong>
                     </div>
                     <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Prize Won:")}</span>
@@ -210,12 +210,12 @@ export default function RaceResultsPage() {
                         {thirdPlace.horse.name}
                       </h3>
                       <p style={{ margin: "2px 0 0 0", fontSize: "var(--fs-xs)", color: "var(--muted)" }}>
-                        {thirdPlace.horse.breed} · #{thirdPlace.horse.horseCode || "N/A"}
+                        {tr(thirdPlace.horse.breed)} · #{thirdPlace.horse.horseCode || "N/A"}
                       </p>
                     </div>
                     <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Finish Time:")}</span>
-                      <strong>{thirdPlace.result?.finishTimeSeconds}s</strong>
+                      <strong>{thirdPlace.result?.finishTimeSeconds != null ? `${formatNumber(thirdPlace.result.finishTimeSeconds, 2)}s` : "—"}</strong>
                     </div>
                     <div className={styles.podiumStat}>
                       <span style={{ color: "var(--muted)" }}>{tr("Prize Won:")}</span>
@@ -267,7 +267,7 @@ export default function RaceResultsPage() {
                           {reg.horse.owner?.fullName || tr("Club Owned")}
                         </td>
                         <td style={{ padding: "0.75rem 0.5rem", fontWeight: 600 }}>
-                          {reg.result?.finishTimeSeconds}s
+                          {reg.result?.finishTimeSeconds != null ? `${formatNumber(reg.result.finishTimeSeconds, 2)}s` : "—"}
                         </td>
                         <td style={{ padding: "0.75rem 0.5rem", color: "var(--brand-700)", fontWeight: 700 }}>
                           {reg.result?.avgSpeedKmh != null ? `${formatNumber(reg.result.avgSpeedKmh, 2)} km/h` : "—"}
