@@ -119,12 +119,30 @@ export function formatVND(amount: number | string | null | undefined): string {
 }
 
 /**
+ * Định dạng số với tối đa chữ số thập phân (mặc định 2), loại bỏ đuôi số thực JS (vd: 8.799999999999999 -> 8.8).
+ */
+export function formatNumber(
+  value: number | string | null | undefined,
+  maxDecimals = 2,
+  fallback = "—"
+): string {
+  if (value == null || value === "") return fallback;
+  const num = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(num)) return fallback;
+  const factor = Math.pow(10, maxDecimals);
+  const rounded = Math.round(num * factor) / factor;
+  return rounded.toString();
+}
+
+/**
  * Định dạng điểm đánh giá cố định số chữ số thập phân (tránh lỗi số thực JS như 8.799999999999999).
  */
 export function formatScore(score: number | null | undefined, digits = 2): string {
   if (score == null) return "—";
   const num = typeof score === "number" ? score : Number(score);
   if (!Number.isFinite(num)) return "—";
-  return num.toFixed(digits);
+  const factor = Math.pow(10, digits);
+  const rounded = Math.round(num * factor) / factor;
+  return rounded.toString();
 }
 

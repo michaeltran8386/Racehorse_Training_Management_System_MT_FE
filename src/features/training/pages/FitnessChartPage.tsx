@@ -21,6 +21,7 @@ import { EXERCISE_TYPE_LABEL } from "../types";
 import type { ExerciseType, FitnessData } from "../types";
 
 import { tr } from "@/shared/i18n/tr";
+import { formatNumber, formatScore } from "@/shared/lib/format";
 const RANGES = [4, 12, 26];
 const PAGE_SIZE = 10;
 const DAY = 24 * 3600_000;
@@ -258,11 +259,11 @@ export default function FitnessChartPage() {
                     <td style={{ padding: "0.6rem 0.75rem" }}>{EXERCISE_TYPE_LABEL[p.workoutType] ? tr(EXERCISE_TYPE_LABEL[p.workoutType]) : p.workoutType}</td>
                     <td style={{ padding: "0.6rem 0.75rem" }}>{p.distanceMeters} m</td>
                     <td style={{ padding: "0.6rem 0.75rem" }}>{formatTime(p.timeSeconds)}</td>
-                    <td style={{ padding: "0.6rem 0.75rem" }}>{p.avgSpeedKmh ?? "—"}</td>
+                    <td style={{ padding: "0.6rem 0.75rem" }}>{formatNumber(p.avgSpeedKmh, 2)}</td>
                     <td style={{ padding: "0.6rem 0.75rem" }}>{p.maxHeartRate ?? "—"}</td>
                     <td style={{ padding: "0.6rem 0.75rem" }}>{p.recoveryHeartRate ?? "—"}</td>
-                    <td style={{ padding: "0.6rem 0.75rem" }}>{p.performanceScore ?? "—"}</td>
-                    <td style={{ padding: "0.6rem 0.75rem" }}>{p.load}</td>
+                    <td style={{ padding: "0.6rem 0.75rem" }}>{formatScore(p.performanceScore, 2)}</td>
+                    <td style={{ padding: "0.6rem 0.75rem" }}>{formatNumber(p.load, 1)}</td>
                   </tr>
                 ))}
               </tbody>

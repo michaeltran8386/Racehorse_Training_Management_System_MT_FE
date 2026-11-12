@@ -23,6 +23,7 @@ import { DeleteHorseModal } from "../components/DeleteHorseModal";
 import { RetireHorseModal } from "../components/RetireHorseModal";
 import { LifecycleTimeline } from "../components/LifecycleTimeline";
 import { Icon } from "@/shared/components/ui/Icon";
+import { formatNumber } from "@/shared/lib/format";
 import { useToast } from "@/shared/components/ui/Toast";
 import { AssignStallDialog, ReturnStallDialog, TransferStallDialog } from "@/features/stable/components/StallDialogs";
 import { IncidentDetailModal } from "@/features/stable/components/IncidentDetailModal";
@@ -317,7 +318,7 @@ export default function HorseDetailPage() {
             </div>
 
             <div className={styles.identityMeta}>
-              {[horse.breed && tr(horse.breed), horse.gender && tr(horse.gender), horse.color && tr(horse.color), ageText, horse.weightKg && `${horse.weightKg} kg`].filter(Boolean).map((item, index) => (
+              {[horse.breed && tr(horse.breed), horse.gender && tr(horse.gender), horse.color && tr(horse.color), ageText, horse.weightKg && `${formatNumber(horse.weightKg, 2)} kg`].filter(Boolean).map((item, index) => (
                 <span key={index}>{item}</span>
               ))}
             </div>
@@ -457,7 +458,7 @@ export default function HorseDetailPage() {
 
             <div>
               <div style={{ color: "var(--ink-muted)", marginBottom: 4 }}>{tr("Weight")}</div>
-              <div style={{ fontWeight: 600 }}>{horse.weightKg ? `${horse.weightKg} kg` : "—"}</div>
+              <div style={{ fontWeight: 600 }}>{horse.weightKg ? `${formatNumber(horse.weightKg, 2)} kg` : "—"}</div>
             </div>
 
             <div>

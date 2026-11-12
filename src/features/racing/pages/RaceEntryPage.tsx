@@ -19,7 +19,7 @@ import { tr, isVietnamese, localizeServerText } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
 import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { messageFor } from "@/shared/lib/messages";
-import { formatDate, vndUnit, formatCurrency, formatVND } from "@/shared/lib/format";
+import { formatDate, vndUnit, formatCurrency, formatVND, formatNumber } from "@/shared/lib/format";
 
 const TOURNAMENT_STATUS_LABEL: Record<string, string> = {
   UPCOMING: "Sắp diễn ra",
@@ -952,7 +952,7 @@ export default function RaceEntryPage() {
                               <span>
                                 #{r.result?.finalRank} {r.horse?.name ?? "Chiến mã"}
                               </span>
-                              <span style={{ fontWeight: 600 }}>{r.result?.avgSpeedKmh} km/h</span>
+                              <span style={{ fontWeight: 600 }}>{r.result?.avgSpeedKmh != null ? `${formatNumber(r.result.avgSpeedKmh, 2)} km/h` : "—"}</span>
                             </div>
                           ))}
                       </div>

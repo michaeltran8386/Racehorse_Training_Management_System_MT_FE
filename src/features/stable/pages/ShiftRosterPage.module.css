@@ -40,18 +40,26 @@
 
 .zoneHead,
 .shiftHead {
-  padding: 0.75rem 1rem;
+  padding: 0.75rem 0.875rem;
   font-weight: 600;
   text-align: left;
 }
 
 .zoneHead {
-  width: 160px;
+  width: 140px;
 }
 
 .shiftHead {
-  width: 140px;
+  width: 120px;
   border-left: 1px solid var(--border);
+}
+
+.dayHead {
+  padding: 0.75rem 0.5rem;
+  font-weight: 600;
+  text-align: center;
+  border-left: 1px solid var(--border);
+  min-width: 110px;
 }
 
 .matrix tbody tr {

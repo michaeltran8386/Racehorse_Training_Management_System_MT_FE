@@ -21,6 +21,7 @@ import type { ExerciseSession } from "../types";
 
 import { tr } from "@/shared/i18n/tr";
 import { useAppLanguage } from "@/shared/lib/language";
+import { formatScore, formatNumber } from "@/shared/lib/format";
 
 function minusDays(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);
@@ -90,7 +91,7 @@ export default function SessionMetricsPage() {
       <td style={{ padding: "0.6rem 0.75rem" }}>{tr(EXERCISE_TYPE_LABEL[s.sessionType])} · {s.targetDistanceMeters} m × {s.repetitions}</td>
       <td style={{ padding: "0.6rem 0.75rem" }}><Badge tone={SESSION_STATUS_TONE[s.status]}>{tr(SESSION_STATUS_LABEL[s.status])}</Badge></td>
       <td style={{ padding: "0.6rem 0.75rem", fontWeight: 700, color: s.result?.performanceScore != null && s.result.performanceScore >= 7 ? "var(--brand-700)" : "inherit" }}>
-        {s.result?.performanceScore != null ? `${s.result.performanceScore}/10` : "—"}
+        {s.result?.performanceScore != null ? `${formatScore(s.result.performanceScore, 1)}/10` : "—"}
       </td>
       <td style={{ padding: "0.6rem 0.75rem", textAlign: "right" }}>
         <LinkButton to={`/training/sessions/${s.id}/result`} size="sm" tone="secondary">{isVietnamese ? (action === "Record result" ? "Ghi kết quả" : "Xem kết quả") : tr(action)}</LinkButton>

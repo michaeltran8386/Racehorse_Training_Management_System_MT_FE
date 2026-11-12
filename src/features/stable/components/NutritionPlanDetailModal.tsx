@@ -8,6 +8,7 @@ import { Textarea } from '@/shared/components/form/Textarea';
 import { Field } from '@/shared/components/form/Field';
 import { useToast } from '@/shared/components/ui/Toast';
 import { tr } from '@/shared/i18n/tr';
+import { formatNumber } from '@/shared/lib/format';
 import { messageFor } from '@/shared/lib/messages';
 import { nutritionApi } from '../api/nutritionApi';
 import type { NutritionPlan } from '../types/nutrition';
@@ -231,7 +232,7 @@ export function NutritionPlanDetailModal({
               {tr('Daily Feed')}
             </div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--color-primary)', marginTop: '2px' }}>
-              {plan.dailyFeedWeightKg} kg
+              {formatNumber(plan.dailyFeedWeightKg, 2)} kg
             </div>
           </div>
 
@@ -247,7 +248,7 @@ export function NutritionPlanDetailModal({
               {tr('Body Weight Ratio')}
             </div>
             <div style={{ fontSize: '1.25rem', fontWeight: 700, marginTop: '2px' }}>
-              {plan.targetWeightRatioPct}%{' '}
+              {formatNumber(plan.targetWeightRatioPct, 2)}%{' '}
               <span
                 style={{
                   fontSize: '0.75rem',

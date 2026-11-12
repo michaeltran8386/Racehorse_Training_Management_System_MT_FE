@@ -482,13 +482,9 @@ export default function ShiftRosterPage() {
                   {weekDays.map((d, i) => (
                     <th
                       key={d.dateStr}
-                      className={i === mobileDayIdx ? rosterStyles.selectedDay : rosterStyles.otherDay}
+                      className={`${rosterStyles.dayHead} ${i === mobileDayIdx ? rosterStyles.selectedDay : rosterStyles.otherDay}`}
                       style={{
-                        padding: '0.75rem 0.5rem',
-                        fontWeight: 600,
-                        textAlign: 'center',
                         background: d.isToday ? 'var(--brand-50)' : undefined,
-                        borderLeft: '1px solid var(--border)',
                       }}
                     >
                       <div>{d.dayName}</div>
