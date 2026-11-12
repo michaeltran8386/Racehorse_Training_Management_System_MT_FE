@@ -185,7 +185,7 @@ export default function PlanListPage() {
                     {!isTrainer && <td className={styles.colTrainer}>{plan.headTrainerName}</td>}
                     <td className={styles.colActions} onClick={(e) => e.stopPropagation()}>
                       <div style={{ display: "inline-flex", gap: "0.5rem" }}>
-                        <LinkButton to={`/training/plans/${plan.id}`} tone="secondary" size="sm">{tr("View")}</LinkButton>
+                        <LinkButton to={`/training/plans/${plan.id}`} tone="secondary" size="sm">{tr("View plan")}</LinkButton>
                         {isTrainer && (
                           <Button tone="ghost" size="sm" onClick={() => setCloning(plan)}>{tr("Clone")}</Button>
                         )}

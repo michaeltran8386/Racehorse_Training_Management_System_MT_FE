@@ -133,6 +133,9 @@ export interface BeWorkout {
 // ------------------------------------------------------------ Chuyển đổi BE -> màn hình
 
 export function toPlan(p: BePlan): TrainingPlan {
+  const startDateStr = p.startDate ? (typeof p.startDate === "string" ? p.startDate.slice(0, 10) : new Date(p.startDate).toISOString().slice(0, 10)) : "";
+  const endDateStr = p.endDate ? (typeof p.endDate === "string" ? p.endDate.slice(0, 10) : new Date(p.endDate).toISOString().slice(0, 10)) : "";
+
   return {
     id: p.id,
     planCode: p.planCode ?? "—",
@@ -147,10 +150,23 @@ export function toPlan(p: BePlan): TrainingPlan {
     horseStatus: p.horse?.status,
     targetDistanceMeters: p.targetDistance,
     targetSpeedKmh: p.targetSpeed,
-    startDate: p.startDate.slice(0, 10),
-    endDate: p.endDate.slice(0, 10),
+    startDate: startDateStr,
+    endDate: endDateStr,
     status: p.status,
-    phases: Array.isArray(p.phases) ? (p.phases as TrainingPhase[]) : [],
+    phases: Array.isArray(p.phases)
+      ? (p.phases as any[]).map((ph, idx) => ({
+          id: ph.id || `ph-${idx + 1}`,
+          name: ph.name || `Phase ${idx + 1}`,
+          type: ph.type || ph.focus || "FOUNDATION",
+          startDate: ph.startDate ? String(ph.startDate).slice(0, 10) : startDateStr,
+          endDate: ph.endDate ? String(ph.endDate).slice(0, 10) : endDateStr,
+          goal: ph.goal || "",
+          sessionsPerWeek: ph.sessionsPerWeek != null ? Number(ph.sessionsPerWeek) : 5,
+          maxWeeklyDistance: ph.maxWeeklyDistance != null ? Number(ph.maxWeeklyDistance) : (ph.targetDistanceM != null ? Number(ph.targetDistanceM) : 9000),
+          surface: ph.surface || "TURF",
+          targetSpeedKmh: ph.targetSpeedKmh != null ? Number(ph.targetSpeedKmh) : undefined,
+        }))
+      : [],
     headTrainerName: p.trainer?.fullName ?? "—",
     workoutCount: p._count?.workoutSessions ?? 0,
     cancelledReason: p.cancelReason,
