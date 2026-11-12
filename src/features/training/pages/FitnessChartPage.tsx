@@ -183,7 +183,7 @@ export default function FitnessChartPage() {
             max={200}
             marker={100}
             tone={loadRatio != null && loadRatio > 130 ? "var(--warn)" : "var(--chart-s1)"}
-            display={String(s.load7d)}
+            display={formatNumber(s.load7d, 2)}
             caption={
               s.loadChangePct == null ? tr("No 4-week average yet") : (
                 <span style={{ color: s.loadChangePct > 30 ? "var(--warn)" : undefined }}>

@@ -129,9 +129,7 @@ export function formatNumber(
   if (value == null || value === "") return fallback;
   const num = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(num)) return fallback;
-  const factor = Math.pow(10, maxDecimals);
-  const rounded = Math.round(num * factor) / factor;
-  return rounded.toString();
+  return Number(num.toFixed(maxDecimals)).toString();
 }
 
 /**
@@ -141,8 +139,6 @@ export function formatScore(score: number | null | undefined, digits = 2): strin
   if (score == null) return "—";
   const num = typeof score === "number" ? score : Number(score);
   if (!Number.isFinite(num)) return "—";
-  const factor = Math.pow(10, digits);
-  const rounded = Math.round(num * factor) / factor;
-  return rounded.toString();
+  return Number(num.toFixed(digits)).toString();
 }
 

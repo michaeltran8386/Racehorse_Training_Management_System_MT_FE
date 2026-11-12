@@ -67,9 +67,9 @@ function getDraftBadgeText(kind: ReturnType<typeof summarizeDraftResults>["kind"
 function getSurfaceShortLabel(trackType: string, isVi: boolean): string {
   switch (trackType) {
     case "TURF":
-      return isVi ? "Mặt cỏ (Turf)" : "Turf";
+      return isVi ? "Mặt cỏ" : "Turf";
     case "DIRT":
-      return isVi ? "Đường cát (Dirt)" : "Dirt";
+      return isVi ? "Đường cát" : "Dirt";
     case "SYNTHETIC":
       return isVi ? "Tổng hợp" : "Synthetic";
     default:
@@ -382,14 +382,14 @@ export default function RaceEntryPage() {
       {
         label: isVi ? "Mở mô phỏng 2D" : "Run 2D Simulation",
         icon: "play",
-        hidden: !(canManage && isClosedReg && registeredCount > 0),
+        hidden: !(isClubManager && isClosedReg && registeredCount > 0),
         disabledReason: simBusy ? (isVi ? "Đang xử lý mô phỏng..." : "Simulation in progress...") : undefined,
         onSelect: () => handleLaunchSimulator(tourney),
       },
       {
         label: isVi ? "Lấy kết quả nhanh" : "Quick Result Import",
         icon: "zap",
-        hidden: !(canManage && isClosedReg && registeredCount > 0),
+        hidden: !(isClubManager && isClosedReg && registeredCount > 0),
         disabledReason: simBusy ? (isVi ? "Đang xử lý mô phỏng..." : "Simulation in progress...") : undefined,
         onSelect: () => handleQuickSimulate(tourney),
       },
@@ -1020,8 +1020,8 @@ export default function RaceEntryPage() {
                       </div>
                     )}
 
-                    {/* Telemetry & Results Collection Section */}
-                    {canManage && isClosedReg && registeredCount > 0 && (
+                    {/* Telemetry & Results Collection Section (Club Manager only) */}
+                    {isClubManager && isClosedReg && registeredCount > 0 && (
                       <div
                         style={{
                           marginTop: "0.75rem",
@@ -1250,7 +1250,7 @@ export default function RaceEntryPage() {
           title={isVietnamese() ? "Đóng cổng đăng ký thi đấu?" : tr("Close tournament registration?")}
           subtitle={
             isVietnamese()
-              ? `Chuyển trạng thái giải đua "${closeTarget.name}" sang "Đã đóng đăng ký" (CLOSED_REGISTRATION).`
+              ? `Chuyển trạng thái giải đua "${closeTarget.name}" sang "Đã đóng đăng ký".`
               : tr(`Change tournament "${closeTarget.name}" status to CLOSED_REGISTRATION.`)
           }
           callout={
@@ -1273,7 +1273,7 @@ export default function RaceEntryPage() {
           title={isVietnamese() ? "Mở cổng đăng ký thi đấu?" : tr("Open tournament registration?")}
           subtitle={
             isVietnamese()
-              ? `Chuyển trạng thái giải đua "${openRegTarget.name}" sang "Đang mở đăng ký" (OPEN_REGISTRATION).`
+              ? `Chuyển trạng thái giải đua "${openRegTarget.name}" sang "Đang mở đăng ký".`
               : tr(`Change tournament "${openRegTarget.name}" status to OPEN_REGISTRATION.`)
           }
           callout={
@@ -1296,7 +1296,7 @@ export default function RaceEntryPage() {
           title={isVietnamese() ? "Hủy tổ chức giải đua?" : tr("Cancel Tournament?")}
           subtitle={
             isVietnamese()
-              ? `Chuyển trạng thái giải đua "${cancelTarget.name}" sang "Đã hủy" (CANCELLED).`
+              ? `Chuyển trạng thái giải đua "${cancelTarget.name}" sang "Đã hủy".`
               : tr(`Change tournament "${cancelTarget.name}" status to CANCELLED.`)
           }
           callout={
