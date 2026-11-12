@@ -96,19 +96,35 @@ export function getLocalizedZoneName(
   zone: { code?: string; name: string },
   isVi: boolean,
 ): string {
-  const code = (zone.code || '').toUpperCase();
+  const code = (zone.code || '').toUpperCase().trim();
   const n = zone.name || '';
 
+  const isZoneA =
+    code === 'A' ||
+    code === 'ZONE-A' ||
+    code === 'ZONE_A' ||
+    /\b(?:zone|khu(?:\s+chuồng)?)\s*a\b|barn\s*1|đua chính/i.test(n);
+  const isZoneB =
+    code === 'B' ||
+    code === 'ZONE-B' ||
+    code === 'ZONE_B' ||
+    /\b(?:zone|khu(?:\s+chuồng)?)\s*b\b|barn\s*2|huấn luyện/i.test(n);
+  const isZoneC =
+    code === 'C' ||
+    code === 'ZONE-C' ||
+    code === 'ZONE_C' ||
+    /\b(?:zone|khu)\s*c\b|cách ly|isolation/i.test(n);
+
   if (!isVi) {
-    if (code === 'ZONE-A' || /khu a|zone a/i.test(n)) return 'Zone A - Barn 1';
-    if (code === 'ZONE-B' || /khu b|zone b/i.test(n)) return 'Zone B - Barn 2';
-    if (code === 'ZONE-C' || /khu c|zone c/i.test(n)) return 'Zone C - Isolation';
+    if (isZoneA) return 'Zone A - Barn 1';
+    if (isZoneB) return 'Zone B - Barn 2';
+    if (isZoneC) return 'Zone C - Isolation';
     return n;
   }
 
-  if (code === 'ZONE-A' || /zone a|khu a/i.test(n)) return 'Khu A - Chuồng 1';
-  if (code === 'ZONE-B' || /zone b|khu b/i.test(n)) return 'Khu B - Chuồng 2';
-  if (code === 'ZONE-C' || /zone c|khu c/i.test(n)) return 'Khu C - Khu Cách ly';
+  if (isZoneA) return 'Khu A - Chuồng 1';
+  if (isZoneB) return 'Khu B - Chuồng 2';
+  if (isZoneC) return 'Khu C - Khu Cách ly';
   return tr(n);
 }
 

@@ -1,6 +1,6 @@
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/shared/components/layout/PageHeader';
 import styles from './StableOperations.module.css';
@@ -26,6 +26,35 @@ import { IncidentReportModal } from '../components/IncidentReportModal';
 import type { DailyCareTask, DailyTaskSummary, DailyTaskType } from '../types/dailyTasks';
 import type { Zone } from '../types';
 import type { IncidentReport } from '../types/incidents';
+
+function localizeTaskDescription(description: string, isVi: boolean): string {
+  if (!description || !isVi) return description;
+  const unitReplacements: Array<[RegExp, string]> = [
+    [/\bVIAL\b/gi, 'lọ'],
+    [/\bPILL\b/gi, 'viên'],
+    [/\bTABLETS?\b/gi, 'viên'],
+    [/\bBOTTLE\b/gi, 'chai'],
+    [/\bPACKET\b/gi, 'gói'],
+    [/\bSACHETS?\b/gi, 'gói'],
+    [/\bLITER\b/gi, 'lít'],
+    [/\bPIECE\b/gi, 'cái'],
+    [/\bSET\b/gi, 'bộ'],
+    [/\bKG\b/g, 'kg'],
+    [/\bML\b/g, 'ml'],
+    [/\bMG\b/g, 'mg'],
+    [/\bOral\b/gi, 'Uống'],
+    [/\bIntramuscular\b/gi, 'Tiêm bắp'],
+    [/\bIntravenous\b/gi, 'Tiêm tĩnh mạch'],
+    [/\bSubcutaneous\b/gi, 'Tiêm dưới da'],
+    [/\bTopical\b/gi, 'Bôi ngoài da'],
+    [/\bOphthalmic\b/gi, 'Nhỏ mắt'],
+  ];
+  let out = description;
+  for (const [pattern, replacement] of unitReplacements) {
+    out = out.replace(pattern, replacement);
+  }
+  return out;
+}
 
 function UndoTaskButton({
   undoUntil,
@@ -70,7 +99,7 @@ export default function DailyChecklistPage() {
   useScreenTranslation();
   const user = useCurrentUser();
   const toast = useToast();
-  useAppLanguage();
+  const { isVietnamese: isVi } = useAppLanguage();
   const isGroom = user?.role === 'GROOM';
 
   const todayStr = useMemo(() => todayClub(), []);
@@ -107,24 +136,31 @@ export default function DailyChecklistPage() {
 
   // Auto-detect and preselect Groom's assigned Zone from shift roster
   useEffect(() => {
+    let active = true;
     if (isGroom) {
       getMyShifts({ startDate: selectedDate, endDate: selectedDate })
         .then((shifts) => {
+          if (!active) return;
           if (shifts && shifts.length > 0 && shifts[0].zone?.id) {
             setSelectedZoneId(shifts[0].zone.id);
+          } else {
+            setSelectedZoneId('ALL');
           }
         })
         .catch(() => {})
         .finally(() => {
-          setShiftsLoaded(true);
+          if (active) setShiftsLoaded(true);
         });
     } else {
       setShiftsLoaded(true);
     }
+    return () => {
+      active = false;
+    };
   }, [isGroom, selectedDate]);
 
-  async function loadData() {
-    setLoading(true);
+  async function loadData(silent = false) {
+    if (!silent) setLoading(true);
     setError('');
     try {
       const [tasksRes, zonesRes] = await Promise.all([
@@ -146,9 +182,9 @@ export default function DailyChecklistPage() {
       setSummary(tasksRes.summary || tasksRes.stats || null);
       setZones(zonesRes || []);
     } catch (err) {
-      setError(messageFor(err));
+      if (!silent) setError(messageFor(err));
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }
 
@@ -157,12 +193,42 @@ export default function DailyChecklistPage() {
     loadData();
   }, [selectedDate, selectedZoneId, statusFilter, onlyMyTasks, shiftsLoaded]);
 
+  const loadDataRef = useRef(loadData);
+  loadDataRef.current = loadData;
+
+  useEffect(() => {
+    const refreshOnFocus = () => {
+      if (document.visibilityState === 'visible') {
+        void loadDataRef.current(true);
+      }
+    };
+    window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshOnFocus);
+    return () => {
+      window.removeEventListener('focus', refreshOnFocus);
+      document.removeEventListener('visibilitychange', refreshOnFocus);
+    };
+  }, []);
+
   const handleComplete = async (taskId: string) => {
     if (actionBusyId) return;
     setActionBusyId(taskId);
     try {
       const updated = await dailyTasksApi.complete(taskId);
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                ...updated,
+                shift: updated.shift ?? t.shift,
+                stallZone: updated.stallZone ?? t.stallZone,
+                stall: updated.stall ?? t.stall,
+                assignedGroom: updated.assignedGroom ?? t.assignedGroom,
+              }
+            : t,
+        ),
+      );
       toast.show(tr('Task marked as completed. 15-min undo window started.'), 'ok');
       if (summary) {
         setSummary({
@@ -183,7 +249,20 @@ export default function DailyChecklistPage() {
     setActionBusyId(taskId);
     try {
       const updated = await dailyTasksApi.uncomplete(taskId);
-      setTasks((prev) => prev.map((t) => (t.id === taskId ? updated : t)));
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === taskId
+            ? {
+                ...t,
+                ...updated,
+                shift: updated.shift ?? t.shift,
+                stallZone: updated.stallZone ?? t.stallZone,
+                stall: updated.stall ?? t.stall,
+                assignedGroom: updated.assignedGroom ?? t.assignedGroom,
+              }
+            : t,
+        ),
+      );
       toast.show(tr('Task uncompleted.'), 'info');
       if (summary) {
         setSummary({
@@ -626,7 +705,7 @@ export default function DailyChecklistPage() {
 
                           {task.description && (
                             <div style={{ fontSize: 'var(--fs-sm)', color: 'var(--muted)', marginTop: '0.25rem', lineHeight: 1.5 }}>
-                              {task.description}
+                              {localizeTaskDescription(task.description, isVi)}
                             </div>
                           )}
 
