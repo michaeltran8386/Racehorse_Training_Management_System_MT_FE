@@ -349,6 +349,7 @@ export const VI_TEXT: Record<string, string> = {
   "Audits & Compliance Reports": "Báo cáo kiểm toán & tuân thủ",
   "Aug": "Th8",
   "August": "Tháng 8",
+  "Auto-generate": "Tự tạo mã",
   "Auto-generated on save": "Tự sinh khi lưu",
   "Automatically": "Tự động",
   "Average speed (km/h)": "Tốc độ trung bình (km/h)",

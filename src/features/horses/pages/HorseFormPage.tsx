@@ -59,7 +59,9 @@ export default function HorseFormPage() {
   const [gender, setGender] = useState("Stallion");
   const [color, setColor] = useState("");
   const [weightKg, setWeightKg] = useState("");
-  const [microchip, setMicrochip] = useState("");
+  const [microchip, setMicrochip] = useState(() =>
+    isEdit ? "" : `985${Math.floor(Math.random() * 1e12).toString().padStart(12, "0")}`
+  );
   const [ownerId, setOwnerId] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [owners, setOwners] = useState<Array<{ id: string; fullName: string; email: string }>>([]);
@@ -251,7 +253,7 @@ export default function HorseFormPage() {
           setName("");
           setDob("");
           setWeightKg("");
-          setMicrochip("");
+          setMicrochip(`985${Math.floor(Math.random() * 1e12).toString().padStart(12, "0")}`);
           setOwnerId("");
           setErrors({});
           setIsDirty(false);
@@ -368,17 +370,35 @@ export default function HorseFormPage() {
               error={errors.microchip ? tr(errors.microchip) : undefined}
               hint={tr("15-digit ISO standard electronic microchip")}
             >
-              <Input
-                placeholder={tr("Enter 15-digit microchip number...")}
-                value={microchip}
-                invalid={Boolean(errors.microchip)}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, "").slice(0, 15);
-                  setMicrochip(val);
-                  setIsDirty(true);
-                  if (errors.microchip) setErrors((prev) => ({ ...prev, microchip: "" }));
-                }}
-              />
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <div style={{ flex: 1 }}>
+                  <Input
+                    placeholder={tr("Enter 15-digit microchip number...")}
+                    value={microchip}
+                    invalid={Boolean(errors.microchip)}
+                    onChange={(e) => {
+                      const val = e.target.value.replace(/\D/g, "").slice(0, 15);
+                      setMicrochip(val);
+                      setIsDirty(true);
+                      if (errors.microchip) setErrors((prev) => ({ ...prev, microchip: "" }));
+                    }}
+                  />
+                </div>
+                <Button
+                  type="button"
+                  tone="secondary"
+                  size="sm"
+                  onClick={() => {
+                    const random12 = Math.floor(Math.random() * 1e12).toString().padStart(12, "0");
+                    setMicrochip(`985${random12}`);
+                    setIsDirty(true);
+                    if (errors.microchip) setErrors((prev) => ({ ...prev, microchip: "" }));
+                  }}
+                  style={{ whiteSpace: "nowrap" }}
+                >
+                  {tr("Auto-generate")}
+                </Button>
+              </div>
             </Field>
 
             <Field
