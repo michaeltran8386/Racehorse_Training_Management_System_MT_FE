@@ -422,24 +422,38 @@ export default function RecordDetailPage() {
                       {tr("Activity:")}{" "}<Badge tone="brand">{phase.allowedActivity}</Badge> · {tr("Objective:")} {phase.target}
                     </div>
 
-                    {phase.careInstructions && phase.careInstructions.length > 0 && (
-                      <div style={{ fontSize: "var(--fs-body)", marginTop: 4 }}>
-                        <span style={{ color: "var(--muted)" }}>{tr("Care Directives:")}</span>
-                        <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
-                          {phase.careInstructions.map((c: any, i: number) => (
-                            <li key={i}>
-                              {typeof c === "string" ? (
-                                <strong>{c}</strong>
-                              ) : (
-                                <>
-                                  <strong>{c.activity}</strong> {c.frequency ? `(${c.frequency})` : ""}{c.notes ? ` — ${c.notes}` : ""}
-                                </>
-                              )}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    {(() => {
+                      const validDirectives = (phase.careInstructions || []).filter(
+                        (c: any) =>
+                          (typeof c === "string" && c.trim() !== "") ||
+                          (c && typeof c === "object" && !Array.isArray(c) && typeof c.activity === "string" && c.activity.trim() !== ""),
+                      );
+                      if (validDirectives.length === 0) return null;
+                      return (
+                        <div style={{ fontSize: "var(--fs-body)", marginTop: 4 }}>
+                          <span style={{ color: "var(--muted)" }}>{tr("Care Directives:")}</span>
+                          <ul style={{ margin: "4px 0 0 16px", padding: 0 }}>
+                            {validDirectives.map((c: any, i: number) => (
+                              <li key={i}>
+                                {typeof c === "string" ? (
+                                  <strong>{c}</strong>
+                                ) : (
+                                  <>
+                                    <strong>{c.activity}</strong>{" "}
+                                    {c.frequency
+                                      ? `(${tr(c.frequency)})`
+                                      : c.frequencyPerDay
+                                        ? `(${c.frequencyPerDay} ${tr("times/day")})`
+                                        : ""}
+                                    {c.notes ? ` — ${c.notes}` : ""}
+                                  </>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })()}
                   </div>
                   );
                 })}

@@ -145,6 +145,7 @@ export const VI_TEXT: Record<string, string> = {
   "10-{{max}} characters": "10–{{max}} ký tự",
   "15 digits": "15 chữ số",
   "2 times/day": "2 lần/ngày",
+  "3 times/day": "3 lần/ngày",
   "2. Vital Signs": "2. Chỉ số sinh tồn",
   "2D Anatomical Injury Map": "Bản đồ chấn thương giải phẫu 2D",
   "2D Musculoskeletal Anatomical Model": "Mô hình giải phẫu cơ xương 2D",

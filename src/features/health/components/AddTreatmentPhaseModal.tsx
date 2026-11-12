@@ -11,6 +11,14 @@ import { Modal } from "@/shared/components/ui/Modal";
 import type { CareInstructionItem, TreatmentPhaseInput } from "../types";
 
 import { localizeServerText, tr } from "@/shared/i18n/tr";
+import { todayClub } from "@/features/training/api";
+
+function addDaysYmd(ymd: string, days: number): string {
+  const d = new Date(`${ymd}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 const ACTIVITY_OPTIONS = [
   { value: "Strict stall rest", label: "Strict stall rest" },
   { value: "Hand walk 10-15 mins", label: "Hand walk 10-15 mins" },
@@ -25,10 +33,8 @@ interface AddTreatmentPhaseModalProps {
 
 export function AddTreatmentPhaseModal({ onClose, onSubmit }: AddTreatmentPhaseModalProps) {
   const [phaseName, setPhaseName] = useState("");
-  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
-  const [endDate, setEndDate] = useState(
-    new Date(Date.now() + 7 * 86400000).toISOString().split("T")[0],
-  );
+  const [startDate, setStartDate] = useState(() => todayClub());
+  const [endDate, setEndDate] = useState(() => addDaysYmd(todayClub(), 7));
   const [target, setTarget] = useState("");
   const [allowedActivity, setAllowedActivity] = useState("");
   const [instructions, setInstructions] = useState<CareInstructionItem[]>([]);

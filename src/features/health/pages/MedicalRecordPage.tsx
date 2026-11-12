@@ -243,17 +243,28 @@ export default function MedicalRecordPage() {
                 </div>
                 <div>
                   {tr("Special care instructions:")}
-                  {overview.careInstructions.length === 0 ? (
-                    <div style={{ color: "var(--muted)", marginTop: 4 }}>{tr("No special directives.")}</div>
-                  ) : (
-                    <ul style={{ margin: "6px 0 0 18px", padding: 0, color: "var(--text-2)" }}>
-                      {overview.careInstructions.map((c, i) => (
-                        <li key={i} style={{ marginBottom: 4 }}>
-                          <strong>{c.activity}</strong> — {c.frequency}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+                  {(() => {
+                    const validInstructions = (overview.careInstructions || []).filter(
+                      (c: any) => c && typeof c === "object" && !Array.isArray(c) && c.activity,
+                    );
+                    if (validInstructions.length === 0) {
+                      return <div style={{ color: "var(--muted)", marginTop: 4 }}>{tr("No special directives.")}</div>;
+                    }
+                    return (
+                      <ul style={{ margin: "6px 0 0 18px", padding: 0, color: "var(--text-2)" }}>
+                        {validInstructions.map((c, i) => (
+                          <li key={i} style={{ marginBottom: 4 }}>
+                            <strong>{c.activity}</strong>
+                            {c.frequency
+                              ? ` — ${tr(String(c.frequency))}`
+                              : c.frequencyPerDay
+                                ? ` — ${c.frequencyPerDay} ${tr("times/day")}`
+                                : ""}
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

@@ -12,6 +12,7 @@ import type { PrescriptionInput } from "../types";
 import { formatDate } from "@/shared/lib/format";
 
 import { localizeServerText, tr } from "@/shared/i18n/tr";
+import { todayClub } from "@/features/training/api";
 const UNIT_OPTIONS = [
   { value: "g", label: "g" },
   { value: "mg", label: "mg" },
@@ -55,7 +56,7 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
   const [unit, setUnit] = useState("");
   const [route, setRoute] = useState("");
   const [frequencyPerDay, setFrequencyPerDay] = useState("");
-  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
+  const [startDate, setStartDate] = useState(() => todayClub());
   const [daysCount, setDaysCount] = useState("");
   const [withdrawalDays, setWithdrawalDays] = useState("");
   const [notes, setNotes] = useState("");
@@ -178,10 +179,26 @@ export function AddPrescriptionModal({ onClose, onSubmit }: AddPrescriptionModal
             />
           </Field>
           <Field label={tr("Unit *")}>
-            <Select required options={[{ value: "", label: tr("Select unit"), disabled: true }, ...UNIT_OPTIONS]} value={unit} onChange={(e) => setUnit(e.target.value)} />
+            <Select
+              required
+              options={[
+                { value: "", label: tr("Select unit"), disabled: true },
+                ...UNIT_OPTIONS.map((opt) => ({ value: opt.value, label: tr(opt.label) })),
+              ]}
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+            />
           </Field>
           <Field label={tr("Route *")}>
-            <Select required options={[{ value: "", label: tr("Select route"), disabled: true }, ...ROUTE_OPTIONS]} value={route} onChange={(e) => setRoute(e.target.value)} />
+            <Select
+              required
+              options={[
+                { value: "", label: tr("Select route"), disabled: true },
+                ...ROUTE_OPTIONS.map((opt) => ({ value: opt.value, label: tr(opt.label) })),
+              ]}
+              value={route}
+              onChange={(e) => setRoute(e.target.value)}
+            />
           </Field>
         </div>
 
