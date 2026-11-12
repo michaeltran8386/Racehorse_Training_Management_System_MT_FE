@@ -50,13 +50,15 @@ const MEDICAL = ["UNDER_OBSERVATION", "INJURED", "ISOLATED"];
 
 /** Thứ Hai (YYYY-MM-DD) của tuần chứa ngày d (YYYY-MM-DD). */
 function mondayOf(d: string): string {
+  if (!d) return "";
   const x = new Date(`${d}T00:00:00Z`);
+  if (isNaN(x.getTime())) return "";
   x.setUTCDate(x.getUTCDate() - ((x.getUTCDay() + 6) % 7));
   return x.toISOString().slice(0, 10);
 }
 
 function distanceOf(s: ExerciseSession): number {
-  return s.result?.actualDistanceMeters ?? s.targetDistanceMeters * s.repetitions;
+  return Number(s.result?.actualDistanceMeters ?? ((s.targetDistanceMeters ?? 0) * (s.repetitions ?? 1))) || 0;
 }
 
 /** Trễ ghi kết quả: đã Bỏ lỡ, hoặc Đã lên lịch mà đã qua giờ (khớp con số "Trễ ghi kết quả" của BE). */
@@ -66,7 +68,9 @@ function isOverdue(s: ExerciseSession): boolean {
 
 /** Hạn ghi bù buổi Bỏ lỡ: hết ngày tập + 7 ngày (LATE_RESULT_DAYS ở BE), dạng dd/mm. */
 function lateResultDeadline(sessionDate: string): string {
+  if (!sessionDate) return "";
   const d = new Date(`${sessionDate}T00:00:00Z`);
+  if (isNaN(d.getTime())) return sessionDate;
   d.setUTCDate(d.getUTCDate() + 7);
   return `${String(d.getUTCDate()).padStart(2, "0")}/${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
 }
@@ -121,9 +125,15 @@ export default function PlanDetailPage() {
 
   if (error) {
     return (
-      <Alert tone="danger" title={tr("Could not load the plan")}>
-        {error} <Button size="sm" tone="secondary" onClick={() => void load()}>{tr("Try again")}</Button>
-      </Alert>
+      <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <Alert tone="danger" title={tr("Could not load the plan")}>
+          {error}
+        </Alert>
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <Button size="sm" tone="secondary" onClick={() => void load()}>{tr("Try again")}</Button>
+          <LinkButton to="/training/plans" size="sm" tone="ghost">{tr("Training plans")}</LinkButton>
+        </div>
+      </div>
     );
   }
   if (!plan) return <div style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>{tr("Loading plan...")}</div>;
@@ -145,7 +155,9 @@ export default function PlanDetailPage() {
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
               <h1 className={styles.planTitle}>{plan.name}</h1>
               <Badge tone="neutral">{plan.planCode}</Badge>
-              <Badge tone={PLAN_STATUS_TONE[plan.status]}>{tr(PLAN_STATUS_LABEL[plan.status])}</Badge>
+              <Badge tone={PLAN_STATUS_TONE[plan.status] ?? "neutral"}>
+                {PLAN_STATUS_LABEL[plan.status] ? tr(PLAN_STATUS_LABEL[plan.status]) : plan.status}
+              </Badge>
             </div>
             <div style={{ fontSize: "var(--fs-body)", color: "var(--text-muted)", marginTop: "0.25rem" }}>
               {tr("Horse:")}{" "}<Link to={`/horses/${plan.horseId}`}>{plan.horseName}</Link> · {plan.startDate} → {plan.endDate} {tr("· Trainer:")}{" "}
@@ -253,7 +265,7 @@ export default function PlanDetailPage() {
               key={ph.id}
               phase={ph}
               sessions={sessions.filter((s) => s.phaseId === ph.id)}
-              current={ph.startDate <= today && today <= ph.endDate}
+              current={Boolean(ph.startDate && ph.endDate && ph.startDate <= today && today <= ph.endDate)}
               canEdit={isTrainer && open}
               onGenerateSchedule={() => setDialog({ kind: "generateSchedule", phase: ph })}
             />
@@ -416,7 +428,7 @@ export default function PlanDetailPage() {
         <WorkoutDialog
           plan={plan}
           session={dialog.kind === "edit" ? dialog.session : undefined}
-          defaultDate={plan.startDate > today ? plan.startDate : today}
+          defaultDate={(plan.startDate && plan.startDate > today) ? plan.startDate : today}
           onClose={() => setDialog(null)}
           onSaved={() => {
             setDialog(null);
@@ -444,7 +456,10 @@ export default function PlanDetailPage() {
 
 /** "2026-11-09" (thứ Hai) -> "09/11 – 15/11". */
 function weekRange(monday: string): string {
-  const [y, m, d] = monday.split("-").map(Number);
+  if (!monday) return "—";
+  const parts = monday.split("-").map(Number);
+  if (parts.length < 3 || parts.some(isNaN)) return monday;
+  const [y, m, d] = parts;
   const start = new Date(y, m - 1, d);
   const end = new Date(y, m - 1, d + 6);
   const fmt = (x: Date) => `${String(x.getDate()).padStart(2, "0")}/${String(x.getMonth() + 1).padStart(2, "0")}`;
@@ -466,44 +481,48 @@ function PhaseCard({
   onGenerateSchedule?: () => void;
 }) {
   const { isVietnamese } = useAppLanguage();
-  const num = (x: number) => x.toLocaleString(isVietnamese ? "vi-VN" : "en-US");
-  const done = sessions.filter((s) => s.status === "COMPLETED");
-  const run = done.reduce((sum, s) => sum + distanceOf(s), 0);
+  const num = (x?: number | null) => (x != null && !isNaN(Number(x)) ? Number(x).toLocaleString(isVietnamese ? "vi-VN" : "en-US") : "0");
+  const done = (sessions ?? []).filter((s) => s.status === "COMPLETED");
+  const run = done.reduce((sum, s) => sum + (distanceOf(s) || 0), 0);
   const weekly = new Map<string, number>();
   const weeklyCounts = new Map<string, number>();
-  for (const s of sessions.filter((x) => x.status !== "CANCELLED")) {
+  for (const s of (sessions ?? []).filter((x) => x.status !== "CANCELLED")) {
     const key = mondayOf(s.sessionDate);
-    weekly.set(key, (weekly.get(key) ?? 0) + distanceOf(s));
+    if (!key) continue;
+    weekly.set(key, (weekly.get(key) ?? 0) + (distanceOf(s) || 0));
     weeklyCounts.set(key, (weeklyCounts.get(key) ?? 0) + 1);
   }
   // Tuần (T2–CN) vượt định mức số buổi hoặc cự ly: gom thành một dòng dễ đọc cho mỗi tuần.
   const overLimitWeeks = [...weeklyCounts.keys()]
     .sort()
     .map((week) => ({ week, count: weeklyCounts.get(week) ?? 0, meters: weekly.get(week) ?? 0 }))
-    .filter((w) => w.count > phase.sessionsPerWeek || w.meters > phase.maxWeeklyDistance);
+    .filter((w) =>
+      (phase.sessionsPerWeek != null && phase.sessionsPerWeek > 0 && w.count > phase.sessionsPerWeek) ||
+      (phase.maxWeeklyDistance != null && phase.maxWeeklyDistance > 0 && w.meters > phase.maxWeeklyDistance)
+    );
 
-  const scheduled = sessions.filter((x) => x.status !== "CANCELLED").length;
-  const ended = phase.endDate < todayClub();
+  const scheduled = (sessions ?? []).filter((x) => x.status !== "CANCELLED").length;
+  const ended = Boolean(phase.endDate && phase.endDate < todayClub());
   const pct = scheduled > 0 ? Math.round((done.length / scheduled) * 100) : 0;
-  const surface = TRACK_LABEL[phase.surface] ? tr(TRACK_LABEL[phase.surface]) : phase.surface;
+  const surface = phase.surface && TRACK_LABEL[phase.surface] ? tr(TRACK_LABEL[phase.surface]) : (phase.surface || "—");
 
   return (
     <Card pad={0}>
       <div className={`${styles.phaseCard} ${current ? styles.currentPhase : ""}`}>
         <div className={styles.phaseHead}>
-          <strong className={styles.phaseName}>{phase.name}</strong>
-          <Badge tone="neutral">{PHASE_TYPE_LABEL[phase.type] ?? phase.type}</Badge>
+          <strong className={styles.phaseName}>{phase.name || tr("Phase")}</strong>
+          <Badge tone="neutral">{(phase.type && PHASE_TYPE_LABEL[phase.type]) ? tr(PHASE_TYPE_LABEL[phase.type]) : (phase.type || "—")}</Badge>
           {current && <Badge tone="info">{tr("Current")}</Badge>}
         </div>
         <div className={styles.phaseDates}>
-          {phase.startDate} → {phase.endDate}
+          {phase.startDate && phase.endDate ? `${phase.startDate} → ${phase.endDate}` : "—"}
         </div>
         {phase.goal && <div className={styles.phaseGoal}>{phase.goal}</div>}
 
         <dl className={styles.phaseStats}>
           <dt>{tr("Quota")}</dt>
           <dd>
-            {tr("{{count}} sessions/week", { count: phase.sessionsPerWeek })} · {num(phase.maxWeeklyDistance)} {tr("m/week")} · {surface}
+            {tr("{{count}} sessions/week", { count: phase.sessionsPerWeek ?? 0 })} · {num(phase.maxWeeklyDistance)} {tr("m/week")} · {surface}
             {phase.targetSpeedKmh ? ` · ${phase.targetSpeedKmh} km/h` : ""}
           </dd>
           <dt>{tr("Scheduled")}</dt>
@@ -522,7 +541,7 @@ function PhaseCard({
             <strong>{tr("Schedule exceeds this phase's weekly limit")}</strong>
             <span>
               {tr("Limit: {{count}} sessions and {{meters}} m per week (Mon–Sun).", {
-                count: phase.sessionsPerWeek,
+                count: phase.sessionsPerWeek ?? 0,
                 meters: num(phase.maxWeeklyDistance),
               })}
             </span>
@@ -531,11 +550,11 @@ function PhaseCard({
                 <li key={w.week}>
                   <b>{weekRange(w.week)}</b>
                   {": "}
-                  {w.count > phase.sessionsPerWeek
+                  {phase.sessionsPerWeek != null && phase.sessionsPerWeek > 0 && w.count > phase.sessionsPerWeek
                     ? tr("{{count}} sessions ({{extra}} too many)", { count: w.count, extra: w.count - phase.sessionsPerWeek })
                     : tr("{{count}} session(s)", { count: w.count })}
                   {" · "}
-                  {w.meters > phase.maxWeeklyDistance
+                  {phase.maxWeeklyDistance != null && phase.maxWeeklyDistance > 0 && w.meters > phase.maxWeeklyDistance
                     ? tr("{{meters}} m ({{extra}} m over)", {
                         meters: num(w.meters),
                         extra: num(w.meters - phase.maxWeeklyDistance),

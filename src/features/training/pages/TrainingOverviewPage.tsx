@@ -406,9 +406,9 @@ export default function TrainingOverviewPage() {
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "flex-end", gap: "0.35rem" }}>
                           {r.plan ? (
-                            <Button size="sm" tone="secondary" onClick={() => r.plan && navigate(`/training/plans/${r.plan.id}`)}>
+                            <LinkButton to={`/training/plans/${r.plan.id}`} size="sm" tone="secondary">
                               {tr("View plan")}
-                            </Button>
+                            </LinkButton>
                           ) : (
                             user.role === "HEAD_TRAINER" && (
                               <Button
