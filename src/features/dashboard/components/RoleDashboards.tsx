@@ -1323,27 +1323,64 @@ export function GroomDashboard() {
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap: "20px" }}>
-        <Card pad={20}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+      <Card pad={20}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <Icon name="activity" size={18} />
             <h3 className={styles.widgetTitle}>
               {isVi ? "Nhiệm vụ chăm sóc ngựa" : tr("Daily Care Tasks")}
             </h3>
-            <Link to="/tasks" style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)" }}>
-              {isVi ? "Chi tiết nhiệm vụ →" : tr("All tasks →")}
-            </Link>
           </div>
-          <p style={{ margin: 0, color: "var(--muted)", fontSize: "var(--fs-sm)" }}>
-            {t
-              ? isVi
-                ? `Hôm nay đã xong ${t.completed}/${t.total} việc, còn ${t.pending} việc.`
-                : `${t.completed}/${t.total} tasks done today, ${t.pending} left.`
-              : "—"}
-          </p>
-        </Card>
+          <Link to="/tasks" style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)", fontWeight: 600, textDecoration: "none" }}>
+            {isVi ? "Chi tiết nhiệm vụ →" : tr("All tasks →")}
+          </Link>
+        </div>
+        <p style={{ margin: 0, color: "var(--muted)", fontSize: "var(--fs-sm)" }}>
+          {t
+            ? isVi
+              ? `Hôm nay đã xong ${t.completed}/${t.total} việc, còn ${t.pending} việc.`
+              : `${t.completed}/${t.total} tasks done today, ${t.pending} left.`
+            : "—"}
+        </p>
 
-        <UpcomingTournamentsWidget />
-      </div>
+        {tasks.data?.items && tasks.data.items.length > 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "16px" }}>
+            {tasks.data.items.slice(0, 4).map((task) => (
+              <div
+                key={task.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "10px 12px",
+                  borderRadius: "var(--r)",
+                  background: "var(--surface-muted, rgba(0,0,0,0.02))",
+                  border: "1px solid var(--border)",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "10px", minWidth: 0 }}>
+                  <Icon
+                    name={task.isCompleted ? "check" : "clock"}
+                    size={16}
+                    style={{ color: task.isCompleted ? "var(--ok, #10b981)" : "var(--warn, #f59e0b)" }}
+                  />
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: "var(--fs-sm)", fontWeight: 600, color: "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {task.title}
+                    </div>
+                    <div style={{ fontSize: "var(--fs-xs)", color: "var(--muted)", marginTop: "2px" }}>
+                      {task.horse?.name ? `${task.horse.name} · ` : ""}{task.scheduledTime || ""}
+                    </div>
+                  </div>
+                </div>
+                <Badge tone={task.isCompleted ? "ok" : "warn"}>
+                  {task.isCompleted ? (isVi ? "Hoàn thành" : "Done") : (isVi ? "Chưa xong" : "Pending")}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
     </div>
   );
 }
