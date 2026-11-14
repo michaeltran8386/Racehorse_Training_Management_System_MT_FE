@@ -88,9 +88,9 @@ Toàn bộ tài khoản có mật khẩu chung: **`EquiFlow@2026`**
   - Lập hóa đơn chi phí lưu chuồng tính tự động theo ngày thực tế (`prorated by days`), ăn uống, dịch vụ thú y và bù trừ tiền thưởng giải đua.
   - Hỗ trợ **In / Xuất hóa đơn PDF & Excel (.xlsx)**.
 
-### 🤖 Flow 6: Trợ Lý AI Chuyên Biệt & Hệ Thống Đa Ngôn Ngữ
-- **Trợ lý AI TMEC Assistant:** Định hướng phục vụ chuyên sâu cho **Chủ Ngựa (`HORSE_OWNER`)** để tra cứu tình trạng chiến mã, lịch tập và sao kê cá nhân hóa; giao diện nhân viên nội bộ tinh giản để tối ưu thao tác chuyên môn.
-- **Song ngữ Anh - Việt 100%:** Chuyển đổi ngôn ngữ tức thời, đồng nhất nhãn trạng thái ("Đã gửi" / "Chưa gửi") và định dạng tiền tệ dấu chấm phân cách hàng nghìn (`6.000.000 đ`).
+### 🌐 Flow 6: Hệ Thống Đa Ngôn Ngữ & Trải Nghiệm Người Dùng
+- **Song ngữ Anh - Việt 100%:** Chuyển đổi ngôn ngữ tức thời (`i18next`), đồng nhất nhãn trạng thái ("Đã gửi" / "Chưa gửi") và định dạng tiền tệ dấu chấm phân cách hàng nghìn (`6.000.000 đ`).
+- **Giao diện tối ưu theo vai trò:** Mỗi vai trò (Manager, Trainer, Vet, Groom, Owner) sở hữu dashboard riêng biệt, tập trung vào nghiệp vụ cốt lõi không gây nhiễu thông tin.
 
 ---
 
