@@ -193,3 +193,29 @@
 - DB incident: first Prisma db push accidentally targeted existing equiflow DB on port 5432 because DIRECT_URL remained from .env while only DATABASE_URL was overridden. Schema sync reported success. No reset/accept-data-loss flags used; no before snapshot exists, so no claim of unchanged data. User was notified. Subsequent QA schema setup set BOTH URLs; fixtures restricted to equiflow_qa on port 55439. Do not blindly rollback existing DB.
 - Remaining limits: OneSignal needs App ID/HTTPS and real-device delivery test; VietQR remains a placeholder; no real Gmail inbox test, banking refund or partial-payment workflow. SMTP crash ambiguity and commit-to-email gap still require reconciliation/outbox for guaranteed delivery. No push/deploy.
 - Detailed handoff: docs/superpowers/plans/2026-11-23-business-email-alerts-handoff.md (workspace root). This checkpoint supersedes earlier notes that Tasks 5–12 remained open or no schema/live test had run.
+
+
+---
+### [2026-11-23 13:30] - Session Update by: Antigravity Assistant
+- **Context / Task:** Cập nhật tiến độ dự án, đối chiếu Pull Request của DungLT, dọn dẹp các tài liệu Xuan_Sinh và đưa nhánh nâng cấp lên GitHub PR #177 & PR #132.
+- **Changes Made:**
+  - **Phân tích đối chiếu PR DungLT (BE #176 & FE #131):** Phát hiện xung đột tiềm tàng giữa PR của DungLT (dựa trên nền `dev` cũ) với 14 commit BE và 3 commit FE mới tại local trên nhánh `feat/business-email-alerts`. Đã xác lập quyết định kiến trúc: KHÔNG merge PR của DungLT vào `dev` lúc này, yêu cầu DungLT rebase theo code mới.
+  - **Dọn dẹp môi trường (Cleanup):** Xóa toàn bộ thư mục `Xuan_Sinh/` (~15.3 MB), các file `xuansinh.md`, `Xuansinh_Implementation_QA_*.md`, `.superpowers/sdd/2026-11-23-xuansinh-upgrade`, và các log/test tạm thời trong `tmp/*xuansinh*` (~3 MB). Giải phóng hơn 18.5 MB dung lượng ổ đĩa.
+  - **Đưa mã nguồn lên Remote & Mở PR:**
+    - BE commit `7710d16` (push lên `origin/feat/business-email-alerts`), mở **PR #177** vào `dev` (bao gồm: Business Email Alerts, Sân tập Training Tracks capacity 6, gợi ý slot tập, ledger chi phí y tế và chống race condition khi finalize bệnh án).
+    - FE commit `cb36e63` (push lên `origin/feat/business-email-alerts`), mở **PR #132** vào `dev` (bao gồm: UI lịch trực tuần & xin đổi ca Groom, UI quản lý sân tập, bộ lọc khiếu nại nhân sự theo role và modal giải quyết sự cố).
+  - **Đặc tả nghiệp vụ mới (RecieveHorse.md):** Khởi tạo file đặc tả v2 [RecieveHorse.md](file:///e:/01_Academic_FPT/Courses/Se_5_Active/SWP391/MINH_Racehorse_Branch/RecieveHorse.md) chuẩn hóa chu trình 4 bước tiếp nhận và xác thực chính chủ ngựa (PENDING_ADMISSION -> APPOINTED -> INSPECTION_IN_PROGRESS -> RESTING/REJECTED), tách biệt bảng audit `AdmissionHistoryLog` và `AuditLog`, thiết kế 4 template Gmail và giao diện lọc nhanh 7 ngày qua.
+  - **Cập nhật Knowledge Graph (Graphify):** Chạy `graphify update .` đồng bộ AST và quan hệ mã nguồn (19,178 nodes, 58,111 edges, 1,709 communities).
+- **Current Status:** 
+  - Backend & Frontend working tree: Clean 100%.
+  - `typecheck` (tsc --noEmit) trên cả BE và FE: PASS 100% (0 errors).
+  - GitHub PRs: PR #177 (BE) và PR #132 (FE) đang chạy CI xanh các bước cơ bản; PR #176 và #131 của DungLT giữ nguyên OPEN (chờ rebase).
+- **Evidence:**
+  - BE build/typecheck: PASS (`tsc --noEmit` code 0).
+  - FE build/typecheck: PASS (`tsc --noEmit` code 0).
+  - Graphify: exit 0 (`graphify-out/graph.json` updated: 19,178 nodes, 58,111 edges, 1,709 communities).
+  - PR Links: BE PR #177 (https://github.com/michaeltran8386/Racehorse_Training_Management_System_MT_BE/pull/177), FE PR #132 (https://github.com/michaeltran8386/Racehorse_Training_Management_System_MT_FE/pull/132).
+- **Next Steps / Handoff Notes:**
+  - Theo dõi hoàn tất CI của PR #177 và PR #132 trước khi merge vào `dev`.
+  - Thông báo cho DungLT pull/rebase nhánh `dev` mới sau khi PR #177 và #132 được merge.
+  - Sẵn sàng triển khai 5 tasks của module Tiếp nhận ngựa theo `RecieveHorse.md` khi người dùng yêu cầu.
