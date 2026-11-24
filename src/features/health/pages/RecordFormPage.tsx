@@ -205,8 +205,6 @@ export default function RecordFormPage() {
   const [proposedStatus, setProposedStatus] = useState("UNDER_OBSERVATION");
   const [initialProposedStatus, setInitialProposedStatus] = useState<string | undefined>(undefined);
   const [proposeMedicalLock, setProposeMedicalLock] = useState(false);
-  const [lockExpectedRestDays,setLockExpectedRestDays] = useState(7);
-  const [lockUnlockConditions,setLockUnlockConditions] = useState('');
   const [recordStatus, setRecordStatus] = useState<string>("DRAFT");
   const [openRecordForSelectedHorse, setOpenRecordForSelectedHorse] = useState<MedicalRecord | null>(null);
 
@@ -308,8 +306,6 @@ export default function RecordFormPage() {
         setProposedStatus(nextProposedStatus);
         setInitialProposedStatus(r.proposedStatus || "");
         setProposeMedicalLock(Boolean(r.proposeMedicalLock) || r.severity === 'SEVERE' || r.severity === 'CRITICAL');
-        setLockExpectedRestDays(r.lockExpectedRestDays ?? 7);
-        setLockUnlockConditions(r.lockUnlockConditions ?? '');
       });
     }
   }, [isEdit, id, navigate, toast]);
@@ -514,8 +510,6 @@ export default function RecordFormPage() {
       severity,
       proposedStatus: effectiveProposedStatus,
       proposeMedicalLock: isEditingOpen ? false : proposeMedicalLock,
-      lockExpectedRestDays,
-      lockUnlockConditions,
       // "Save & Finalize" cũng lưu nháp trước, rồi mở hộp thoại Chốt ở trang chi tiết:
       // ở đó bác sĩ xác nhận áp trạng thái đề xuất và đặt Khóa huấn luyện (nếu đề xuất).
       saveAsDraft: true,
@@ -1113,10 +1107,6 @@ export default function RecordFormPage() {
                   checked={proposeMedicalLock || severity === 'SEVERE' || severity === 'CRITICAL'}
                   onChange={value=>{if (severity !== 'SEVERE' && severity !== 'CRITICAL') setProposeMedicalLock(value);}}
                 />
-                {proposeMedicalLock && <>
-                  <Field label={tr('Expected rest days')}><Input type="number" min={1} max={180} value={lockExpectedRestDays} onChange={e=>setLockExpectedRestDays(Number(e.target.value))} /></Field>
-                  <Field label={tr('Conditions for release')}><Textarea value={lockUnlockConditions} maxLength={2000} onChange={e=>setLockUnlockConditions(e.target.value)} /></Field>
-                </>}
                 <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)", display: "block", marginTop: 4 }}>
                   {tr("Upon finalizing the medical record, a confirmation step will be prompted to issue a protective training lock.")}
                 </span>
