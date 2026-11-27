@@ -62,7 +62,7 @@ export default function ChangePasswordPage() {
         title: "Password saved",
         body: `Every other device was signed out. The next change is due ${formatDate(res.nextChangeDue)}.`,
       });
-      toast.show("Password saved. Other devices were signed out.", "ok");
+      toast.show(tr("Password saved. Other devices were signed out."), "ok");
     } catch (err) {
       if (err instanceof ApiError && err.code === "WRONG_PASSWORD") {
         const left = Number(err.data.attemptsLeft ?? 0);
@@ -74,7 +74,7 @@ export default function ChangePasswordPage() {
         });
       } else if (err instanceof ApiError && err.code === "ATTEMPTS_EXCEEDED") fail({}, messageFor(err));
       else if (err instanceof ApiError && (err.code === "WEAK_PASSWORD" || err.code === "SAME_PASSWORD")) {
-        fail({ next: err.code === "SAME_PASSWORD" ? "The new password must differ from the current one." : messageFor(err) });
+        fail({ next: err.code === "SAME_PASSWORD" ? tr("The new password must differ from the current one.") : messageFor(err) });
       } else fail({}, messageFor(err));
     } finally {
       setBusy(false);

@@ -257,7 +257,7 @@ export function ClonePlanDialog({ plan, onClose, onDone }: DialogProps) {
     setSubmitting(true);
     try {
       const created = await trainingApi.clonePlan(plan.id, { targetHorseId: horseId, name: name.trim(), startDate, copyWorkouts });
-      toast.show("Training plan copied as a new draft.", "ok");
+      toast.show(tr("Training plan copied as a new draft."), "ok");
       if (created.skippedWorkouts > 0) {
         toast.show(`Bỏ qua ${created.skippedWorkouts} buổi tập do trùng giờ nhân viên chăm sóc hoặc trùng giờ của ngựa.`, "warn");
       }

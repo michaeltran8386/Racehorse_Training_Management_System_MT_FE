@@ -67,7 +67,7 @@ export default function NotificationSettingsPage() {
     };
     setSettings(nextSettings);
     saveStoredNotificationSettings(nextSettings);
-    toast.show("Notification preference saved.", "ok");
+    toast.show(tr("Notification preference saved."), "ok");
   };
 
   const updateChannel = <K extends keyof UserNotificationSettings["channels"]>(
@@ -83,14 +83,14 @@ export default function NotificationSettingsPage() {
     };
     setSettings(nextSettings);
     saveStoredNotificationSettings(nextSettings);
-    toast.show("Delivery channel settings updated.", "ok");
+    toast.show(tr("Delivery channel settings updated."), "ok");
   };
 
   const handleReset = () => {
     const defaults = getDefaultNotificationSettings(user?.role);
     setSettings(defaults);
     saveStoredNotificationSettings(defaults);
-    toast.show("Reset to default notification preferences.", "info");
+    toast.show(tr("Reset to default notification preferences."), "info");
   };
 
   const getCategorySummary = (catId: string) => {

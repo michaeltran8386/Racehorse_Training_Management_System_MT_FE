@@ -38,7 +38,7 @@ export default function ForgotPasswordPage() {
       await forgotPassword(mail);
       navigate(`/forgot-password/verify?email=${encodeURIComponent(mail)}`);
     } catch (err) {
-      if (err instanceof ApiError && err.code === "INVALID_EMAIL") setError("Email must be a @gmail.com address.");
+      if (err instanceof ApiError && err.code === "INVALID_EMAIL") setError(tr("Email must be a @gmail.com address."));
       else setFailure(messageFor(err));
     } finally {
       setBusy(false);

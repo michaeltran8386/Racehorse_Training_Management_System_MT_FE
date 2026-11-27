@@ -111,7 +111,7 @@ export interface BarnStaffingItem {
 }
 
 export const getBarnStaffing = () =>
-  api<{ barns: BarnStaffingItem[] }>("GET", "/accounts/barn-staffing");
+  api<{ barns: BarnStaffingItem[] }>("GET", "/accounts/barn-staffing", undefined, { silent: true });
 
 export interface OrphanedHorseItem {
   horseId: string;

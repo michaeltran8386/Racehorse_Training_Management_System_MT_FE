@@ -73,7 +73,7 @@ export default function MyProfilePage() {
     try {
       const res = await updateNotification(key, value);
       setUser(res.user);
-      toast.show("Notification setting saved.", "ok");
+      toast.show(tr("Notification setting saved."), "ok");
     } catch (err) {
       toast.show(messageFor(err), "danger");
     }

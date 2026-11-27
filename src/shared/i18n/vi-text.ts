@@ -4620,6 +4620,17 @@ export const VI_TEXT: Record<string, string> = {
   "Track name": "Tên sân tập",
   "New training track": "Thêm sân tập mới",
   "Training track saved.": "Đã lưu sân tập thể lực thành công.",
+  // Toast & Error Messages Localization
+  "horse needs 24 hours between these sessions.": "Chiến mã cần tối thiểu 24 giờ giãn cách giữa hai buổi tập để đảm bảo an toàn thể lực.",
+  "horse needs 48 hours between these sessions.": "Chiến mã cần tối thiểu 48 giờ giãn cách giữa hai buổi tập nặng để bảo vệ tim mạch và thể lực.",
+  "WORKOUT_REST_REQUIRED: horse needs 24 hours between these sessions.": "Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu 24 giờ giãn cách giữa hai buổi tập để đảm bảo an toàn thể lực.",
+  "WORKOUT_REST_REQUIRED: horse needs 48 hours between these sessions.": "Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu 48 giờ giãn cách giữa hai buổi tập nặng để bảo vệ tim mạch và thể lực.",
+  "WORKOUT_REST_REQUIRED: horse needs {{hours}} hours between these sessions.": "Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu {{hours}} giờ giãn cách giữa hai buổi tập để đảm bảo an toàn thể lực.",
+  "horse needs {{hours}} hours between these sessions.": "Chiến mã cần tối thiểu {{hours}} giờ giãn cách giữa hai buổi tập để đảm bảo an toàn thể lực.",
+  "Select a physical training track.": "Vui lòng chọn một sân tập thể lực cụ thể.",
+  "Selected track is inactive or does not match the surface.": "Đường chạy đã chọn không hoạt động hoặc không khớp với loại mặt sân.",
+  "TRACK_MAPPING_REQUIRED: overlapping legacy workouts need a verified physical-track mapping.": "Buổi tập cần được gắn với một đường chạy thực tế cụ thể.",
+  "This horse already has an overlapping workout.": "Chiến mã này đã có một buổi tập khác trong cùng khung giờ này.",
 };
 
 

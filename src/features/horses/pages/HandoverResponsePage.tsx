@@ -91,9 +91,9 @@ export default function HandoverResponsePage() {
                 }}
               >
                 <div style={{ fontWeight: 600, color: "var(--primary)", marginBottom: 4 }}>
-                  Quy định SLA Lũy tiến hoàn thành giáo án:
+                  Quy định SLA hoàn thành giáo án:
                 </div>
-                <div>Thời hạn: <strong>{result.days} ngày</strong></div>
+                <div>Thời hạn: <strong>{result.days || 3} ngày (72 giờ)</strong></div>
                 <div>Hạn hoàn thành trước: <strong>{new Date(result.planDeadlineAt).toLocaleString("vi-VN")}</strong></div>
               </div>
             )}
@@ -135,7 +135,7 @@ export default function HandoverResponsePage() {
               lineHeight: 1.5,
             }}
           >
-            <strong>Lưu ý về tiến độ SLA:</strong> Khi bạn bấm Tiếp nhận, hệ thống sẽ áp dụng SLA Lũy tiến (3 ngày cho chiến mã đầu tiên, cộng thêm 2 ngày cho mỗi chiến mã tiếp theo bạn đang chờ lập giáo án).
+            <strong>Lưu ý về tiến độ SLA:</strong> Khi bạn bấm Tiếp nhận, hệ thống sẽ áp dụng hạn chót cố định <strong>3 ngày (72 giờ)</strong> để bạn khảo sát thể lực và kích hoạt giáo án huấn luyện chính thức cho chiến mã.
           </div>
 
           {showDeclineField && (
