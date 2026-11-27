@@ -15,7 +15,7 @@ import { Select } from "@/shared/components/form/Select";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useToast } from "@/shared/components/ui/Toast";
 import { messageFor } from "@/shared/lib/messages";
-import { clubIso, todayClub, trainingApi } from "../api";
+import { clubIso, todayClub, effectiveClubNow, trainingApi } from "../api";
 import {
   ALWAYS_HEAVY,
   CANCEL_REASON_LABEL,
@@ -158,8 +158,8 @@ function DailyRoutineTimeline({
     6 * 60 + 15,
     11 * 60 + 30,
     normalizedBusyWorkouts,
-    isVietnamese ? "Khung rảnh sáng" : "Morning Slot",
-    isVietnamese ? "Khả dụng" : "Available",
+    isVietnamese ? "Khung tập sáng tham khảo" : "Morning training window",
+    isVietnamese ? "Cần kiểm tra lịch" : "Check availability",
     "avail-morning"
   );
 
@@ -168,8 +168,8 @@ function DailyRoutineTimeline({
     14 * 60 + 15,
     17 * 60,
     normalizedBusyWorkouts,
-    isVietnamese ? "Khung rảnh chiều" : "Afternoon Slot",
-    isVietnamese ? "Khả dụng" : "Available",
+    isVietnamese ? "Khung tập chiều tham khảo" : "Afternoon training window",
+    isVietnamese ? "Cần kiểm tra lịch" : "Check availability",
     "avail-afternoon"
   );
 
@@ -429,6 +429,9 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
     setWarnings([]);
   }, [planId, phaseId, date, time, type, intensity, distance, reps, surface]);
 
+  const workoutMinutes = type === 'TRIAL' ? 90 : ['WALK','SWIM'].includes(type) ? 45 : 60;
+  const latestStartMinutes = 17*60-workoutMinutes;
+  const latestStartTime = formatMinutesToTime(latestStartMinutes);
   const fieldErrors = useMemo(() => {
     const errs: Record<string, string> = {};
     if(locked)errs.planId=tr('This horse is medically protected. New workouts require veterinary release.');
@@ -457,25 +460,25 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
     }
     const today = todayClub();
     if (date === today) {
-      const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+      const now = new Date(+effectiveClubNow() + 7 * 60 * 60 * 1000);
       const minTimeDate = new Date(now.getTime() + 30 * 60 * 1000);
       const minH = String(minTimeDate.getUTCHours()).padStart(2, "0");
       const minM = String(minTimeDate.getUTCMinutes()).padStart(2, "0");
       const todayMinTime = `${minH}:${minM}`;
-      if (time < todayMinTime) {
+      if (+new Date(clubIso(date,time)) < +effectiveClubNow()+30*60000) {
         errs.time = isVietnamese
-          ? `Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo thời gian thực (từ ${todayMinTime} trở đi).`
+          ? `Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo giờ hiện tại của CLB (từ ${todayMinTime} trở đi).`
           : tr("Start time for today must be at least 30 minutes in the future (from {{time}}).", { time: todayMinTime });
       }
     }
-    if (time > "16:00") {
+    if (time && Number(time.slice(0,2))*60+Number(time.slice(3))+workoutMinutes > 17*60) {
       errs.time = isVietnamese
-        ? "Buổi tập phải kết thúc trước 17:00 chiều. Giờ bắt đầu muộn nhất là 16:00."
-        : tr("Workout must end before 17:00. Latest start time is 16:00.");
+        ? `Buổi tập phải kết thúc trước 17:00 chiều. Giờ bắt đầu muộn nhất của bài này là ${latestStartTime}.`
+        : tr("Workout must end before 17:00.");
     }
     return errs;
 
-  }, [planId, phases.length, phaseId, forcedHeavy, speed, distance, reps, date, time, isVietnamese, locked, noSurface, trackId, catalog.loading, catalog.error]);
+  }, [planId, phases.length, phaseId, forcedHeavy, speed, distance, reps, date, time, isVietnamese, locked, noSurface, trackId, catalog.loading, catalog.error, workoutMinutes, latestStartTime]);
 
 
   // Chỉ tự xóa thông báo "kiểm tra các ô" khi các ô đã hợp lệ; lỗi từ BE phải giữ nguyên để người dùng đọc được.
@@ -530,6 +533,8 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
   // Gợi ý khung giờ thông minh: không bắt buộc phải nhập tốc độ hay chọn sẵn track trước
   const suggestionInputError = !planId
     ? (isVietnamese ? "Vui lòng chọn ngựa và giáo án." : tr("Please select a horse and plan."))
+    : locked ? (isVietnamese ? "Ngựa đang bị khóa y tế." : "This horse is medically locked.")
+    : forcedHeavy && (!speed || Number(speed)<10 || Number(speed)>70) ? (isVietnamese ? "Nhập tốc độ mục tiêu từ 10 đến 70 km/h trước khi tìm lịch." : "Enter a target speed from 10 to 70 km/h first.")
     : phases.length > 0 && !phaseId
       ? (isVietnamese ? "Vui lòng chọn giai đoạn huấn luyện." : tr("Please select a training phase."))
       : "";
@@ -551,34 +556,9 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
       return;
     }
 
-    const defaultTrackId = trackId || catalog.tracks[0]?.id || null;
-    const fallbackSlots: SuggestedSlot[] = [
-      {
-        startAt: `${from}T07:00:00+07:00`,
-        endAt: `${from}T08:00:00+07:00`,
-        trackId: defaultTrackId,
-        availableCapacity: 5,
-        reasons: ["OPTIMAL_COOL_WEATHER"],
-      },
-      {
-        startAt: `${from}T15:30:00+07:00`,
-        endAt: `${from}T16:30:00+07:00`,
-        trackId: defaultTrackId,
-        availableCapacity: 4,
-        reasons: ["AFTERNOON_SESSION"],
-      },
-      {
-        startAt: `${new Date(new Date(`${from}T00:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10)}T07:30:00+07:00`,
-        endAt: `${new Date(new Date(`${from}T00:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10)}T08:30:00+07:00`,
-        trackId: defaultTrackId,
-        availableCapacity: 6,
-        reasons: ["NEXT_MORNING_SLOT"],
-      },
-    ];
-
     const query = new URLSearchParams();
     Object.entries({ ...input(), from, to, excludeWorkoutId: session?.id }).forEach(([k, value]) => {
-      if (value !== undefined && !["scheduledDate", "trainerNotes", "acknowledgeWarnings"].includes(k)) {
+      if (value !== undefined && !(k === "trackId" && !value) && !["scheduledDate", "trainerNotes", "acknowledgeWarnings"].includes(k)) {
         query.set(k, String(value));
       }
     });
@@ -593,17 +573,22 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
       );
       if (version !== suggestionVersion.current) return;
 
-      if (result.slots && result.slots.length > 0) {
-        setSuggestions({ key, loading: false, slots: result.slots, error: "" });
-      } else {
-        // Fallback sang 3 khung giờ tối ưu tiêu chuẩn
-        setSuggestions({ key, loading: false, slots: fallbackSlots, error: "" });
-      }
-    } catch {
-      if (version === suggestionVersion.current) {
-        // Khắc phục lỗi: Thay vì báo lỗi chặn đứng, trả về 3 khung giờ thông minh đề xuất
-        setSuggestions({ key, loading: false, slots: fallbackSlots, error: "" });
-      }
+      const slots = result.slots ?? [];
+      const reasons: Record<string,string> = {
+        MEDICAL_LOCK_ACTIVE: isVietnamese ? 'Ngựa đang khóa y tế; cần bác sĩ giải trừ trước khi xếp tập.' : 'Veterinary release is required.',
+        PLAN_CLOSED: isVietnamese ? 'Giáo án đã kết thúc hoặc bị hủy.' : 'This plan is closed.',
+        HORSE_UNAVAILABLE: isVietnamese ? 'Tình trạng ngựa chưa cho phép xếp tập.' : 'This horse cannot be scheduled.',
+        DEBT_IMPOUNDED: isVietnamese ? 'Ngựa đang lưu giữ nợ, không được xếp bài nặng.' : 'Debt impound prevents heavy workouts.',
+        VET_CONFIRMATION_REQUIRED: isVietnamese ? 'Cần xác nhận đã trao đổi với bác sĩ trước bài tập này.' : 'Veterinary consultation must be confirmed.',
+        INVALID_TRAINER: isVietnamese ? 'HLV phụ trách chưa đủ điều kiện hoạt động.' : 'The assigned trainer is unavailable.',
+        INVALID_WORKOUT_INPUT: isVietnamese ? 'Kiểm tra cự ly, số hiệp và tốc độ mục tiêu.' : 'Check distance, repetitions and target speed.',
+        PHASE_REQUIRED: isVietnamese ? 'Vui lòng chọn giai đoạn huấn luyện.' : 'Select a training phase.',
+      };
+      setSuggestions({key,loading:false,slots,error:slots.length===0
+        ? result.reasons.map(reason=>reasons[reason]).filter(Boolean).join(' ') || (isVietnamese ? 'Không có khung giờ phù hợp trong phạm vi đã chọn. Hãy đổi ngày, giai đoạn hoặc loại bài tập.' : 'No suitable slots in this range. Try another date, phase or workout type.')
+        : slots.length<3 ? (isVietnamese ? `Chỉ có ${slots.length} khung giờ đáp ứng các điều kiện hiện tại.` : `Only ${slots.length} suitable slots are available.`) : ''});
+    } catch (error) {
+      if (version === suggestionVersion.current) setSuggestions({key,loading:false,slots:[],error:messageFor(error)});
     }
   };
   const canCheck=Object.keys(fieldErrors).length===0;
@@ -705,7 +690,8 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
                     const club = new Date(+new Date(slot.startAt) + 7 * 3600000).toISOString();
                     const slotDate = club.slice(0, 10);
                     const slotTime = club.slice(11, 16);
-                    const trackName = catalog.tracks.find((t) => t.id === slot.trackId)?.name ?? (isVietnamese ? "Đường tập tiêu chuẩn" : tr("Physical track"));
+                    const slotEndTime = new Intl.DateTimeFormat(isVietnamese ? "vi-VN" : "en-GB", { timeZone: "Asia/Ho_Chi_Minh",hour:"2-digit",minute:"2-digit" }).format(new Date(slot.endAt));
+                    const trackName = noSurface ? (isVietnamese ? "Không dùng sân tập" : "No physical track") : catalog.tracks.find((t) => t.id === slot.trackId)?.name ?? (isVietnamese ? "Sân tập đã kiểm tra" : tr("Physical track"));
                     const isSelected = date === slotDate && time === slotTime && (!slot.trackId || trackId === slot.trackId);
                     return (
                       <div
@@ -725,10 +711,10 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
                           <span style={{ color: "#16a34a" }}>● {isVietnamese ? "Khả dụng" : "Available"}</span>
                         </div>
                         <div style={{ fontSize: "13px", fontWeight: 700, color: "var(--ink, #0f172a)" }}>
-                          {new Intl.DateTimeFormat(isVietnamese ? "vi-VN" : "en-GB", { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" }).format(new Date(slot.startAt))}
+                          {new Intl.DateTimeFormat(isVietnamese ? "vi-VN" : "en-GB", { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" }).format(new Date(slot.startAt))} – {slotEndTime}
                         </div>
                         <div style={{ fontSize: "12px", color: "var(--ink-secondary, #64748b)" }}>
-                          {trackName}
+                          {trackName} · {workoutMinutes} {isVietnamese ? "phút" : "min"}
                         </div>
                         <button
                           type="button"
@@ -842,13 +828,13 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
           <Field
             label={tr("Start time")}
             required
-            hint="04:00 – 16:00"
+            hint={`04:00 – ${latestStartTime}`}
             error={isFieldVisible("time") ? fieldErrors.time : undefined}
           >
             <Input
               type="time"
               min="04:00"
-              max="16:00"
+              max={latestStartTime}
               step={900}
               value={time}
               onChange={(e) => setTime(e.target.value)}
@@ -1091,6 +1077,7 @@ export function CancelWorkoutDialog({ session, onClose, onDone }: { session: Exe
 
 /** DL-2.07 Khôi phục buổi tập bị chặn (sau khi gỡ khóa), có thể dời ngày giờ. */
 export function RestoreWorkoutDialog({ session, onClose, onDone }: { session: ExerciseSession; onClose: () => void; onDone: () => void }) {
+  const latestStartTime = formatMinutesToTime(17*60-(session.sessionType === 'TRIAL' ? 90 : ['WALK','SWIM'].includes(session.sessionType) ? 45 : 60));
   useAppLanguage();
   const toast = useToast();
   const today = todayClub();
@@ -1131,8 +1118,8 @@ export function RestoreWorkoutDialog({ session, onClose, onDone }: { session: Ex
           <Field label={tr("Date")} required>
             <Input type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
-          <Field label={tr("Start time")} required hint="04:00 – 16:00">
-            <Input type="time" min="04:00" max="16:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
+          <Field label={tr("Start time")} required hint={`04:00 – ${latestStartTime}`}>
+            <Input type="time" min="04:00" max={latestStartTime} step={900} value={time} onChange={(e) => setTime(e.target.value)} />
           </Field>
         </div>
       </div>
@@ -1184,6 +1171,8 @@ export function GeneratePhaseScheduleDialog({
   const [weekdays, setWeekdays] = useState<number[]>(defaultDays);
   const [time, setTime] = useState("06:30");
   const [type, setType] = useState<ExerciseType>(defaultType);
+  const workoutMinutes = type === 'TRIAL' ? 90 : ['WALK','SWIM'].includes(type) ? 45 : 60;
+  const latestStartTime = formatMinutesToTime(17*60-workoutMinutes);
   const [intensity, setIntensity] = useState<ExerciseIntensity>(defaultIntensity);
   const [distance, setDistance] = useState(
     String(Math.min(5000, Math.max(500, Math.round(phase.maxWeeklyDistance / (phase.sessionsPerWeek || 5))))),
@@ -1225,7 +1214,7 @@ export function GeneratePhaseScheduleDialog({
             const bMStr = String(endTotal % 60).padStart(2, "0");
             return {
               id: w.id,
-              horseName: w.horse?.name || "Chiến mã",
+              horseName: w.horse?.name || tr("Horse"),
               timeRange: `${sHStr}:${sMStr} – ${eHStr}:${eMStr}`,
               startMinutes: startTotal,
               endMinutes: endTotal,
@@ -1294,7 +1283,7 @@ export function GeneratePhaseScheduleDialog({
 
   const today = todayClub();
   const isStartingToday = phase.startDate <= today;
-  const now = new Date(Date.now() + 7 * 60 * 60 * 1000);
+  const now = new Date(+effectiveClubNow() + 7 * 60 * 60 * 1000);
   const minTimeDate = new Date(now.getTime() + 30 * 60 * 1000);
   const minH = String(minTimeDate.getUTCHours()).padStart(2, "0");
   const minM = String(minTimeDate.getUTCMinutes()).padStart(2, "0");
@@ -1310,7 +1299,7 @@ export function GeneratePhaseScheduleDialog({
     if (isStartingToday && phase.startDate === today && time < todayMinTime) {
       setError(
         isVietnamese
-          ? `Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo thời gian thực (từ ${todayMinTime} trở đi).`
+          ? `Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo giờ hiện tại của CLB (từ ${todayMinTime} trở đi).`
           : tr("Start time for today must be at least 30 minutes in the future (from {{time}}).", { time: todayMinTime }),
       );
       return;
@@ -1341,11 +1330,11 @@ export function GeneratePhaseScheduleDialog({
       return;
     }
     const needsSpeed = type === "BREEZE" || type === "TRIAL";
-    if (time > "16:00") {
+    if (time && Number(time.slice(0,2))*60+Number(time.slice(3))+workoutMinutes > 17*60) {
       setError(
         isVietnamese
-          ? "Buổi tập phải kết thúc trước 17:00 chiều. Giờ bắt đầu muộn nhất là 16:00."
-          : tr("Workout must end before 17:00. Latest start time is 16:00."),
+          ? `Buổi tập phải kết thúc trước 17:00 chiều. Giờ bắt đầu muộn nhất của bài này là ${latestStartTime}.`
+          : tr("Workout must end before 17:00."),
       );
       return;
     }
@@ -1484,7 +1473,7 @@ export function GeneratePhaseScheduleDialog({
                   : "04:00 – 16:00"
               }
             >
-              <Input type="time" min={minTimeAllowed} max="16:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
+              <Input type="time" min={minTimeAllowed} max={latestStartTime} step={900} value={time} onChange={(e) => setTime(e.target.value)} />
               {time && time < "06:15" && (
                 <div style={{ color: "#d97706", fontSize: "11px", marginTop: "4px" }}>
                   <span>{isVietnamese ? "Sát bữa ăn sáng (05:30). Khuyên dùng sau 06:15 để ngựa tiêu hóa tốt." : "Close to breakfast (05:30). Recommended after 06:15."}</span>
