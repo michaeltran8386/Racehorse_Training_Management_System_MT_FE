@@ -73,10 +73,15 @@ export function TimePicker({
     return [padZero(Number(h) || 0), padZero(Number(m) || 0)];
   }, [value]);
 
-  // Hours: 00 to 23
+  // Hours: filtered by min and max
   const hours = useMemo(() => {
-    return Array.from({ length: 24 }, (_, i) => padZero(i));
-  }, []);
+    const all = Array.from({ length: 24 }, (_, i) => padZero(i));
+    return all.filter((h) => {
+      if (min && `${h}:59` < min) return false;
+      if (max && `${h}:00` > max) return false;
+      return true;
+    });
+  }, [min, max]);
 
   // Minutes step (default 5 min intervals if not specified, or 15 mins if step is 900)
   const minuteInterval = step >= 900 ? 15 : step >= 300 ? 5 : 1;
@@ -130,7 +135,12 @@ export function TimePicker({
   };
 
   const handleSelectHour = (h: string) => {
-    const newTime = `${h}:${selectedMinute}`;
+    let nextMinute = selectedMinute;
+    if (isTimeDisabled(h, nextMinute)) {
+      const validMin = minutes.find((m) => !isTimeDisabled(h, m)) || "00";
+      nextMinute = validMin;
+    }
+    const newTime = `${h}:${nextMinute}`;
     onChange?.(newTime);
   };
 
@@ -258,7 +268,7 @@ export function TimePicker({
 
           {/* Quick Presets */}
           <div className={styles.presetsRow}>
-            {COMMON_PRESETS.map((p) => (
+            {COMMON_PRESETS.filter((p) => (!min || p >= min) && (!max || p <= max)).map((p) => (
               <button
                 key={p}
                 type="button"

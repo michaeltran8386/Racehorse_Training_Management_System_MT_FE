@@ -136,17 +136,17 @@ function validatePlanForm(
   } else {
     const s = new Date(`${start}T00:00:00Z`).getTime();
     const e = new Date(`${end}T00:00:00Z`).getTime();
-    const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24));
-    if (diffDays < 7) {
+    const totalDays = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
+    if (totalDays < 7) {
       errors.endDate = isVietnamese
         ? "Giáo án phải kéo dài ít nhất 1 tuần (7 ngày) giữa ngày bắt đầu và ngày kết thúc."
         : tr("Training plan must last at least 1 week (7 days) between start date and end date.");
-    } else if (diffDays > 365) {
+    } else if (totalDays > 365) {
       errors.endDate = isVietnamese ? "Giáo án tối đa 52 tuần (365 ngày)." : tr("Plan duration cannot exceed 52 weeks.");
-    } else if (phases.length > 0 && diffDays + 1 < phases.length * 3) {
+    } else if (phases.length > 0 && totalDays < phases.length) {
       errors.endDate = isVietnamese
-        ? `Thời gian giáo án (${diffDays + 1} ngày) không đủ cho ${phases.length} giai đoạn (mỗi giai đoạn tối thiểu từ 3 ngày).`
-        : tr("Plan duration is too short for {{count}} phases (min 3 days/phase).", { count: phases.length });
+        ? `Thời gian giáo án (${totalDays} ngày) không đủ cho ${phases.length} giai đoạn (mỗi giai đoạn tối thiểu từ 1 ngày).`
+        : tr("Plan duration is too short for {{count}} phases (min 1 day/phase).", { count: phases.length });
     }
   }
 
@@ -524,6 +524,7 @@ export default function PlanWizardPage() {
         id: selectedAssignableHorse.id,
         name: selectedAssignableHorse.name,
         horseCode: selectedAssignableHorse.horseCode,
+        avatarUrl: selectedAssignableHorse.avatarUrl,
         breed: selectedAssignableHorse.breed,
         stallName: selectedAssignableHorse.stallName,
         age: getHorseAge(selectedAssignableHorse.dob),
@@ -540,6 +541,7 @@ export default function PlanWizardPage() {
         id: horse.id,
         name: horse.name,
         horseCode: horse.horseCode,
+        avatarUrl: horse.avatarUrl,
         breed: horse.breed,
         stallName: horse.stallCode,
         age: getHorseAge(horse.dob),
@@ -890,11 +892,11 @@ export default function PlanWizardPage() {
     setDirty(true);
     markTouched("startDate");
 
-    // Nếu endDate chưa có hoặc nhỏ hơn newStart, cập nhật endDate mặc định theo số giai đoạn hiện tại
+    // Ngày kết thúc tối thiểu phải đủ 7 ngày kể từ ngày bắt đầu
+    const minRequiredEnd = addDays(newStart, 6);
     let targetEnd = endDate;
-    const minEnd = addDays(newStart, (phases.length || 4) - 1);
-    if (!targetEnd || targetEnd < minEnd) {
-      targetEnd = addDays(newStart, (phases.length || 4) * 7 - 1);
+    if (!targetEnd || targetEnd < minRequiredEnd) {
+      targetEnd = addDays(newStart, Math.max(6, (phases.length || 4) * 7 - 1));
       setEndDate(targetEnd);
       markTouched("endDate");
     }
@@ -907,14 +909,28 @@ export default function PlanWizardPage() {
 
   const handleEndDateChange = (newEnd: string) => {
     if (!newEnd) return;
-    setEndDate(newEnd);
+    if (!startDate) {
+      setEndDate(newEnd);
+      return;
+    }
+    const minRequiredEnd = addDays(startDate, 6);
+    let finalEnd = newEnd;
+    if (finalEnd < minRequiredEnd) {
+      finalEnd = minRequiredEnd;
+      toast.show(
+        isVietnamese
+          ? "Thời lượng giáo án bắt buộc tối thiểu 7 ngày."
+          : "Plan duration must be at least 7 days.",
+        "warn"
+      );
+    }
+    setEndDate(finalEnd);
     setDirty(true);
     markTouched("endDate");
-    if (!startDate || newEnd < startDate) return;
 
-    // Giữ nguyên số giai đoạn đang chọn, chia đều khoảng thời gian [startDate, newEnd]
+    // Giữ nguyên số giai đoạn đang chọn, chia đều khoảng thời gian [startDate, finalEnd]
     const count = phases.length || 4;
-    const updated = distributePhasesEqually(startDate, newEnd, count, phases, isVietnamese);
+    const updated = distributePhasesEqually(startDate, finalEnd, count, phases, isVietnamese);
     setPhases(updated);
   };
 
@@ -1434,7 +1450,14 @@ export default function PlanWizardPage() {
               <div className={styles.horseHeroCard}>
                 <div className={styles.horseHeroLeft}>
                   <div className={styles.horseHeroAvatar}>
-                    
+                    <img
+                      src={selectedHorseInfo.avatarUrl || "/images/horses/horse-01.jpg"}
+                      alt={selectedHorseInfo.name}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "10px" }}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/images/horses/horse-01.jpg";
+                      }}
+                    />
                   </div>
                   <div className={styles.horseHeroInfo}>
                     <div className={styles.horseHeroTitleRow}>
@@ -1447,44 +1470,24 @@ export default function PlanWizardPage() {
                       </Badge>
                     </div>
                     <div className={styles.horseHeroMetaRow}>
-                      {selectedHorseInfo.breed && (
-                        <span className={styles.horseHeroMetaChip}>
-                          Giống: <strong>{selectedHorseInfo.breed}</strong>
-                        </span>
-                      )}
-                      {selectedHorseInfo.age != null && (
-                        <span className={styles.horseHeroMetaChip}>
-                          Tuổi: <strong>{selectedHorseInfo.age} tuổi</strong>
-                        </span>
-                      )}
-                      {selectedHorseInfo.gender && (
-                        <span className={styles.horseHeroMetaChip}>
-                          Giới tính: <strong>{formatHorseGender(selectedHorseInfo.gender)}</strong>
-                        </span>
-                      )}
-                      {selectedHorseInfo.color && (
-                        <span className={styles.horseHeroMetaChip}>
-                          Lông: <strong>{selectedHorseInfo.color}</strong>
-                        </span>
-                      )}
-                      {selectedHorseInfo.stallName && (
-                        <span className={styles.horseHeroMetaChip}>
-                          Ô chuồng: <strong>{selectedHorseInfo.stallName}</strong>
-                        </span>
-                      )}
-                      {selectedHorseInfo.ownerName && (
-                        <span className={styles.horseHeroMetaChip}>
-                          Chủ: <strong>{selectedHorseInfo.ownerName}</strong>
-                        </span>
-                      )}
                       <span className={styles.horseHeroMetaChip}>
-                        Thể trạng: <strong>{formatHealthStatus(selectedHorseInfo.status, selectedHorseInfo.isMedicalLocked).label}</strong>
+                        {isVietnamese ? "Giống:" : "Breed:"} <strong>{selectedHorseInfo.breed || "Thoroughbred"}</strong>
                       </span>
                       <span className={styles.horseHeroMetaChip}>
-                        HLV: <strong>{user.fullName}</strong>
+                        {isVietnamese ? "Tuổi & Giới tính:" : "Age & Sex:"}{" "}
+                        <strong>
+                          {selectedHorseInfo.age != null ? `${selectedHorseInfo.age} ${isVietnamese ? "tuổi" : "yo"}` : "—"} · {formatHorseGender(selectedHorseInfo.gender)}
+                        </strong>
                       </span>
                       <span className={styles.horseHeroMetaChip}>
-                        Định mức HLV:{" "}
+                        {isVietnamese ? "Ô chuồng:" : "Stall:"} <strong>{selectedHorseInfo.stallName || "Barn A"}</strong>
+                      </span>
+                      <span className={styles.horseHeroMetaChip}>
+                        {isVietnamese ? "Thể trạng:" : "Health:"}{" "}
+                        <strong>{formatHealthStatus(selectedHorseInfo.status, selectedHorseInfo.isMedicalLocked).label}</strong>
+                      </span>
+                      <span className={styles.horseHeroMetaChip}>
+                        {isVietnamese ? "Định mức HLV:" : "Trainer Quota:"}{" "}
                         <strong style={{ color: trainerSelfCount >= 8 ? "var(--danger, #ef4444)" : "var(--brand, #2563eb)" }}>
                           {trainerSelfCount}/8 {isVietnamese ? "chiến mã" : "horses"}
                         </strong>
@@ -1757,40 +1760,9 @@ export default function PlanWizardPage() {
                 <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", color: "var(--text, #334155)", fontWeight: 500 }}>
                   <Icon name="clock" size={14} inline style={{ color: "var(--text-muted, #64748b)" }} />
                   <span>
-                    <strong>{planDuration?.diffDays || phases.length * 7}</strong> {isVietnamese ? "ngày" : "days"} ({phases.length} {isVietnamese ? "GĐ" : "phases"})
+                    <strong>{planDuration?.diffDays || phases.length * 7}</strong> {isVietnamese ? "ngày" : "days"} ({phases.length} {isVietnamese ? "giai đoạn" : "phases"})
                   </span>
                 </span>
-
-                {planDuration && planDuration.diffDays < phases.length * 3 && (
-                  <>
-                    <span style={{ color: "var(--border, #cbd5e1)" }}>｜</span>
-                    <span style={{ color: "var(--danger, #dc2626)", display: "inline-flex", alignItems: "center", gap: "5px", fontWeight: 500 }}>
-                      <Icon name="ban" size={14} inline />
-                      <span>{isVietnamese ? "Quá ngắn: Mỗi giai đoạn cần tối thiểu từ 3 ngày" : "Too short: each phase requires at least 3 days"}</span>
-                    </span>
-                  </>
-                )}
-
-                {planDuration && planDuration.diffDays >= phases.length * 3 && planDuration.diffDays < phases.length * 7 && (
-                  <>
-                    <span style={{ color: "var(--border, #cbd5e1)" }}>｜</span>
-                    <span style={{ color: "var(--accent-gold, #d97706)", display: "inline-flex", alignItems: "center", gap: "5px", fontWeight: 500 }}>
-                      <Icon name="alert" size={14} inline />
-                      <span>{isVietnamese ? "Dưới 7 ngày/GĐ: Chỉ áp dụng Nước rút / Hồi phục" : "Under 7 days/phase: only suitable for Pre-race / Recovery"}</span>
-                    </span>
-                  </>
-                )}
-
-                {planDuration && planDuration.diffDays >= phases.length * 7 && (
-                  <>
-                    <span style={{ color: "var(--text-muted, #94a3b8)" }}>·</span>
-                    <span style={{ color: "var(--text-muted, #64748b)" }}>
-                      {isVietnamese
-                        ? `Trung bình ~${Math.round((planDuration?.diffDays || phases.length * 7) / phases.length)} ngày/giai đoạn`
-                        : `Average ~${Math.round((planDuration?.diffDays || phases.length * 7) / phases.length)} days/phase`}
-                    </span>
-                  </>
-                )}
               </div>
 
               <div className={styles.sectionDivider} />
@@ -1883,30 +1855,6 @@ export default function PlanWizardPage() {
             <Button size="sm" tone="secondary" onClick={() => setStep(1)}>
               {isVietnamese ? "← Chỉnh sửa thông tin Bước 1" : "← Edit Step 1 info"}
             </Button>
-          </div>
-
-          {/* Scientific Periodization Banner */}
-          <div style={{
-            margin: "0.75rem 0 1rem",
-            padding: "0.85rem 1rem",
-            background: isMicrocycle ? "rgba(16, 185, 129, 0.08)" : "rgba(59, 130, 246, 0.08)",
-            border: `1px solid ${isMicrocycle ? "#10b981" : "#3b82f6"}`,
-            borderRadius: "6px",
-          }}>
-            <div style={{ fontWeight: 700, fontSize: "13px", color: isMicrocycle ? "#059669" : "#2563eb", marginBottom: "4px" }}>
-              {isMicrocycle
-                ? (isVietnamese ? "[CHẾ ĐỘ TIỂU CHU KỲ (MICROCYCLE) · THÍCH ỨNG NHANH]" : "[MICROCYCLE MODE · RAPID ADAPTATION]")
-                : (isVietnamese ? "[CHẾ ĐỘ TRUNG CHU KỲ (MESOCYCLE) · THỂ LỰC TIÊU CHUẨN]" : "[MESOCYCLE MODE · STANDARD PERIODIZATION]")}
-            </div>
-            <div style={{ fontSize: "12px", color: "var(--text-secondary, #475569)", lineHeight: 1.5 }}>
-              {isMicrocycle
-                ? (isVietnamese
-                    ? `Giáo án ngắn hạn (${planTotalDays} ngày). Cho phép các giai đoạn tối thiểu từ 3 ngày để phục vụ tinh chỉnh chiến thuật hoặc hồi phục cấp tốc theo khoa học huấn luyện ngựa đua.`
-                    : `Short-term plan (${planTotalDays} days). Phases can be at least 3 days for tactical tapering or rapid recovery.`)
-                : (isVietnamese
-                    ? `Giáo án dài hạn (${planTotalDays} ngày / ${Math.round(planTotalDays / 7)} tuần). Các giai đoạn rèn luyện (Nền tảng / Tăng sức bền / Tốc độ) yêu cầu tối thiểu 7 ngày/giai đoạn để đảm bảo thích nghi sinh lý cơ xương và hô hấp.`
-                    : `Standard plan (${planTotalDays} days). Training phases require at least 7 days per phase for physiological adaptation.`)}
-            </div>
           </div>
 
           {error && (
@@ -2312,7 +2260,14 @@ export default function PlanWizardPage() {
                     >
                       <div className={styles.horsePickerItemLeft}>
                         <div className={styles.horsePickerItemAvatar}>
-                          
+                          <img
+                            src={h.avatarUrl || "/images/horses/horse-01.jpg"}
+                            alt={h.name}
+                            style={{ width: "100%", height: "100%", borderRadius: 6, objectFit: "cover" }}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/images/horses/horse-01.jpg";
+                            }}
+                          />
                         </div>
                         <div className={styles.horsePickerItemContent}>
                           <div className={styles.horsePickerItemHeader}>

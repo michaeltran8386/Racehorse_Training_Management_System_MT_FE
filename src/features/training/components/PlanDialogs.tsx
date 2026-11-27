@@ -81,12 +81,19 @@ export function ActivatePlanDialog({ plan, onClose, onDone }: DialogProps) {
     setSubmitting(true);
     setError("");
     try {
+      const effectiveStart = plan.startDate < todayClub() ? todayClub() : plan.startDate.slice(0, 10);
+      const isShifted = plan.startDate < todayClub();
       const updated = await trainingApi.activatePlan(plan.id, {
         moveHorseToTraining: moveHorse,
         vetConsulted,
-        effectiveStartDate,
+        effectiveStartDate: effectiveStart,
       });
-      toast.show(isVietnamese ? "Đã kích hoạt kế hoạch huấn luyện." : "Training plan activated.", "ok");
+      toast.show(
+        isShifted
+          ? (isVietnamese ? "Đã kích hoạt giáo án (Tự động tịnh tiến bảo toàn tổng thời lượng)." : "Plan activated with auto-shifted schedule.")
+          : (isVietnamese ? "Đã kích hoạt kế hoạch huấn luyện." : "Training plan activated."),
+        "ok"
+      );
       onDone(updated);
       onClose();
     } catch (err) {
@@ -139,28 +146,6 @@ export function ActivatePlanDialog({ plan, onClose, onDone }: DialogProps) {
             )}
           </div>
         )}
-        {plan.horseStatus === "RESTING" && (
-          <div style={{ fontSize: "var(--fs-caption)", color: "var(--brand-700)", background: "var(--surface-sunken)", padding: "0.5rem 0.75rem", borderRadius: "6px" }}>
-            <Icon name="check" inline size={14} style={{ marginRight: 6 }} />
-            {isVietnamese
-              ? "Hệ thống sẽ tự động chuyển chiến mã từ Nghỉ ngơi sang Đang huấn luyện khi kích hoạt giáo án."
-              : tr("The horse will automatically move from Resting to In Training upon activation.")}
-          </div>
-        )}
-
-        <Field label={isVietnamese ? "Ngày bắt đầu thực tế" : "Effective start date"} required>
-          <Input
-            type="date"
-            value={effectiveStartDate}
-            min={todayClub()}
-            onChange={(e) => setEffectiveStartDate(e.target.value)}
-          />
-        </Field>
-        <p style={{ margin: 0, fontSize: "var(--fs-caption)", color: "var(--text-muted)", lineHeight: 1.4 }}>
-          {isVietnamese
-            ? "Hệ thống sẽ tự động tịnh tiến đồng bộ ngày của các giai đoạn (Phases) và tất cả bài tập sang mốc bắt đầu thực tế này."
-            : "The system will automatically shift all phases and scheduled workouts in sync with this effective start date."}
-        </p>
 
         {medical && (
           <Checkbox

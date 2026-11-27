@@ -63,125 +63,219 @@ interface WorkoutDialogProps {
   onSaved: (date: string) => void;
 }
 
-function DailyRoutineTimeline({ horseName, isVietnamese }: { horseName?: string; isVietnamese: boolean }) {
-  return (
-    <div
-      style={{
-        padding: "10px 12px",
-        borderRadius: "8px",
-        background: "var(--surface-subtle, rgba(255, 255, 255, 0.04))",
-        border: "1px solid var(--border-subtle, rgba(255, 255, 255, 0.1))",
-        display: "flex",
-        flexDirection: "column",
-        gap: "6px",
-        fontSize: "12px",
-        marginBottom: "10px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
-        <span style={{ fontWeight: 600, color: "var(--text, #1e293b)" }}>
-          {isVietnamese ? `Lịch sinh hoạt thường nhật${horseName ? ` (${horseName})` : ""}` : `Daily Routine${horseName ? ` (${horseName})` : ""}`}
-        </span>
-        <span style={{ fontSize: "11px", color: "var(--text-muted, #64748b)" }}>
-          {isVietnamese ? "Lịch Groom chăm sóc cố định hàng ngày" : "Daily fixed groom routine"}
-        </span>
-      </div>
+interface DailyRoutineTimelineProps {
+  horseName?: string;
+  isVietnamese: boolean;
+  trainerWorkouts?: Array<{ id: string; horseName: string; timeRange: string; startMinutes?: number; endMinutes?: number }>;
+  onSelectTime?: (time: string) => void;
+  selectedTime?: string;
+}
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "4px", marginTop: "2px" }}>
-        {/* Dòng 1: Ăn sáng */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "5px 8px",
-            borderRadius: "5px",
-            background: "rgba(245, 158, 11, 0.12)",
-            border: "1px solid rgba(245, 158, 11, 0.25)",
-            color: "#b45309",
-            fontWeight: 500,
-            fontSize: "11.5px",
-          }}
-        >
-          <span style={{ fontWeight: 600, minWidth: "45px" }}>[05:30]</span>
-          <span>{isVietnamese ? "Ăn sáng" : "Breakfast"}</span>
-        </div>
+interface TimelineEvent {
+  id: string;
+  startMinutes: number;
+  endMinutes: number;
+  timeLabel: string;
+  title: string;
+  badge: string;
+  type: "routine" | "care" | "busy" | "available" | "recommended";
+}
 
-        {/* Dòng 2: Khung giờ tập lý tưởng */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "5px 8px",
-            borderRadius: "5px",
+function DailyRoutineTimeline({
+  horseName,
+  isVietnamese,
+  trainerWorkouts = [],
+}: DailyRoutineTimelineProps) {
+  // Tinh toan moc bat dau cua khung ranh buoi chieu dua vao lich ban HLV
+  const afternoonBusyWorkouts = trainerWorkouts.filter(
+    (w) => (w.startMinutes ?? 0) >= 12 * 60 && (w.startMinutes ?? 0) < 17 * 60
+  );
+  const latestBusyEndMinutes = afternoonBusyWorkouts.reduce(
+    (max, w) => Math.max(max, w.endMinutes ?? 0),
+    14 * 60 + 15 // Mac dinh sau khi Groom tam xa co xong (14:15)
+  );
+
+  // Neu co lich ban sau 14:15 (vi du nghi den 14:45), moc ranh bat dau ngay sau khi nghi xong
+  const afternoonStartMinutes = Math.max(14 * 60 + 30, latestBusyEndMinutes);
+  const aftStartH = String(Math.floor(afternoonStartMinutes / 60)).padStart(2, "0");
+  const aftStartM = String(afternoonStartMinutes % 60).padStart(2, "0");
+  const afternoonTimeLabel = `${aftStartH}:${aftStartM} – 17:00`;
+
+  const events: TimelineEvent[] = [
+    {
+      id: "routine-morning-meal",
+      startMinutes: 5 * 60 + 30,
+      endMinutes: 6 * 60 + 15,
+      timeLabel: "05:30 – 06:15",
+      title: isVietnamese ? "Ăn sáng" : "Breakfast",
+      badge: isVietnamese ? "Sinh hoạt Groom" : "Groom Routine",
+      type: "routine",
+    },
+    {
+      id: "available-morning",
+      startMinutes: 6 * 60 + 15,
+      endMinutes: 11 * 60 + 30,
+      timeLabel: "06:15 – 11:30",
+      title: isVietnamese ? "Khung rảnh sáng" : "Morning Slot",
+      badge: isVietnamese ? "Khuyên dùng" : "Recommended",
+      type: "recommended",
+    },
+    {
+      id: "routine-lunch-rest",
+      startMinutes: 11 * 60 + 30,
+      endMinutes: 13 * 60 + 30,
+      timeLabel: "11:30 – 13:30",
+      title: isVietnamese ? "Ăn trưa & Nghỉ ngơi trưa" : "Lunch & Rest",
+      badge: isVietnamese ? "Sinh hoạt Groom" : "Groom Routine",
+      type: "routine",
+    },
+    {
+      id: "care-bath-cool",
+      startMinutes: 13 * 60 + 30,
+      endMinutes: 14 * 60 + 15,
+      timeLabel: "13:30 – 14:15",
+      title: isVietnamese ? "Tắm xả cơ & Chăm sóc móng" : "Bath & Cool",
+      badge: isVietnamese ? "Chăm sóc Groom" : "Care",
+      type: "care",
+    },
+    // Map cac lich ban cua HLV vao dong thoi gian
+    ...trainerWorkouts.map((w, idx) => ({
+      id: `busy-trainer-${w.id || idx}`,
+      startMinutes: w.startMinutes ?? 13 * 60 + 30,
+      endMinutes: w.endMinutes ?? 14 * 60 + 45,
+      timeLabel: w.timeRange,
+      title: isVietnamese ? `HLV bận: ${w.horseName}` : `Trainer Busy: ${w.horseName}`,
+      badge: isVietnamese ? "Đang bận" : "Busy",
+      type: "busy" as const,
+    })),
+    {
+      id: "available-afternoon",
+      startMinutes: afternoonStartMinutes,
+      endMinutes: 17 * 60,
+      timeLabel: afternoonTimeLabel,
+      title: isVietnamese ? "Khung rảnh chiều" : "Afternoon Slot",
+      badge: isVietnamese ? "Khả dụng" : "Available",
+      type: "available",
+    },
+    {
+      id: "routine-dinner",
+      startMinutes: 18 * 60,
+      endMinutes: 19 * 60,
+      timeLabel: "18:00 – 19:00",
+      title: isVietnamese ? "Ăn tối & Nghỉ đêm" : "Dinner & Rest",
+      badge: isVietnamese ? "Sinh hoạt Groom" : "Groom Routine",
+      type: "routine",
+    },
+  ];
+
+  // Sap xep tuyet doi tuyen tinh theo startMinutes tang dan
+  events.sort((a, b) => a.startMinutes - b.startMinutes);
+
+  const getStyleForType = (type: TimelineEvent["type"]) => {
+    switch (type) {
+      case "recommended":
+        return {
+          container: {
             background: "rgba(34, 197, 94, 0.12)",
             border: "1px solid rgba(34, 197, 94, 0.3)",
             color: "#16a34a",
             fontWeight: 600,
-            fontSize: "11.5px",
-          }}
-        >
-          <span style={{ minWidth: "95px" }}>[06:15 – 09:30]</span>
-          <span>{isVietnamese ? "Khung giờ tập lý tưởng (Sau bữa sáng ≥ 45 phút)" : "Golden Training Hours (≥ 45 min after breakfast)"}</span>
-        </div>
-
-        {/* Dòng 3: Ăn trưa */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "5px 8px",
-            borderRadius: "5px",
-            background: "rgba(245, 158, 11, 0.12)",
-            border: "1px solid rgba(245, 158, 11, 0.25)",
-            color: "#b45309",
-            fontWeight: 500,
-            fontSize: "11.5px",
-          }}
-        >
-          <span style={{ fontWeight: 600, minWidth: "45px" }}>[11:30]</span>
-          <span>{isVietnamese ? "Ăn trưa" : "Lunch"}</span>
-        </div>
-
-        {/* Dòng 4: Tắm xả cơ */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "5px 8px",
-            borderRadius: "5px",
-            background: "rgba(14, 165, 233, 0.12)",
-            border: "1px solid rgba(14, 165, 233, 0.25)",
+          },
+          badge: { color: "#15803d", fontWeight: 700 },
+        };
+      case "available":
+        return {
+          container: {
+            background: "rgba(34, 197, 94, 0.1)",
+            border: "1px solid rgba(34, 197, 94, 0.25)",
+            color: "#16a34a",
+            fontWeight: 600,
+          },
+          badge: { color: "#15803d", fontWeight: 600 },
+        };
+      case "care":
+        return {
+          container: {
+            background: "rgba(14, 165, 233, 0.1)",
+            border: "1px solid rgba(14, 165, 233, 0.2)",
             color: "#0284c7",
             fontWeight: 500,
-            fontSize: "11.5px",
-          }}
-        >
-          <span style={{ fontWeight: 600, minWidth: "45px" }}>[13:30]</span>
-          <span>{isVietnamese ? "Tắm xả cơ & Chăm sóc" : "Grooming & Bath"}</span>
-        </div>
-
-        {/* Dòng 5: Ăn tối */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            padding: "5px 8px",
-            borderRadius: "5px",
+          },
+          badge: { opacity: 0.85 },
+        };
+      case "busy":
+        return {
+          container: {
             background: "rgba(245, 158, 11, 0.12)",
-            border: "1px solid rgba(245, 158, 11, 0.25)",
-            color: "#b45309",
+            border: "1px solid rgba(245, 158, 11, 0.3)",
+            color: "#d97706",
             fontWeight: 500,
-            fontSize: "11.5px",
-          }}
-        >
-          <span style={{ fontWeight: 600, minWidth: "45px" }}>[18:00]</span>
-          <span>{isVietnamese ? "Ăn tối" : "Dinner"}</span>
-        </div>
+          },
+          badge: { fontWeight: 600 },
+        };
+      case "routine":
+      default:
+        return {
+          container: {
+            background: "rgba(245, 158, 11, 0.1)",
+            border: "1px solid rgba(245, 158, 11, 0.2)",
+            color: "#d97706",
+            fontWeight: 500,
+          },
+          badge: { opacity: 0.85 },
+        };
+    }
+  };
+
+  return (
+    <div
+      style={{
+        padding: "12px 14px",
+        borderRadius: "8px",
+        background: "var(--surface-sunken, rgba(0, 0, 0, 0.2))",
+        border: "1px solid var(--border, rgba(255, 255, 255, 0.1))",
+        display: "flex",
+        flexDirection: "column",
+        gap: "8px",
+        fontSize: "12px",
+        marginBottom: "12px",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "6px" }}>
+        <span style={{ fontWeight: 700, color: "var(--ink, #f1f5f9)", fontSize: "12.5px" }}>
+          {isVietnamese
+            ? `Dòng thời gian hoạt động & Khung giờ huấn luyện${horseName ? ` – ${horseName}` : ""}`
+            : `Daily Activity Timeline & Training Availability${horseName ? ` – ${horseName}` : ""}`}
+        </span>
+        <span style={{ fontSize: "11px", color: "var(--text-muted, #94a3b8)" }}>
+          {isVietnamese ? "Đối chiếu lịch Groom chăm sóc & HLV cá nhân" : "Groom routine & Trainer schedule"}
+        </span>
+      </div>
+
+      {/* Danh sách các mốc thời gian xếp dọc tuyến tính */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+        {events.map((evt) => {
+          const style = getStyleForType(evt.type);
+          return (
+            <div
+              key={evt.id}
+              style={{
+                padding: "6px 10px",
+                borderRadius: "5px",
+                fontSize: "11.5px",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                ...style.container,
+              }}
+            >
+              <span>
+                <strong>{evt.timeLabel}:</strong> {evt.title}
+              </span>
+              <span style={{ fontSize: "11px", ...style.badge }}>{evt.badge}</span>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -335,6 +429,11 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
           ? `Thời gian bắt đầu buổi tập hôm nay phải sau ít nhất 30 phút theo thời gian thực (từ ${todayMinTime} trở đi).`
           : tr("Start time for today must be at least 30 minutes in the future (from {{time}}).", { time: todayMinTime });
       }
+    }
+    if (time > "16:00") {
+      errs.time = isVietnamese
+        ? "Buổi tập phải kết thúc trước 17:00 chiều. Giờ bắt đầu muộn nhất là 16:00."
+        : tr("Workout must end before 17:00. Latest start time is 16:00.");
     }
     return errs;
 
@@ -551,7 +650,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
           >
             {suggestions.loading
               ? (isVietnamese ? "Đang tính toán khung giờ phù hợp…" : tr("Finding available slots…"))
-              : (isVietnamese ? "⚡ Gợi ý ba khung giờ tập luyện phù hợp" : tr("Suggest three training slots"))}
+              : (isVietnamese ? "Gợi ý ba khung giờ tập luyện phù hợp" : tr("Suggest three training slots"))}
           </Button>
           {suggestionInputError && <p role="status" style={{ fontSize: "12px", color: "#64748b", margin: 0 }}>{suggestionInputError}</p>}
           {suggestions.key === suggestionKey && (
@@ -700,13 +799,13 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
           <Field
             label={tr("Start time")}
             required
-            hint="04:00 – 20:00"
+            hint="04:00 – 16:00"
             error={isFieldVisible("time") ? fieldErrors.time : undefined}
           >
             <Input
               type="time"
               min="04:00"
-              max="20:00"
+              max="16:00"
               step={900}
               value={time}
               onChange={(e) => setTime(e.target.value)}
@@ -986,8 +1085,8 @@ export function RestoreWorkoutDialog({ session, onClose, onDone }: { session: Ex
           <Field label={tr("Date")} required>
             <Input type="date" min={today} value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
-          <Field label={tr("Start time")} required hint="04:00 – 20:00">
-            <Input type="time" min="04:00" max="20:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
+          <Field label={tr("Start time")} required hint="04:00 – 16:00">
+            <Input type="time" min="04:00" max="16:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
           </Field>
         </div>
       </div>
@@ -1081,7 +1180,7 @@ export function GeneratePhaseScheduleDialog({
             return {
               id: w.id,
               horseName: w.horse?.name || "Chiến mã",
-              timeRange: `${sHStr}:${sMStr} – ${eHStr}:${eMStr} (nghỉ đến ${bHStr}:${bMStr})`,
+              timeRange: `${sHStr}:${sMStr} – ${eHStr}:${eMStr}`,
               startMinutes: startTotal,
               endMinutes: endTotal,
             };
@@ -1196,6 +1295,14 @@ export function GeneratePhaseScheduleDialog({
       return;
     }
     const needsSpeed = type === "BREEZE" || type === "TRIAL";
+    if (time > "16:00") {
+      setError(
+        isVietnamese
+          ? "Buổi tập phải kết thúc trước 17:00 chiều. Giờ bắt đầu muộn nhất là 16:00."
+          : tr("Workout must end before 17:00. Latest start time is 16:00."),
+      );
+      return;
+    }
     if (needsSpeed && phase.targetSpeedKmh == null) {
       setError(
         isVietnamese
@@ -1312,50 +1419,12 @@ export function GeneratePhaseScheduleDialog({
             </div>
           </div>
 
-          {/* Dải Timeline Sinh hoạt Thường nhật */}
-          <DailyRoutineTimeline horseName={plan.horseName} isVietnamese={isVietnamese} />
-
-          {/* Dải Thước đo Lịch tập trực quan của Huấn luyện viên trong ngày */}
-          <div
-            style={{
-              padding: "10px 12px",
-              borderRadius: "6px",
-              background: "var(--surface-sunken, rgba(0, 0, 0, 0.2))",
-              border: "1px solid var(--border, rgba(255, 255, 255, 0.1))",
-              marginBottom: "12px",
-            }}
-          >
-            <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--ink, #f1f5f9)", marginBottom: "6px" }}>
-              {isVietnamese ? "Lịch huấn luyện trong ngày của bạn:" : "Your Training Schedule Today:"}
-            </div>
-            {trainerWorkouts.length === 0 ? (
-              <div style={{ fontSize: "11.5px", color: "var(--text-muted, #94a3b8)" }}>
-                {isVietnamese
-                  ? "Bạn chưa có lịch tập nào trong ngày này (Toàn bộ khung giờ sẵn sàng)."
-                  : "No workouts scheduled for you today."}
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-                {trainerWorkouts.map((w) => (
-                  <div
-                    key={w.id}
-                    style={{
-                      fontSize: "12px",
-                      color: "#f59e0b",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      padding: "4px 8px",
-                      borderRadius: "4px",
-                      background: "rgba(245, 158, 11, 0.08)",
-                    }}
-                  >
-                    <span>{w.timeRange}: {w.horseName}</span>
-                    <span style={{ fontWeight: 600 }}>[Đang bận]</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Bảng Dòng thời gian hoạt động & Khung giờ huấn luyện */}
+          <DailyRoutineTimeline
+            horseName={plan.horseName}
+            isVietnamese={isVietnamese}
+            trainerWorkouts={trainerWorkouts}
+          />
 
           <div className={formLayout.columns}>
             <Field
@@ -1364,45 +1433,17 @@ export function GeneratePhaseScheduleDialog({
               hint={
                 isStartingToday && phase.startDate === today && todayMinTime > "04:00"
                   ? isVietnamese
-                    ? `Từ ${todayMinTime} – 20:00 (sau ít nhất 30p)`
-                    : `${todayMinTime} – 20:00`
-                  : "04:00 – 20:00"
+                    ? `Từ ${todayMinTime} – 16:00 (sau ít nhất 30p)`
+                    : `${todayMinTime} – 16:00`
+                  : "04:00 – 16:00"
               }
             >
-              <Input type="time" min={minTimeAllowed} max="20:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
+              <Input type="time" min={minTimeAllowed} max="16:00" step={900} value={time} onChange={(e) => setTime(e.target.value)} />
               {time && time < "06:15" && (
                 <div style={{ color: "#d97706", fontSize: "11px", marginTop: "4px" }}>
                   <span>{isVietnamese ? "Sát bữa ăn sáng (05:30). Khuyên dùng sau 06:15 để ngựa tiêu hóa tốt." : "Close to breakfast (05:30). Recommended after 06:15."}</span>
                 </div>
               )}
-
-              {/* Gợi ý khung giờ trống hợp lệ (Smart Chips 1-Click) */}
-              <div style={{ marginTop: "8px" }}>
-                <div style={{ fontSize: "11px", color: "var(--text-muted, #94a3b8)", marginBottom: "4px" }}>
-                  {isVietnamese ? "Gợi ý khung giờ trống hợp lệ (1-click chọn):" : "Suggested available slots (1-click):"}
-                </div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                  {smartSlots.map((s) => (
-                    <button
-                      key={s.time}
-                      type="button"
-                      onClick={() => setTime(s.time)}
-                      style={{
-                        padding: "3px 8px",
-                        borderRadius: "4px",
-                        background: time === s.time ? "var(--brand, #2563eb)" : "var(--surface, #1e293b)",
-                        color: time === s.time ? "#ffffff" : "var(--ink, #f1f5f9)",
-                        border: "1px solid var(--border, rgba(255, 255, 255, 0.15))",
-                        fontSize: "11px",
-                        cursor: "pointer",
-                        fontWeight: 500,
-                      }}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Cảnh báo tức thì nếu gõ giờ trùng */}
               {conflictWorkout && (
@@ -1468,13 +1509,6 @@ export function GeneratePhaseScheduleDialog({
               <Input type="number" min={1} max={10} value={repetitions} onChange={(e) => setRepetitions(Math.min(10, Math.max(1, Math.round(Number(e.target.value)) || 1)))} />
             </Field>
           </div>
-        </section>
-
-        <section className={gen.section}>
-          <h3 className={gen.sectionTitle}>{tr("Assignment")}</h3>
-
-          <p style={{ margin: 0, color: "var(--text-muted)", fontSize: "13px" }}>{tr("You run this workout yourself and ride as the jockey.")}</p>
-
         </section>
 
         <div className={gen.summary} aria-live="polite">

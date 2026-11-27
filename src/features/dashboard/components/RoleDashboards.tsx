@@ -919,8 +919,8 @@ export function TrainerDashboard() {
           icon="activity"
           iconBg="var(--ok-bg)"
           iconColor="var(--ok)"
-          label={isVi ? "Đang phụ trách (Trần 8)" : "Managing (Max 8)"}
-          value={overview.loading ? "—" : `${inTraining} / 8`}
+          label={isVi ? "Đang phụ trách" : "Managing"}
+          value={overview.loading ? "—" : `${totalHorses} / 8`}
           trend={
             <span>
               {inTraining} {isVi ? "có giáo án" : "with plan"} · {withoutPlan} {isVi ? "chờ lập giáo án" : "unplanned"}
@@ -937,7 +937,7 @@ export function TrainerDashboard() {
           trend={
             withoutPlan > 0 ? (
               <span style={{ color: "var(--warn)", fontWeight: 600 }}>
-                {isVi ? "⚠️ Cần lập kế hoạch" : "Action needed"}
+                {isVi ? "Cần lập kế hoạch" : "Action needed"}
               </span>
             ) : (
               <span style={{ color: "var(--ok)", fontWeight: 600 }}>
@@ -945,7 +945,7 @@ export function TrainerDashboard() {
               </span>
             )
           }
-          to="/training/plans"
+          to="/training/plans?tab=UNPLANNED"
         />
         <InteractiveKpiCard
           icon="lock"
@@ -1054,22 +1054,9 @@ export function TrainerDashboard() {
       <Card pad={20}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <h3 className={styles.widgetTitle} style={{ fontSize: "1.2rem" }}>
+            <h3 className={styles.widgetTitle} style={{ fontSize: "1.2rem", margin: 0 }}>
               {isVi ? "Chiến mã chưa có giáo án huấn luyện" : "Horses Without Training Plan"}
             </h3>
-            {attentionRows.length > 0 && (
-              <Badge tone="warn">
-                {isVi ? `${attentionRows.length} chiến mã cần xử lý` : `${attentionRows.length} pending`}
-              </Badge>
-            )}
-          </div>
-          <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-            <LinkButton to="/training/plans/new" tone="primary" size="sm">
-              {isVi ? "+ Lập giáo án" : "+ New Plan"}
-            </LinkButton>
-            <Link to="/training/plans" style={{ fontSize: "var(--fs-xs)", color: "var(--brand-700)" }}>
-              {isVi ? "Xem tất cả →" : "View all →"}
-            </Link>
           </div>
         </div>
 
@@ -1180,14 +1167,44 @@ export function TrainerDashboard() {
                           <span style={{ fontSize: "var(--fs-xs)", color: "var(--danger)" }}>
                             {r.horse.medicalLockReason || (isVi ? "Tạm dừng tập luyện" : "Suspended")}
                           </span>
+                        ) : (r.horse as any).isRestingCycle || (!r.plan && r.horse.status === "RESTING") ? (
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <Badge tone="info">
+                              {isVi ? "Nghỉ ngơi hồi phục" : "Resting Cycle"}
+                            </Badge>
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 500 }}>
+                              {isVi ? "Đã hoàn thành giáo án" : "Plan completed"}
+                            </span>
+                          </div>
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
                             <Badge tone="warn">
                               {isVi ? "Chưa có giáo án" : "No training plan"}
                             </Badge>
-                            <span style={{ fontSize: "11px", color: "var(--warn)", fontWeight: 500 }}>
-                              {isVi ? "Hạn lập giáo án: còn 3 ngày" : "Deadline: 3 days"}
-                            </span>
+                            {(() => {
+                              if (!r.horse.planDeadlineAt) {
+                                return (
+                                  <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 500 }}>
+                                    {isVi ? "Sẵn sàng lập kế hoạch mới" : "Ready for new plan"}
+                                  </span>
+                                );
+                              }
+                              const diffDays = Math.ceil(
+                                (new Date(r.horse.planDeadlineAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                              );
+                              if (diffDays < 0) {
+                                return (
+                                  <span style={{ fontSize: "11px", color: "var(--danger)", fontWeight: 600 }}>
+                                    {isVi ? `Quá hạn lập giáo án: ${Math.abs(diffDays)} ngày` : `Overdue: ${Math.abs(diffDays)}d`}
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span style={{ fontSize: "11px", color: "var(--warn)", fontWeight: 500 }}>
+                                  {isVi ? `Hạn lập giáo án: còn ${Math.max(1, diffDays)} ngày` : `Deadline: ${Math.max(1, diffDays)}d left`}
+                                </span>
+                              );
+                            })()}
                           </div>
                         )}
                       </td>
@@ -1222,103 +1239,6 @@ export function TrainerDashboard() {
             </table>
           </div>
         )}
-      </Card>
-
-      {/* Widget: Đội ngũ Nhân sự & Người phụ trách Khu chuồng Barn A */}
-      <Card pad={20}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px", flexWrap: "wrap", gap: "8px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: 36, height: 36, borderRadius: "8px", background: "rgba(37,99,235,0.1)", color: "var(--brand, #2563eb)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <Icon name="user" size={18} />
-            </div>
-            <div>
-              <h3 className={styles.widgetTitle} style={{ fontSize: "1.1rem", margin: 0 }}>
-                {isVi ? "Đội ngũ Nhân sự & Người phụ trách Khu chuồng Barn A" : "Barn A Care Team & Staff Roster"}
-              </h3>
-              <p style={{ margin: "2px 0 0 0", fontSize: "12px", color: "var(--text-muted)" }}>
-                {isVi ? "HLV nắm bắt trực quan danh sách nhân sự, Groom trực ca và Bác sĩ chuyên trách cùng phụ trách đàn ngựa" : "Trainer team overview: grooms on duty, barn vet, and manager"}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: "12px" }}>
-          {/* HLV Trưởng (Bạn) */}
-          <div style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface-sunken)", border: "1px solid var(--border)", display: "flex", gap: "10px", alignItems: "center" }}>
-            <div style={{ width: 38, height: 38, borderRadius: "50%", background: "var(--brand, #2563eb)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px", flexShrink: 0 }}>
-              HT
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <strong style={{ fontSize: "13.5px", color: "var(--ink)" }}>Nguyễn Văn Tuấn</strong>
-                <Badge tone="ok">{isVi ? "Bạn" : "You"}</Badge>
-              </div>
-              <div style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
-                {isVi ? "HLV Trưởng · Quản lý huấn luyện 8/8 chiến mã" : "Head Trainer · 8/8 horses"}
-              </div>
-              <div style={{ fontSize: "11px", color: "var(--brand, #2563eb)", marginTop: "2px" }}>
-                trainer@gmail.com
-              </div>
-            </div>
-          </div>
-
-          {/* Groom 1: Trần Thị Mai */}
-          <div style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface-sunken)", border: "1px solid var(--border)", display: "flex", gap: "10px", alignItems: "center" }}>
-            <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#10b981", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px", flexShrink: 0 }}>
-              TM
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <strong style={{ fontSize: "13.5px", color: "var(--ink)" }}>Trần Thị Mai</strong>
-                <Badge tone="info">{isVi ? "Ca sáng" : "Morning"}</Badge>
-              </div>
-              <div style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
-                {isVi ? "Nhân viên Groom · Trực chuồng A-01 đến A-04" : "Groom · Stalls A-01 to A-04"}
-              </div>
-              <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
-                groom@gmail.com · 0912.888.101
-              </div>
-            </div>
-          </div>
-
-          {/* Groom 2: Hoàng Văn Phúc */}
-          <div style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface-sunken)", border: "1px solid var(--border)", display: "flex", gap: "10px", alignItems: "center" }}>
-            <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#059669", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px", flexShrink: 0 }}>
-              HP
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <strong style={{ fontSize: "13.5px", color: "var(--ink)" }}>Hoàng Văn Phúc</strong>
-                <Badge tone="warn">{isVi ? "Ca chiều" : "Afternoon"}</Badge>
-              </div>
-              <div style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
-                {isVi ? "Nhân viên Groom · Trực chuồng A-05 đến A-08" : "Groom · Stalls A-05 to A-08"}
-              </div>
-              <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
-                groom2@gmail.com · 0912.888.102
-              </div>
-            </div>
-          </div>
-
-          {/* Bác sĩ thú y: BS. Hoàng Thị Mai */}
-          <div style={{ padding: "12px 14px", borderRadius: "8px", background: "var(--surface-sunken)", border: "1px solid var(--border)", display: "flex", gap: "10px", alignItems: "center" }}>
-            <div style={{ width: 38, height: 38, borderRadius: "50%", background: "#ef4444", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: "14px", flexShrink: 0 }}>
-              BS
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <strong style={{ fontSize: "13.5px", color: "var(--ink)" }}>BS. Hoàng Thị Mai</strong>
-                <Badge tone="danger">{isVi ? "Thú y" : "Vet"}</Badge>
-              </div>
-              <div style={{ fontSize: "11.5px", color: "var(--text-muted)" }}>
-                {isVi ? "Trưởng khoa Thú y · Giám sát sức khỏe Barn A" : "Lead Vet · Health monitoring Barn A"}
-              </div>
-              <div style={{ fontSize: "11px", color: "var(--muted)", marginTop: "2px" }}>
-                vet@gmail.com · 0903.115.999
-              </div>
-            </div>
-          </div>
-        </div>
       </Card>
 
       {/* Modal Chẩn đoán Khóa Y tế dành cho HLV */}
@@ -1413,8 +1333,29 @@ export function TrainerDashboard() {
         </Modal>
       )}
 
-      {/* Grid phụ bên dưới: Cảnh báo tải trọng & Lịch tập, Giải đấu sắp tới */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))", gap: "20px" }}>
+      {/* Lưới 2x2: Buổi tập kế tiếp | Tải trọng cần chú ý; Giáo án gần nhất | Giải đua sắp diễn ra */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 460px), 1fr))", gap: "20px" }}>
+        {/* Hàng 1, Cột 1: Buổi tập kế tiếp */}
+        <Card pad={20}>
+          <h3 className={styles.widgetTitle}>{tr("Next Workout")}</h3>
+          {next && nextTime ? (
+            <div className={styles.actionDetails}>
+              <div><Badge tone="info">{nextTime.date === todayClub() ? tr("Today") : nextTime.date.slice(8, 10) + "/" + nextTime.date.slice(5, 7)} {nextTime.time}</Badge></div>
+              <strong>{next.horseName}</strong>
+              <span className={styles.actionMeta}>{next.horseCode || "—"}</span>
+              <span>{labelFor(EXERCISE_TYPE_LABEL, next.workoutType)} · {labelFor(TRACK_LABEL, next.surface)}</span>
+              <span className={styles.actionMeta}>{tr("Intensity")}: {labelFor(INTENSITY_LABEL, next.intensity)}</span>
+              <LinkButton to="/training/calendar" tone="primary">{tr("Open weekly calendar")}</LinkButton>
+            </div>
+          ) : (
+            <div className={styles.actionDetails}>
+              <p>{tr("No upcoming workouts.")}</p>
+              <LinkButton to="/training/calendar" tone="secondary">{tr("Open weekly calendar")}</LinkButton>
+            </div>
+          )}
+        </Card>
+
+        {/* Hàng 1, Cột 2: Tải trọng & Buổi tập cần chú ý */}
         <Card pad={20}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
             <h3 className={styles.widgetTitle} style={{ fontSize: "1.1rem" }}>
@@ -1473,52 +1414,30 @@ export function TrainerDashboard() {
           </div>
         </Card>
 
+        {/* Hàng 2, Cột 1: Giáo án gần nhất */}
+        <Card pad={20}>
+          <h3 className={styles.widgetTitle}>{tr("Latest Training Plan")}</h3>
+          {plan ? (
+            <div className={styles.actionDetails}>
+              <div><Badge tone="ok">{tr("Active")}</Badge></div>
+              <strong>{plan.name}</strong>
+              <span className={styles.actionMeta}>{plan.planCode || "—"}</span>
+              <span>{plan.horseName}</span>
+              <span>{plan.currentPhaseName || tr("No current phase")}</span>
+              <span className={styles.actionMeta}>{clubParts(plan.startDate).date} – {clubParts(plan.endDate).date}</span>
+              <LinkButton to={"/training/plans/" + plan.id} tone="primary">{tr("View training plan")}</LinkButton>
+            </div>
+          ) : (
+            <div className={styles.actionDetails}>
+              <p>{tr("No active training plan.")}</p>
+              <LinkButton to="/training?plan=NONE" tone="primary">{isVi ? "Chọn ngựa lập giáo án" : tr("Create training plan")}</LinkButton>
+            </div>
+          )}
+        </Card>
+
+        {/* Hàng 2, Cột 2: Giải đua sắp diễn ra */}
         <UpcomingTournamentsWidget />
       </div>
-
-      <Block title={tr("Your next actions")} state={overview}>
-        {() => (
-          <div className={styles.trainerActions}>
-            <Card pad={20}>
-              <h3 className={styles.widgetTitle}>{tr("Next Workout")}</h3>
-              {next && nextTime ? (
-                <div className={styles.actionDetails}>
-                  <div><Badge tone="info">{nextTime.date === todayClub() ? tr("Today") : nextTime.date.slice(8, 10) + "/" + nextTime.date.slice(5, 7)} {nextTime.time}</Badge></div>
-                  <strong>{next.horseName}</strong>
-                  <span className={styles.actionMeta}>{next.horseCode || "—"}</span>
-                  <span>{labelFor(EXERCISE_TYPE_LABEL, next.workoutType)} · {labelFor(TRACK_LABEL, next.surface)}</span>
-                  <span className={styles.actionMeta}>{tr("Intensity")}: {labelFor(INTENSITY_LABEL, next.intensity)}</span>
-                  <LinkButton to="/training/calendar" tone="primary">{tr("Open weekly calendar")}</LinkButton>
-                </div>
-              ) : (
-                <div className={styles.actionDetails}>
-                  <p>{tr("No upcoming workouts.")}</p>
-                  <LinkButton to="/training/calendar" tone="secondary">{tr("Open weekly calendar")}</LinkButton>
-                </div>
-              )}
-            </Card>
-            <Card pad={20}>
-              <h3 className={styles.widgetTitle}>{tr("Latest Training Plan")}</h3>
-              {plan ? (
-                <div className={styles.actionDetails}>
-                  <div><Badge tone="ok">{tr("Active")}</Badge></div>
-                  <strong>{plan.name}</strong>
-                  <span className={styles.actionMeta}>{plan.planCode || "—"}</span>
-                  <span>{plan.horseName}</span>
-                  <span>{plan.currentPhaseName || tr("No current phase")}</span>
-                  <span className={styles.actionMeta}>{clubParts(plan.startDate).date} – {clubParts(plan.endDate).date}</span>
-                  <LinkButton to={"/training/plans/" + plan.id} tone="primary">{tr("View training plan")}</LinkButton>
-                </div>
-              ) : (
-                <div className={styles.actionDetails}>
-                  <p>{tr("No active training plan.")}</p>
-                  <LinkButton to="/training?plan=NONE" tone="primary">{isVi ? "Chọn ngựa lập giáo án" : tr("Create training plan")}</LinkButton>
-                </div>
-              )}
-            </Card>
-          </div>
-        )}
-      </Block>
 
       {pendingHandovers.data && (
         <HandoverBatchReviewModal

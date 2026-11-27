@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Tài Liệu Nghiệp Vụ Huấn Luyện Viên - EquiFlow</title>
+<style>
+  @page {
+    size: A4;
+    margin: 22mm 18mm 22mm 18mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+  
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.6;
+    font-size: 10.5pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Bìa báo cáo */
+  .cover-page {
+    text-align: center;
+    padding-top: 60px;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    page-break-after: always;
+  }
+  .cover-header {
+    font-size: 13pt;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #334155;
+    text-transform: uppercase;
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 12px;
+    margin-bottom: 60px;
+  }
+  .cover-title-box {
+    margin: 40px 0;
+  }
+  .cover-subtitle {
+    font-size: 14pt;
+    font-weight: 600;
+    color: #2563eb;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 15px;
+  }
+  .cover-title {
+    font-size: 24pt;
+    font-weight: 800;
+    color: #0f172a;
+    line-height: 1.3;
+    margin-bottom: 20px;
+  }
+  .cover-desc {
+    font-size: 11pt;
+    color: #64748b;
+    max-width: 80%;
+    margin: 0 auto;
+    font-style: italic;
+  }
+  .cover-meta {
+    font-size: 11pt;
+    text-align: left;
+    margin-top: 80px;
+    padding: 20px 30px;
+    background: #f8fafc;
+    border-left: 4px solid #2563eb;
+    border-radius: 4px;
+    display: inline-block;
+  }
+  .cover-meta p {
+    margin: 6px 0;
+  }
+
+  /* Headings */
+  h1 {
+    color: #0f172a;
+    font-size: 18pt;
+    font-weight: 800;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-top: 30px;
+    page-break-after: avoid;
+  }
+  h2 {
+    color: #1e3a8a;
+    font-size: 14pt;
+    font-weight: 700;
+    margin-top: 28px;
+    margin-bottom: 12px;
+    border-left: 4px solid #2563eb;
+    padding-left: 10px;
+    page-break-after: avoid;
+  }
+  h3 {
+    color: #1e293b;
+    font-size: 12pt;
+    font-weight: 700;
+    margin-top: 20px;
+    margin-bottom: 8px;
+    page-break-after: avoid;
+  }
+  h4 {
+    color: #334155;
+    font-size: 11pt;
+    font-weight: 700;
+    margin-top: 14px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 9.5pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #1e293b;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 9pt;
+    letter-spacing: 0.5px;
+  }
+  tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+
+  /* Code & Pre */
+  code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9pt;
+    background-color: #f1f5f9;
+    color: #b91c1c;
+    padding: 2px 5px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+  }
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 14px 16px;
+    border-radius: 6px;
+    font-size: 8.5pt;
+    overflow-x: auto;
+    line-height: 1.45;
+    page-break-inside: avoid;
+  }
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    border: none;
+  }
+
+  /* Blockquote & Notes */
+  blockquote {
+    margin: 14px 0;
+    padding: 10px 16px;
+    background-color: #eff6ff;
+    border-left: 4px solid #2563eb;
+    border-radius: 0 6px 6px 0;
+    color: #1e40af;
+    font-size: 10pt;
+  }
+  blockquote p {
+    margin: 4px 0;
+  }
+
+  ul, ol {
+    padding-left: 24px;
+    margin: 8px 0;
+  }
+  li {
+    margin-bottom: 5px;
+  }
+
+  /* In ấn phân trang */
+  .section-break {
+    page-break-before: always;
+  }
+</style>
+</head>
+<body>
+
+<div class="cover-page">
+  <div class="cover-header">
+    ĐỒ ÁN TỐT NGHIỆP CÔNG NGHỆ THÔNG TIN · HỆ THỐNG EQUIFLOW
+  </div>
+
+  <div class="cover-title-box">
+    <div class="cover-subtitle">BÁO CÁO NGHIỆM THU CHUYÊN ĐỀ</div>
+    <div class="cover-title">TÀI LIỆU ĐẶC TẢ NGHIỆP VỤ & RÀNG BUỘC KỸ THUẬT PHÂN HỆ HUẤN LUYỆN VIÊN</div>
+    <div class="cover-desc">
+      Đặc tả chi tiết 100% trích xuất từ mã nguồn thực tế (Code-Driven): Quy trình tiếp nhận chiến mã, SLA 48h/3 ngày, vòng đời giáo án 5 phase, chống xung đột lịch tập 3 ngôi và cơ chế liên động y tế.
+    </div>
+  </div>
+
+  <div>
+    <div class="cover-meta">
+      <p><strong>Hệ thống:</strong> EquiFlow - Quản lý Chuồng trại & Huấn luyện Ngựa đua</p>
+      <p><strong>Chuyên đề phân hệ:</strong> Phân hệ Huấn luyện viên Trưởng (Head Trainer Workspace)</p>
+      <p><strong>Tác giả thực hiện:</strong> Thành viên Đảm nhận Phân hệ Huấn luyện</p>
+      <p><strong>Phiên bản tài liệu:</strong> v1.0.0 (Official Production Code Reference)</p>
+      <p><strong>Thời gian nghiệm thu:</strong> Tháng 11 / 2026</p>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+<h1>TÀI LIỆU ĐẶC TẢ NGHIỆP VỤ PHÂN HỆ HUẤN LUYỆN VIÊN (HEAD TRAINER)</h1>
+<h2>DỰ ÁN EQUFLOW - RACEHORSE TRAINING &amp; STABLE MANAGEMENT SYSTEM</h2>
+<blockquote>
+<p><strong>Phiên bản tài liệu</strong>: v1.0.0 (Official Business Logic Reference - Code-Driven 100%)<br />
+<strong>Phân hệ</strong>: Huấn luyện &amp; Điều hành Tập luyện Ngựa đua (Training &amp; Workouts)<br />
+<strong>Đối tượng người dùng</strong>: Huấn luyện viên Trưởng (<code>Role.HEAD_TRAINER</code>)<br />
+<strong>Nguyên tắc biên soạn</strong>: Trích xuất 100% từ mã nguồn thực tế (Backend &amp; Frontend), đúng tên biến, đúng hằng số, đúng logic rẽ nhánh IF/ELSE, có dẫn chứng tệp nguồn cụ thể.</p>
+</blockquote>
+<hr />
+<h2>MỤC LỤC</h2>
+<ol>
+<li><a href="#1-tổng-quan-vai-trò--phân-quyền-hlv-trưởng">Tổng quan Vai trò &amp; Phân quyền HLV Trưởng</a></li>
+<li><a href="#2-quy-trình-1-tiếp-nhận--phân-công-chiến-mã-handover--acceptance">Quy trình 1: Tiếp nhận &amp; Phân công Chiến mã (Handover &amp; Acceptance)</a></li>
+<li><a href="#3-quy-trình-2-lập--quản-lý-vòng-đời-giáo-án-huấn-luyện-training-plan-lifecycle">Quy trình 2: Lập &amp; Quản lý Vòng đời Giáo án Huấn luyện (Training Plan Lifecycle)</a></li>
+<li><a href="#4-quy-trình-3-lập-lịch-xếp-ca--kiểm-soát-xung-đột-3-ngôi-workout-scheduling--conflict-checks">Quy trình 3: Lập lịch, Xếp ca &amp; Kiểm soát Xung đột 3 Ngôi (Workout Scheduling &amp; Conflict Checks)</a></li>
+<li><a href="#5-quy-trình-4-thực-thi-buổi-tập--ghi-nhận-chỉ-số-sinh-trắc-session-execution--telemetry-metrics">Quy trình 4: Thực thi Buổi tập &amp; Ghi nhận Chỉ số Sinh trắc (Session Execution &amp; Telemetry Metrics)</a></li>
+<li><a href="#6-quy-trình-5-cơ-chế-liên-động-khóa-y-tế-medical-lock-interlock">Quy trình 5: Cơ chế Liên động Khóa Y tế (Medical Lock Interlock)</a></li>
+<li><a href="#7-quy-trình-6-sát-hạch-chạy-thử--đăng-ký-thi-đấu-trial-runs--race-entries">Quy trình 6: Sát hạch Chạy thử &amp; Đăng ký Thi đấu (Trial Runs &amp; Race Entries)</a></li>
+<li><a href="#8-quy-trình-7-minh-bạch-đánh-giá-từ-chủ-ngựa-trainer-reviews">Quy trình 7: Minh bạch Đánh giá từ Chủ ngựa (Trainer Reviews)</a></li>
+<li><a href="#9-bảng-tra-cứu-tham-số--hằng-số-nghiệp-vụ-cốt-lõi-business-rule-matrix">Bảng Tra cứu Tham số &amp; Hằng số Nghiệp vụ Cốt lõi (Business Rule Matrix)</a></li>
+</ol>
+<hr />
+<h2>1. TỔNG QUAN VAI TRÒ &amp; PHÂN QUYỀN HLV TRƯỞNG</h2>
+<h3>1.1. Định danh &amp; Ràng buộc Tổ chức</h3>
+<ul>
+<li><strong>Mã vai trò</strong>: <code>HEAD_TRAINER</code> (thuộc enum <code>Role</code> tại <code>FE/src/shared/types/enums.ts</code> và Prisma schema).</li>
+<li><strong>Phạm vi phân bổ khu chuồng (<code>assignedBarnId</code>)</strong>:</li>
+<li>Khi Quản lý CLB tạo tài khoản HLV, bắt buộc phải chọn một Khu chuồng (Barn A, Barn B,...) (<code>assignedBarnId</code> không được null).</li>
+<li><strong>Ràng buộc định mức khu chuồng</strong>: Mỗi Barn chỉ cho phép tối đa 2 HLV cùng công tác (<code>MAX_TRAINERS_PER_BARN = 2</code> tại <code>BE/src/training/training-rules.ts#L72</code>).</li>
+</ul>
+<h3>1.2. Ma trận Phân quyền Cố định (Permission Matrix)</h3>
+<p>Theo định nghĩa tại <code>FE/src/shared/lib/permissions.ts#L215-L221</code>, tài khoản HLV Trưởng sở hữu mặc định 5 quyền cốt lõi:<br />
+1. <code>viewHorses</code>: Xem danh sách và hồ sơ chi tiết các chiến mã trong CLB.<br />
+2. <code>createPlan</code>: Soạn thảo, chỉnh sửa, kích hoạt, hoàn thành và lưu trữ giáo án huấn luyện.<br />
+3. <code>assignSchedule</code>: Xếp lịch tập tuần, bố trí bài tập, chỉ định đường chạy và nhân viên chăm sóc (Groom).<br />
+4. <code>recordMetrics</code>: Ghi nhận dữ liệu sinh trắc học (nhịp tim, tốc độ, cự ly) và đánh giá phong độ sau buổi tập.<br />
+5. <code>viewMedical</code>: Xem lịch sử bệnh án, tình trạng khóa huấn luyện y tế của ngựa để đảm bảo an toàn tập luyện (không có quyền tự ý đặt/gỡ khóa y tế - quyền này thuộc về Bác sĩ thú y <code>VETERINARIAN</code>).</p>
+<hr />
+<h2>2. QUY TRÌNH 1: TIẾP NHẬN &amp; PHÂN CÔNG CHIẾN MÃ (HANDOVER &amp; ACCEPTANCE)</h2>
+<p><em>Tệp nguồn: <code>BE/src/horses/horses.service.ts</code> (<code>assignTrainer</code>, <code>respondHandover</code>), <code>BE/src/horses/horses-handover-qa.spec.ts</code></em></p>
+<pre><code>[Quản lý CLB]
+     │
+     ├── 1. Kiểm tra 4 điều kiện phân công ──► (Thất bại: Ném lỗi Bad Request)
+     │
+     ├── 2. Sinh Handover Request (SLA 48h) + Token bí mật + Gửi Mail HLV
+     │
+     ▼
+[HLV Trưởng]
+     │
+     ├────► Từ chối (DECLINE) ──► Nhập lý do ──► Ngựa trở lại trạng thái chưa gán HLV
+     │
+     └────► Tiếp nhận (ACCEPT)
+                 │
+                 ├── Gán assignedTrainerId = toTrainerId
+                 ├── trainerAssignmentStatus = ASSIGNED
+                 └── Cố định SLA 3 ngày lập giáo án (planDeadlineAt = now + 72h)
+</code></pre>
+<h3>2.1. 4 Ràng buộc Điều kiện khi Quản lý phân công ngựa cho HLV (<code>assignTrainer</code>):</h3>
+<ol>
+<li><strong>Ràng buộc ô chuồng</strong>: Chiến mã phải được xếp ô chuồng hoạt động (<code>stallAllocations.isActive === true</code>). Nếu chưa có ô chuồng $\rightarrow$ Chặn ném lỗi: <em>"Chiến mã chưa được xếp ô chuồng đang hoạt động"</em>.</li>
+<li><strong>Ràng buộc cùng Khu chuồng (<code>BARN_MISMATCH</code>)</strong>: Khu chuồng của ô chuồng (<code>stall.zoneId</code>) phải trùng khớp với Khu chuồng mà HLV đang phụ trách (<code>trainer.assignedBarnId</code>). Khác Barn $\rightarrow$ Chặn ném lỗi: <em>"HLV [Tên] phụ trách [Barn HLV], không thể nhận ngựa ở [Barn Ngựa]"</em>.</li>
+<li><strong>Ràng buộc Định mức trần 8 chiến mã (<code>TRAINER_CAPACITY_EXCEEDED</code>)</strong>: Mỗi HLV chỉ được phụ trách tối đa 8 chiến mã đồng thời (<code>MAX_HORSES_PER_TRAINER = 8</code>). Nếu số ngựa hiện tại $\ge 8$ $\rightarrow$ Chặn ném lỗi: <em>"HLV [Tên] đã đạt định mức tối đa 8 chiến mã đồng thời"</em>.</li>
+<li><strong>Ràng buộc Chốt chặn Tồn đọng WIP Limit (<code>TRAINER_WIP_LIMIT_EXCEEDED</code>)</strong>: Đếm số ngựa đã tiếp nhận của HLV nhưng chưa có giáo án <code>ACTIVE</code>. Nếu <code>pendingPlanCount &gt;= 2</code> $\rightarrow$ Chặn ném lỗi: <em>"Huấn luyện viên [Tên] đang tồn [X] chiến mã chưa kích hoạt giáo án. Vui lòng hoàn tất giáo án hiện có trước khi phân công thêm."</em></li>
+</ol>
+<h3>2.2. Cơ chế Hạn phản hồi SLA Bàn giao (48 Giờ):</h3>
+<ul>
+<li>Hệ thống sinh một chuỗi ngẫu nhiên 24 bytes Hex (<code>crypto.randomBytes(24).toString('hex')</code>) làm <code>token</code>.</li>
+<li>Thời hạn hiệu lực: <code>expiresAt = new Date(Date.now() + 48 * 3600 * 1000)</code> (đúng 48 giờ).</li>
+<li>Nếu HLV phản hồi sau 48 giờ $\rightarrow$ Ném lỗi <code>400 BAD_REQUEST</code>: <em>"Yêu cầu phân công đã hết hạn phản hồi (48 giờ)."</em></li>
+</ul>
+<h3>2.3. Xử lý Tiếp nhận (<code>ACCEPT</code>) &amp; Cố định SLA 3 ngày:</h3>
+<ul>
+<li>Cập nhật bản ghi <code>HorseHandoverRequest</code>: <code>status = ACCEPTED</code>, <code>acceptedAt = new Date()</code>.</li>
+<li>Cập nhật bản ghi <code>Horse</code>: <code>assignedTrainerId = req.toTrainerId</code>, <code>trainerAssignmentStatus = ASSIGNED</code>, <code>trainerRespondedAt = new Date()</code>.</li>
+<li><strong>Hạn lập giáo án chuẩn</strong>: Cố định đúng 3 ngày (72 giờ) độc lập cho từng chiến mã:<br />
+  $$\text{planDeadlineAt} = \text{Date.now()} + 3 \times 24 \times 3600 \times 1000$$<br />
+<em>(Đã loại bỏ hoàn toàn công thức lũy tiến cũ $3 + 2N$ để chống trôi dạt SLA).</em></li>
+</ul>
+<hr />
+<h2>3. QUY TRÌNH 2: LẬP &amp; QUẢN LÝ VÒNG ĐỜI GIÁO ÁN HUẤN LUYỆN (TRAINING PLAN LIFECYCLE)</h2>
+<p><em>Tệp nguồn: <code>BE/src/training/training-plans.service.ts</code>, <code>BE/src/training/training-rules.ts</code></em></p>
+<h3>3.1. Các trạng thái Giáo án (<code>PlanStatus</code>):</h3>
+<ul>
+<li><code>DRAFT</code>: Bản nháp, HLV đang xây dựng các giai đoạn và bài tập.</li>
+<li><code>ACTIVE</code>: Giáo án đang kích hoạt áp dụng thực tế trên ngựa.</li>
+<li><code>COMPLETED</code>: Giáo án đã hoàn thành chu kỳ huấn luyện.</li>
+<li><code>CANCELLED</code>: Giáo án bị hủy bỏ giữa chừng (bắt buộc nhập lý do hủy $\ge 10$ ký tự).</li>
+<li><code>ARCHIVED</code>: Giáo án được đưa vào kho lưu trữ hồ sơ lịch sử.</li>
+</ul>
+<h3>3.2. Cấu trúc Giai đoạn Huấn luyện (Phases Validation):</h3>
+<p>Một giáo án bao gồm từ <strong>1 đến 12 giai đoạn</strong> (<code>MAX_PHASES = 12</code>), kiểm tra qua hàm <code>validatePhases</code>:<br />
+- <strong>5 Loại giai đoạn (<code>PHASE_TYPES</code>)</strong>:<br />
+  1. <code>BASE</code>: Xây dựng nền tảng thể lực cơ bản.<br />
+  2. <code>BUILD</code>: Phát triển cơ bắp và sức bền tim mạch.<br />
+  3. <code>SPEED</code>: Rèn luyện tốc độ bứt phá.<br />
+  4. <code>PRE_RACE</code>: Giai đoạn siết cơ, chuẩn bị thi đấu.<br />
+  5. <code>RECOVERY</code>: Phục hồi thể trạng sau thi đấu/tập nặng.<br />
+- <strong>3 Loại mặt sân (<code>PHASE_SURFACES</code>)</strong>: <code>TURF</code> (Sân cỏ), <code>DIRT</code> (Sân cát), <code>SYNTHETIC</code> (Mặt sân tổng hợp).<br />
+- <strong>Ràng buộc chỉ số mỗi giai đoạn</strong>:<br />
+  - Số buổi mỗi tuần: từ 1 đến 14 buổi/tuần (<code>sessionsPerWeek</code>).<br />
+  - Cự ly tích lũy tuần: từ 500m đến 60.000m/tuần (<code>maxWeeklyDistance</code>).<br />
+  - Tốc độ mục tiêu: từ 10 đến 70 km/h (<code>targetSpeedKmh</code>).<br />
+  - Thời lượng tối thiểu: Giáo án ngắn (&lt; 14 ngày) thì mỗi phase tối thiểu 3 ngày; giáo án dài thì phase <code>PRE_RACE</code> và <code>RECOVERY</code> tối thiểu 3 ngày, các phase còn lại tối thiểu 7 ngày.<br />
+  - <strong>Ràng buộc không giao thoa</strong>: <code>phases[i].startDate &gt; phases[i-1].endDate</code>. Nếu trùng lặp thời gian $\rightarrow$ Ném lỗi <code>PHASE_OVERLAP</code>.</p>
+<h3>3.3. Kích hoạt Giáo án (<code>ACTIVE</code>) &amp; Tịnh tiến Lịch tập tự động (<code>shiftMs</code>):</h3>
+<ul>
+<li>Điều kiện kích hoạt:</li>
+<li>Chỉ kích hoạt từ trạng thái <code>DRAFT</code>.</li>
+<li>Chiến mã không bị Khóa y tế (<code>isMedicalLocked === false</code>).</li>
+<li>Chiến mã không bị Lưu giữ do nợ tiền chuồng (<code>isDebtImpounded === false</code>).</li>
+<li>Chiến mã chưa có giáo án <code>ACTIVE</code> nào khác (Mỗi ngựa chỉ có duy nhất 1 giáo án hiệu lực).</li>
+<li><strong>Thuật toán Tịnh tiến Lịch tập (<code>shiftMs</code>)</strong>:</li>
+<li>Nếu ngày kích hoạt thực tế trễ hơn so với ngày dự kiến trong nháp:<br />
+    $$\text{shiftMs} = \text{targetStartDate} - \text{plan.startDate}$$</li>
+<li>Backend tự động cộng <code>shiftMs</code> vào toàn bộ ngày bắt đầu/kết thúc của các Phase và dời ngày diễn ra của toàn bộ các buổi tập con (<code>workoutSession.scheduledDate</code>), bảo đảm không có buổi tập nào bị rơi vào quá khứ.</li>
+<li><strong>Chuyển đổi trạng thái ngựa</strong>: Khi kích hoạt giáo án, trạng thái chiến mã tự động chuyển từ <code>RESTING</code> $\rightarrow$ <code>IN_TRAINING</code>.</li>
+</ul>
+<h3>3.4. Hoàn thành Giáo án (<code>COMPLETED</code>) &amp; Cơ chế Miễn trừ SLA (<code>isSlaExempt</code>):</h3>
+<ul>
+<li><strong>Điều kiện kết thúc</strong>:</li>
+<li>Bắt buộc nhập báo cáo tổng kết từ 10 đến 2000 ký tự (<code>dto.summary</code>).</li>
+<li>Kiểm tra các buổi tập chưa ghi kết quả (<code>unfinished</code>). Nếu còn buổi tập nào chưa hoàn tất $\rightarrow$ Ném lỗi <code>409 CONFLICT: PLAN_WORKOUT_RESULTS_REQUIRED</code>: <em>"Còn [X] buổi tập chưa ghi kết quả"</em>.</li>
+<li><strong>Tự động đưa ngựa về Nghỉ ngơi</strong>: Khi giáo án hoàn tất, ngựa tự động chuyển từ <code>IN_TRAINING</code> về <code>RESTING</code>.</li>
+<li><strong>Cơ chế Miễn trừ SLA</strong>:</li>
+<li>Hệ thống tự động gán <code>isRestingCycle = true</code> và <code>planDeadlineAt = null</code>.</li>
+<li>Dashboard HLV hiển thị Badge xanh <code>Nghỉ ngơi hồi phục</code>, <strong>không tính vào danh sách nợ giáo án 3 ngày</strong>, giải phóng nghĩa vụ SLA của lần bàn giao trước.</li>
+</ul>
+<hr />
+<h2>4. QUY TRÌNH 3: LẬP LỊCH, XẾP CA &amp; KIỂM SOÁT XUNG ĐỘT 3 NGÔI (WORKOUT SCHEDULING &amp; CONFLICT CHECKS)</h2>
+<p><em>Tệp nguồn: <code>BE/src/training/workouts.service.ts</code>, <code>workout-availability.service.ts</code>, <code>tracks.service.ts</code>, <code>training-rules.ts</code></em></p>
+<h3>4.1. Phân loại 7 Bài tập &amp; Cường độ:</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Mã bài tập</th>
+<th style="text-align: left;">Tên bài tập</th>
+<th style="text-align: center;">Thời lượng tiêu chuẩn</th>
+<th style="text-align: center;">Quy chuẩn Cường độ</th>
+<th style="text-align: center;">Quy chuẩn Mặt sân</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>WALK</code></td>
+<td style="text-align: left;">Đi bộ</td>
+<td style="text-align: center;">45 phút</td>
+<td style="text-align: center;">Nhẹ (<code>LIGHT</code>)</td>
+<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>TROT</code></td>
+<td style="text-align: left;">Chạy nước kiệu</td>
+<td style="text-align: center;">60 phút</td>
+<td style="text-align: center;">Nhẹ / Vừa (<code>LIGHT</code>/<code>MEDIUM</code>)</td>
+<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>CANTER</code></td>
+<td style="text-align: left;">Chạy nước đại nhẹ</td>
+<td style="text-align: center;">60 phút</td>
+<td style="text-align: center;">Vừa (<code>MEDIUM</code>)</td>
+<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>BREEZE</code></td>
+<td style="text-align: left;">Chạy tốc độ</td>
+<td style="text-align: center;">60 phút</td>
+<td style="text-align: center;"><strong>Luôn ép thành Nặng (<code>HEAVY</code>)</strong></td>
+<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>TRIAL</code></td>
+<td style="text-align: left;">Chạy thử sát hạch</td>
+<td style="text-align: center;">90 phút</td>
+<td style="text-align: center;"><strong>Luôn ép thành Nặng (<code>HEAVY</code>)</strong></td>
+<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>SWIM</code></td>
+<td style="text-align: left;">Bơi phục hồi</td>
+<td style="text-align: center;">45 phút</td>
+<td style="text-align: center;">Nhẹ / Vừa</td>
+<td style="text-align: center;"><strong>Ép thành <code>NONE</code> (Bể bơi)</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>TREADMILL</code></td>
+<td style="text-align: left;">Máy đi bộ trên cạn</td>
+<td style="text-align: center;">60 phút</td>
+<td style="text-align: center;">Nhẹ / Vừa</td>
+<td style="text-align: center;"><strong>Ép thành <code>NONE</code> (Khu máy)</strong></td>
+</tr>
+</tbody>
+</table>
+<h3>4.2. Khung giờ &amp; Quy chuẩn Thời gian (Time Constraints):</h3>
+<ul>
+<li><strong>Giờ tập quy định trong ngày</strong>: Chỉ được phép xếp lịch từ <strong>04:00 đến 20:00</strong> (<code>withinTrainingHours</code>).</li>
+<li><strong>Khung giờ vàng (<code>Prime Time</code>: 06:15 - 08:00)</strong>: Thời điểm mát mẻ nhất trong ngày, mỗi HLV bị khống chế <strong>tối đa 2 buổi tập nặng</strong> (<code>MAX_PRIME_HEAVY_SESSIONS_PER_TRAINER = 2</code>) để công bằng tài nguyên sân bãi và bảo vệ ngựa.</li>
+<li><strong>Đệm thời gian của Huấn luyện viên</strong>: Bắt buộc cách nhau tối thiểu <strong>15 phút</strong> (<code>TRAINER_BUFFER_MINUTES = 15</code>) giữa 2 buổi tập của cùng 1 HLV.</li>
+<li><strong>Đệm thời gian của Nhân viên chăm sóc (Groom)</strong>: Bắt buộc đệm <strong>15 phút</strong> (<code>GROOM_BUFFER_MINUTES = 15</code>) để làm vệ sinh, tháo yên và tắm cho ngựa.</li>
+<li><strong>Định mức tải của Groom</strong>: 1 Groom chỉ được phân công tối đa <strong>4 buổi tập/ngày</strong> và <strong>không quá 2 bài tập nặng/ngày</strong> (<code>MAX_DAILY_WORKOUTS_PER_GROOM = 4</code>, <code>MAX_DAILY_HEAVY_WORKOUTS_PER_GROOM = 2</code>).</li>
+</ul>
+<h3>4.3. Kiểm soát Sức chứa Mặt sân Chạy (Track Capacity):</h3>
+<p>Hàm kiểm tra <code>checkTrackAvailability</code> tại <code>tracks.service.ts</code>:<br />
+- <strong>Đối với bài tập Nhẹ / Vừa</strong>: Mặt sân cho phép tối đa <strong>3 chiến mã cùng tập</strong> (<code>TRACK_MAX_LIGHT_HORSES = 3</code>).<br />
+- <strong>Đối với bài tập Nặng (<code>BREEZE</code>, <code>TRIAL</code>, <code>HEAVY</code>)</strong>: Áp dụng cơ chế <strong>Chiếm dụng độc quyền (<code>HEAVY_OCCUPIED</code>)</strong>. Khi có 1 chiến mã đang chạy tốc độ, sân bị khóa hoàn toàn, không cho bất kỳ ngựa nào khác vào sân trong khung giờ đó để tránh va chạm ở vận tốc cao.</p>
+<hr />
+<h2>5. QUY TRÌNH 4: THỰC THI BUỔI TẬP &amp; GHI NHẬN CHỈ SỐ SINH TRẮC (SESSION EXECUTION &amp; TELEMETRY METRICS)</h2>
+<p><em>Tệp nguồn: <code>BE/src/training/workouts.service.ts</code> (<code>startWorkout</code>, <code>recordWorkoutResult</code>), <code>training-rules.ts</code></em></p>
+<h3>5.1. Bắt đầu Buổi tập (<code>startWorkout</code>):</h3>
+<ul>
+<li><strong>Chốt chặn y tế</strong>: Kiểm tra <code>checkMedicalLock(horseId, workoutDate)</code>. Nếu ngựa đang có Khóa y tế hiệu lực $\rightarrow$ Chặn đứng, ném lỗi <code>400 BAD_REQUEST: MEDICAL_LOCK_ACTIVE</code>.</li>
+<li><strong>Chốt chặn thời gian</strong>: Chỉ được bấm Bắt đầu khi đến giờ tập thực tế (trừ khi bật cờ môi trường test dev <code>allowEarlyWorkoutStart()</code>).</li>
+<li>Trạng thái buổi tập chuyển sang <code>IN_PROGRESS</code>.</li>
+</ul>
+<h3>5.2. Ghi nhận Chỉ số Sinh trắc học &amp; Thể lực (<code>recordWorkoutResult</code>):</h3>
+<ul>
+<li><strong>Thời hạn ghi kết quả</strong>: Tối đa trong vòng <strong>7 ngày</strong> kể từ khi buổi tập diễn ra (<code>LATE_RESULT_DAYS = 7</code>). Quá 7 ngày $\rightarrow$ Ném lỗi quá hạn ghi nhận.</li>
+<li><strong>Giới hạn kiểm tra tính hợp lý sinh học (Sanity Checks)</strong>:</li>
+<li>Cự ly thực tế: Tối đa <strong>10.000 mét / buổi</strong> (<code>MAX_SESSION_DISTANCE_METERS = 10000</code>).</li>
+<li>Vận tốc trung bình tính toán: Tối đa <strong>75 km/h</strong> (<code>MAX_AVERAGE_SPEED_KMH = 75</code> - do kỷ lục thế giới của loài ngựa đua xấp xỉ 70 km/h; vượt quá 75 km/h là dữ liệu nhập sai).</li>
+<li>Dải nhịp tim:<ul>
+<li>Nhịp tim nghỉ trước tập: 28 – 45 bpm.</li>
+<li>Nhịp tim đỉnh khi tập nặng: 120 – 240 bpm.</li>
+<li>Nhịp tim hồi phục sau 15 phút: Đo lường khả năng tản nhiệt và phục hồi tim mạch.</li>
+</ul>
+</li>
+<li>Điểm số phong độ (<code>performanceScore</code>): Thang điểm chuẩn từ 0 đến 100 điểm.</li>
+<li><strong>Cảnh báo Bất thường sau Buổi tập (<code>Post-workout Alerts</code>)</strong>:</li>
+<li>Nếu nhịp tim sau 15 phút nghỉ vẫn $&gt; 115$ bpm $\rightarrow$ Hệ thống tự động tạo bản ghi Cảnh báo mệt mỏi quá tải (<code>Exertion Alert</code>).</li>
+<li>Cảnh báo xuất hiện chấm đỏ trên Sidebar của HLV và gửi thông báo tới Bác sĩ thú y để kiểm tra nguy cơ chấn thương cơ/khớp.</li>
+</ul>
+<hr />
+<h2>6. QUY TRÌNH 5: CƠ CHẾ LIÊN ĐỘNG KHÓA Y TẾ (MEDICAL LOCK INTERLOCK)</h2>
+<p><em>Tệp nguồn: <code>BE/src/health/health.service.ts</code>, <code>BE/src/training/workouts.service.ts</code>, <code>training-common.service.ts</code></em></p>
+<p>Khi Bác sĩ thú y (<code>VETERINARIAN</code>) chẩn đoán ngựa có vấn đề sức khỏe và kích hoạt lệnh Khóa y tế (<code>placeLock</code>):</p>
+<pre><code>       [Bác sĩ Thú y đặt Khóa y tế]
+                    │
+                    ▼
+     ┌──────────────────────────────┐
+     │  Horse.isMedicalLocked = true│
+     └──────────────┬───────────────┘
+                    │
+       Cơ chế Khóa liên động (Interlock)
+                    │
+     ┌──────────────┴──────────────┐
+     ▼                             ▼
+[Tại Module Huấn luyện]     [Tại Dashboard HLV]
+- Chặn tạo Plan mới          - Hiển thị Badge đỏ &quot;Khóa y tế&quot;
+- Chặn bấm Start Workout     - Khóa nút &quot;Bắt đầu tập&quot;
+- Hủy/Hoãn bài tập nặng      - Chuyển thành nút &quot;Xem bệnh án&quot;
+</code></pre>
+<ol>
+<li><strong>Khóa quyền Lập giáo án mới</strong>: Tại màn hình Plan Wizard, cờ <code>canAssign</code> chuyển thành <code>false</code>, hiển thị lý do: <em>"Ngựa đang bị Khóa huấn luyện y tế bởi Bác sĩ thú y"</em>.</li>
+<li><strong>Khóa quyền Bắt đầu Buổi tập</strong>: Tại API <code>startWorkout</code>, Backend kiểm tra hàm <code>checkMedicalLock</code>. Nếu phát hiện khóa đang active $\rightarrow$ Ném lỗi <code>400 BAD_REQUEST</code>, ngăn chặn 100% việc HLV ép ngựa ốm/chấn thương ra sân.</li>
+<li><strong>Tự động Hoãn/Chặn bài tập nặng</strong>: Các buổi tập <code>HEAVY</code>, <code>BREEZE</code>, <code>TRIAL</code> đã lên lịch trong thời gian khóa y tế tự động chuyển sang trạng thái <code>BLOCKED</code>.</li>
+<li><strong>Giải phóng Khóa y tế</strong>: Chỉ duy nhất Bác sĩ thú y có quyền gỡ khóa (<code>liftLock</code>) sau khi khám tái thẩm định. Khi khóa được gỡ, các buổi tập mới được mở khóa trở lại.</li>
+</ol>
+<hr />
+<h2>7. QUY TRÌNH 6: SÁT HẠCH CHẠY THỬ &amp; ĐĂNG KÝ THI ĐẤU (TRIAL RUNS &amp; RACE ENTRIES)</h2>
+<p><em>Tệp nguồn: <code>FE/src/features/training/pages/TrialRunsPage.tsx</code>, <code>FE/src/features/racing/pages/RaceEntryPage.tsx</code></em></p>
+<ol>
+<li><strong>Buổi Chạy thử Sát hạch (<code>Trial Run</code>)</strong>:</li>
+<li>Thời lượng: 90 phút (bài tập nặng nhất hệ thống).</li>
+<li>Đo đạc chính thức 3 cự ly chuẩn thi đấu quốc tế: <strong>1000m, 1200m, 1600m</strong>.</li>
+<li>Bắt buộc bố trí Nài ngựa chính quy thuộc danh bạ CLB (<code>CLUB_JOCKEYS</code>: Trần Văn Kiên, Lê Minh Quân, Nguyễn Tấn Lộc, Phạm Hữu Đạt) với cân nặng chuẩn 50 - 53 kg.</li>
+<li>Ghi nhận chỉ số Vận tốc bứt phá cực đại (<strong>Top Speed</strong>) và thời gian hoàn thành (giây).</li>
+<li><strong>Điều kiện Đăng ký Tham gia Giải đua (<code>Race Registration</code>)</strong>:</li>
+<li>Chiến mã phải đạt trạng thái sẵn sàng (<code>READY_FOR_RACE</code>).</li>
+<li>Tuyệt đối không có Khóa y tế (<code>isMedicalLocked === false</code>).</li>
+<li>Có kết quả Chạy thử sát hạch đạt chuẩn tốc độ (Top Speed $\ge 50$ km/h) làm căn cứ kỹ thuật để HLV Trưởng và Chủ ngựa tự tin gửi danh sách thi đấu.</li>
+</ol>
+<hr />
+<h2>8. QUY TRÌNH 7: MINH BẠCH ĐÁNH GIÁ TỪ CHỦ NGỰA (TRAINER REVIEWS)</h2>
+<p><em>Tệp nguồn: <code>BE/src/training/trainer-reviews.service.ts</code>, <code>FE/src/features/training/pages/TrainerReviewsPage.tsx</code></em></p>
+<ul>
+<li><strong>Phân quyền Một chiều</strong>:</li>
+<li>Chủ sở hữu ngựa (<code>HORSE_OWNER</code>) có quyền gửi đánh giá từ 1 đến 5 sao kèm nhận xét cho Huấn luyện viên đối với các giáo án đang áp dụng (<code>ACTIVE</code>) hoặc đã hoàn thành (<code>COMPLETED</code>).</li>
+<li>HLV Trưởng chỉ có quyền <strong>Xem đánh giá (<code>My Reviews</code>)</strong>, hoàn toàn <strong>KHÔNG có quyền can thiệp, chỉnh sửa hay xóa đánh giá</strong>.</li>
+<li><strong>Chỉ số đánh giá HLV</strong>:</li>
+<li>Điểm trung bình cộng sao (Average Rating).</li>
+<li>Tỷ lệ hoàn thành giáo án đúng hạn.</li>
+<li>Số lượng phản hồi tích cực từ cộng đồng chủ ngựa.</li>
+</ul>
+<hr />
+<h2>9. BẢNG TRA CỨU THAM SỐ &amp; HẰNG SỐ NGHIỆP VỤ CỐT LÕI (BUSINESS RULE MATRIX)</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Tên Hằng số / Quy tắc</th>
+<th style="text-align: center;">Giá trị</th>
+<th style="text-align: left;">Tệp nguồn trong Code</th>
+<th style="text-align: left;">Ý nghĩa Nghiệp vụ &amp; Cơ sở Khoa học</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>MAX_HORSES_PER_TRAINER</code></td>
+<td style="text-align: center;"><strong>8</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L69</code></td>
+<td style="text-align: left;">Định mức tối đa 8 ngựa / 1 HLV để đảm bảo chất lượng huấn luyện.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>WIP Limit (Pending Plans)</code></td>
+<td style="text-align: center;"><strong>2</strong></td>
+<td style="text-align: left;"><code>BE/src/horses/horses.service.ts#L2305</code></td>
+<td style="text-align: left;">HLV tồn $\ge 2$ ngựa chưa có giáo án thì bị chặn không cho nhận thêm ngựa.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>MAX_TRAINERS_PER_BARN</code></td>
+<td style="text-align: center;"><strong>2</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L72</code></td>
+<td style="text-align: left;">Mỗi Khu chuồng chỉ bố trí tối đa 2 HLV để tránh xung đột quản lý.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>HANDOVER_SLA_HOURS</code></td>
+<td style="text-align: center;"><strong>48h</strong></td>
+<td style="text-align: left;"><code>BE/src/horses/horses.service.ts#L2316</code></td>
+<td style="text-align: left;">Thời hạn tối đa để HLV bấm Tiếp nhận hoặc Từ chối ngựa quản lý giao.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>PLAN_CREATION_SLA_DAYS</code></td>
+<td style="text-align: center;"><strong>3 ngày</strong></td>
+<td style="text-align: left;"><code>BE/src/horses/horses.service.ts#L2467</code></td>
+<td style="text-align: left;">Hạn cố định 72 giờ để HLV lập và kích hoạt giáo án sau khi nhận ngựa.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>FIRST_HOUR</code> - <code>LAST_HOUR</code></td>
+<td style="text-align: center;"><strong>04:00 - 20:00</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L146-L147</code></td>
+<td style="text-align: left;">Khung giờ cho phép tổ chức tập luyện trong ngày của CLB.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>PRIME_TIME</code></td>
+<td style="text-align: center;"><strong>06:15 - 08:00</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L80-L84</code></td>
+<td style="text-align: left;">Khung giờ vàng buổi sáng, khống chế tối đa 2 bài tập nặng / HLV.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>TRAINER_BUFFER_MINUTES</code></td>
+<td style="text-align: center;"><strong>15 phút</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L75</code></td>
+<td style="text-align: left;">Thời gian đệm nghỉ tối thiểu giữa 2 ca tập của HLV.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>GROOM_BUFFER_MINUTES</code></td>
+<td style="text-align: center;"><strong>15 phút</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L138</code></td>
+<td style="text-align: left;">Thời gian đệm tối thiểu của Groom để tháo yên, tắm rửa cho ngựa.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>MAX_DAILY_WORKOUTS_PER_GROOM</code></td>
+<td style="text-align: center;"><strong>4 buổi</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L65</code></td>
+<td style="text-align: left;">Giới hạn an toàn lao động: 1 Groom không phụ trách quá 4 ca/ngày.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>TRACK_MAX_LIGHT_HORSES</code></td>
+<td style="text-align: center;"><strong>3 ngựa</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L78</code></td>
+<td style="text-align: left;">Sức chứa tối đa của 1 mặt sân cho các bài tập nhẹ/vừa.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>HEAVY_OCCUPIED</code></td>
+<td style="text-align: center;"><strong>1 ngựa</strong></td>
+<td style="text-align: left;"><code>BE/src/training/tracks.service.ts</code></td>
+<td style="text-align: left;">Bài tập nặng chiếm dụng độc quyền sân, cấm các ngựa khác vào sân.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>MAX_SESSION_DISTANCE_METERS</code></td>
+<td style="text-align: center;"><strong>10.000m</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L141</code></td>
+<td style="text-align: left;">Cự ly tối đa cho phép trong 1 buổi tập để chống nhập khống.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>MAX_AVERAGE_SPEED_KMH</code></td>
+<td style="text-align: center;"><strong>75 km/h</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L143</code></td>
+<td style="text-align: left;">Tốc độ tối đa giới hạn sinh học loài ngựa đua (kỷ lục thế giới $\approx 70$ km/h).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>LATE_RESULT_DAYS</code></td>
+<td style="text-align: center;"><strong>7 ngày</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L145</code></td>
+<td style="text-align: left;">Hạn chót HLV phải nhập kết quả sau khi buổi tập kết thúc.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>MAX_PHASES</code></td>
+<td style="text-align: center;"><strong>12</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L185</code></td>
+<td style="text-align: left;">Số giai đoạn tối đa trong 1 giáo án huấn luyện.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>MAX_PLAN_WEEKS</code></td>
+<td style="text-align: center;"><strong>52 tuần</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L186</code></td>
+<td style="text-align: left;">Thời lượng tối đa của một giáo án (1 năm).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>CLUB_UTC_OFFSET_HOURS</code></td>
+<td style="text-align: center;"><strong>UTC+7</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L152</code></td>
+<td style="text-align: left;">Quy đổi múi giờ chuẩn Việt Nam, loại bỏ sai lệch ngày giờ hệ thống.</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+</body>
+</html>

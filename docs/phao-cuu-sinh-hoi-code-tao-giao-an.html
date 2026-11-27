@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Phao Cứu Sinh Hỏi Code Tạo Giáo Án</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 18mm 16mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+  
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: #0f172a;
+    line-height: 1.55;
+    font-size: 10.5pt;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Header Box */
+  .header-card {
+    background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    color: white;
+    padding: 24px 28px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+  }
+  .header-title {
+    font-size: 18pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 8px 0;
+  }
+  .header-sub {
+    font-size: 11pt;
+    color: #dbeafe;
+    margin: 0;
+  }
+
+  /* Headings */
+  h1 {
+    display: none;
+  }
+  h2 {
+    color: #1e3a8a;
+    font-size: 13.5pt;
+    font-weight: 700;
+    margin-top: 22px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #2563eb;
+    padding-bottom: 5px;
+    page-break-after: avoid;
+  }
+  h3 {
+    color: #0f172a;
+    font-size: 11.5pt;
+    font-weight: 700;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    background: #f1f5f9;
+    padding: 6px 10px;
+    border-left: 4px solid #2563eb;
+    border-radius: 0 4px 4px 0;
+    page-break-after: avoid;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 9.5pt;
+    page-break-inside: avoid;
+  }
+  th, td {
+    border: 1px solid #cbd5e1;
+    padding: 8px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background-color: #1e293b;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 9pt;
+  }
+  tr:nth-child(even) {
+    background-color: #f8fafc;
+  }
+
+  /* Code */
+  code {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 9pt;
+    background-color: #f1f5f9;
+    color: #b91c1c;
+    padding: 2px 5px;
+    border-radius: 4px;
+    border: 1px solid #e2e8f0;
+    font-weight: 600;
+  }
+  pre {
+    background-color: #0f172a;
+    color: #f8fafc;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 8.5pt;
+    line-height: 1.45;
+    page-break-inside: avoid;
+  }
+  pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    border: none;
+    font-weight: 400;
+  }
+
+  /* Alert / Blockquote */
+  blockquote {
+    margin: 14px 0;
+    padding: 10px 16px;
+    background-color: #eff6ff;
+    border-left: 4px solid #2563eb;
+    border-radius: 0 6px 6px 0;
+    color: #1e40af;
+    font-size: 9.5pt;
+  }
+
+  ol, ul {
+    padding-left: 20px;
+    margin: 6px 0;
+  }
+  li {
+    margin-bottom: 4px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header-card">
+  <div class="header-title">PHAO CỨU SINH THỰC CHIẾN 9H SÁNG MAI</div>
+  <div class="header-sub">BẢN ĐỒ TỌA ĐỘ VÀ KỊCH BẢN HỎI CODE LUỒNG TẠO GIÁO ÁN HUẤN LUYỆN (DÀNH CHO NGƯỜI KHÔNG CHUYÊN CODE)</div>
+</div>
+
+<div class="content">
+<h1>CẨM NANG THỰC CHIẾN BẢO VỆ ĐỒ ÁN: LUỒNG CODE TẠO GIÁO ÁN HUẤN LUYỆN</h1>
+<h2>DÀNH RIÊNG CHO NGƯỜI KHÔNG CHUYÊN CODE — KỊCH BẢN CHỈ ĐIỂM CODE &amp; THAO TÁC TAY</h2>
+<blockquote>
+<p><strong>Mục tiêu</strong>: Vượt qua phần vấn đáp code của Hội đồng lúc 9h sáng mai mà không cần học lập trình phức tạp.<br />
+<strong>Nguyên tắc</strong>: Thuộc lòng tọa độ 4 tệp tin cốt lõi, phím tắt tìm kiếm <code>Ctrl + P</code>, <code>Ctrl + F</code>, và quy trình trả lời chuẩn xác.</p>
+</blockquote>
+<hr />
+<h2>I. BẢN ĐỒ TỌA ĐỘ 4 TỆP TIN CỐT LÕI (IN RA GIẤY CẦM TAY)</h2>
+<p>Khi Thầy Cô yêu cầu: <em>"Chỉ cho thầy luồng tạo giáo án chạy từ đâu tới đâu?"</em>, bạn nhớ đúng 4 trạm dừng sau:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: center;">Trạm</th>
+<th style="text-align: left;">Vai trò</th>
+<th style="text-align: left;">Đường dẫn tệp tin (File Path)</th>
+<th style="text-align: center;">Dòng code chính</th>
+<th style="text-align: left;">Từ khóa bấm <code>Ctrl + F</code> tìm nhanh</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>1</strong></td>
+<td style="text-align: left;"><strong>Giao diện Web</strong></td>
+<td style="text-align: left;"><code>FE/src/features/training/pages/PlanWizardPage.tsx</code></td>
+<td style="text-align: center;"><strong>2139 – 2152</strong></td>
+<td style="text-align: left;"><code>Lưu giáo án &amp; Tiếp theo: Xếp lịch tập</code></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>2</strong></td>
+<td style="text-align: left;"><strong>Cầu nối API</strong></td>
+<td style="text-align: left;"><code>FE/src/features/training/api.ts</code></td>
+<td style="text-align: center;"><strong>368 – 372</strong></td>
+<td style="text-align: left;"><code>async createPlan(</code></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>3</strong></td>
+<td style="text-align: left;"><strong>Đón nhận Backend</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training.controller.ts</code></td>
+<td style="text-align: center;"><strong>201 – 208</strong></td>
+<td style="text-align: left;"><code>@Post('plans')</code></td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>4</strong></td>
+<td style="text-align: left;"><strong>Lưu Database</strong></td>
+<td style="text-align: left;"><code>BE/src/training/training-plans.service.ts</code></td>
+<td style="text-align: center;"><strong>280 – 295</strong></td>
+<td style="text-align: left;"><code>tx.trainingPlan.create</code></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>II. KỊCH BẢN 4 TÌNH HUỐNG THẦY CÔ BẮT BẺ CODE &amp; HÀNH ĐỘNG TAY</h2>
+<h3>Tình huống 1: "Cái nút 'Lưu giáo án' ở file nào, sửa thử chữ trên nút cho thầy xem?"</h3>
+<ul>
+<li><strong>Ý đồ Thầy Cô</strong>: Kiểm tra bạn có thực sự biết giao diện đang chạy từ code nào hay không.</li>
+<li><strong>Thao tác tay của bạn (Làm theo đúng 4 bước)</strong>:</li>
+<li>Trong VS Code, bấm phím tắt: <strong><code>Ctrl + P</code></strong> $\rightarrow$ Gõ: <code>PlanWizardPage.tsx</code> $\rightarrow$ Nhấn <strong>Enter</strong>.</li>
+<li>Bấm phím tắt: <strong><code>Ctrl + F</code></strong> $\rightarrow$ Gõ: <code>Lưu giáo án &amp; Tiếp theo</code> $\rightarrow$ Con trỏ nhảy ngay đến <strong>dòng 2150</strong>.</li>
+<li>Chỉ tay vào màn hình: <em>"Dạ thưa Thầy, nút bấm nằm ở dòng 2150 của file PlanWizardPage.tsx ạ!"</em>.</li>
+<li>Nếu Thầy bảo sửa chữ: Bạn đổi chữ <code>Lưu giáo án &amp; Tiếp theo: Xếp lịch tập</code> thành <code>Xác nhận tạo giáo án mới</code>, rồi bấm <strong><code>Ctrl + S</code></strong> (Lưu file).</li>
+<li>Quay lại trình duyệt Web: Do hệ thống có cơ chế Hot-reload tự động, chữ trên màn hình đổi ngay lập tức mà không cần F5. Thầy Cô sẽ thấy bạn thao tác rất tự tin!</li>
+</ul>
+<hr />
+<h3>Tình huống 2: "Cái icon mũi tên ở nút này ở đâu, xóa nó đi xem nào?"</h3>
+<ul>
+<li><strong>Ý đồ Thầy Cô</strong>: Xem bạn có phân biệt được thẻ JSX icon và text hay không.</li>
+<li><strong>Thao tác tay của bạn</strong>:</li>
+<li>Ngay tại <strong>dòng 2150</strong> của file <code>PlanWizardPage.tsx</code>, nhìn ngay phía sau chữ có đoạn mã:<br />
+<code>tsx
+     &lt;Icon name="arrowRight" inline size={14} /&gt;</code></li>
+<li>Dùng chuột bôi đen đoạn <code>&lt;Icon name="arrowRight" inline size={14} /&gt;</code> rồi bấm phím <strong>Delete</strong>.</li>
+<li>Bấm <strong><code>Ctrl + S</code></strong> để lưu lại.</li>
+<li>Quay lại trình duyệt Web: Mũi tên biến mất ngay lập tức. Bạn trả lời: <em>"Dạ em đã xóa icon mũi tên rồi ạ!"</em>.</li>
+</ul>
+<hr />
+<h3>Tình huống 3: "Bấm nút này thì gọi API nào? Luồng đi từ Frontend sang Backend như thế nào?"</h3>
+<ul>
+<li><strong>Ý đồ Thầy Cô</strong>: Kiểm tra kiến trúc Client - Server.</li>
+<li><strong>Thao tác tay &amp; Lời thoại của bạn</strong>:</li>
+<li>Mở file <code>PlanWizardPage.tsx</code>, kéo lên dòng <strong>1156</strong>, chỉ tay:<ul>
+<li><em>"Dạ thưa Thầy, khi bấm nút, hàm <code>save()</code> sẽ lấy toàn bộ dữ liệu form (Tên giáo án, ngày bắt đầu, ngày kết thúc, các giai đoạn) và gọi hàm <code>trainingApi.createPlan(payload)</code> ở dòng 1156 ạ."</em></li>
+</ul>
+</li>
+<li>Bấm <code>Ctrl + P</code>, gõ mở file <code>FE/src/features/training/api.ts</code>, chỉ vào dòng <strong>370</strong>:<ul>
+<li><em>"Hàm này dùng phương thức HTTP <code>POST</code> để đẩy dữ liệu lên đường dẫn <code>/training/plans</code> trên máy chủ Backend."</em></li>
+</ul>
+</li>
+<li>Bấm <code>Ctrl + P</code>, gõ mở file <code>BE/src/training/training.controller.ts</code>, chỉ vào dòng <strong>201</strong>:<ul>
+<li><em>"Tại Backend, Controller tiếp nhận endpoint <code>@Post('plans')</code> ở dòng 201, kiểm tra đúng quyền HLV Trưởng (<code>HEAD_TRAINER</code>) rồi chuyển qua Service để xử lý tiếp."</em></li>
+</ul>
+</li>
+</ul>
+<hr />
+<h3>Tình huống 4: "Dữ liệu giáo án được lưu vào bảng nào trong Cơ sở dữ liệu?"</h3>
+<ul>
+<li><strong>Ý đồ Thầy Cô</strong>: Kiểm tra cơ sở dữ liệu và ORM.</li>
+<li><strong>Lời thoại trả lời ngay không cần ngập ngừng</strong>:</li>
+<li><em>"Dạ thưa Thầy, dữ liệu được xử lý trong file <code>training-plans.service.ts</code> tại dòng 280, sử dụng Prisma ORM ghi trực tiếp vào bảng </em><em><code>TrainingPlan</code></em><em> trong cơ sở dữ liệu PostgreSQL ạ."</em></li>
+<li><em>"Khi mới tạo xong, trạng thái của giáo án luôn được gán mặc định là </em><em><code>DRAFT</code></em><em> (Bản nháp). Sau khi HLV xếp xong các buổi tập chi tiết và bấm Kích hoạt thì trạng thái mới chuyển sang </em><em><code>ACTIVE</code></em><em> ạ!"</em></li>
+</ul>
+<hr />
+<h2>III. 3 PHÍM TẮT SINH TỬ TRONG VS CODE CẦN NHỚ</h2>
+<ol>
+<li><strong><code>Ctrl + P</code></strong>: Mở nhanh bất kỳ file nào bằng cách gõ tên file.</li>
+<li><strong><code>Ctrl + F</code></strong>: Tìm kiếm từ khóa hoặc đoạn text trong file đang mở.</li>
+<li><strong><code>Ctrl + S</code></strong>: Lưu file ngay sau khi chỉnh sửa để web tự động cập nhật.</li>
+</ol>
+<hr />
+<blockquote>
+<p>[!IMPORTANT]<br />
+<strong>BÍ QUYẾT GIỮ VỮNG TÂM LÝ</strong>:<br />
+Thầy Cô chỉ muốn xem bạn có thực sự làm việc trên project này hay không. Khi Thầy Cô hỏi code, bạn cứ bình tĩnh bấm <code>Ctrl + P</code> mở đúng file, bấm <code>Ctrl + F</code> tìm đúng dòng chữ theo cẩm nang này. Chỉ cần mở đúng file trong vòng 5 giây là bạn đã ghi trọn điểm phong thái và năng lực!</p>
+</blockquote>
+</div>
+
+</body>
+</html>

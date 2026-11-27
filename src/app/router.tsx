@@ -60,7 +60,6 @@ import {
   HealthReportPage,
   PlanListPage,
   PlanWizardPage,
-  PlanHistoryPage,
   WeeklyCalendarPage,
   TrialRunsPage,
   SessionMetricsPage,
