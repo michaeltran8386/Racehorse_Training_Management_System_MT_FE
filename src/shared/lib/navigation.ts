@@ -107,10 +107,13 @@ export function breadcrumbFor(user: AuthUser, pathname: string, accountName?: st
   if (/^\/training\/sessions\/[^/]+\/result$/.test(pathname)) {
     return [homeSegment, { label: tr("Training Schedule"), href: "/calendar" }, { label: tr("Workout Result") }];
   }
+  if (pathname === "/horses/my-admissions") {
+    return [homeSegment, { label: "Hồ sơ đăng ký đã nộp" }];
+  }
   if (pathname === "/horses/admissions") {
     return [homeSegment, { label: i18n.t("nav.horseAdmissions", "Horse Admissions") }];
   }
-  if (/^\/horses\/(?!new$|deleted$)[^/]+$/.test(pathname)) {
+  if (/^\/horses\/(?!new$|deleted$|my-admissions$)[^/]+$/.test(pathname)) {
     return [homeSegment, { label: tr("Horses"), href: "/horses" }, { label: accountName ?? tr("Horse profile") }];
   }
   if (/^\/horses\/[^/]+\/edit$/.test(pathname)) {

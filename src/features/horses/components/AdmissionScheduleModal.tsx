@@ -10,8 +10,9 @@ import { Textarea } from "@/shared/components/form/Textarea";
 import { useToast } from "@/shared/components/ui/Toast";
 import { tr } from "@/shared/i18n/tr";
 import { messageFor } from "@/shared/lib/messages";
-import { scheduleAdmission } from "../services/admissionService";
+import { extractAdmissionDocumentPhotos, scheduleAdmission } from "../services/admissionService";
 import type { HorseAdmissionRecord } from "../types/admission.types";
+import { LegalDocumentsGallery } from "./LegalDocumentsUploader";
 import design from "./AdmissionDesign.module.css";
 
 interface Props { record: HorseAdmissionRecord; onClose: () => void; onSuccess: () => void }
@@ -76,10 +77,42 @@ export function AdmissionScheduleModal({ record, onClose, onSuccess }: Props) {
     finally { setLoading(false); }
   }
 
+  const ownerDocs = extractAdmissionDocumentPhotos(record);
+
   return <Modal title={tr("Schedule Admission Appointment — {{code}}", { code: record.admissionCode })}
-    subtitle={`${record.horse.name} · ${record.owner.fullName}`} width={560} dialogClassName={design.dialog} overlayClassName={design.overlay} onClose={onClose}>
+    subtitle={`${record.horse.name} · ${record.owner.fullName}`} width={600} dialogClassName={design.dialog} overlayClassName={design.overlay} onClose={onClose}>
     <form className={design.form} onSubmit={submit}>
       <p className={design.helper}>Một lịch hẹn chung: Quản lý xác minh chip và pháp lý; bác sĩ khám sức khỏe. Giờ hiển thị theo CLB (UTC+7).</p>
+      {(record.ownerNotes || ownerDocs.length > 0) && (
+        <div
+          style={{
+            padding: "0.85rem 1rem",
+            borderRadius: "10px",
+            background: "rgba(239, 246, 255, 0.7)",
+            border: "1px solid rgba(59, 130, 246, 0.35)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.65rem",
+          }}
+        >
+          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1e40af" }}>
+            Tờ khai của Chủ ngựa ({record.owner.fullName})
+          </div>
+          {record.ownerNotes && (
+            <div style={{ fontSize: "0.85rem", lineHeight: 1.45, color: "#0f172a", whiteSpace: "pre-wrap" }}>
+              <strong>Ghi chú / Mong muốn:</strong> {record.ownerNotes}
+            </div>
+          )}
+          {ownerDocs.length > 0 && (
+            <div>
+              <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: 6 }}>
+                Ảnh giấy tờ pháp lý chủ nộp trước ({ownerDocs.length} ảnh — bấm để phóng to):
+              </div>
+              <LegalDocumentsGallery photos={ownerDocs} compact />
+            </div>
+          )}
+        </div>
+      )}
       <Field label="Quản lý phụ trách *"><Select value={managerId} onChange={e => setManagerId(e.target.value)} disabled={loading || membersLoading} required
         options={[{ value: '', label: 'Chọn Quản lý' }, ...members.filter(m => m.role === 'CLUB_MANAGER').map(m => ({ value: m.id, label: m.fullName }))]} /></Field>
       <Field label="Bác sĩ tham gia *"><Select value={vetId} onChange={e => setVetId(e.target.value)} disabled={loading || membersLoading} required

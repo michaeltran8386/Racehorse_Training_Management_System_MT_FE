@@ -38,6 +38,7 @@ export const StaffDirectoryPage = lazy(() => import("@/features/master-data/page
 export const StaffSchedulePage = lazy(() => import("@/features/staff/pages/StaffSchedulePage"));
 export const HorseListPage = lazy(() => import("@/features/horses/pages/HorseListPage"));
 export const HorseAdmissionListPage = lazy(() => import("@/features/horses/pages/HorseAdmissionListPage"));
+export const OwnerAdmissionsPage = lazy(() => import("@/features/horses/pages/OwnerAdmissionsPage"));
 export const HorseDetailPage = lazy(() => import("@/features/horses/pages/HorseDetailPage"));
 export const HorseFormPage = lazy(() => import("@/features/horses/pages/HorseFormPage"));
 export const DeletedHorsesPage = lazy(() => import("@/features/horses/pages/DeletedHorsesPage"));

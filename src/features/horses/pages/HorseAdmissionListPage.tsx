@@ -14,7 +14,8 @@ import { useToast } from "@/shared/components/ui/Toast";
 import { tr } from "@/shared/i18n/tr";
 import { formatDateTime } from "@/shared/lib/format";
 import { messageFor } from "@/shared/lib/messages";
-import { getAdmissions, cancelAdmission, getAdmissionCapacity, deferAdmissionForCapacity, getAdmissionRecord } from "../services/admissionService";
+import { getAdmissions, cancelAdmission, getAdmissionCapacity, deferAdmissionForCapacity, getAdmissionRecord, extractAdmissionDocumentPhotos } from "../services/admissionService";
+import { getDemoDate } from "@/features/training/api";
 import type { HorseAdmissionRecord, AdmissionStatus } from "../types/admission.types";
 import { AdmissionInspectionModal } from "../components/AdmissionInspectionModal";
 import { AdmissionScheduleModal } from "../components/AdmissionScheduleModal";
@@ -198,7 +199,16 @@ export default function HorseAdmissionListPage() {
                 const appointed = rec.status === "APPOINTED";
                 const canInspect = (appointed || rec.status === "INSPECTION_IN_PROGRESS") && (isManager || (isVet && rec.veterinarianUserId === currentUser.id));
                 const canSchedule = (pending || appointed) && isManager;
-                const overdue = Boolean(rec.appointmentDate && Date.now() - Date.parse(rec.appointmentDate) >= 3 * 86400000);
+                const demoYmd = getDemoDate();
+                const nowMs = demoYmd
+                  ? Date.parse(`${demoYmd}T${new Date().toISOString().slice(11, 19)}+07:00`) || Date.now()
+                  : Date.now();
+                const overdueDays = rec.appointmentDate
+                  ? Math.floor((nowMs - Date.parse(rec.appointmentDate)) / 86400000)
+                  : 0;
+                const overdue = Boolean(appointed && rec.appointmentDate && overdueDays >= 3);
+                const pastDue = Boolean(appointed && rec.appointmentDate && nowMs > Date.parse(rec.appointmentDate));
+                const docCount = extractAdmissionDocumentPhotos(rec).length;
                 const canCancel = isManager ? appointed && overdue : currentUser.id === rec.ownerId && (pending || appointed);
                 return <tr key={rec.id}>
                   <td><div className={styles.horse}>
@@ -211,9 +221,32 @@ export default function HorseAdmissionListPage() {
                     <span className={styles.microchip}><span>{tr("Microchip No.")}</span> {rec.scannedMicrochip || rec.declaredMicrochip || rec.horse.microchip || tr("None")}
                       {rec.microchipVerified && <span className={styles.verified} title={tr("Microchip verified")}><Icon name="check" size={14} /><span className={styles.srOnly}>{tr("Microchip verified")}</span></span>}
                     </span>
+                    {(docCount > 0 || rec.ownerNotes) && (
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
+                        {docCount > 0 && <Badge tone="info">{docCount} ảnh pháp lý</Badge>}
+                        {rec.ownerNotes && (
+                          <Badge tone="neutral" title={rec.ownerNotes}>
+                            Có ghi chú chủ
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                   </div></td>
                   <td><div className={styles.person}><span>{rec.owner.fullName}</span><span className={styles.meta}>{rec.owner.email}</span></div></td>
-                  <td>{rec.appointmentDate ? <time dateTime={rec.appointmentDate}>{formatDateTime(rec.appointmentDate)}{rec.appointmentEndDate && <> → {formatDateTime(rec.appointmentEndDate)}</>}</time> : <span className={styles.meta}>{rec.capacityDeferredAt ? 'Hoãn do hết chuồng · chờ hẹn lại' : tr("Not scheduled")}</span>}</td>
+                  <td>
+                    {rec.appointmentDate ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                        <time dateTime={rec.appointmentDate}>
+                          {formatDateTime(rec.appointmentDate)}
+                          {rec.appointmentEndDate && <> → {formatDateTime(rec.appointmentEndDate)}</>}
+                        </time>
+                        {overdue && <Badge tone="danger">Quá hạn {overdueDays} ngày (có thể hủy)</Badge>}
+                        {!overdue && pastDue && <Badge tone="warn">Đã quá giờ hẹn</Badge>}
+                      </div>
+                    ) : (
+                      <span className={styles.meta}>{rec.capacityDeferredAt ? 'Hoãn do hết chuồng · chờ hẹn lại' : tr("Not scheduled")}</span>
+                    )}
+                  </td>
                   <td>{rec.veterinarian?.fullName || <span className={styles.meta}>{tr("Unassigned")}</span>}</td>
                   <td><Badge tone={badge?.tone ?? "neutral"}>{tr(badge?.label ?? rec.status)}</Badge></td>
                   <td><div className={styles.rowActions}>

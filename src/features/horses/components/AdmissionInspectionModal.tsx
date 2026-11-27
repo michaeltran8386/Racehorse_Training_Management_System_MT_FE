@@ -11,12 +11,14 @@ import { useToast } from "@/shared/components/ui/Toast";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { tr } from "@/shared/i18n/tr";
 import {
+  extractAdmissionDocumentPhotos,
   inspectAdmission,
   approveAdmission,
   rejectAdmission,
   getAdmissionCapacity,
   reviewAdmissionHealth,
 } from "../services/admissionService";
+import { LegalDocumentsGallery } from "./LegalDocumentsUploader";
 import type {
   HorseAdmissionRecord,
   InspectAdmissionDto,
@@ -64,7 +66,7 @@ export function AdmissionInspectionModal({
   const [legalDocumentsNote, setLegalDocumentsNote] = useState(
     currentRecord.legalDocumentsNote || "",
   );
-  const [documentsUrl, setDocumentsUrl] = useState(currentRecord.documentsUrl || "");
+  const submittedDocPhotos = extractAdmissionDocumentPhotos(currentRecord);
 
   // Form states - Block 2: Veterinary Screen (Veterinarian)
   const [isHealthEligible, setIsHealthEligible] = useState<boolean | null>(
@@ -127,7 +129,6 @@ export function AdmissionInspectionModal({
           scannedMicrochip: trimmedScanned,
           legalVerified,
           legalDocumentsNote: legalDocumentsNote.trim(),
-          documentsUrl: documentsUrl.trim(),
         };
       } else if (isVet) {
         payload = {
@@ -210,7 +211,6 @@ export function AdmissionInspectionModal({
 
   const scannedChipId = useId();
   const legalNotesId = useId();
-  const docsUrlId = useId();
   const healthNotesId = useId();
 
   return (
@@ -284,6 +284,44 @@ export function AdmissionInspectionModal({
               </span>
             </div>
           </div>
+
+          {/* Ghi chú mong muốn & Giấy tờ pháp lý chủ ngựa đã nộp */}
+          {(currentRecord.ownerNotes || submittedDocPhotos.length > 0) && (
+            <div className={styles.block}>
+              <h3 className={styles.blockTitle}>
+                <Icon name="file" size={18} />
+                Tờ khai &amp; Giấy tờ pháp lý Chủ ngựa nộp trực tuyến
+              </h3>
+              <div className={styles.fieldGroup}>
+                {currentRecord.ownerNotes && (
+                  <div
+                    style={{
+                      padding: "0.7rem 0.85rem",
+                      borderRadius: "8px",
+                      background: "var(--surface-subtle, #f8fafc)",
+                      borderLeft: "3px solid var(--brand-600, #2563eb)",
+                      fontSize: "0.86rem",
+                      lineHeight: 1.5,
+                      whiteSpace: "pre-wrap",
+                    }}
+                  >
+                    <strong>Ghi chú / Mong muốn của chủ ngựa:</strong>
+                    <div>{currentRecord.ownerNotes}</div>
+                  </div>
+                )}
+                <div>
+                  <span className={styles.label}>
+                    Ảnh giấy tờ pháp lý đính kèm ({submittedDocPhotos.length} ảnh — đối chiếu với bản gốc)
+                  </span>
+                  <LegalDocumentsGallery
+                    photos={submittedDocPhotos}
+                    compact
+                    emptyText="Chủ ngựa chưa tải ảnh giấy tờ pháp lý trực tuyến — vui lòng kiểm tra trực tiếp bản gốc."
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* KHỐI 1: Vi mạch & Pháp lý */}
           <div className={styles.block}>

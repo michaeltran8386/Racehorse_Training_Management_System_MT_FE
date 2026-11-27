@@ -371,6 +371,11 @@ export default function HorseListPage() {
                 {tr("Deleted horses")}
               </LinkButton>
             )}
+            {isOwner && (
+              <LinkButton to="/horses/my-admissions" tone="secondary" icon="clipboard">
+                Hồ sơ đã nộp
+              </LinkButton>
+            )}
             {canEdit && (
               <LinkButton to="/horses/new" tone="primary" icon="plus">
                 {tr("Register horse")}

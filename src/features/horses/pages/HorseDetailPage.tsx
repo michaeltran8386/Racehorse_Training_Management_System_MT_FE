@@ -24,6 +24,7 @@ import { ChangeStatusDialog } from "../components/ChangeStatusDialog";
 import { DeleteHorseModal } from "../components/DeleteHorseModal";
 import { RetireHorseModal } from "../components/RetireHorseModal";
 import { LifecycleTimeline } from "../components/LifecycleTimeline";
+import { OwnerAdmissionDossierCard } from "../components/OwnerAdmissionDossierCard";
 import { Icon } from "@/shared/components/ui/Icon";
 import { formatNumber } from "@/shared/lib/format";
 import { useToast } from "@/shared/components/ui/Toast";
@@ -294,6 +295,32 @@ export default function HorseDetailPage() {
           {horse.retireReason ? tr("Reason: {{reason}}. ", { reason: tr(RETIRE_REASON_LABEL[horse.retireReason]) }) : ""}
           {tr("Identity, stall and health history stay available for reference.")}
         </Alert>
+      )}
+
+      {/* Phiếu theo dõi hồ sơ đăng ký tiếp nhận (kiểu Dịch vụ công cho Chủ ngựa) */}
+      {isOwner && horse.latestAdmission && (
+        <OwnerAdmissionDossierCard
+          record={{
+            ...horse.latestAdmission,
+            horse: horse.latestAdmission.horse ?? {
+              id: horse.id,
+              horseCode: horse.horseCode,
+              name: horse.name,
+              microchip: horse.microchip,
+              breed: horse.breed,
+              dob: horse.dob,
+              gender: horse.gender,
+              color: horse.color,
+              weightKg: horse.weightKg,
+            },
+            owner: horse.latestAdmission.owner ?? {
+              id: currentUser.id,
+              fullName: currentUser.fullName,
+              email: currentUser.email,
+            },
+          }}
+          onUpdated={refreshHorse}
+        />
       )}
 
       {/* Athlete Header Card */}

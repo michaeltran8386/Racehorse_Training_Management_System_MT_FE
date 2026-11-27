@@ -468,6 +468,9 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
       items: [
         item("dashboard", "Dashboard", "home"),
         item("my-horses", "My Horses", "horse", { requires: "viewHorses" }),
+        item("horses/my-admissions", "Hồ sơ đã nộp", "clipboard", {
+          requires: "viewHorses",
+        }),
       ],
     },
     {
@@ -656,7 +659,7 @@ const sidebarOrder: Record<Role, [string, string[]][]> = {
     ["SUPPLIES", supply],
   ],
   HORSE_OWNER: [
-    ["WORKSPACE", ["dashboard", "my-horses"]],
+    ["WORKSPACE", ["dashboard", "my-horses", "horses/my-admissions"]],
     ["MONITORING", ["progress", "health"]],
     ["REPORTS", ["financial-reports", "race-record"]],
   ],
@@ -688,6 +691,9 @@ export function sidebarNavFor(
 }
 
 export function isNavItemActive(navItem: NavItem, pathname: string): boolean {
+  if (pathname === "/horses/my-admissions" || pathname.startsWith("/horses/my-admissions/")) {
+    return navItem.href === "/horses/my-admissions";
+  }
   if (pathname === "/horses/admissions" || pathname.startsWith("/horses/admissions/")) {
     return navItem.href === "/horses/admissions";
   }
@@ -801,6 +807,16 @@ export function screenAccess(
     ownerRoles: [],
     inOwnRole: false,
   };
+  if (pathname === "/horses/my-admissions" || pathname.startsWith("/horses/my-admissions/")) {
+    const allowed = role === "HORSE_OWNER" && !!permissions.viewHorses;
+    return {
+      allowed,
+      group: "WORKSPACE",
+      label: "Hồ sơ đã nộp",
+      ownerRoles: ["HORSE_OWNER"],
+      inOwnRole: role === "HORSE_OWNER",
+    };
+  }
   if (pathname === '/medical/admissions' || pathname.startsWith('/medical/admissions/') ||
       (role === 'VETERINARIAN' && pathname === '/horses/admissions')) {
     const allowed = role === 'VETERINARIAN' && !!permissions.viewMedical;

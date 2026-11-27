@@ -13,6 +13,7 @@ export async function getAdmissionRecord(id: string): Promise<HorseAdmissionReco
   return result.admission;
 }
 import type {
+  AdmissionDocumentPhoto,
   AdmissionPlacement,
   PlacementOptions,
   HorseAdmissionRecord,
@@ -23,7 +24,22 @@ import type {
   InspectAdmissionDto,
   RejectAdmissionDto,
   CancelAdmissionDto,
+  UpdateOwnerAdmissionSubmissionDto,
 } from "../types/admission.types";
+
+/** Trích xuất danh sách ảnh giấy tờ pháp lý chuẩn hóa từ hồ sơ tiếp nhận (hỗ trợ cả bản cũ chỉ có documentsUrl). */
+export function extractAdmissionDocumentPhotos(
+  record?: Pick<HorseAdmissionRecord, "documentPhotos" | "documentsUrl"> | null,
+): AdmissionDocumentPhoto[] {
+  if (!record) return [];
+  if (Array.isArray(record.documentPhotos) && record.documentPhotos.length > 0) {
+    return record.documentPhotos.filter((p) => p && typeof p.url === "string" && p.url.trim().length > 0);
+  }
+  if (record.documentsUrl && record.documentsUrl.trim().length > 0) {
+    return [{ label: "Giấy tờ pháp lý đính kèm", url: record.documentsUrl.trim() }];
+  }
+  return [];
+}
 
 /**
  * Lấy danh sách hồ sơ tiếp nhận ngựa với bộ lọc: status, search, recent7Days, page, pageSize.
@@ -126,4 +142,14 @@ export function getPlacementOptions(stallId = '', allocationId = ''): Promise<Pl
 }
 export function reviewAdmissionHealth(id: string, dto: { isHealthEligible: boolean; healthCheckNotes: string; reason: string }): Promise<HorseAdmissionRecord> {
   return api('POST', `/horses/admissions/${id}/health-review`, dto);
+}
+
+/**
+ * Chủ ngựa cập nhật ghi chú mong muốn / bổ sung ảnh giấy tờ pháp lý khi hồ sơ chưa xếp lịch.
+ */
+export function updateOwnerAdmissionSubmission(
+  id: string,
+  dto: UpdateOwnerAdmissionSubmissionDto,
+): Promise<HorseAdmissionRecord> {
+  return api<HorseAdmissionRecord>("PATCH", `/horses/admissions/${id}/submission`, dto);
 }

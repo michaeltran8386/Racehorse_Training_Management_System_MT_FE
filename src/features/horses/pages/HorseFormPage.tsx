@@ -1,8 +1,10 @@
 import { ImagePicker } from "@/shared/components/form/ImagePicker";
+import { Textarea } from "@/shared/components/form/Textarea";
+import { Checkbox } from "@/shared/components/form/Checkbox";
 import { HORSE_AVATAR_PRESETS } from "../constants/avatars";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import styles from "./HorseFormPage.module.css";
 import { Card } from "@/shared/components/ui/Card";
@@ -16,7 +18,10 @@ import { useToast } from "@/shared/components/ui/Toast";
 import { ApiError } from "@/shared/lib/api";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { getHorseById, createHorse, updateHorse, getHorseCatalog } from "../api";
+import { extractAdmissionDocumentPhotos } from "../services/admissionService";
+import { LegalDocumentsUploader } from "../components/LegalDocumentsUploader";
 import type { Horse, CreateHorsePayload, UpdateHorsePayload, HorseCatalogItem } from "../types";
+import type { AdmissionDocumentPhoto } from "../types/admission.types";
 
 
 import { localizeServerText, tr } from "@/shared/i18n/tr";
@@ -45,14 +50,22 @@ function generateIsoMicrochip(): string {
   return `${prefix}${timePart}${randPart}`;
 }
 
+const QUICK_OWNER_WISHES = [
+  "Mong muốn xếp lịch thẩm định vào buổi sáng (08:30 – 11:00).",
+  "Mong muốn gửi nuôi dài hạn kết hợp giáo án huấn luyện thể lực.",
+  "Ngựa hơi nhạy cảm với tiếng động lớn, mong được tiếp đón nhẹ nhàng.",
+];
+
 export default function HorseFormPage() {
   useScreenTranslation();
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
+  const reapplyId = !id ? searchParams.get("reapply") : null;
   const isEdit = Boolean(id);
   const navigate = useNavigate();
   const toast = useToast();
 
-  const [loading, setLoading] = useState(isEdit);
+  const [loading, setLoading] = useState(isEdit || Boolean(reapplyId));
   const [submitting, setSubmitting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -62,6 +75,7 @@ export default function HorseFormPage() {
   const [horseCode, setHorseCode] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [imageBusy, setImageBusy] = useState(false);
+  const [docUploadBusy, setDocUploadBusy] = useState(false);
   const [name, setName] = useState("");
   const [breed, setBreed] = useState("");
   const [breeds, setBreeds] = useState<HorseCatalogItem[]>([]);
@@ -70,7 +84,10 @@ export default function HorseFormPage() {
   const [gender, setGender] = useState("Stallion");
   const [color, setColor] = useState("");
   const [weightKg, setWeightKg] = useState("");
-  const [microchip, setMicrochip] = useState(() => (!id ? generateIsoMicrochip() : ""));
+  const [microchip, setMicrochip] = useState(() => (!id && !reapplyId ? generateIsoMicrochip() : ""));
+  const [documentPhotos, setDocumentPhotos] = useState<AdmissionDocumentPhoto[]>([]);
+  const [ownerNotes, setOwnerNotes] = useState("");
+  const [declarationAccepted, setDeclarationAccepted] = useState(true);
   const currentUser = useCurrentUser();
   // Chủ ngựa tự đăng ký: ngựa mới luôn thuộc tài khoản đang đăng nhập.
   const [ownerName, setOwnerName] = useState(currentUser.fullName);
@@ -86,12 +103,13 @@ export default function HorseFormPage() {
   const minDobStr = twelveYearsAgo.toISOString().split("T")[0];
 
   useEffect(() => {
-    if (!id) return;
+    const sourceId = id || reapplyId;
+    if (!sourceId) return;
     let active = true;
-    getHorseById(id)
+    getHorseById(sourceId)
       .then((horse: Horse) => {
         if (!active) return;
-        if (horse.status === "RETIRED") {
+        if (id && horse.status === "RETIRED") {
           setRetiredError(true);
           return;
         }
@@ -104,7 +122,11 @@ export default function HorseFormPage() {
         setColor(horse.color || "");
         setWeightKg(horse.weightKg != null ? String(horse.weightKg) : "");
         setMicrochip(horse.microchip || horse.microchipRfid || "");
-        setOwnerName(horse.owner?.fullName || horse.ownerName || "");
+        setOwnerName(horse.owner?.fullName || horse.ownerName || currentUser.fullName);
+        if (reapplyId && horse.latestAdmission) {
+          setOwnerNotes(horse.latestAdmission.ownerNotes || "");
+          setDocumentPhotos(extractAdmissionDocumentPhotos(horse.latestAdmission));
+        }
       })
       .catch((err) => {
         if (!active) return;
@@ -117,7 +139,7 @@ export default function HorseFormPage() {
     return () => {
       active = false;
     };
-  }, [id]);
+  }, [id, reapplyId, currentUser.fullName]);
 
   // Giống / Màu lông lấy từ danh mục SC-1.06 (chỉ mục đang dùng)
   useEffect(() => {
@@ -195,12 +217,16 @@ export default function HorseFormPage() {
       errs.microchip = "Microchip number must consist of exactly 15 digits.";
     }
 
+    if (!isEdit && !declarationAccepted) {
+      errs.declaration = "Vui lòng xác nhận cam kết thông tin hồ sơ trước khi nộp.";
+    }
+
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
 
   async function handleSave(andAddAnother = false) {
-    if (imageBusy || submitting || !validate()) return;
+    if (imageBusy || docUploadBusy || submitting || !validate()) return;
     setSubmitting(true);
     setGeneralError("");
 
@@ -232,15 +258,29 @@ export default function HorseFormPage() {
           color,
           weightKg: Number(weightKg),
           microchip: finalMicrochip,
+          ...(documentPhotos.length > 0
+            ? {
+                documentPhotos,
+                documentsUrl: documentPhotos[0].url,
+              }
+            : {}),
+          ...(ownerNotes.trim() ? { ownerNotes: ownerNotes.trim() } : {}),
         };
         const saved = await createHorse(payload);
-        toast.show(`Horse profile ${saved.name} created successfully.`, "ok");
+        toast.show(
+          reapplyId
+            ? `Đã nộp lại hồ sơ đăng ký cho chiến mã ${saved.name}!`
+            : `Đã nộp hồ sơ đăng ký chiến mã ${saved.name} thành công!`,
+          "ok",
+        );
 
         if (andAddAnother) {
           setAvatarUrl("");
           setName("");
           setDob("");
           setWeightKg("");
+          setDocumentPhotos([]);
+          setOwnerNotes("");
           setMicrochip(generateIsoMicrochip());
           setErrors({});
           setIsDirty(false);
@@ -309,13 +349,25 @@ export default function HorseFormPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
       <PageHeader
-        title={isEdit ? tr(`Edit ${name || horseCode}`) : tr("Register horse")}
+        title={
+          isEdit
+            ? tr(`Edit ${name || horseCode}`)
+            : reapplyId
+              ? `Nộp lại hồ sơ tiếp nhận — ${name || "Chiến mã"}`
+              : "Tờ khai đăng ký tiếp nhận chiến mã"
+        }
         description={
           isEdit
             ? tr("Update identity and profile details.")
-            : tr("Enter identity details to register a new horse.")
+            : "Cung cấp đầy đủ thông tin chiến mã, ảnh giấy tờ pháp lý và ghi chú mong muốn (theo mẫu nộp hồ sơ trực tuyến)."
         }
       />
+
+      {reapplyId && (
+        <Alert tone="info" title="Đang nộp lại hồ sơ dựa trên dữ liệu cũ">
+          Hệ thống đã điền sẵn thông tin chiến mã và mã Microchip cũ. Hãy kiểm tra lại giấy tờ pháp lý / ghi chú mong muốn trước khi bấm nộp hồ sơ.
+        </Alert>
+      )}
 
       {generalError && (
         <Alert tone="danger" title={tr("Error")}>
@@ -473,25 +525,153 @@ export default function HorseFormPage() {
           </div>
         </div>
 
+        {!isEdit && (
+          <div
+            style={{
+              marginTop: "1.75rem",
+              paddingTop: "1.5rem",
+              borderTop: "1px solid var(--border-subtle, #e2e8f0)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "1.5rem",
+            }}
+          >
+            {/* Phần II: Thành phần hồ sơ pháp lý đính kèm */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              <div>
+                <h3 className={styles.sectionTitle} style={{ marginBottom: 4 }}>
+                  Phần II · Thành phần hồ sơ pháp lý đính kèm (Ảnh)
+                </h3>
+                <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--ink-muted)" }}>
+                  Đính kèm ảnh chụp Giấy chứng nhận sở hữu / Hộ chiếu ngựa, Phả hệ hoặc Sổ tiêm phòng (tối đa 3 ảnh) để Quản lý CLB kiểm tra trước khi xếp lịch hẹn.
+                </p>
+              </div>
+              <LegalDocumentsUploader
+                value={documentPhotos}
+                onChange={(next) => {
+                  setDocumentPhotos(next);
+                  setIsDirty(true);
+                }}
+                disabled={submitting}
+                onBusyChange={setDocUploadBusy}
+                horseName={name}
+                microchip={microchip}
+                ownerName={ownerName}
+              />
+            </div>
+
+            {/* Phần III: Ghi chú & Mong muốn của Chủ ngựa */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}>
+              <div>
+                <h3 className={styles.sectionTitle} style={{ marginBottom: 4 }}>
+                  Phần III · Ghi chú &amp; Mong muốn gửi CLB (Tùy chọn)
+                </h3>
+                <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--ink-muted)" }}>
+                  Nhắn cho Quản lý CLB khung giờ thuận tiện mang ngựa tới, mục tiêu huấn luyện/nuôi dưỡng hoặc đặc điểm cần lưu ý của ngựa.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem" }}>
+                {QUICK_OWNER_WISHES.map((preset) => (
+                  <button
+                    key={preset}
+                    type="button"
+                    disabled={submitting}
+                    onClick={() => {
+                      setOwnerNotes((prev) =>
+                        prev.includes(preset)
+                          ? prev
+                          : prev.trim()
+                            ? `${prev.trim()}\n- ${preset}`
+                            : `- ${preset}`,
+                      );
+                      setIsDirty(true);
+                    }}
+                    style={{
+                      border: "1px solid var(--border, #cbd5e1)",
+                      background: "var(--surface-subtle, #f8fafc)",
+                      color: "var(--text, #0f172a)",
+                      borderRadius: "999px",
+                      padding: "4px 10px",
+                      fontSize: "0.78rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    + {preset}
+                  </button>
+                ))}
+              </div>
+
+              <Field
+                label="Nội dung ghi chú / Mong muốn của chủ ngựa"
+                hint={`${ownerNotes.length}/1000 ký tự — Quản lý CLB sẽ đọc ngay trước khi xếp lịch hẹn.`}
+              >
+                <Textarea
+                  rows={4}
+                  maxLength={1000}
+                  value={ownerNotes}
+                  disabled={submitting}
+                  placeholder="Ví dụ: Mình muốn đưa ngựa tới kiểm tra vào sáng thứ 7 (9h00), mong muốn đăng ký gói chăm sóc & luyện sức bền đường trường..."
+                  onChange={(e) => {
+                    setOwnerNotes(e.target.value);
+                    setIsDirty(true);
+                  }}
+                />
+              </Field>
+
+              <div
+                style={{
+                  padding: "0.8rem 1rem",
+                  borderRadius: "10px",
+                  background: "var(--surface-subtle, #f8fafc)",
+                  border: "1px solid var(--border-subtle, #e2e8f0)",
+                }}
+              >
+                <Checkbox
+                  checked={declarationAccepted}
+                  onChange={(checked) => {
+                    setDeclarationAccepted(checked);
+                    if (checked && errors.declaration) {
+                      setErrors((prev) => ({ ...prev, declaration: "" }));
+                    }
+                  }}
+                  label="Tôi cam kết thông tin kê khai và hình ảnh giấy tờ pháp lý đính kèm là trung thực, và sẽ mang theo bản gốc để đối chiếu khi đến thẩm định tại CLB."
+                />
+                {errors.declaration && (
+                  <div style={{ color: "var(--danger, #dc2626)", fontSize: "0.82rem", marginTop: 6 }}>
+                    {errors.declaration}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className={styles.actions}>
-          <Button tone="secondary" onClick={handleCancel} disabled={submitting || imageBusy}>
+          <Button tone="secondary" onClick={handleCancel} disabled={submitting || imageBusy || docUploadBusy}>
             {tr("Cancel")}
           </Button>
-          {!isEdit && (
+          {!isEdit && !reapplyId && (
             <Button
               tone="secondary"
-              disabled={submitting || imageBusy}
+              disabled={submitting || imageBusy || docUploadBusy}
               onClick={() => handleSave(true)}
             >
-              {tr("Save & Add Another")}
+              Nộp &amp; Đăng ký thêm ngựa khác
             </Button>
           )}
           <Button
             tone="primary"
-            disabled={submitting || imageBusy}
+            disabled={submitting || imageBusy || docUploadBusy}
             onClick={() => handleSave(false)}
           >
-            {submitting ? tr("Saving...") : tr("Save Profile")}
+            {submitting
+              ? "Đang gửi hồ sơ..."
+              : isEdit
+                ? tr("Save Profile")
+                : reapplyId
+                  ? "Nộp lại hồ sơ đăng ký"
+                  : "Nộp hồ sơ đăng ký"}
           </Button>
         </div>
       </Card>
