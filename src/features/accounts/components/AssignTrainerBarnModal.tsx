@@ -61,10 +61,10 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
     };
   }, [account.id, account.assignedBarnId]);
 
-  // Tìm các HLV đồng nghiệp trong cùng Khu chuồng hiện tại
+  // Tìm các HLV đồng nghiệp trong cùng Khu chuồng hiện tại đang hoạt động chính thức (ACTIVE)
   const currentBarn = barns.find((b) => b.id === account.assignedBarnId);
   const colleagueTrainers = currentBarn
-    ? currentBarn.trainers.filter((t) => t.id !== account.id)
+    ? currentBarn.trainers.filter((t) => t.id !== account.id && t.status === "ACTIVE")
     : [];
 
   const selectedColleague = colleagueTrainers.find((t) => t.id === handoverTrainerId);

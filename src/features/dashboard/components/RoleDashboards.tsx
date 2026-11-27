@@ -900,13 +900,13 @@ export function TrainerDashboard() {
               </span>
               <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
                 {isVi
-                  ? `Đàn ngựa hiện tại: ${totalHorses}/8 chiến mã · ${withoutPlan} chiến mã chờ lập giáo án (Hạn 3 ngày sau tiếp nhận).`
-                  : `Current herd: ${totalHorses}/8 horses · ${withoutPlan} awaiting plan (3 days deadline).`}
+                  ? `Đàn ngựa hiện tại: ${totalHorses}/8 chiến mã · ${withoutPlan} chiến mã chưa có giáo án.`
+                  : `Current herd: ${totalHorses}/8 horses · ${withoutPlan} without training plan.`}
               </div>
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
-            <LinkButton to="/training/plans" tone="primary" size="sm">
+            <LinkButton to="/training/plans?tab=UNPLANNED" tone="primary" size="sm">
               {isVi ? "Xem danh sách & Lập giáo án →" : "View & Setup Plan →"}
             </LinkButton>
           </div>
@@ -923,7 +923,7 @@ export function TrainerDashboard() {
           value={overview.loading ? "—" : `${totalHorses} / 8`}
           trend={
             <span>
-              {inTraining} {isVi ? "có giáo án" : "with plan"} · {withoutPlan} {isVi ? "chờ lập giáo án" : "unplanned"}
+              {inTraining} {isVi ? "có giáo án" : "with plan"} · {withoutPlan} {isVi ? "chưa có giáo án" : "unplanned"}
             </span>
           }
           to="/training/plans?status=ACTIVE"
@@ -932,7 +932,7 @@ export function TrainerDashboard() {
           icon="alert"
           iconBg={withoutPlan > 0 ? "var(--warn-bg)" : "var(--surface-sunken)"}
           iconColor={withoutPlan > 0 ? "var(--warn)" : "var(--muted)"}
-          label={isVi ? "Chờ lập giáo án" : "Needs training plan"}
+          label={isVi ? "Chưa có giáo án" : "Unplanned"}
           value={overview.loading ? "—" : withoutPlan}
           trend={
             withoutPlan > 0 ? (

@@ -92,7 +92,7 @@ export function BarnLeadershipBanner({ zoneId, zoneName }: BarnLeadershipBannerP
           )}
 
           {invitedTrainers.length > 0 && (
-            <Badge tone="secondary">+{invitedTrainers.length} Chờ kích hoạt</Badge>
+            <Badge tone="neutral">+{invitedTrainers.length} Chờ kích hoạt</Badge>
           )}
 
           {groomsCount >= maxGrooms ? (
