@@ -81,25 +81,97 @@ interface TimelineEvent {
   type: "routine" | "care" | "busy" | "available" | "recommended";
 }
 
+function formatMinutesToTime(minutes: number): string {
+  const h = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const m = String(minutes % 60).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
+function sliceAvailableSlots(
+  windowStart: number,
+  windowEnd: number,
+  busySlots: Array<{ startMinutes: number; endMinutes: number }>,
+  title: string,
+  badge: string,
+  idPrefix: string
+): TimelineEvent[] {
+  // Lọc các ca bận giao cắt với khung giờ này
+  const overlappingBusy = busySlots
+    .filter((b) => b.endMinutes > windowStart && b.startMinutes < windowEnd)
+    .sort((a, b) => a.startMinutes - b.startMinutes);
+
+  const result: TimelineEvent[] = [];
+  let cur = windowStart;
+
+  for (let i = 0; i < overlappingBusy.length; i++) {
+    const b = overlappingBusy[i];
+    const bStart = Math.max(windowStart, b.startMinutes);
+    const bEnd = Math.min(windowEnd, b.endMinutes);
+
+    if (bStart > cur && bStart - cur >= 15) {
+      result.push({
+        id: `${idPrefix}-${cur}-${bStart}`,
+        startMinutes: cur,
+        endMinutes: bStart,
+        timeLabel: `${formatMinutesToTime(cur)} – ${formatMinutesToTime(bStart)}`,
+        title,
+        badge,
+        type: "available",
+      });
+    }
+    cur = Math.max(cur, bEnd);
+  }
+
+  if (cur < windowEnd && windowEnd - cur >= 15) {
+    result.push({
+      id: `${idPrefix}-${cur}-${windowEnd}`,
+      startMinutes: cur,
+      endMinutes: windowEnd,
+      timeLabel: `${formatMinutesToTime(cur)} – ${formatMinutesToTime(windowEnd)}`,
+      title,
+      badge,
+      type: "available",
+    });
+  }
+
+  return result;
+}
+
 function DailyRoutineTimeline({
   horseName,
   isVietnamese,
   trainerWorkouts = [],
 }: DailyRoutineTimelineProps) {
-  // Tinh toan moc bat dau cua khung ranh buoi chieu dua vao lich ban HLV
-  const afternoonBusyWorkouts = trainerWorkouts.filter(
-    (w) => (w.startMinutes ?? 0) >= 12 * 60 && (w.startMinutes ?? 0) < 17 * 60
-  );
-  const latestBusyEndMinutes = afternoonBusyWorkouts.reduce(
-    (max, w) => Math.max(max, w.endMinutes ?? 0),
-    14 * 60 + 15 // Mac dinh sau khi Groom tam xa co xong (14:15)
+  // Chuẩn hóa danh sách ca bận của HLV
+  const normalizedBusyWorkouts: TimelineEvent[] = trainerWorkouts.map((w, idx) => ({
+    id: `busy-trainer-${w.id || idx}`,
+    startMinutes: w.startMinutes ?? 13 * 60 + 30,
+    endMinutes: w.endMinutes ?? 14 * 60 + 45,
+    timeLabel: w.timeRange,
+    title: isVietnamese ? `HLV bận: ${w.horseName}` : `Trainer Busy: ${w.horseName}`,
+    badge: isVietnamese ? "Đang bận" : "Busy",
+    type: "busy" as const,
+  }));
+
+  // Khung rảnh sáng: 06:15 (sau ăn sáng 05:30-06:15) đến 11:30 (trước ăn trưa)
+  const morningAvailableSlots = sliceAvailableSlots(
+    6 * 60 + 15,
+    11 * 60 + 30,
+    normalizedBusyWorkouts,
+    isVietnamese ? "Khung rảnh sáng" : "Morning Slot",
+    isVietnamese ? "Khả dụng" : "Available",
+    "avail-morning"
   );
 
-  // Neu co lich ban sau 14:15 (vi du nghi den 14:45), moc ranh bat dau ngay sau khi nghi xong
-  const afternoonStartMinutes = Math.max(14 * 60 + 30, latestBusyEndMinutes);
-  const aftStartH = String(Math.floor(afternoonStartMinutes / 60)).padStart(2, "0");
-  const aftStartM = String(afternoonStartMinutes % 60).padStart(2, "0");
-  const afternoonTimeLabel = `${aftStartH}:${aftStartM} – 17:00`;
+  // Khung rảnh chiều: 14:15 (sau tắm xả cơ móng 13:30-14:15) đến 17:00
+  const afternoonAvailableSlots = sliceAvailableSlots(
+    14 * 60 + 15,
+    17 * 60,
+    normalizedBusyWorkouts,
+    isVietnamese ? "Khung rảnh chiều" : "Afternoon Slot",
+    isVietnamese ? "Khả dụng" : "Available",
+    "avail-afternoon"
+  );
 
   const events: TimelineEvent[] = [
     {
@@ -111,15 +183,7 @@ function DailyRoutineTimeline({
       badge: isVietnamese ? "Sinh hoạt Groom" : "Groom Routine",
       type: "routine",
     },
-    {
-      id: "available-morning",
-      startMinutes: 6 * 60 + 15,
-      endMinutes: 11 * 60 + 30,
-      timeLabel: "06:15 – 11:30",
-      title: isVietnamese ? "Khung rảnh sáng" : "Morning Slot",
-      badge: isVietnamese ? "Khuyên dùng" : "Recommended",
-      type: "recommended",
-    },
+    ...morningAvailableSlots,
     {
       id: "routine-lunch-rest",
       startMinutes: 11 * 60 + 30,
@@ -138,25 +202,8 @@ function DailyRoutineTimeline({
       badge: isVietnamese ? "Chăm sóc Groom" : "Care",
       type: "care",
     },
-    // Map cac lich ban cua HLV vao dong thoi gian
-    ...trainerWorkouts.map((w, idx) => ({
-      id: `busy-trainer-${w.id || idx}`,
-      startMinutes: w.startMinutes ?? 13 * 60 + 30,
-      endMinutes: w.endMinutes ?? 14 * 60 + 45,
-      timeLabel: w.timeRange,
-      title: isVietnamese ? `HLV bận: ${w.horseName}` : `Trainer Busy: ${w.horseName}`,
-      badge: isVietnamese ? "Đang bận" : "Busy",
-      type: "busy" as const,
-    })),
-    {
-      id: "available-afternoon",
-      startMinutes: afternoonStartMinutes,
-      endMinutes: 17 * 60,
-      timeLabel: afternoonTimeLabel,
-      title: isVietnamese ? "Khung rảnh chiều" : "Afternoon Slot",
-      badge: isVietnamese ? "Khả dụng" : "Available",
-      type: "available",
-    },
+    ...afternoonAvailableSlots,
+    ...normalizedBusyWorkouts,
     {
       id: "routine-dinner",
       startMinutes: 18 * 60,
@@ -168,21 +215,12 @@ function DailyRoutineTimeline({
     },
   ];
 
-  // Sap xep tuyet doi tuyen tinh theo startMinutes tang dan
+  // Sắp xếp tuyệt đối tuyến tính theo startMinutes tăng dần
   events.sort((a, b) => a.startMinutes - b.startMinutes);
 
   const getStyleForType = (type: TimelineEvent["type"]) => {
     switch (type) {
       case "recommended":
-        return {
-          container: {
-            background: "rgba(34, 197, 94, 0.12)",
-            border: "1px solid rgba(34, 197, 94, 0.3)",
-            color: "#16a34a",
-            fontWeight: 600,
-          },
-          badge: { color: "#15803d", fontWeight: 700 },
-        };
       case "available":
         return {
           container: {
