@@ -215,7 +215,13 @@ const DYNAMIC_VI: Record<string, (d: Record<string, unknown>) => string | undefi
     const horse = d?.horse ? ` của ngựa ${d.horse}` : "";
     const time = d?.time ? ` lúc ${d.time}` : "";
     const trainer = d?.trainer ? `HLV ${d.trainer}` : "Huấn luyện viên";
-    return `${trainer} đã có buổi tập${horse}${time}. HLV chỉ có thể điều hành 1 buổi tập tại một thời điểm.`;
+    const suggest = d?.after ? ` Vui lòng chọn giờ bắt đầu từ ${d.after} trở đi.` : "";
+    return `${trainer} đã có buổi tập${horse}${time} và cần tối thiểu 15 phút chuyển tiếp giữa hai buổi tập.${suggest}`;
+  },
+  TRAINER_BUSY_SLOT: (d) => {
+    const raw = String(d?.rawMessage || "");
+    if (raw && raw.includes("15 phút")) return raw;
+    return "Huấn luyện viên đã có lịch tập của chiến mã khác trong khung giờ này hoặc chưa đủ 15 phút chuyển tiếp giữa hai buổi.";
   },
   HORSE_WORKOUT_TIME_CONFLICT: (d) => {
     const time = d?.time ? ` lúc ${d.time}` : "";
@@ -255,8 +261,8 @@ const GENERIC_VI: Record<string, string> = {
   // Huấn luyện & Buổi tập
   WORKOUT_REST_REQUIRED: "Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu 24 giờ (hoặc 48 giờ đối với bài tập nặng) giãn cách giữa hai buổi tập để đảm bảo an toàn thể lực.",
   HORSE_WORKOUT_TIME_CONFLICT: "Chiến mã đã có một buổi tập khác trong cùng khung giờ này.",
-  TRAINER_BUSY_SLOT: "Huấn luyện viên đã có lịch huấn luyện chiến mã khác trong khung giờ này.",
-  TRAINER_TIME_CONFLICT: "Huấn luyện viên đã có lịch huấn luyện chiến mã khác trong khung giờ này.",
+  TRAINER_BUSY_SLOT: "Huấn luyện viên đã có lịch tập của chiến mã khác trong khung giờ này hoặc chưa đủ 15 phút chuyển tiếp giữa hai buổi.",
+  TRAINER_TIME_CONFLICT: "Huấn luyện viên đã có lịch tập của chiến mã khác trong khung giờ này hoặc chưa đủ 15 phút chuyển tiếp giữa hai buổi.",
   TRAINING_TRACK_REQUIRED: "Vui lòng chọn đường chạy thực tế.",
   TRAINING_TRACK_UNAVAILABLE: "Đường chạy đã chọn không khả dụng hoặc không khớp với loại mặt sân.",
   TRACK_MAPPING_REQUIRED: "Buổi tập cần được gắn với một đường chạy thực tế cụ thể.",
