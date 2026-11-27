@@ -71,11 +71,11 @@ export default function HorseAdmissionListPage() {
     return () => { active = false; };
   }, [isManager, isVet, reloadTrigger]);
   async function defer(record: HorseAdmissionRecord) {
-    if (!window.confirm(`Hoãn thẩm định ${record.horse.name} do hết chuồng và gửi email cho chủ ngựa? Hồ sơ sẽ được giữ lại để hẹn mới.`)) return;
+    if (!window.confirm(tr("Defer admission for {{name}} due to full capacity and email the owner? The record will be kept for rescheduling.", { name: record.horse.name }))) return;
     setDeferring(record.id);
     try {
       const result = await deferAdmissionForCapacity(record.id);
-      toast.show(result.notified ? 'Đã hoãn hồ sơ và chuyển email thông báo vào luồng gửi thư.' : 'Hồ sơ đã được hoãn trước đó.', 'ok');
+      toast.show(result.notified ? tr("Admission deferred and notification email queued.") : tr("This admission record was already deferred."), 'ok');
       reload();
     } catch (err) { toast.show(messageFor(err), 'danger'); }
     finally { setDeferring(null); }
@@ -91,7 +91,7 @@ export default function HorseAdmissionListPage() {
     getAdmissionRecord(selectedId).then(record => {
       if (!active) return;
       if (isVet && record.veterinarianUserId !== currentUser.id) {
-        setSelectionError('Hồ sơ này không được phân công cho bạn.'); return;
+        setSelectionError(tr("This admission record is not assigned to you.")); return;
       }
       if (record.status === 'APPOINTED' || record.status === 'INSPECTION_IN_PROGRESS') setInspecting(record);
       else setHistory(record);
@@ -142,8 +142,8 @@ export default function HorseAdmissionListPage() {
   return (
     <div className={`${design.scope} ${styles.page}`}>
       <div className={styles.heading}>
-        <PageHeader title={isVet ? 'Thẩm định được phân công' : tr("Horse Admissions & Verification")}
-          description={isVet ? 'Chỉ hiển thị hồ sơ Quản lý giao cho bạn. Khám sức khỏe và gửi kết luận; Quản lý phụ trách pháp lý và quyết định tiếp nhận.' : tr("Review each horse's identity, arrange arrival and complete veterinary screening.")}
+        <PageHeader title={isVet ? tr("Assigned Admissions") : tr("Horse Admissions & Verification")}
+          description={isVet ? tr("Only records assigned by the Manager are shown. Perform health screening and submit your conclusion; the Manager handles legal verification and final admission.") : tr("Review each horse's identity, arrange arrival and complete veterinary screening.")}
           action={<Button tone="secondary" className={design.secondary} disabled={loading} onClick={reload}>
             {tr("Refresh")}<Icon name="refresh" size={16} />
           </Button>} />
@@ -151,12 +151,12 @@ export default function HorseAdmissionListPage() {
       {selectionError && <p role="alert" className={design.error}>{selectionError}</p>}
 
       {(isManager || isVet) && <p role="status" className={design.helper}>
-        {capacityError ? `Không kiểm tra được chuồng: ${capacityError}` : capacity === null ? 'Đang kiểm tra chuồng trống…' : capacity === 0
-          ? 'CLB đã hết chuồng trống. Chưa thể thẩm định; Quản lý có thể hoãn hồ sơ và thông báo chủ ngựa để hẹn lại.'
-          : `Còn ${capacity} ô chuồng có thể tiếp nhận. Ô được kiểm tra lại và gán khi duyệt, không giữ chỗ trước.`}
+        {capacityError ? tr("Could not check stall availability: {{error}}", { error: capacityError }) : capacity === null ? tr("Checking stall availability…") : capacity === 0
+          ? tr("No stalls are currently available. Inspection cannot proceed; the Manager may defer the record and notify the owner to reschedule.")
+          : tr("{{count}} stall(s) available for admission. Availability is rechecked when saving and assigned upon approval without pre-reservation.", { count: capacity })}
       </p>}
       <ol className={styles.workflow} aria-label={tr("Admission workflow")}>
-        {(isVet ? ['Nhận phân công', 'Khám sức khỏe', 'Gửi kết luận'] : ["Registration request", "Reception appointment", "Verification & decision"]).map((label, i) => (
+        {(isVet ? ["Receive assignment", "Health screening", "Submit conclusion"] : ["Registration request", "Reception appointment", "Verification & decision"]).map((label, i) => (
           <li key={label}><span className={styles.stepNumber}>{String(i + 1).padStart(2, "0")}</span><span>{tr(label)}</span></li>
         ))}
       </ol>
@@ -223,10 +223,10 @@ export default function HorseAdmissionListPage() {
                     </span>
                     {(docCount > 0 || rec.ownerNotes) && (
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 4 }}>
-                        {docCount > 0 && <Badge tone="info">{docCount} ảnh pháp lý</Badge>}
+                        {docCount > 0 && <Badge tone="info">{tr("{{count}} legal photo(s)", { count: docCount })}</Badge>}
                         {rec.ownerNotes && (
                           <Badge tone="neutral" title={rec.ownerNotes}>
-                            Có ghi chú chủ
+                            {tr("Has owner notes")}
                           </Badge>
                         )}
                       </div>
@@ -240,19 +240,19 @@ export default function HorseAdmissionListPage() {
                           {formatDateTime(rec.appointmentDate)}
                           {rec.appointmentEndDate && <> → {formatDateTime(rec.appointmentEndDate)}</>}
                         </time>
-                        {overdue && <Badge tone="danger">Quá hạn {overdueDays} ngày (có thể hủy)</Badge>}
-                        {!overdue && pastDue && <Badge tone="warn">Đã quá giờ hẹn</Badge>}
+                        {overdue && <Badge tone="danger">{tr("Overdue {{days}} day(s) (cancellable)", { days: overdueDays })}</Badge>}
+                        {!overdue && pastDue && <Badge tone="warn">{tr("Past appointment time")}</Badge>}
                       </div>
                     ) : (
-                      <span className={styles.meta}>{rec.capacityDeferredAt ? 'Hoãn do hết chuồng · chờ hẹn lại' : tr("Not scheduled")}</span>
+                      <span className={styles.meta}>{rec.capacityDeferredAt ? tr("Deferred due to full stalls · awaiting reschedule") : tr("Not scheduled")}</span>
                     )}
                   </td>
                   <td>{rec.veterinarian?.fullName || <span className={styles.meta}>{tr("Unassigned")}</span>}</td>
                   <td><Badge tone={badge?.tone ?? "neutral"}>{tr(badge?.label ?? rec.status)}</Badge></td>
                   <td><div className={styles.rowActions}>
                     {canSchedule && <Button tone="secondary" size="sm" className={design.secondary} onClick={() => setScheduling(rec)}>{tr("Schedule reception")}<Icon name="calendar" size={16} /></Button>}
-                    {canInspect && <Button tone="secondary" size="sm" className={design.secondary} disabled={isManager && (capacity === null || capacity === 0)} onClick={() => setInspecting(rec)}>{isVet ? 'Khám thẩm định' : tr("Inspect")}<Icon name="shield" size={16} /></Button>}
-                    {isManager && (pending || appointed) && capacity === 0 && !rec.capacityDeferredAt && <Button tone="secondary" size="sm" className={design.secondary} disabled={deferring !== null} onClick={() => void defer(rec)}>{deferring === rec.id ? 'Đang hoãn…' : 'Hoãn & thông báo chủ ngựa'}</Button>}
+                    {canInspect && <Button tone="secondary" size="sm" className={design.secondary} disabled={isManager && (capacity === null || capacity === 0)} onClick={() => setInspecting(rec)}>{isVet ? tr("Health Screening") : tr("Inspect")}<Icon name="shield" size={16} /></Button>}
+                    {isManager && (pending || appointed) && capacity === 0 && !rec.capacityDeferredAt && <Button tone="secondary" size="sm" className={design.secondary} disabled={deferring !== null} onClick={() => void defer(rec)}>{deferring === rec.id ? tr("Deferring…") : tr("Defer & notify owner")}</Button>}
                     {canCancel && <Button tone="ghost" size="sm" aria-label={`${tr("Cancel admission")} — ${rec.admissionCode}`} onClick={() => { setCancellingRecord(rec); setCancelReason(""); setCancelError(""); }}><Icon name="ban" size={16} /></Button>}
                     {!canSchedule && !canInspect && !canCancel && <span className={styles.meta}>{tr("View only")}</span>}
                   </div></td>

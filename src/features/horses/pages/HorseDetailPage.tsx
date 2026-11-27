@@ -24,7 +24,6 @@ import { ChangeStatusDialog } from "../components/ChangeStatusDialog";
 import { DeleteHorseModal } from "../components/DeleteHorseModal";
 import { RetireHorseModal } from "../components/RetireHorseModal";
 import { LifecycleTimeline } from "../components/LifecycleTimeline";
-import { OwnerAdmissionDossierCard } from "../components/OwnerAdmissionDossierCard";
 import { Icon } from "@/shared/components/ui/Icon";
 import { formatNumber } from "@/shared/lib/format";
 import { useToast } from "@/shared/components/ui/Toast";
@@ -297,32 +296,6 @@ export default function HorseDetailPage() {
         </Alert>
       )}
 
-      {/* Phiếu theo dõi hồ sơ đăng ký tiếp nhận (kiểu Dịch vụ công cho Chủ ngựa) */}
-      {isOwner && horse.latestAdmission && (
-        <OwnerAdmissionDossierCard
-          record={{
-            ...horse.latestAdmission,
-            horse: horse.latestAdmission.horse ?? {
-              id: horse.id,
-              horseCode: horse.horseCode,
-              name: horse.name,
-              microchip: horse.microchip,
-              breed: horse.breed,
-              dob: horse.dob,
-              gender: horse.gender,
-              color: horse.color,
-              weightKg: horse.weightKg,
-            },
-            owner: horse.latestAdmission.owner ?? {
-              id: currentUser.id,
-              fullName: currentUser.fullName,
-              email: currentUser.email,
-            },
-          }}
-          onUpdated={refreshHorse}
-        />
-      )}
-
       {/* Athlete Header Card */}
       <Card pad={20}>
         <div className={styles.identity}>
@@ -411,7 +384,7 @@ export default function HorseDetailPage() {
             <div style={{ color: "var(--ink-secondary)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
               <Icon name="award" size={13} />
               <span style={{ fontSize: "12px", fontWeight: 600, color: "#1e293b" }}>
-                {assignedTrainer ? `HLV: ${assignedTrainer.split("(")[0].trim()}` : (isVi ? "Chưa có HLV" : "No Trainer")}
+                {assignedTrainer ? `${isVi ? "HLV" : "Trainer"}: ${assignedTrainer.split("(")[0].trim()}` : (isVi ? "Chưa có HLV" : "No Trainer")}
               </span>
             </div>
             {isManager && (

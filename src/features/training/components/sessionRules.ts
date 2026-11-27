@@ -1,5 +1,6 @@
 import type { ExerciseSession, Tone } from "../types";
 import { SESSION_STATUS_LABEL, SESSION_STATUS_TONE } from "../types";
+import { tr } from "@/shared/i18n/tr";
 
 /** Các nút được hiện cho một buổi tập (bảng nút SC-2.04, dùng chung cho SC-2.05). */
 export interface SessionButtons {
@@ -59,7 +60,7 @@ export function sessionButtons(s: ExerciseSession, role: string, allowEarly = fa
     record: ht && ((s.status === "SCHEDULED" && started) || missedInTime),
     recordDisabledReason:
       ht && s.status === "SCHEDULED" && !started
-        ? "Chưa đến giờ bắt đầu buổi tập."
+        ? tr("Training session has not reached its scheduled start time.")
         : undefined,
     viewResult: s.status === "COMPLETED",
     restore: ht && s.status === "BLOCKED",

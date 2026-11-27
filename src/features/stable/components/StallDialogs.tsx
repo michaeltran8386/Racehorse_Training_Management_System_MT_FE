@@ -182,17 +182,17 @@ export function AssignStallDialog({ stall, horse, onClose, onDone }: AssignProps
           </Field>
         )}
         {!stall && picker.fields}
-        <Field label={tr("Groom phụ trách (Bắt buộc)")} required hint={tr("Chỉ chọn Groom còn nhận được ô chuồng (< 6 ô)")}>
+        <Field label={tr("Assigned Groom (Required)")} required hint={tr("Only Grooms under the 6-stall limit can be selected (< 6 stalls)")}>
           <SearchSelect
             value={groomUserId}
             onChange={setGroomUserId}
             options={[
-              { value: "", label: tr("— Chọn Groom phụ trách (Bắt buộc) —") },
+              { value: "", label: tr("— Select Assigned Groom (Required) —") },
               ...grooms
                 .filter((g) => g.horseCount < 6)
                 .map((g) => ({
                   value: g.id,
-                  label: `${g.fullName} (${g.horseCount}/6 ô chuồng)`,
+                  label: `${g.fullName} (${tr("{{count}}/6 stalls", { count: g.horseCount })})`,
                 })),
             ]}
           />

@@ -51,9 +51,9 @@ function generateIsoMicrochip(): string {
 }
 
 const QUICK_OWNER_WISHES = [
-  "Mong muốn xếp lịch thẩm định vào buổi sáng (08:30 – 11:00).",
-  "Mong muốn gửi nuôi dài hạn kết hợp giáo án huấn luyện thể lực.",
-  "Ngựa hơi nhạy cảm với tiếng động lớn, mong được tiếp đón nhẹ nhàng.",
+  "Prefer a morning inspection slot (08:30 – 11:00).",
+  "Looking for long-term boarding combined with a physical conditioning plan.",
+  "Horse is sensitive to loud noises, please handle gently upon arrival.",
 ];
 
 export default function HorseFormPage() {
@@ -218,7 +218,7 @@ export default function HorseFormPage() {
     }
 
     if (!isEdit && !declarationAccepted) {
-      errs.declaration = "Vui lòng xác nhận cam kết thông tin hồ sơ trước khi nộp.";
+      errs.declaration = "Please confirm the declaration before submitting.";
     }
 
     setErrors(errs);
@@ -245,7 +245,7 @@ export default function HorseFormPage() {
           microchip: finalMicrochip,
         };
         const saved = await updateHorse(id, payload);
-        toast.show(`Horse profile ${saved.name} updated successfully.`, "ok");
+        toast.show(tr("Horse profile {{name}} updated successfully.", { name: saved.name }), "ok");
         setIsDirty(false);
         navigate(`/horses/${saved.id}`);
       } else {
@@ -269,8 +269,8 @@ export default function HorseFormPage() {
         const saved = await createHorse(payload);
         toast.show(
           reapplyId
-            ? `Đã nộp lại hồ sơ đăng ký cho chiến mã ${saved.name}!`
-            : `Đã nộp hồ sơ đăng ký chiến mã ${saved.name} thành công!`,
+            ? tr("Resubmitted admission dossier for {{name}}!", { name: saved.name })
+            : tr("Submitted admission dossier for {{name}} successfully!", { name: saved.name }),
           "ok",
         );
 
@@ -292,16 +292,16 @@ export default function HorseFormPage() {
     } catch (err: any) {
       if (err instanceof ApiError) {
         if (err.code === "DUPLICATE_NAME") {
-          setErrors((prev) => ({ ...prev, name: "Horse name already exists in the stable system." }));
+          setErrors((prev) => ({ ...prev, name: tr("Horse name already exists in the stable system.") }));
         } else if (err.code === "DUPLICATE_MICROCHIP") {
-          setErrors((prev) => ({ ...prev, microchip: "Microchip number is already registered to another horse." }));
+          setErrors((prev) => ({ ...prev, microchip: tr("Microchip number is already registered to another horse.") }));
         } else if (err.code === "INVALID_DOB") {
           setErrors((prev) => ({ ...prev, dob: localizeServerText(err.message) || tr("Invalid date of birth.") }));
         } else {
           setGeneralError(localizeServerText(err.message) || tr("An error occurred while saving the horse profile."));
         }
       } else {
-        setGeneralError("Server connection error. Please try again.");
+        setGeneralError(tr("Server connection error. Please try again."));
       }
     } finally {
       setSubmitting(false);
@@ -351,21 +351,21 @@ export default function HorseFormPage() {
       <PageHeader
         title={
           isEdit
-            ? tr(`Edit ${name || horseCode}`)
+            ? tr("Edit {{name}}", { name: name || horseCode })
             : reapplyId
-              ? `Nộp lại hồ sơ tiếp nhận — ${name || "Chiến mã"}`
-              : "Tờ khai đăng ký tiếp nhận chiến mã"
+              ? tr("Resubmit Admission Dossier — {{name}}", { name: name || tr("Horse") })
+              : tr("Horse Admission Registration Form")
         }
         description={
           isEdit
             ? tr("Update identity and profile details.")
-            : "Cung cấp đầy đủ thông tin chiến mã, ảnh giấy tờ pháp lý và ghi chú mong muốn (theo mẫu nộp hồ sơ trực tuyến)."
+            : tr("Provide full horse identity details, legal document photos and preferences for online admission.")
         }
       />
 
       {reapplyId && (
-        <Alert tone="info" title="Đang nộp lại hồ sơ dựa trên dữ liệu cũ">
-          Hệ thống đã điền sẵn thông tin chiến mã và mã Microchip cũ. Hãy kiểm tra lại giấy tờ pháp lý / ghi chú mong muốn trước khi bấm nộp hồ sơ.
+        <Alert tone="info" title={tr("Resubmitting dossier based on previous record")}>
+          {tr("Existing horse details and Microchip code have been prefilled. Please review your legal documents and notes before submitting.")}
         </Alert>
       )}
 
@@ -540,10 +540,10 @@ export default function HorseFormPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
               <div>
                 <h3 className={styles.sectionTitle} style={{ marginBottom: 4 }}>
-                  Phần II · Thành phần hồ sơ pháp lý đính kèm (Ảnh)
+                  {tr("Part II · Attached Legal Documents (Photos)")}
                 </h3>
                 <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--ink-muted)" }}>
-                  Đính kèm ảnh chụp Giấy chứng nhận sở hữu / Hộ chiếu ngựa, Phả hệ hoặc Sổ tiêm phòng (tối đa 3 ảnh) để Quản lý CLB kiểm tra trước khi xếp lịch hẹn.
+                  {tr("Attach clear photos of the Ownership Certificate / Horse Passport or Vaccination Book (up to 3 photos) for the Club Manager to review before scheduling.")}
                 </p>
               </div>
               <LegalDocumentsUploader
@@ -564,26 +564,28 @@ export default function HorseFormPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "0.65rem" }}>
               <div>
                 <h3 className={styles.sectionTitle} style={{ marginBottom: 4 }}>
-                  Phần III · Ghi chú &amp; Mong muốn gửi CLB (Tùy chọn)
+                  {tr("Part III · Owner Notes & Preferences (Optional)")}
                 </h3>
                 <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--ink-muted)" }}>
-                  Nhắn cho Quản lý CLB khung giờ thuận tiện mang ngựa tới, mục tiêu huấn luyện/nuôi dưỡng hoặc đặc điểm cần lưu ý của ngựa.
+                  {tr("Share preferred inspection hours, training/care goals, or special notes about the horse with the Club Manager.")}
                 </p>
               </div>
 
               <div style={{ display: "flex", flexWrap: "wrap", gap: "0.45rem" }}>
-                {QUICK_OWNER_WISHES.map((preset) => (
+                {QUICK_OWNER_WISHES.map((preset) => {
+                  const localizedPreset = tr(preset);
+                  return (
                   <button
                     key={preset}
                     type="button"
                     disabled={submitting}
                     onClick={() => {
                       setOwnerNotes((prev) =>
-                        prev.includes(preset)
+                        prev.includes(localizedPreset)
                           ? prev
                           : prev.trim()
-                            ? `${prev.trim()}\n- ${preset}`
-                            : `- ${preset}`,
+                            ? `${prev.trim()}\n- ${localizedPreset}`
+                            : `- ${localizedPreset}`,
                       );
                       setIsDirty(true);
                     }}
@@ -597,21 +599,22 @@ export default function HorseFormPage() {
                       cursor: "pointer",
                     }}
                   >
-                    + {preset}
+                    + {localizedPreset}
                   </button>
-                ))}
+                  );
+                })}
               </div>
 
               <Field
-                label="Nội dung ghi chú / Mong muốn của chủ ngựa"
-                hint={`${ownerNotes.length}/1000 ký tự — Quản lý CLB sẽ đọc ngay trước khi xếp lịch hẹn.`}
+                label={tr("Owner notes / preferences")}
+                hint={tr("{{count}}/1000 characters — read by the Club Manager before scheduling.", { count: ownerNotes.length })}
               >
                 <Textarea
                   rows={4}
                   maxLength={1000}
                   value={ownerNotes}
                   disabled={submitting}
-                  placeholder="Ví dụ: Mình muốn đưa ngựa tới kiểm tra vào sáng thứ 7 (9h00), mong muốn đăng ký gói chăm sóc & luyện sức bền đường trường..."
+                  placeholder={tr("e.g. I prefer Saturday morning (09:00) for inspection and long-distance conditioning...")}
                   onChange={(e) => {
                     setOwnerNotes(e.target.value);
                     setIsDirty(true);
@@ -635,11 +638,11 @@ export default function HorseFormPage() {
                       setErrors((prev) => ({ ...prev, declaration: "" }));
                     }
                   }}
-                  label="Tôi cam kết thông tin kê khai và hình ảnh giấy tờ pháp lý đính kèm là trung thực, và sẽ mang theo bản gốc để đối chiếu khi đến thẩm định tại CLB."
+                  label={tr("I declare that all provided details and attached legal document photos are truthful, and I will bring originals for verification upon arrival.")}
                 />
                 {errors.declaration && (
                   <div style={{ color: "var(--danger, #dc2626)", fontSize: "0.82rem", marginTop: 6 }}>
-                    {errors.declaration}
+                    {tr(errors.declaration)}
                   </div>
                 )}
               </div>
@@ -657,7 +660,7 @@ export default function HorseFormPage() {
               disabled={submitting || imageBusy || docUploadBusy}
               onClick={() => handleSave(true)}
             >
-              Nộp &amp; Đăng ký thêm ngựa khác
+              {tr("Submit & Register Another Horse")}
             </Button>
           )}
           <Button
@@ -666,12 +669,12 @@ export default function HorseFormPage() {
             onClick={() => handleSave(false)}
           >
             {submitting
-              ? "Đang gửi hồ sơ..."
+              ? tr("Submitting dossier...")
               : isEdit
                 ? tr("Save Profile")
                 : reapplyId
-                  ? "Nộp lại hồ sơ đăng ký"
-                  : "Nộp hồ sơ đăng ký"}
+                  ? tr("Resubmit Admission Dossier")
+                  : tr("Submit Admission Dossier")}
           </Button>
         </div>
       </Card>

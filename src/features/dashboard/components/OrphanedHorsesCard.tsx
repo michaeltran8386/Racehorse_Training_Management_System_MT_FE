@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Card } from "@/shared/components/ui/Card";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Icon } from "@/shared/components/ui/Icon";
+import { useToast } from "@/shared/components/ui/Toast";
+import { tr } from "@/shared/i18n/tr";
 import { HorseAvatar } from "@/features/horses/components/HorseAvatar";
 import { getOrphanedHorses, type OrphanedHorseItem } from "@/features/accounts/api";
 import { AssignHorseTrainerModal } from "@/features/horses/components/AssignHorseTrainerModal";
@@ -13,6 +15,8 @@ interface OrphanedHorsesCardProps {
 }
 
 export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
+  useTranslation();
+  const toast = useToast();
   const [items, setItems] = useState<OrphanedHorseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedHorse, setSelectedHorse] = useState<OrphanedHorseItem | null>(null);
@@ -46,8 +50,9 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
   }
 
   function handlePostpone(horseName: string) {
-    alert(
-      `[Bảo vệ An toàn Huấn luyện - Lớp 3]: Đã gửi yêu cầu dời lịch tập của chiến mã "${horseName}" sang ngày hôm sau (+1 ngày). Huấn luyện viên mới sẽ tiếp nhận sau khi hoàn tất xác nhận giáo án.`
+    toast.show(
+      tr("[Training Safety Protection - Layer 3]: Sent request to postpone workouts for \"{{name}}\" to tomorrow (+1 day). The new trainer will take over once the plan is confirmed.", { name: horseName }),
+      "info",
     );
   }
 
@@ -84,12 +89,12 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <h3 style={{ margin: 0, fontSize: "15.5px", fontWeight: 700, color: "var(--ink)" }}>
-                  Chiến mã Tồn đọng Chờ Bổ nhiệm HLV (Do Điều chuyển Nhân sự)
+                  {tr("Unassigned Horses Awaiting Trainer (Staff Reassignment)")}
                 </h3>
-                <Badge tone="danger">{items.length} chiến mã</Badge>
+                <Badge tone="danger">{tr("{{count}} horse(s)", { count: items.length })}</Badge>
               </div>
               <p style={{ margin: "3px 0 0 0", fontSize: "13px", color: "var(--text-muted)" }}>
-                Các chiến mã này đang ở trong ô chuồng nhưng chưa có HLV phụ trách do HLV cũ đã chuyển Barn hoặc đồng nghiệp đầy tải. Vui lòng ưu tiên phân công HLV mới để duy trì lịch tập.
+                {tr("These horses are stabled without an assigned trainer due to barn transfer or full capacity. Please assign a new Head Trainer to maintain training schedules.")}
               </p>
             </div>
           </div>
@@ -101,11 +106,11 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
                 onClick={() => setIsExpanded(!isExpanded)}
               >
                 <Icon name={isExpanded ? "chevron-up" : "chevron-down"} size={14} />
-                {isExpanded ? "Thu gọn" : `Xem tất cả (${items.length})`}
+                {isExpanded ? tr("Collapse") : tr("View all ({{count}})", { count: items.length })}
               </Button>
             )}
             <Button size="sm" tone="ghost" onClick={loadData}>
-              <Icon name="refresh-cw" size={14} /> Làm mới
+              <Icon name="refresh-cw" size={14} /> {tr("Refresh")}
             </Button>
           </div>
         </div>
@@ -134,11 +139,11 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
                       <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>({h.horseCode})</span>
                     </div>
                     <div style={{ fontSize: "12px", color: "var(--brand, #2563eb)", fontWeight: 500, marginTop: "2px" }}>
-                      Ô chuồng: <strong>{h.stallCode}</strong> {h.zoneName ? `· ${h.zoneName}` : ""}
+                      {tr("Stall:")} <strong>{h.stallCode}</strong> {h.zoneName ? `· ${h.zoneName}` : ""}
                     </div>
                   </div>
                 </div>
-                <Badge tone="danger">Chưa có HLV</Badge>
+                <Badge tone="danger">{tr("No Trainer")}</Badge>
               </div>
 
               {h.latestPlan && (
@@ -152,7 +157,7 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
                     color: "var(--text-muted)",
                   }}
                 >
-                  📋 Giáo án: <strong>{h.latestPlan.planCode}</strong> (Đang tạm dừng chờ HLV tiếp nhận)
+                  📋 {tr("Training Plan:")} <strong>{h.latestPlan.planCode}</strong> ({tr("Paused awaiting trainer takeover")})
                 </div>
               )}
 
@@ -162,7 +167,7 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
                   tone="primary"
                   onClick={() => setSelectedHorse(h)}
                 >
-                  <Icon name="user-plus" size={14} /> Phân công HLV mới
+                  <Icon name="user-plus" size={14} /> {tr("Assign new trainer")}
                 </Button>
                 <Link
                   to="/stables/map"
@@ -180,15 +185,15 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
                     textDecoration: "none",
                   }}
                 >
-                  <Icon name="move" size={13} /> Chuyển sang Barn khác
+                  <Icon name="move" size={13} /> {tr("Move to another Barn")}
                 </Link>
                 <Button
                   size="sm"
                   tone="secondary"
                   onClick={() => handlePostpone(h.horseName)}
-                  title="Dời lịch tập hôm nay/ngày mai sang ngày kế tiếp nếu chưa có HLV phụ trách"
+                  title={tr("Postpone today/tomorrow's workouts to the next day while awaiting a trainer")}
                 >
-                  <Icon name="clock" size={14} /> Dời lịch tập +1 ngày
+                  <Icon name="clock" size={14} /> {tr("Postpone workout +1 day")}
                 </Button>
               </div>
             </div>
@@ -204,8 +209,8 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
             >
               <Icon name={isExpanded ? "chevron-up" : "chevron-down"} size={14} />
               {isExpanded
-                ? "Thu gọn danh sách"
-                : `Xem toàn bộ ${items.length} chiến mã tồn đọng (còn ${items.length - previewLimit} con)`}
+                ? tr("Collapse list")
+                : tr("View all {{total}} pending horses ({{more}} more)", { total: items.length, more: items.length - previewLimit })}
             </Button>
           </div>
         )}

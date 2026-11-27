@@ -851,7 +851,7 @@ export function TrainerDashboard() {
                       {req.horse.name} <span style={{ color: "var(--muted)", fontWeight: 400 }}>({req.horse.horseCode})</span>
                     </strong>
                     <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                      {req.horse.breed ? tr(req.horse.breed) : "Thần mã"} · {req.horse.stallAllocations?.[0]?.stall?.code || "Barn A"}
+                      {req.horse.breed ? tr(req.horse.breed) : tr("Racehorse")} · {req.horse.stallAllocations?.[0]?.stall?.code || "Barn A"}
                     </div>
                     <div style={{ fontSize: "11.5px", color: "var(--brand, #2563eb)", marginTop: "2px" }}>
                       {isVi ? `Người giao: Quản lý ${req.fromManager.fullName}` : `Assigned by: ${req.fromManager.fullName}`}

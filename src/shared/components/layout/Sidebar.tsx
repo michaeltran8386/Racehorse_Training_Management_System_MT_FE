@@ -140,7 +140,7 @@ export function Sidebar({ user, pathname, note, accountsAlert, open, onNavigate,
                   window.dispatchEvent(new CustomEvent("equiflow_toggle_magic_toolkit"));
                 }}
                 title={isVietnamese ? "Nút Thần Thánh (Demo & Sát hạch)" : "Magic Demo Toolkit"}
-                aria-label="Nút Thần Thánh"
+                aria-label={tr("Magic Demo Toolkit")}
               >
                 <Icon name="wrench" size={12} strokeWidth={2.2} />
                 {Boolean(getDemoDate()) && <span className={styles.wrenchActiveDot} />}

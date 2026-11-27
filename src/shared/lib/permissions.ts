@@ -412,7 +412,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
     {
       label: "MEDICAL",
       items: [
-        item("medical/admissions", "Thẩm định được phân công", "clipboard", { requires: "viewMedical" }),
+        item("medical/admissions", "Assigned Admissions", "clipboard", { requires: "viewMedical" }),
         item("herd", "Herd Health", "stethoscope", { requires: "viewMedical" }),
         item("records", "Medical Records", "file", { requires: "viewMedical" }),
         // Danh sách khóa huấn luyện (Training Locks) yêu cầu quyền viewMedical
@@ -468,7 +468,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
       items: [
         item("dashboard", "Dashboard", "home"),
         item("my-horses", "My Horses", "horse", { requires: "viewHorses" }),
-        item("horses/my-admissions", "Hồ sơ đã nộp", "clipboard", {
+        item("horses/my-admissions", "Submitted Admissions", "clipboard", {
           requires: "viewHorses",
         }),
       ],
@@ -812,7 +812,7 @@ export function screenAccess(
     return {
       allowed,
       group: "WORKSPACE",
-      label: "Hồ sơ đã nộp",
+      label: "Submitted Admissions",
       ownerRoles: ["HORSE_OWNER"],
       inOwnRole: role === "HORSE_OWNER",
     };
@@ -821,7 +821,7 @@ export function screenAccess(
       (role === 'VETERINARIAN' && pathname === '/horses/admissions')) {
     const allowed = role === 'VETERINARIAN' && !!permissions.viewMedical;
     return { allowed, ownerRoles: ['VETERINARIAN'], inOwnRole: allowed, group: 'MEDICAL',
-      label: 'Thẩm định được phân công' };
+      label: 'Assigned Admissions' };
   }
   if (pathname === "/complaints" || pathname.startsWith("/complaints/")) {
     const allowed = role !== "HORSE_OWNER";

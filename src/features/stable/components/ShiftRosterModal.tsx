@@ -105,7 +105,7 @@ export function ShiftRosterModal({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!dutyTypes.length) { setError('Chọn ít nhất một nhiệm vụ trong ca.'); return; }
+    if (!dutyTypes.length) { setError(tr('Please select at least one duty for this shift.')); return; }
 
     setBusy(true);
     setError('');

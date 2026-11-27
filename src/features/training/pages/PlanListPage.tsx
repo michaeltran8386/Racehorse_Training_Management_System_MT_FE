@@ -335,7 +335,7 @@ export default function PlanListPage() {
                               <div>
                                 <div style={{ fontWeight: 600, color: "var(--ink)", fontSize: 13.5 }}>{h.name}</div>
                                 <div style={{ fontSize: 11.5, color: "var(--text-muted)" }}>
-                                  {h.horseCode || "—"} · {h.breed || "Chưa rõ"}
+                                  {h.horseCode || "—"} · {h.breed ? tr(h.breed) : tr("Unknown")}
                                 </div>
                               </div>
                             </div>
@@ -350,23 +350,23 @@ export default function PlanListPage() {
                           </td>
                           <td>
                             {isMed ? (
-                              <Badge tone="danger">Khóa y tế</Badge>
+                              <Badge tone="danger">{tr("Medical lock")}</Badge>
                             ) : isResting ? (
-                              <Badge tone="ok">Nghỉ ngơi hồi phục</Badge>
+                              <Badge tone="ok">{tr("Resting & Recovery")}</Badge>
                             ) : (
                               <Badge tone={isOverdue ? "danger" : "warn"}>
-                                Mới tiếp nhận · {deadlineText}
+                                {tr("Newly admitted · {{deadline}}", { deadline: deadlineText })}
                               </Badge>
                             )}
                           </td>
                           {!isTrainer && (
                             <td className={styles.colTrainer}>
-                              <span style={{ fontSize: 12.5 }}>{h.assignedTrainer?.fullName || "Chưa phân công"}</span>
+                              <span style={{ fontSize: 12.5 }}>{h.assignedTrainer?.fullName || tr("Unassigned")}</span>
                             </td>
                           )}
                           <td className={styles.colActions}>
                             {isMed ? (
-                              <Button size="sm" tone="secondary" disabled title="Chiến mã đang bị khóa y tế. Không thể lập giáo án.">
+                              <Button size="sm" tone="secondary" disabled title={tr("This horse is under a medical lock and cannot have a plan created.")}>
                                 <Icon name="lock" size={13} style={{ marginRight: 4 }} />
                                 {isVietnamese ? "Đang khóa y tế" : "Locked"}
                               </Button>

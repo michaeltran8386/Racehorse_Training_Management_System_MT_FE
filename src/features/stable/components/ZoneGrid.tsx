@@ -87,7 +87,7 @@ export function GridCell({
       {look.subtitle && <span style={{ fontSize: "var(--fs-caption)", opacity: 0.8 }}>{look.subtitle}</span>}
       
       {/* Huấn luyện viên trưởng phụ trách */}
-      {look.title !== "Chờ xếp ngựa" && look.title !== tr("Maintenance") && look.title !== tr("Inactive") && (
+      {look.title !== tr("Awaiting horse") && look.title !== tr("Maintenance") && look.title !== tr("Inactive") && (
         <span
           style={{
             fontSize: "11px",
@@ -102,7 +102,7 @@ export function GridCell({
             alignSelf: "flex-start",
           }}
         >
-          <Icon name="award" size={12} inline /> {look.trainerName ? `HLV: ${look.trainerName}` : "HLV: Chưa phân công"}
+          <Icon name="award" size={12} inline /> {look.trainerName ? tr("Trainer: {{name}}", { name: look.trainerName }) : tr("Trainer: Unassigned")}
         </span>
       )}
 
@@ -128,7 +128,7 @@ export function GridCell({
             maxWidth: "100%",
           }}
         >
-          <Icon name="alert" size={12} inline /> Groom: Chưa gán
+          <Icon name="alert" size={12} inline /> {tr("Groom: Unassigned")}
         </span>
       ) : look.groomName ? (
         <span

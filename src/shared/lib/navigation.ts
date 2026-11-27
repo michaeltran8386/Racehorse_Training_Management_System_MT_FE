@@ -108,7 +108,7 @@ export function breadcrumbFor(user: AuthUser, pathname: string, accountName?: st
     return [homeSegment, { label: tr("Training Schedule"), href: "/calendar" }, { label: tr("Workout Result") }];
   }
   if (pathname === "/horses/my-admissions") {
-    return [homeSegment, { label: "Hồ sơ đăng ký đã nộp" }];
+    return [homeSegment, { label: tr("Submitted Admissions") }];
   }
   if (pathname === "/horses/admissions") {
     return [homeSegment, { label: i18n.t("nav.horseAdmissions", "Horse Admissions") }];

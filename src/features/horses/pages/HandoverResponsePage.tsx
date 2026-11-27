@@ -1,15 +1,20 @@
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Card } from "@/shared/components/ui/Card";
 import { Button } from "@/shared/components/ui/Button";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { Field } from "@/shared/components/form/Field";
+import { useAppLanguage } from "@/shared/lib/language";
 import { ApiError } from "@/shared/lib/api";
 import { messageFor } from "@/shared/lib/messages";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 import { respondHandover } from "../api";
 
 export default function HandoverResponsePage() {
+  useTranslation();
+  const { isVietnamese } = useAppLanguage();
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
 
@@ -28,7 +33,7 @@ export default function HandoverResponsePage() {
   if (!token) {
     return (
       <div style={{ maxWidth: 480, margin: "60px auto", padding: "0 16px" }}>
-        <Alert tone="danger">Mã xác thực tiếp nhận (token) không hợp lệ hoặc thiếu.</Alert>
+        <Alert tone="danger">{tr("Invalid or missing handover verification token.")}</Alert>
       </div>
     );
   }
@@ -40,7 +45,7 @@ export default function HandoverResponsePage() {
       return;
     }
     if (action === "REJECT" && !declineReason.trim()) {
-      setError("Vui lòng nhập lý do từ chối để thông báo lại cho Quản lý.");
+      setError(tr("Please enter a decline reason to notify the Club Manager."));
       return;
     }
 
@@ -61,7 +66,7 @@ export default function HandoverResponsePage() {
       });
     } catch (err) {
       if (err instanceof ApiError) setError(messageFor(err));
-      else setError("Không thể xử lý yêu cầu tiếp nhận. Yêu cầu có thể đã hết hạn 48h.");
+      else setError(tr("Could not process handover request. It may have expired after 48h."));
     } finally {
       setBusy(false);
     }
@@ -73,10 +78,10 @@ export default function HandoverResponsePage() {
         <Card pad={24}>
           <div style={{ textAlign: "center", display: "grid", gap: 14 }}>
             <h2 style={{ margin: 0, fontSize: "1.25rem", color: result.action === "ACCEPT" ? "var(--success)" : "var(--text)" }}>
-              {result.action === "ACCEPT" ? "Tiếp nhận chiến mã thành công" : "Đã từ chối tiếp nhận chiến mã"}
+              {result.action === "ACCEPT" ? tr("Horse handover accepted successfully") : tr("Horse handover declined")}
             </h2>
             <p style={{ margin: 0, color: "var(--text-2)", lineHeight: 1.5 }}>
-              {result.message}
+              {localizeServerText(result.message)}
             </p>
 
             {result.action === "ACCEPT" && result.planDeadlineAt && (
@@ -91,16 +96,16 @@ export default function HandoverResponsePage() {
                 }}
               >
                 <div style={{ fontWeight: 600, color: "var(--primary)", marginBottom: 4 }}>
-                  Quy định SLA hoàn thành giáo án:
+                  {tr("Training plan SLA deadline:")}
                 </div>
-                <div>Thời hạn: <strong>{result.days || 3} ngày (72 giờ)</strong></div>
-                <div>Hạn hoàn thành trước: <strong>{new Date(result.planDeadlineAt).toLocaleString("vi-VN")}</strong></div>
+                <div>{tr("Time limit:")} <strong>{tr("{{days}} days (72 hours)", { days: result.days || 3 })}</strong></div>
+                <div>{tr("Due before:")} <strong>{new Date(result.planDeadlineAt).toLocaleString(isVietnamese ? "vi-VN" : "en-US")}</strong></div>
               </div>
             )}
 
             <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 10 }}>
               <Button tone="primary" onClick={() => navigate("/training/plans")}>
-                Đến trang Giáo án huấn luyện
+                {tr("Go to Training Plans")}
               </Button>
             </div>
           </div>
@@ -115,10 +120,10 @@ export default function HandoverResponsePage() {
         <div style={{ display: "grid", gap: 16 }}>
           <div>
             <h2 style={{ margin: "0 0 6px 0", fontSize: "1.25rem" }}>
-              Xác nhận tiếp nhận chiến mã
+              {tr("Confirm horse handover")}
             </h2>
             <p style={{ margin: 0, color: "var(--text-2)", fontSize: "var(--fs-caption)", lineHeight: 1.5 }}>
-              Quản lý CLB đã phân công bạn phụ trách chiến mã này. Vui lòng xác nhận tiếp nhận hoặc từ chối trong vòng 48 giờ kể từ khi nhận được thông báo.
+              {tr("The Club Manager has assigned this horse to you. Please accept or decline within 48 hours of receiving this notification.")}
             </p>
           </div>
 
@@ -135,14 +140,14 @@ export default function HandoverResponsePage() {
               lineHeight: 1.5,
             }}
           >
-            <strong>Lưu ý về tiến độ SLA:</strong> Khi bạn bấm Tiếp nhận, hệ thống sẽ áp dụng hạn chót cố định <strong>3 ngày (72 giờ)</strong> để bạn khảo sát thể lực và kích hoạt giáo án huấn luyện chính thức cho chiến mã.
+            <strong>{tr("SLA deadline notice:")}</strong> {tr("Once accepted, a fixed 3-day (72-hour) deadline applies to assess fitness and activate the official training plan.")}
           </div>
 
           {showDeclineField && (
-            <Field label="Lý do từ chối tiếp nhận" required>
+            <Field label={tr("Reason for declining handover")} required>
               <Textarea
                 rows={3}
-                placeholder="Nhập lý do (ví dụ: đang quá tải ca huấn luyện, cần điều chuyển...)"
+                placeholder={tr("Enter reason (e.g. workload full, reassignment needed...)")}
                 value={declineReason}
                 onChange={(e) => setDeclineReason(e.target.value)}
               />
@@ -155,14 +160,14 @@ export default function HandoverResponsePage() {
               disabled={busy}
               onClick={() => handleResponse("REJECT")}
             >
-              {busy ? "Đang xử lý…" : showDeclineField ? "Xác nhận từ chối" : "Từ chối tiếp nhận"}
+              {busy ? tr("Processing…") : showDeclineField ? tr("Confirm decline") : tr("Decline handover")}
             </Button>
             <Button
               tone="primary"
               disabled={busy}
               onClick={() => handleResponse("ACCEPT")}
             >
-              {busy ? "Đang xử lý…" : "Tiếp nhận chiến mã"}
+              {busy ? tr("Processing…") : tr("Accept horse")}
             </Button>
           </div>
         </div>

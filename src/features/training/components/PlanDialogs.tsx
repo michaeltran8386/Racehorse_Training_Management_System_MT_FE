@@ -251,7 +251,7 @@ export function ClonePlanDialog({ plan, onClose, onDone }: DialogProps) {
 
   const submit = async () => {
     if (!selectedHorse || !selectedHorse.canAssign) {
-      toast.show(selectedHorse?.explanation || "Vui lòng chọn chiến mã hợp lệ", "danger");
+      toast.show(selectedHorse?.explanation || tr("Please select an eligible horse"), "danger");
       return;
     }
     setSubmitting(true);
@@ -259,7 +259,7 @@ export function ClonePlanDialog({ plan, onClose, onDone }: DialogProps) {
       const created = await trainingApi.clonePlan(plan.id, { targetHorseId: horseId, name: name.trim(), startDate, copyWorkouts });
       toast.show(tr("Training plan copied as a new draft."), "ok");
       if (created.skippedWorkouts > 0) {
-        toast.show(`Bỏ qua ${created.skippedWorkouts} buổi tập do trùng giờ nhân viên chăm sóc hoặc trùng giờ của ngựa.`, "warn");
+        toast.show(tr("Skipped {{count}} session(s) due to groom or horse schedule conflicts.", { count: created.skippedWorkouts }), "warn");
       }
       onDone(created);
       onClose();
