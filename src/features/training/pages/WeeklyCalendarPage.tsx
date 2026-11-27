@@ -253,10 +253,42 @@ export default function WeeklyCalendarPage() {
             : ""
         }
       >
-        {/* Hàng 1: Tên ngựa (Chuẩn hóa: Chỉ tên ngựa, bỏ ID và bỏ badge trạng thái bên cạnh) */}
+        {/* Hàng 1: Tên ngựa & Badge trạng thái nhỏ gọn */}
         <div className={styles.itemHeaderRow}>
           <div className={styles.itemTitle} title={s.horseName}>
             <span>{s.horseName}</span>
+          </div>
+          <div className={styles.itemBadgeWrapper}>
+            {isCompleted && (
+              <span className={`${styles.itemBadge} ${styles.badgeOk}`}>
+                <Icon name="check" inline size={9} strokeWidth={2.5} />
+                {isVietnamese ? "Hoàn thành" : tr("Completed")}
+              </span>
+            )}
+            {s.status === "SCHEDULED" && (
+              <span className={`${styles.itemBadge} ${styles.badgeBrand}`}>
+                <Icon name="clock" inline size={9} strokeWidth={2.5} />
+                {isVietnamese ? "Đã lên lịch" : tr("Scheduled")}
+              </span>
+            )}
+            {isBlocked && (
+              <span className={`${styles.itemBadge} ${styles.badgeDanger}`}>
+                <Icon name="lock" inline size={9} strokeWidth={2.5} />
+                {isVietnamese ? "Khóa y tế" : tr("Blocked")}
+              </span>
+            )}
+            {isMissed && (
+              <span className={`${styles.itemBadge} ${styles.badgeWarn}`}>
+                <Icon name="alert" inline size={9} strokeWidth={2.5} />
+                {isVietnamese ? "Bỏ lỡ" : tr("Missed")}
+              </span>
+            )}
+            {isCancelled && (
+              <span className={`${styles.itemBadge} ${styles.badgeNeutral}`}>
+                <Icon name="x" inline size={9} strokeWidth={2.5} />
+                {isVietnamese ? "Đã hủy" : tr("Cancelled")}
+              </span>
+            )}
           </div>
         </div>
 
