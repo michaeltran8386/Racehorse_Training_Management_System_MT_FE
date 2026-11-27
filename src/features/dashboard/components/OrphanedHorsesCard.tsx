@@ -16,6 +16,12 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
   const [items, setItems] = useState<OrphanedHorseItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedHorse, setSelectedHorse] = useState<OrphanedHorseItem | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Mặc định hiển thị vài con tượng trưng (1 con nếu có 2 con, 2 con nếu có từ 3 con trở lên)
+  const previewLimit = items.length <= 2 ? 1 : 2;
+  const visibleItems = isExpanded ? items : items.slice(0, previewLimit);
+  const hasMore = items.length > previewLimit;
 
   function loadData() {
     setLoading(true);
@@ -87,13 +93,25 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
               </p>
             </div>
           </div>
-          <Button size="sm" tone="ghost" onClick={loadData}>
-            <Icon name="refresh-cw" size={14} /> Làm mới
-          </Button>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+            {hasMore && (
+              <Button
+                size="sm"
+                tone="secondary"
+                onClick={() => setIsExpanded(!isExpanded)}
+              >
+                <Icon name={isExpanded ? "chevron-up" : "chevron-down"} size={14} />
+                {isExpanded ? "Thu gọn" : `Xem tất cả (${items.length})`}
+              </Button>
+            )}
+            <Button size="sm" tone="ghost" onClick={loadData}>
+              <Icon name="refresh-cw" size={14} /> Làm mới
+            </Button>
+          </div>
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))", gap: "12px" }}>
-          {items.map((h) => (
+          {visibleItems.map((h) => (
             <div
               key={h.horseId}
               style={{
@@ -176,6 +194,21 @@ export function OrphanedHorsesCard({ onChanged }: OrphanedHorsesCardProps) {
             </div>
           ))}
         </div>
+
+        {hasMore && (
+          <div style={{ display: "flex", justifyContent: "center", paddingTop: "4px" }}>
+            <Button
+              size="sm"
+              tone="secondary"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              <Icon name={isExpanded ? "chevron-up" : "chevron-down"} size={14} />
+              {isExpanded
+                ? "Thu gọn danh sách"
+                : `Xem toàn bộ ${items.length} chiến mã tồn đọng (còn ${items.length - previewLimit} con)`}
+            </Button>
+          </div>
+        )}
       </div>
 
       {selectedHorse && (

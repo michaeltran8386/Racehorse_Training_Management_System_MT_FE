@@ -62,7 +62,10 @@ export function AssignHorseTrainerModal({
 
   // Tìm khu chuồng của ngựa
   const currentBarn = barns.find((b) => b.id === zoneId || b.name === zoneName || (stallCode && b.code && stallCode.startsWith(b.code)));
-  const trainers = currentBarn ? currentBarn.trainers : barns.flatMap((b) => b.trainers);
+  const allBarnTrainers = currentBarn ? currentBarn.trainers : barns.flatMap((b) => b.trainers);
+  // Chỉ lọc các Huấn luyện viên ĐANG HOẠT ĐỘNG CHÍNH THỨC (ACTIVE)
+  const activeTrainers = allBarnTrainers.filter((t) => t.status === "ACTIVE");
+  const invitedTrainers = allBarnTrainers.filter((t) => t.status && t.status !== "ACTIVE");
 
   async function handleSubmit() {
     if (!selectedTrainerId) {
@@ -104,14 +107,16 @@ export function AssignHorseTrainerModal({
           <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>
             Đang tải danh sách Huấn luyện viên phụ trách khu chuồng...
           </div>
-        ) : trainers.length === 0 ? (
+        ) : activeTrainers.length === 0 ? (
           <Alert tone="warn">
-            Khu chuồng này hiện chưa có Huấn luyện viên trưởng nào được phân công. Vui lòng vào trang Quản lý tài khoản để bổ nhiệm HLV cho Khu chuồng trước.
+            {invitedTrainers.length > 0
+              ? `Khu chuồng này hiện chưa có Huấn luyện viên chính thức (ACTIVE) sẵn sàng tiếp nhận (${invitedTrainers.length} nhân sự đang chờ kích hoạt tài khoản qua email). Vui lòng kích hoạt tài khoản HLV trước khi phân công ngựa.`
+              : "Khu chuồng này hiện chưa có Huấn luyện viên trưởng nào được phân công. Vui lòng vào trang Quản lý tài khoản để bổ nhiệm HLV cho Khu chuồng trước."}
           </Alert>
         ) : (
           <Field label="Chọn Huấn luyện viên trưởng tiếp nhận (*)" required>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "6px" }}>
-              {trainers.map((t) => {
+              {activeTrainers.map((t) => {
                 const load = t.currentLoad ?? 0;
                 const max = t.maxCapacity ?? 8;
                 const isFull = load >= max;
@@ -152,12 +157,16 @@ export function AssignHorseTrainerModal({
                         <strong style={{ fontSize: "14px", color: "var(--ink)" }}>{t.fullName}</strong>
                         {isSelected && <Badge tone="ok">Đã chọn</Badge>}
                       </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                        {t.email}
+                      </div>
                     </div>
+
                     <div>
                       {isFull ? (
                         <Badge tone="danger">Tải: {load}/{max} [Đầy tải]</Badge>
                       ) : (
-                        <Badge tone="ok">Tải: {load}/{max} con · Còn {max - load} chỗ</Badge>
+                        <Badge tone="neutral">Tải: {load}/{max} con · Còn {max - load} chỗ</Badge>
                       )}
                     </div>
                   </div>

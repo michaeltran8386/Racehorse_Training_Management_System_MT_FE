@@ -62,8 +62,10 @@ export function AssignHorseTrainerModal({
       (horse.stallCode && (horse.stallCode.startsWith(b.code) || horse.stallCode.startsWith(b.name.charAt(b.name.length - 1)))),
   ) || (horse.stallCode && barns.length > 0 ? barns[0] : undefined);
 
-  // Danh sách HLV thuộc Barn này
-  const eligibleTrainers = horseBarn ? horseBarn.trainers : [];
+  // Danh sách HLV thuộc Barn này và ĐANG HOẠT ĐỘNG CHÍNH THỨC (ACTIVE)
+  const allBarnTrainers = horseBarn ? horseBarn.trainers : [];
+  const eligibleTrainers = allBarnTrainers.filter((t) => t.status === "ACTIVE");
+  const invitedTrainersCount = allBarnTrainers.filter((t) => t.status && t.status !== "ACTIVE").length;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

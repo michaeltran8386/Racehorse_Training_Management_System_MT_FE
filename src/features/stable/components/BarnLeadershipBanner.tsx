@@ -29,7 +29,9 @@ export function BarnLeadershipBanner({ zoneId, zoneName }: BarnLeadershipBannerP
 
   const barn = barnStaffing.find((b) => b.id === zoneId || b.name === zoneName);
   const trainers = barn?.trainers || [];
-  const trainersCount = trainers.length;
+  const activeTrainers = trainers.filter((t) => t.status === "ACTIVE");
+  const invitedTrainers = trainers.filter((t) => t.status && t.status !== "ACTIVE");
+  const trainersCount = activeTrainers.length;
   const maxTrainers = barn?.maxTrainers || 2;
 
   const grooms = barn?.grooms || [];
@@ -80,13 +82,17 @@ export function BarnLeadershipBanner({ zoneId, zoneName }: BarnLeadershipBannerP
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
           {trainersCount >= maxTrainers ? (
             <Badge tone="ok">{trainersCount}/{maxTrainers} HLV [Đủ HLV]</Badge>
           ) : trainersCount > 0 ? (
             <Badge tone="warn">{trainersCount}/{maxTrainers} HLV [Còn {maxTrainers - trainersCount} HLV]</Badge>
           ) : (
             <Badge tone="danger">0/{maxTrainers} HLV [Thiếu HLV]</Badge>
+          )}
+
+          {invitedTrainers.length > 0 && (
+            <Badge tone="secondary">+{invitedTrainers.length} Chờ kích hoạt</Badge>
           )}
 
           {groomsCount >= maxGrooms ? (
@@ -120,6 +126,7 @@ export function BarnLeadershipBanner({ zoneId, zoneName }: BarnLeadershipBannerP
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "8px" }}>
             {trainers.map((t) => {
+              const isInvited = t.status && t.status !== "ACTIVE";
               const load = t.currentLoad ?? 0;
               const max = t.maxCapacity ?? 8;
               const isFull = load >= max;
@@ -131,19 +138,35 @@ export function BarnLeadershipBanner({ zoneId, zoneName }: BarnLeadershipBannerP
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "space-between",
-                    background: isFull ? "rgba(239, 68, 68, 0.04)" : "var(--surface-sunken, #f8fafc)",
-                    border: isFull ? "1px solid rgba(239, 68, 68, 0.3)" : "1px solid var(--border-subtle, #e2e8f0)",
+                    background: isInvited
+                      ? "var(--surface-sunken, #f8fafc)"
+                      : isFull
+                      ? "rgba(239, 68, 68, 0.04)"
+                      : "var(--surface-sunken, #f8fafc)",
+                    border: isInvited
+                      ? "1px dashed var(--warning, #f59e0b)"
+                      : isFull
+                      ? "1px solid rgba(239, 68, 68, 0.3)"
+                      : "1px solid var(--border-subtle, #e2e8f0)",
                     borderRadius: "6px",
                     padding: "8px 12px",
+                    opacity: isInvited ? 0.85 : 1,
                   }}
                 >
                   <div>
                     <strong style={{ fontSize: "13px", color: "var(--ink)" }}>{t.fullName}</strong>
                     <div style={{ fontSize: "11px", color: "var(--text-muted)" }}>{t.email}</div>
+                    {isInvited && (
+                      <div style={{ fontSize: "11px", color: "var(--warning, #d97706)", fontStyle: "italic", marginTop: "2px" }}>
+                        Chưa thể tiếp nhận ngựa · Đang chờ kích hoạt
+                      </div>
+                    )}
                   </div>
 
                   <div>
-                    {isFull ? (
+                    {isInvited ? (
+                      <Badge tone="warn">Chờ kích hoạt</Badge>
+                    ) : isFull ? (
                       <Badge tone="danger">{load}/{max} ngựa [Đầy]</Badge>
                     ) : (
                       <Badge tone="ok">{load}/{max} ngựa</Badge>
