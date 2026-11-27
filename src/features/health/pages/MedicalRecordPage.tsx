@@ -108,7 +108,7 @@ export default function MedicalRecordPage() {
     } catch {
       if (current !== observationRequest.current) return;
       setObsUrgency(loadedUrgency.current);
-      toast.show("Error filtering observation notes.", "danger");
+      toast.show(tr("Error filtering observation notes."), "danger");
     } finally {
       if (current === observationRequest.current) setObservationsLoading(false);
     }

@@ -635,11 +635,11 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
         toast.show(tr("Workout updated."), "ok");
       } else if (repeat) {
         const res = await trainingApi.createRepeatSessions(planId, { ...input(), weekdays, until });
-        const skipped = res.skipped.map((s) => `${s.date}: ${s.reason}`).join("; ");
-        toast.show(
-          tr(`Created ${res.created} workout(s).${res.skipped.length ? ` Skipped ${res.skipped.length} day(s): ${skipped}` : ""}`),
-          res.skipped.length ? "warn" : "ok",
-        );
+        const skipped = res.skipped.map((s) => `${s.date}: ${localizeServerText(s.reason)}`).join("; ");
+        const message = isVietnamese
+          ? `Đã tạo ${res.created} buổi tập.${res.skipped.length ? ` Đã bỏ qua ${res.skipped.length} ngày: ${skipped}` : ""}`
+          : `Created ${res.created} workout(s).${res.skipped.length ? ` Skipped ${res.skipped.length} day(s): ${skipped}` : ""}`;
+        toast.show(message, res.skipped.length ? "warn" : "ok");
       } else {
         await trainingApi.createSession(planId, input());
         toast.show(tr("Workout added."), "ok");
@@ -1047,7 +1047,7 @@ export function CancelWorkoutDialog({ session, onClose, onDone }: { session: Exe
     setSubmitting(true);
     try {
       await trainingApi.cancelSession(session.id, reason, note.trim());
-      toast.show("Workout cancelled.", "ok");
+      toast.show(tr("Workout cancelled."), "ok");
       onDone();
       onClose();
     } catch (err) {

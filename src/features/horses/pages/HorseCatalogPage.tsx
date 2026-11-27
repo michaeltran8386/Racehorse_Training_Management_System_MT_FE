@@ -71,7 +71,7 @@ function ItemDialog({
       const body = { name: name.trim(), description: description.trim() || undefined, sortOrder: Number(sortOrder) };
       if (item) await updateHorseCatalogItem(item.id, body);
       else await createHorseCatalogItem({ type, code, ...body });
-      toast.show("Saved.", "ok");
+      toast.show(tr("Saved."), "ok");
       onSaved();
     } catch (err) {
       setError(messageFor(err));

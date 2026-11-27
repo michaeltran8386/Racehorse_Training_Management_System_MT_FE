@@ -125,7 +125,7 @@ export default function PermissionMatrix({ accountId }: { accountId: string }) {
   function discard() {
     if (!account) return;
     setDraft(account.permissions);
-    toast.show("Changes discarded. The saved permission list is back.", "warn");
+    toast.show(tr("Changes discarded. The saved permission list is back."), "warn");
   }
 
   async function save() {
@@ -138,7 +138,7 @@ export default function PermissionMatrix({ accountId }: { accountId: string }) {
       toast.show(`Permissions saved. ${res.granted} granted, ${res.revoked} revoked for ${account.fullName}.`, "ok");
     } catch (err) {
       // Lưu lỗi: giữ nguyên bản đang sửa để không mất công.
-      toast.show(err instanceof ApiError && err.code === "NETWORK_ERROR" ? "Permissions not saved. The account service did not answer." : messageFor(err), "danger");
+      toast.show(err instanceof ApiError && err.code === "NETWORK_ERROR" ? tr("Permissions not saved. The account service did not answer.") : messageFor(err), "danger");
     } finally {
       setSaving(false);
     }

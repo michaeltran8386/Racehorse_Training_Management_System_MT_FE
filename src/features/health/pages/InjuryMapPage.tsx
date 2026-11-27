@@ -339,7 +339,7 @@ export default function InjuryMapPage() {
       setAddModalPoint(null);
       setFormType("");
       setFormNotes("");
-      toast.show("New anatomical injury point recorded successfully.", "ok");
+      toast.show(tr("New anatomical injury point recorded successfully."), "ok");
     } catch (error) {
       toast.show(getErrorMessage(error, "Failed to create injury point."), "danger");
       console.error(error);
