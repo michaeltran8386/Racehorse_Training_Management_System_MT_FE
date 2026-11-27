@@ -853,6 +853,18 @@
 <td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu ca tập.<br><strong>Thông báo lỗi:</strong> <em>"Chiến mã đã có lịch tập khác quá gần khung giờ này (cần cách tối thiểu 30 phút)."</em></td>
 </tr>
 <tr>
+<td style="text-align: left;"><strong>Hạn mức Số ca tập trong Ngày</strong></td>
+<td style="text-align: left;">Một chiến mã được phép xếp <strong>tối đa 3 buổi tập trong cùng 1 ngày</strong> (<code>MAX_WORKOUTS_PER_DAY = 3</code>).</td>
+<td style="text-align: left;">Số buổi tập trong ngày của ngựa ≤ 3 buổi.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu buổi tập thứ 4 trong cùng một ngày.<br><strong>Thông báo lỗi:</strong> <em>"Mỗi ngựa tối đa 3 buổi tập mỗi ngày."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Thời gian Hồi phục Thể lực Bắt buộc (Rest Period)</strong></td>
+<td style="text-align: left;">Để bảo vệ tim mạch và ngăn ngừa đứt gân/chấn thương cơ xương khớp, hệ thống áp dụng quy chuẩn y học thể thao khắt khe:<br>• <strong>Bài tập nặng</strong> (Chạy tốc độ cao <code>BREEZE</code>, Chạy thử sát hạch <code>TRIAL</code>, hoặc Cường độ Nặng <code>HEAVY</code>): Bắt buộc cách buổi tập liền kề tối thiểu <strong>48 giờ</strong>.<br>• <strong>Bài tập vừa</strong> (Chạy nước kiệu <code>TROT</code>, Phi nước đại nhẹ <code>CANTER</code>): Bắt buộc cách buổi tập liền kề tối thiểu <strong>24 giờ</strong>.<br>• <strong>Bài tập phục hồi nhẹ</strong> (Đi bộ <code>WALK</code>, Bơi hồ xả cơ <code>SWIM</code>, Máy đi bộ <code>TREADMILL</code> ở cường độ Nhẹ/Vừa): Giãn cách yêu cầu là <strong>0 giờ</strong> (chỉ cần tuân thủ đệm nghỉ 30 phút giữa 2 ca). Đây là nhóm bài duy nhất được phép kết hợp để đạt trần 3 buổi/ngày.</td>
+<td style="text-align: left;">Khoảng cách giữa 2 buổi tập của ngựa đáp ứng đầy đủ thời gian hồi phục thể lực y tế.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu ca tập vi phạm giãn cách.<br><strong>Thông báo lỗi:</strong> <em>"Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu [24/48] giờ giãn cách giữa hai buổi tập."</em><br><em>(Mã hệ thống: <code>WORKOUT_REST_REQUIRED: horse needs 24/48 hours between these sessions.</code>)</em></td>
+</tr>
+<tr>
 <td style="text-align: left;"><strong>Thời điểm Tạo lịch Hôm nay</strong></td>
 <td style="text-align: left;">Nếu lên lịch cho buổi tập diễn ra ngay trong ngày hôm nay, giờ bắt đầu phải sau giờ hiện tại tối thiểu <strong>30 phút</strong>.</td>
 <td style="text-align: left;">Đặt lịch trước ít nhất 30 phút so với giờ chạy thực tế.</td>
@@ -1245,6 +1257,18 @@
 <td style="text-align: center;"><strong>Tối thiểu 30 phút</strong></td>
 <td style="text-align: left;">Ngựa được hồi phục giữa 2 ca vận động.</td>
 <td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Chiến mã đã có lịch tập khác quá gần khung giờ này..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Giới hạn số ca tập trong ngày</strong></td>
+<td style="text-align: center;"><strong>Tối đa 3 buổi / ngày</strong></td>
+<td style="text-align: left;">Tránh ép ngựa tập luyện quá tải trong ngày.</td>
+<td style="text-align: left;"><strong>Chặn lưu ca thứ 4</strong>.<br>Thông báo: <em>"Mỗi ngựa tối đa 3 buổi tập mỗi ngày."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Thời gian hồi phục giữa 2 ca tập</strong></td>
+<td style="text-align: center;"><strong>Nghỉ 24h (bài vừa) / 48h (bài nặng)</strong></td>
+<td style="text-align: left;">Bảo vệ gân cơ, khớp chân và tim mạch ngựa.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu [24/48] giờ giãn cách giữa hai buổi tập."</em><br><em>(Mã lỗi: <code>WORKOUT_REST_REQUIRED</code>).</em></td>
 </tr>
 <tr>
 <td style="text-align: left;"><strong>Sức chứa đường chạy bài nhẹ/vừa</strong></td>
