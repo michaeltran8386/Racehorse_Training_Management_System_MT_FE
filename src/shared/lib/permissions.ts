@@ -412,7 +412,7 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
     {
       label: "MEDICAL",
       items: [
-        item("medical/admissions", "Thẩm định được phân công", "clipboard", { requires: "viewMedical" }),
+        item("medical/admissions", "Assigned Admissions", "clipboard", { requires: "viewMedical" }),
         item("herd", "Herd Health", "stethoscope", { requires: "viewMedical" }),
         item("records", "Medical Records", "file", { requires: "viewMedical" }),
         // Danh sách khóa huấn luyện (Training Locks) yêu cầu quyền viewMedical
@@ -468,6 +468,9 @@ export const ROLE_NAV: Record<Role, NavGroup[]> = {
       items: [
         item("dashboard", "Dashboard", "home"),
         item("my-horses", "My Horses", "horse", { requires: "viewHorses" }),
+        item("horses/my-admissions", "Submitted Admissions", "clipboard", {
+          requires: "viewHorses",
+        }),
       ],
     },
     {
@@ -656,7 +659,7 @@ const sidebarOrder: Record<Role, [string, string[]][]> = {
     ["SUPPLIES", supply],
   ],
   HORSE_OWNER: [
-    ["WORKSPACE", ["dashboard", "my-horses"]],
+    ["WORKSPACE", ["dashboard", "my-horses", "horses/my-admissions"]],
     ["MONITORING", ["progress", "health"]],
     ["REPORTS", ["financial-reports", "race-record"]],
   ],
@@ -688,6 +691,9 @@ export function sidebarNavFor(
 }
 
 export function isNavItemActive(navItem: NavItem, pathname: string): boolean {
+  if (pathname === "/horses/my-admissions" || pathname.startsWith("/horses/my-admissions/")) {
+    return navItem.href === "/horses/my-admissions";
+  }
   if (pathname === "/horses/admissions" || pathname.startsWith("/horses/admissions/")) {
     return navItem.href === "/horses/admissions";
   }
@@ -801,11 +807,21 @@ export function screenAccess(
     ownerRoles: [],
     inOwnRole: false,
   };
+  if (pathname === "/horses/my-admissions" || pathname.startsWith("/horses/my-admissions/")) {
+    const allowed = role === "HORSE_OWNER" && !!permissions.viewHorses;
+    return {
+      allowed,
+      group: "WORKSPACE",
+      label: "Submitted Admissions",
+      ownerRoles: ["HORSE_OWNER"],
+      inOwnRole: role === "HORSE_OWNER",
+    };
+  }
   if (pathname === '/medical/admissions' || pathname.startsWith('/medical/admissions/') ||
       (role === 'VETERINARIAN' && pathname === '/horses/admissions')) {
     const allowed = role === 'VETERINARIAN' && !!permissions.viewMedical;
     return { allowed, ownerRoles: ['VETERINARIAN'], inOwnRole: allowed, group: 'MEDICAL',
-      label: 'Thẩm định được phân công' };
+      label: 'Assigned Admissions' };
   }
   if (pathname === "/complaints" || pathname.startsWith("/complaints/")) {
     const allowed = role !== "HORSE_OWNER";

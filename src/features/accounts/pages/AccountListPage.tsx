@@ -257,7 +257,6 @@ export default function AccountListPage() {
                 }}
                 title={owned.length > 0 ? owned.map((h) => `${h.name} (${h.horseCode ?? "—"})`).join(", ") : tr("No horses assigned yet")}
               >
-                <Icon name="horse" size={14} />
                 <span>{owned.length > 0 ? tr(`${owned.length} horse${owned.length > 1 ? "s" : ""} at club`) : tr("0 horses assigned")}</span>
               </Link>
             </div>
@@ -268,10 +267,16 @@ export default function AccountListPage() {
             <div>
               <div style={{ fontWeight: 600 }}>{roleLabel}</div>
               <div style={{ marginTop: 2 }}>
-                {r.assignedBarn?.name ? (
+                {r.status === "INVITED" ? (
+                  r.assignedBarn?.name ? (
+                    <Badge tone="neutral">{tr("Pending assignment: {{name}}", { name: r.assignedBarn.name })}</Badge>
+                  ) : (
+                    <Badge tone="warn">{tr("No Barn assigned")}</Badge>
+                  )
+                ) : r.assignedBarn?.name ? (
                   <Badge tone="info">{r.assignedBarn.name}</Badge>
                 ) : (
-                  <Badge tone="warn">Chưa gán Barn</Badge>
+                  <Badge tone="warn">{tr("No Barn assigned")}</Badge>
                 )}
               </div>
             </div>
@@ -353,7 +358,7 @@ export default function AccountListPage() {
             items={[
               { label: "Edit account", icon: "edit", onSelect: () => setDialog({ kind: "edit", target: r }) },
               {
-                label: "Đổi Khu chuồng (Barn)",
+                label: tr("Change Barn"),
                 hidden: r.role !== "HEAD_TRAINER",
                 onSelect: () => setDialog({ kind: "assignBarn", target: r }),
               },
@@ -647,7 +652,7 @@ export default function AccountListPage() {
           onSaved={(updated) => {
             replace(updated);
             setDialog(null);
-            toast.show("Đã cập nhật Khu chuồng cho HLV thành công.", "ok");
+            toast.show(tr("Trainer Barn assignment updated successfully."), "ok");
           }}
         />
       )}

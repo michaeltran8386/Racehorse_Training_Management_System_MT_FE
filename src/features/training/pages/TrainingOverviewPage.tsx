@@ -337,8 +337,13 @@ export default function TrainingOverviewPage() {
                           </div>
                         ) : (
                           <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-                            <span style={{ color: "var(--text-muted)" }}>
-                              {isVietnamese ? "Chưa có giáo án" : tr("No plan")}
+                            <span style={{ fontWeight: 600, color: r.horse.status === "RESTING" ? "var(--ink)" : "var(--text-muted)" }}>
+                              {r.horse.status === "RESTING"
+                                ? (isVietnamese ? "Nghỉ ngơi hồi phục" : "Resting & Recovery")
+                                : (isVietnamese ? "Chưa có giáo án" : tr("No plan"))}
+                            </span>
+                            <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                              {isVietnamese ? "Sẵn sàng lập kế hoạch mới" : "Ready for new plan"}
                             </span>
                             {/* Trạng thái ngựa do quản lý / thú y đặt, không tự đổi theo giáo án -> nói rõ khi lệch nhau */}
                             {r.horse.status === "IN_TRAINING" && (
@@ -350,7 +355,20 @@ export default function TrainingOverviewPage() {
                         )}
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>
-                        {r.plan?.trainerName ?? "—"}
+                        {r.horse.assignedTrainer?.fullName ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                            <span style={{ fontWeight: 600, color: "var(--ink)" }}>{r.horse.assignedTrainer.fullName}</span>
+                            {user?.id === r.horse.assignedTrainer.id && (
+                              <Badge tone="info">{isVietnamese ? "Của bạn" : "Yours"}</Badge>
+                            )}
+                          </div>
+                        ) : (
+                          r.plan?.trainerName ? (
+                            <span style={{ fontWeight: 600, color: "var(--ink)" }}>{r.plan.trainerName}</span>
+                          ) : (
+                            <span style={{ color: "var(--text-muted)" }}>{isVietnamese ? "Chưa phân công" : "—"}</span>
+                          )
+                        )}
                       </td>
                       <td style={{ padding: "0.6rem 0.75rem" }}>
                         {r.currentPhase ? tr(`${r.currentPhase.name} · week ${r.currentPhase.week}/${r.currentPhase.weeks}`) : "—"}

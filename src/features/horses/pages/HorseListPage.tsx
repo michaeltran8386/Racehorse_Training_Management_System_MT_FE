@@ -55,7 +55,7 @@ const LOCK_OPTIONS = [
 ];
 
 const SORT_OPTIONS = [
-  { value: "readiness_asc", label: "Ưu tiên: Sẵn sàng thi đấu" },
+  { value: "readiness_asc", label: "Priority: Race Ready" },
   { value: "name_asc", label: "Sort: Name A–Z" },
   { value: "name_desc", label: "Sort: Name Z–A" },
   { value: "horseCode_asc", label: "Sort: Horse ID" },
@@ -305,7 +305,7 @@ export default function HorseListPage() {
     },
     {
       key: "trainer",
-      header: "HLV phụ trách",
+      header: tr("Assigned Trainer"),
       render: (h) => (
         <span className="nowrap">
           {h.assignedTrainer?.fullName ? (
@@ -327,7 +327,7 @@ export default function HorseListPage() {
           items={[
             { label: tr("View profile"), icon: "eye", to: `/horses/${h.id}` },
             {
-              label: "Phân công HLV…",
+              label: tr("Assign trainer…"),
               hidden: currentUser.role !== "CLUB_MANAGER" || h.status === "RETIRED",
               onSelect: () => setAssignTrainerHorse(h),
             },
@@ -369,6 +369,11 @@ export default function HorseListPage() {
             {currentUser.role === "CLUB_MANAGER" && (
               <LinkButton to="/horses/deleted" icon="trash">
                 {tr("Deleted horses")}
+              </LinkButton>
+            )}
+            {isOwner && (
+              <LinkButton to="/horses/my-admissions" tone="secondary" icon="clipboard">
+                {tr("Submitted Admissions")}
               </LinkButton>
             )}
             {canEdit && (

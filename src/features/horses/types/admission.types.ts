@@ -6,12 +6,18 @@ export type AdmissionStatus =
   | "REJECTED"
   | "CANCELLED";
 
+export interface AdmissionDocumentPhoto {
+  label: string;
+  url: string;
+}
+
 export interface HorseAdmissionRecord {
   id: string;
   admissionCode: string; // e.g. ADM-2026-001
   horseId: string;
   horse: {
     id?: string;
+    horseCode?: string | null;
     name: string;
     microchip?: string | null;
     microchipRfid?: string | null;
@@ -19,6 +25,9 @@ export interface HorseAdmissionRecord {
     dob?: string | null;
     gender?: string | null;
     color?: string | null;
+    weightKg?: number | null;
+    avatarUrl?: string | null;
+    status?: string;
   };
   ownerId: string;
   owner: {
@@ -26,6 +35,7 @@ export interface HorseAdmissionRecord {
     fullName: string;
     email: string;
     phone?: string | null;
+    phoneNumber?: string | null;
   };
   status: AdmissionStatus;
 
@@ -33,15 +43,22 @@ export interface HorseAdmissionRecord {
   appointmentDate?: string | null;
   appointmentEndDate?: string | null;
   managerUserId?: string | null;
+  manager?: {
+    id?: string;
+    fullName: string;
+    email?: string;
+  } | null;
   capacityDeferredAt?: string | null;
   appointmentNotes?: string | null;
 
-  // Mục 2: Thẩm định Pháp lý & Vi mạch (Club Manager)
+  // Mục 2: Thẩm định Pháp lý & Vi mạch (Club Manager) + Tờ khai Chủ ngựa
   declaredMicrochip?: string | null;
   scannedMicrochip?: string | null;
   microchipVerified: boolean;
   legalDocumentsNote?: string | null;
   documentsUrl?: string | null;
+  documentPhotos?: AdmissionDocumentPhoto[] | null;
+  ownerNotes?: string | null;
   legalVerified: boolean;
 
   // Mục 3: Khám sàng lọc ban đầu (Veterinarian)
@@ -107,6 +124,12 @@ export interface RejectAdmissionDto {
 
 export interface CancelAdmissionDto {
   reason?: string;
+}
+
+export interface UpdateOwnerAdmissionSubmissionDto {
+  ownerNotes?: string;
+  documentsUrl?: string;
+  documentPhotos?: AdmissionDocumentPhoto[];
 }
 
 export interface AdmissionListFilter {

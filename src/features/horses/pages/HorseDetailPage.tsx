@@ -384,7 +384,7 @@ export default function HorseDetailPage() {
             <div style={{ color: "var(--ink-secondary)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
               <Icon name="award" size={13} />
               <span style={{ fontSize: "12px", fontWeight: 600, color: "#1e293b" }}>
-                {assignedTrainer ? `HLV: ${assignedTrainer.split("(")[0].trim()}` : (isVi ? "Chưa có HLV" : "No Trainer")}
+                {assignedTrainer ? `${isVi ? "HLV" : "Trainer"}: ${assignedTrainer.split("(")[0].trim()}` : (isVi ? "Chưa có HLV" : "No Trainer")}
               </span>
             </div>
             {isManager && (

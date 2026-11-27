@@ -190,9 +190,9 @@ export default function StableMapPage() {
       }
       if (s.status === "MAINTENANCE") return { title: tr("Maintenance"), striped: true, dimmed: onlyMine, flash: flashId === s.id };
       if (s.status === "INACTIVE") return { title: tr("Inactive"), striped: true, dimmed: onlyMine, flash: flashId === s.id };
-      return { title: "Chờ xếp ngựa", dashed: true, dimmed: onlyMine, flash: flashId === s.id };
+      return { title: tr("Awaiting horse"), dashed: true, dimmed: onlyMine, flash: flashId === s.id };
     },
-    [isMine, onlyMine, flashId],
+    [isMine, onlyMine, flashId, isVietnamese],
   );
 
   const listRows = useMemo(() => [...stalls].sort((a, b) => a.code.localeCompare(b.code)), [stalls]);

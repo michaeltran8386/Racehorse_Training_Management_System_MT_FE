@@ -253,56 +253,59 @@ export default function WeeklyCalendarPage() {
             : ""
         }
       >
-        {/* Hàng 1: Icon + Tên/Mã ngựa + Badge trạng thái */}
+        {/* Hàng 1: Tên ngựa & Badge trạng thái nhỏ gọn */}
         <div className={styles.itemHeaderRow}>
-          <div className={styles.itemTitle} title={`${s.horseCode ? `${s.horseCode} - ` : ""}${s.horseName}`}>
-            <Icon name="horse" inline size={14} />
-            <span>{s.horseCode ? `${s.horseCode} - ${s.horseName}` : s.horseName}</span>
+          <div className={styles.itemTitle} title={s.horseName}>
+            <span>{s.horseName}</span>
           </div>
           <div className={styles.itemBadgeWrapper}>
             {isCompleted && (
               <span className={`${styles.itemBadge} ${styles.badgeOk}`}>
-                <Icon name="check" inline size={10} strokeWidth={2.5} />
+                <Icon name="check" inline size={9} strokeWidth={2.5} />
                 {isVietnamese ? "Hoàn thành" : tr("Completed")}
               </span>
             )}
             {s.status === "SCHEDULED" && (
               <span className={`${styles.itemBadge} ${styles.badgeBrand}`}>
-                <Icon name="clock" inline size={10} strokeWidth={2.5} />
-                {isVietnamese ? "Đã xếp lịch" : tr("Scheduled")}
+                <Icon name="clock" inline size={9} strokeWidth={2.5} />
+                {isVietnamese ? "Đã lên lịch" : tr("Scheduled")}
               </span>
             )}
             {isBlocked && (
               <span className={`${styles.itemBadge} ${styles.badgeDanger}`}>
-                <Icon name="lock" inline size={10} strokeWidth={2.5} />
+                <Icon name="lock" inline size={9} strokeWidth={2.5} />
                 {isVietnamese ? "Khóa y tế" : tr("Blocked")}
               </span>
             )}
             {isMissed && (
               <span className={`${styles.itemBadge} ${styles.badgeWarn}`}>
-                <Icon name="alert" inline size={10} strokeWidth={2.5} />
+                <Icon name="alert" inline size={9} strokeWidth={2.5} />
                 {isVietnamese ? "Bỏ lỡ" : tr("Missed")}
               </span>
             )}
             {isCancelled && (
               <span className={`${styles.itemBadge} ${styles.badgeNeutral}`}>
-                <Icon name="x" inline size={10} strokeWidth={2.5} />
+                <Icon name="x" inline size={9} strokeWidth={2.5} />
                 {isVietnamese ? "Đã hủy" : tr("Cancelled")}
               </span>
             )}
           </div>
         </div>
 
-        {/* Hàng 2: Thời gian + Cự ly/Kiểu bài tập */}
+        {/* Hàng 2: Thời gian */}
         <div className={styles.itemTimeRow}>
           <Icon name="clock" inline size={12} />
           <span className={styles.timeValue}>{timeRange}</span>
+        </div>
+
+        {/* Hàng 3: Cự ly / Kiểu bài tập */}
+        <div className={styles.itemExerciseRow}>
           <span className={styles.workoutDetail}>
             - {exerciseLabel} {s.targetDistanceMeters}m
           </span>
         </div>
 
-        {/* Hàng 3: Mặt sân / Địa điểm */}
+        {/* Hàng 4: Mặt sân / Địa điểm */}
         <div className={styles.itemLocationRow}>
           <Icon name="pin" inline size={12} />
           <span>
@@ -311,7 +314,7 @@ export default function WeeklyCalendarPage() {
           </span>
         </div>
 
-        {/* Hàng 4: Người phụ trách */}
+        {/* Hàng 5: Người phụ trách */}
         <div className={styles.itemStaffRow}>
           <Icon name="user" inline size={12} />
           <span>{s.trainerName || "—"}</span>

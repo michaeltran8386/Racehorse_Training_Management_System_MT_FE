@@ -254,6 +254,32 @@ export default function PlanDetailPage() {
         <Alert tone="info" title={tr("Cancelled")}>{plan.cancelledReason}</Alert>
       )}
 
+      {(plan.status === "CANCELLED" || plan.status === "COMPLETED") && (
+        <div style={{ background: "var(--brand-50, #f0f9ff)", border: "1px solid var(--brand-200, #bae6fd)", borderRadius: "8px", padding: "16px", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: "14px", color: "var(--brand-900, #0c4a6e)" }}>
+                {isVietnamese ? "Chiến mã đang trong chu kỳ Nghỉ ngơi phục hồi thể lực" : tr("Horse is in Resting & Recovery Cycle")}
+              </div>
+              <div style={{ fontSize: "12.5px", color: "var(--brand-700, #0369a1)", marginTop: "2px" }}>
+                {isVietnamese
+                  ? `Chiến mã ${plan.horseName} vẫn do HLV ${plan.headTrainerName || "bạn"} tiếp tục phụ trách. Bạn có thể thiết lập chu kỳ huấn luyện mới bất cứ lúc nào.`
+                  : tr("Horse {{name}} remains under trainer custody. You can create a new training cycle at any time.", { name: plan.horseName })}
+              </div>
+            </div>
+            {(user.role === "HEAD_TRAINER" || user.role === "CLUB_MANAGER") && (
+              <Button
+                tone="primary"
+                size="sm"
+                onClick={() => navigate(`/training/plans/new?horseId=${plan.horseId}`)}
+              >
+                {isVietnamese ? `+ Lập giáo án mới cho ${plan.horseName}` : tr("+ Create new plan for {{name}}", { name: plan.horseName })}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
       <PlanSummaryCard plan={plan} sessions={sessions} />
 
       <TrainerReviewCard

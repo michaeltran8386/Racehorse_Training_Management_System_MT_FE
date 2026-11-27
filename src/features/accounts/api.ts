@@ -78,6 +78,16 @@ export const resolvePermissionRequest = (id: number, status: "GRANTED" | "DISMIS
 export const savePermissions = (id: string, permissions: PermissionMap) =>
   api<SavePermissionsResult>("PUT", `/accounts/${id}/permissions`, { permissions });
 
+export interface BarnGroomItem {
+  id: string;
+  fullName: string;
+  email: string;
+  status?: "ACTIVE" | "INVITED" | string;
+  createdAt?: string;
+  currentLoad?: number;
+  maxCapacity?: number;
+}
+
 export interface BarnStaffingItem {
   id: string;
   name: string;
@@ -89,13 +99,19 @@ export interface BarnStaffingItem {
     id: string;
     fullName: string;
     email: string;
+    status?: "ACTIVE" | "INVITED" | string;
+    createdAt?: string;
     currentLoad?: number;
     maxCapacity?: number;
   }>;
+  groomsCount?: number;
+  maxGrooms?: number;
+  isGroomFull?: boolean;
+  grooms?: BarnGroomItem[];
 }
 
 export const getBarnStaffing = () =>
-  api<{ barns: BarnStaffingItem[] }>("GET", "/accounts/barn-staffing");
+  api<{ barns: BarnStaffingItem[] }>("GET", "/accounts/barn-staffing", undefined, { silent: true });
 
 export interface OrphanedHorseItem {
   horseId: string;

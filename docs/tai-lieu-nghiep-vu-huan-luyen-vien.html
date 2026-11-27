@@ -224,408 +224,1117 @@
 </div>
 
 <div class="content">
-<h1>TÀI LIỆU ĐẶC TẢ NGHIỆP VỤ PHÂN HỆ HUẤN LUYỆN VIÊN (HEAD TRAINER)</h1>
-<h2>DỰ ÁN EQUFLOW - RACEHORSE TRAINING &amp; STABLE MANAGEMENT SYSTEM</h2>
-<blockquote>
-<p><strong>Phiên bản tài liệu</strong>: v1.0.0 (Official Business Logic Reference - Code-Driven 100%)<br />
-<strong>Phân hệ</strong>: Huấn luyện &amp; Điều hành Tập luyện Ngựa đua (Training &amp; Workouts)<br />
-<strong>Đối tượng người dùng</strong>: Huấn luyện viên Trưởng (<code>Role.HEAD_TRAINER</code>)<br />
-<strong>Nguyên tắc biên soạn</strong>: Trích xuất 100% từ mã nguồn thực tế (Backend &amp; Frontend), đúng tên biến, đúng hằng số, đúng logic rẽ nhánh IF/ELSE, có dẫn chứng tệp nguồn cụ thể.</p>
-</blockquote>
+<h1>TÀI LIỆU ĐẶC TẢ NGHIỆP VỤ PHÂN HỆ HUẤN LUYỆN VIÊN TRƯỞNG</h1>
+<p><strong>Hệ thống:</strong> EquiFlow – Nền tảng Quản lý Chuồng trại &amp; Huấn luyện Ngựa đua<br />
+<strong>Chuyên đề phân hệ:</strong> Bàn làm việc Huấn luyện viên Trưởng (Head Trainer Workspace)<br />
+<strong>Phiên bản:</strong> v2.1.0 – Chuẩn hóa Nghiệp vụ Quản trị 100% (Phân định Rõ ràng Luồng Hợp lệ &amp; Luồng Vi phạm)<br />
+<strong>Ngày cập nhật:</strong> 27/11/2026  </p>
 <hr />
-<h2>MỤC LỤC</h2>
-<ol>
-<li><a href="#1-tổng-quan-vai-trò--phân-quyền-hlv-trưởng">Tổng quan Vai trò &amp; Phân quyền HLV Trưởng</a></li>
-<li><a href="#2-quy-trình-1-tiếp-nhận--phân-công-chiến-mã-handover--acceptance">Quy trình 1: Tiếp nhận &amp; Phân công Chiến mã (Handover &amp; Acceptance)</a></li>
-<li><a href="#3-quy-trình-2-lập--quản-lý-vòng-đời-giáo-án-huấn-luyện-training-plan-lifecycle">Quy trình 2: Lập &amp; Quản lý Vòng đời Giáo án Huấn luyện (Training Plan Lifecycle)</a></li>
-<li><a href="#4-quy-trình-3-lập-lịch-xếp-ca--kiểm-soát-xung-đột-3-ngôi-workout-scheduling--conflict-checks">Quy trình 3: Lập lịch, Xếp ca &amp; Kiểm soát Xung đột 3 Ngôi (Workout Scheduling &amp; Conflict Checks)</a></li>
-<li><a href="#5-quy-trình-4-thực-thi-buổi-tập--ghi-nhận-chỉ-số-sinh-trắc-session-execution--telemetry-metrics">Quy trình 4: Thực thi Buổi tập &amp; Ghi nhận Chỉ số Sinh trắc (Session Execution &amp; Telemetry Metrics)</a></li>
-<li><a href="#6-quy-trình-5-cơ-chế-liên-động-khóa-y-tế-medical-lock-interlock">Quy trình 5: Cơ chế Liên động Khóa Y tế (Medical Lock Interlock)</a></li>
-<li><a href="#7-quy-trình-6-sát-hạch-chạy-thử--đăng-ký-thi-đấu-trial-runs--race-entries">Quy trình 6: Sát hạch Chạy thử &amp; Đăng ký Thi đấu (Trial Runs &amp; Race Entries)</a></li>
-<li><a href="#8-quy-trình-7-minh-bạch-đánh-giá-từ-chủ-ngựa-trainer-reviews">Quy trình 7: Minh bạch Đánh giá từ Chủ ngựa (Trainer Reviews)</a></li>
-<li><a href="#9-bảng-tra-cứu-tham-số--hằng-số-nghiệp-vụ-cốt-lõi-business-rule-matrix">Bảng Tra cứu Tham số &amp; Hằng số Nghiệp vụ Cốt lõi (Business Rule Matrix)</a></li>
-</ol>
+<h2>LỜI NÓI ĐẦU &amp; NGUYÊN TẮC TIẾP CẬN NGHIỆP VỤ</h2>
+<p>Tài liệu này được biên soạn độc quyền cho đội ngũ Chuyên viên Nghiệp vụ (BA), Quản lý Câu lạc bộ (Club Manager) và các Huấn luyện viên Trưởng (Head Trainer). Toàn bộ nội dung tập trung mô tả bản chất quy trình vận hành, thẩm quyền các vai trò và hành vi ứng xử của hệ thống phần mềm.</p>
+<p>Mọi quy tắc nghiệp vụ trong tài liệu đều được phân định minh bạch thành hai nhánh vận hành thực tế:<br />
+1. <strong>Trường hợp Hợp lệ (Đúng quy chuẩn)</strong>: Hệ thống ghi nhận kết quả gì, chuyển dịch trạng thái nghiệp vụ ra sao, hiển thị huy hiệu hoặc thông báo chúc mừng/xác nhận thành công như thế nào.<br />
+2. <strong>Trường hợp Vi phạm (Sai quy chuẩn)</strong>: Hệ thống dựng rào cản kỹ thuật ở đâu, chế tài quản lý áp dụng là gì (khóa nút chức năng, tạm hoãn ca tập, kích hoạt cảnh báo chỉ số hiệu suất KPI qua thư điện tử) và câu thông báo lỗi cụ thể hiển thị trực tiếp trên màn hình người dùng là gì.</p>
 <hr />
-<h2>1. TỔNG QUAN VAI TRÒ &amp; PHÂN QUYỀN HLV TRƯỞNG</h2>
-<h3>1.1. Định danh &amp; Ràng buộc Tổ chức</h3>
+<h2>1. TỔNG QUAN PHÂN HỆ &amp; MA TRẬN PHÂN QUYỀN</h2>
+<h3>1.1. Phạm vi Quản lý &amp; Trách nhiệm Chuyên môn</h3>
+<p>Huấn luyện viên Trưởng là nhân sự chuyên môn cấp cao, chịu trách nhiệm toàn diện về công tác huấn luyện thể lực, nâng cao phong độ, kiểm soát an toàn vận động và sát hạch thi đấu cho các chiến mã thuộc Khu chuồng mình phụ trách.</p>
 <ul>
-<li><strong>Mã vai trò</strong>: <code>HEAD_TRAINER</code> (thuộc enum <code>Role</code> tại <code>FE/src/shared/types/enums.ts</code> và Prisma schema).</li>
-<li><strong>Phạm vi phân bổ khu chuồng (<code>assignedBarnId</code>)</strong>:</li>
-<li>Khi Quản lý CLB tạo tài khoản HLV, bắt buộc phải chọn một Khu chuồng (Barn A, Barn B,...) (<code>assignedBarnId</code> không được null).</li>
-<li><strong>Ràng buộc định mức khu chuồng</strong>: Mỗi Barn chỉ cho phép tối đa 2 HLV cùng công tác (<code>MAX_TRAINERS_PER_BARN = 2</code> tại <code>BE/src/training/training-rules.ts#L72</code>).</li>
+<li><strong>Nhiệm vụ chính</strong>:</li>
+<li>Tiếp nhận chiến mã do Quản lý CLB bàn giao theo đúng Khu chuồng được phân công.</li>
+<li>Thiết lập và điều hành vòng đời giáo án huấn luyện (từ 1 đến 12 giai đoạn sinh lý phát triển).</li>
+<li>Lập lịch tập luyện theo tuần, điều phối khung giờ tập, chọn mặt sân và đường chạy, phòng ngừa xung đột thể lực và va chạm tốc độ cao.</li>
+<li><strong>Tự điều hành buổi tập &amp; Kiêm nài ngựa</strong>: Huấn luyện viên Trưởng trực tiếp dẫn dắt ca tập và trực tiếp cưỡi ngựa trên đường chạy trong các bài tập tốc độ/sát hạch. Nhân viên chăm sóc chuồng trại (Groom) chỉ phụ trách các công việc tĩnh trong khu chuồng (cho ăn, dọn phân, tắm rửa vệ sinh định kỳ) và tuyệt đối không tham gia dẫn tập hay nài ngựa trên đường chạy.</li>
+<li>Ghi nhận chỉ số sinh trắc học viễn trắc (cự ly, thời gian, vận tốc trung bình, nhịp tim nghỉ / đỉnh / hồi phục) và giám sát nguy cơ chấn thương sau buổi tập.</li>
+<li>Thẩm định 4 tiêu chí sẵn sàng thi đấu trước khi gửi danh sách đăng ký giải đua.</li>
 </ul>
-<h3>1.2. Ma trận Phân quyền Cố định (Permission Matrix)</h3>
-<p>Theo định nghĩa tại <code>FE/src/shared/lib/permissions.ts#L215-L221</code>, tài khoản HLV Trưởng sở hữu mặc định 5 quyền cốt lõi:<br />
-1. <code>viewHorses</code>: Xem danh sách và hồ sơ chi tiết các chiến mã trong CLB.<br />
-2. <code>createPlan</code>: Soạn thảo, chỉnh sửa, kích hoạt, hoàn thành và lưu trữ giáo án huấn luyện.<br />
-3. <code>assignSchedule</code>: Xếp lịch tập tuần, bố trí bài tập, chỉ định đường chạy và nhân viên chăm sóc (Groom).<br />
-4. <code>recordMetrics</code>: Ghi nhận dữ liệu sinh trắc học (nhịp tim, tốc độ, cự ly) và đánh giá phong độ sau buổi tập.<br />
-5. <code>viewMedical</code>: Xem lịch sử bệnh án, tình trạng khóa huấn luyện y tế của ngựa để đảm bảo an toàn tập luyện (không có quyền tự ý đặt/gỡ khóa y tế - quyền này thuộc về Bác sĩ thú y <code>VETERINARIAN</code>).</p>
-<hr />
-<h2>2. QUY TRÌNH 1: TIẾP NHẬN &amp; PHÂN CÔNG CHIẾN MÃ (HANDOVER &amp; ACCEPTANCE)</h2>
-<p><em>Tệp nguồn: <code>BE/src/horses/horses.service.ts</code> (<code>assignTrainer</code>, <code>respondHandover</code>), <code>BE/src/horses/horses-handover-qa.spec.ts</code></em></p>
-<pre><code>[Quản lý CLB]
-     │
-     ├── 1. Kiểm tra 4 điều kiện phân công ──► (Thất bại: Ném lỗi Bad Request)
-     │
-     ├── 2. Sinh Handover Request (SLA 48h) + Token bí mật + Gửi Mail HLV
-     │
-     ▼
-[HLV Trưởng]
-     │
-     ├────► Từ chối (DECLINE) ──► Nhập lý do ──► Ngựa trở lại trạng thái chưa gán HLV
-     │
-     └────► Tiếp nhận (ACCEPT)
-                 │
-                 ├── Gán assignedTrainerId = toTrainerId
-                 ├── trainerAssignmentStatus = ASSIGNED
-                 └── Cố định SLA 3 ngày lập giáo án (planDeadlineAt = now + 72h)
-</code></pre>
-<h3>2.1. 4 Ràng buộc Điều kiện khi Quản lý phân công ngựa cho HLV (<code>assignTrainer</code>):</h3>
-<ol>
-<li><strong>Ràng buộc ô chuồng</strong>: Chiến mã phải được xếp ô chuồng hoạt động (<code>stallAllocations.isActive === true</code>). Nếu chưa có ô chuồng $\rightarrow$ Chặn ném lỗi: <em>"Chiến mã chưa được xếp ô chuồng đang hoạt động"</em>.</li>
-<li><strong>Ràng buộc cùng Khu chuồng (<code>BARN_MISMATCH</code>)</strong>: Khu chuồng của ô chuồng (<code>stall.zoneId</code>) phải trùng khớp với Khu chuồng mà HLV đang phụ trách (<code>trainer.assignedBarnId</code>). Khác Barn $\rightarrow$ Chặn ném lỗi: <em>"HLV [Tên] phụ trách [Barn HLV], không thể nhận ngựa ở [Barn Ngựa]"</em>.</li>
-<li><strong>Ràng buộc Định mức trần 8 chiến mã (<code>TRAINER_CAPACITY_EXCEEDED</code>)</strong>: Mỗi HLV chỉ được phụ trách tối đa 8 chiến mã đồng thời (<code>MAX_HORSES_PER_TRAINER = 8</code>). Nếu số ngựa hiện tại $\ge 8$ $\rightarrow$ Chặn ném lỗi: <em>"HLV [Tên] đã đạt định mức tối đa 8 chiến mã đồng thời"</em>.</li>
-<li><strong>Ràng buộc Chốt chặn Tồn đọng WIP Limit (<code>TRAINER_WIP_LIMIT_EXCEEDED</code>)</strong>: Đếm số ngựa đã tiếp nhận của HLV nhưng chưa có giáo án <code>ACTIVE</code>. Nếu <code>pendingPlanCount &gt;= 2</code> $\rightarrow$ Chặn ném lỗi: <em>"Huấn luyện viên [Tên] đang tồn [X] chiến mã chưa kích hoạt giáo án. Vui lòng hoàn tất giáo án hiện có trước khi phân công thêm."</em></li>
-</ol>
-<h3>2.2. Cơ chế Hạn phản hồi SLA Bàn giao (48 Giờ):</h3>
-<ul>
-<li>Hệ thống sinh một chuỗi ngẫu nhiên 24 bytes Hex (<code>crypto.randomBytes(24).toString('hex')</code>) làm <code>token</code>.</li>
-<li>Thời hạn hiệu lực: <code>expiresAt = new Date(Date.now() + 48 * 3600 * 1000)</code> (đúng 48 giờ).</li>
-<li>Nếu HLV phản hồi sau 48 giờ $\rightarrow$ Ném lỗi <code>400 BAD_REQUEST</code>: <em>"Yêu cầu phân công đã hết hạn phản hồi (48 giờ)."</em></li>
-</ul>
-<h3>2.3. Xử lý Tiếp nhận (<code>ACCEPT</code>) &amp; Cố định SLA 3 ngày:</h3>
-<ul>
-<li>Cập nhật bản ghi <code>HorseHandoverRequest</code>: <code>status = ACCEPTED</code>, <code>acceptedAt = new Date()</code>.</li>
-<li>Cập nhật bản ghi <code>Horse</code>: <code>assignedTrainerId = req.toTrainerId</code>, <code>trainerAssignmentStatus = ASSIGNED</code>, <code>trainerRespondedAt = new Date()</code>.</li>
-<li><strong>Hạn lập giáo án chuẩn</strong>: Cố định đúng 3 ngày (72 giờ) độc lập cho từng chiến mã:<br />
-  $$\text{planDeadlineAt} = \text{Date.now()} + 3 \times 24 \times 3600 \times 1000$$<br />
-<em>(Đã loại bỏ hoàn toàn công thức lũy tiến cũ $3 + 2N$ để chống trôi dạt SLA).</em></li>
-</ul>
-<hr />
-<h2>3. QUY TRÌNH 2: LẬP &amp; QUẢN LÝ VÒNG ĐỜI GIÁO ÁN HUẤN LUYỆN (TRAINING PLAN LIFECYCLE)</h2>
-<p><em>Tệp nguồn: <code>BE/src/training/training-plans.service.ts</code>, <code>BE/src/training/training-rules.ts</code></em></p>
-<h3>3.1. Các trạng thái Giáo án (<code>PlanStatus</code>):</h3>
-<ul>
-<li><code>DRAFT</code>: Bản nháp, HLV đang xây dựng các giai đoạn và bài tập.</li>
-<li><code>ACTIVE</code>: Giáo án đang kích hoạt áp dụng thực tế trên ngựa.</li>
-<li><code>COMPLETED</code>: Giáo án đã hoàn thành chu kỳ huấn luyện.</li>
-<li><code>CANCELLED</code>: Giáo án bị hủy bỏ giữa chừng (bắt buộc nhập lý do hủy $\ge 10$ ký tự).</li>
-<li><code>ARCHIVED</code>: Giáo án được đưa vào kho lưu trữ hồ sơ lịch sử.</li>
-</ul>
-<h3>3.2. Cấu trúc Giai đoạn Huấn luyện (Phases Validation):</h3>
-<p>Một giáo án bao gồm từ <strong>1 đến 12 giai đoạn</strong> (<code>MAX_PHASES = 12</code>), kiểm tra qua hàm <code>validatePhases</code>:<br />
-- <strong>5 Loại giai đoạn (<code>PHASE_TYPES</code>)</strong>:<br />
-  1. <code>BASE</code>: Xây dựng nền tảng thể lực cơ bản.<br />
-  2. <code>BUILD</code>: Phát triển cơ bắp và sức bền tim mạch.<br />
-  3. <code>SPEED</code>: Rèn luyện tốc độ bứt phá.<br />
-  4. <code>PRE_RACE</code>: Giai đoạn siết cơ, chuẩn bị thi đấu.<br />
-  5. <code>RECOVERY</code>: Phục hồi thể trạng sau thi đấu/tập nặng.<br />
-- <strong>3 Loại mặt sân (<code>PHASE_SURFACES</code>)</strong>: <code>TURF</code> (Sân cỏ), <code>DIRT</code> (Sân cát), <code>SYNTHETIC</code> (Mặt sân tổng hợp).<br />
-- <strong>Ràng buộc chỉ số mỗi giai đoạn</strong>:<br />
-  - Số buổi mỗi tuần: từ 1 đến 14 buổi/tuần (<code>sessionsPerWeek</code>).<br />
-  - Cự ly tích lũy tuần: từ 500m đến 60.000m/tuần (<code>maxWeeklyDistance</code>).<br />
-  - Tốc độ mục tiêu: từ 10 đến 70 km/h (<code>targetSpeedKmh</code>).<br />
-  - Thời lượng tối thiểu: Giáo án ngắn (&lt; 14 ngày) thì mỗi phase tối thiểu 3 ngày; giáo án dài thì phase <code>PRE_RACE</code> và <code>RECOVERY</code> tối thiểu 3 ngày, các phase còn lại tối thiểu 7 ngày.<br />
-  - <strong>Ràng buộc không giao thoa</strong>: <code>phases[i].startDate &gt; phases[i-1].endDate</code>. Nếu trùng lặp thời gian $\rightarrow$ Ném lỗi <code>PHASE_OVERLAP</code>.</p>
-<h3>3.3. Kích hoạt Giáo án (<code>ACTIVE</code>) &amp; Tịnh tiến Lịch tập tự động (<code>shiftMs</code>):</h3>
-<ul>
-<li>Điều kiện kích hoạt:</li>
-<li>Chỉ kích hoạt từ trạng thái <code>DRAFT</code>.</li>
-<li>Chiến mã không bị Khóa y tế (<code>isMedicalLocked === false</code>).</li>
-<li>Chiến mã không bị Lưu giữ do nợ tiền chuồng (<code>isDebtImpounded === false</code>).</li>
-<li>Chiến mã chưa có giáo án <code>ACTIVE</code> nào khác (Mỗi ngựa chỉ có duy nhất 1 giáo án hiệu lực).</li>
-<li><strong>Thuật toán Tịnh tiến Lịch tập (<code>shiftMs</code>)</strong>:</li>
-<li>Nếu ngày kích hoạt thực tế trễ hơn so với ngày dự kiến trong nháp:<br />
-    $$\text{shiftMs} = \text{targetStartDate} - \text{plan.startDate}$$</li>
-<li>Backend tự động cộng <code>shiftMs</code> vào toàn bộ ngày bắt đầu/kết thúc của các Phase và dời ngày diễn ra của toàn bộ các buổi tập con (<code>workoutSession.scheduledDate</code>), bảo đảm không có buổi tập nào bị rơi vào quá khứ.</li>
-<li><strong>Chuyển đổi trạng thái ngựa</strong>: Khi kích hoạt giáo án, trạng thái chiến mã tự động chuyển từ <code>RESTING</code> $\rightarrow$ <code>IN_TRAINING</code>.</li>
-</ul>
-<h3>3.4. Hoàn thành Giáo án (<code>COMPLETED</code>) &amp; Cơ chế Miễn trừ SLA (<code>isSlaExempt</code>):</h3>
-<ul>
-<li><strong>Điều kiện kết thúc</strong>:</li>
-<li>Bắt buộc nhập báo cáo tổng kết từ 10 đến 2000 ký tự (<code>dto.summary</code>).</li>
-<li>Kiểm tra các buổi tập chưa ghi kết quả (<code>unfinished</code>). Nếu còn buổi tập nào chưa hoàn tất $\rightarrow$ Ném lỗi <code>409 CONFLICT: PLAN_WORKOUT_RESULTS_REQUIRED</code>: <em>"Còn [X] buổi tập chưa ghi kết quả"</em>.</li>
-<li><strong>Tự động đưa ngựa về Nghỉ ngơi</strong>: Khi giáo án hoàn tất, ngựa tự động chuyển từ <code>IN_TRAINING</code> về <code>RESTING</code>.</li>
-<li><strong>Cơ chế Miễn trừ SLA</strong>:</li>
-<li>Hệ thống tự động gán <code>isRestingCycle = true</code> và <code>planDeadlineAt = null</code>.</li>
-<li>Dashboard HLV hiển thị Badge xanh <code>Nghỉ ngơi hồi phục</code>, <strong>không tính vào danh sách nợ giáo án 3 ngày</strong>, giải phóng nghĩa vụ SLA của lần bàn giao trước.</li>
-</ul>
-<hr />
-<h2>4. QUY TRÌNH 3: LẬP LỊCH, XẾP CA &amp; KIỂM SOÁT XUNG ĐỘT 3 NGÔI (WORKOUT SCHEDULING &amp; CONFLICT CHECKS)</h2>
-<p><em>Tệp nguồn: <code>BE/src/training/workouts.service.ts</code>, <code>workout-availability.service.ts</code>, <code>tracks.service.ts</code>, <code>training-rules.ts</code></em></p>
-<h3>4.1. Phân loại 7 Bài tập &amp; Cường độ:</h3>
+<h3>1.2. Ma trận Phân quyền Cố định của Huấn luyện viên Trưởng</h3>
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">Mã bài tập</th>
-<th style="text-align: left;">Tên bài tập</th>
-<th style="text-align: center;">Thời lượng tiêu chuẩn</th>
+<th style="text-align: center;">STT</th>
+<th style="text-align: left;">Tên Quyền Nghiệp vụ</th>
+<th style="text-align: left;">Mô tả Thẩm quyền</th>
+<th style="text-align: left;">Hành vi Hệ thống Hỗ trợ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: center;"><strong>1</strong></td>
+<td style="text-align: left;"><strong>Xem danh bạ chiến mã</strong></td>
+<td style="text-align: left;">Tra cứu danh sách và xem hồ sơ lý lịch toàn diện của các chiến mã trong CLB.</td>
+<td style="text-align: left;">Xem thông tin nguồn gốc, giống ngựa, số hiệu ô chuồng, khu chuồng và trạng thái huấn luyện hiện tại.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>2</strong></td>
+<td style="text-align: left;"><strong>Quản lý giáo án huấn luyện</strong></td>
+<td style="text-align: left;">Khởi tạo, chỉnh sửa giai đoạn, kích hoạt áp dụng, hoàn tất chu kỳ và lưu trữ giáo án.</td>
+<td style="text-align: left;">Cho phép soạn thảo bản nháp giáo án, lên danh sách các buổi tập con và nghiệm thu tổng kết chu kỳ.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>3</strong></td>
+<td style="text-align: left;"><strong>Xếp lịch &amp; Điều phối ca tập</strong></td>
+<td style="text-align: left;">Lập lịch tập tuần, bố trí bài tập, chọn mặt sân tập và chỉ định đường chạy cụ thể.</td>
+<td style="text-align: left;">Kiểm tra tự động sức chứa đường chạy, giãn cách an toàn giữa các ca tập và khóa đường chạy khi chạy tốc độ cao.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>4</strong></td>
+<td style="text-align: left;"><strong>Ghi nhận sinh trắc &amp; Phong độ</strong></td>
+<td style="text-align: left;">Cập nhật số liệu vận động thực tế, thông số nhịp tim và đánh giá điểm số phong độ.</td>
+<td style="text-align: left;">Tự động tính toán tốc độ trung bình, cảnh báo vượt ngưỡng sinh học và gắn cờ cảnh báo mệt mỏi quá tải.</td>
+</tr>
+<tr>
+<td style="text-align: center;"><strong>5</strong></td>
+<td style="text-align: left;"><strong>Xem bệnh án &amp; Khóa y tế</strong></td>
+<td style="text-align: left;">Tra cứu lịch sử chẩn đoán y khoa và theo dõi tình trạng phong tỏa huấn luyện vì lý do sức khỏe.</td>
+<td style="text-align: left;">Xem chi tiết nguyên nhân chấn thương do Bác sĩ thú y ghi nhận. <strong>HLV tuyệt đối không có quyền tự ý đặt hoặc gỡ khóa y tế</strong> (quyền này thuộc độc quyền của Bác sĩ thú y).</td>
+</tr>
+</tbody>
+</table>
+<h3>1.3. Ma trận Phân quyền Truy cập Sơ đồ Chuồng trại (Stall Map RBAC)</h3>
+<p>Sơ đồ chuồng trại là khu vực vận hành nhạy cảm liên quan đến an ninh tài sản và an toàn sinh học. Hệ thống áp dụng quy tắc phân quyền chặt chẽ theo nguyên tắc tối thiểu thông tin:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Vai trò Người dùng</th>
+<th style="text-align: center;">Thẩm quyền Xem Sơ đồ Chuồng</th>
+<th style="text-align: left;">Phạm vi &amp; Chức năng Cho phép</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Quản lý CLB</strong> <em>(Club Manager)</em></td>
+<td style="text-align: center;"><strong>ĐƯỢC XEM (Toàn quyền)</strong></td>
+<td style="text-align: left;">- Xem toàn bộ các Khu chuồng và ô chuồng trong khuôn viên.<br>- Xem khối <strong>Ban điều hành &amp; Định mức nhân sự</strong> (định mức HLV, Groom, tình trạng đủ/thiếu người).<br>- Thực hiện các thao tác: Xếp ô chuồng, chuyển ô, trả ô, phân công HLV, gán Groom và bật/tắt bảo trì ô.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Huấn luyện viên Trưởng</strong> <em>(Head Trainer)</em></td>
+<td style="text-align: center;"><strong>ĐƯỢC XEM (Chuyên môn)</strong></td>
+<td style="text-align: left;">- Xem sơ đồ các khu chuồng để nắm vị trí ô chuồng của đàn ngựa mình và đồng nghiệp phụ trách.<br>- Theo dõi trạng thái thể lực của ngựa tại ô (sẵn sàng, đang tập, cách ly, khóa y tế).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Bác sĩ Thú y</strong> <em>(Veterinarian)</em></td>
+<td style="text-align: center;"><strong>ĐƯỢC XEM (Y tế)</strong></td>
+<td style="text-align: left;">- Định vị nhanh ô chuồng của ngựa bệnh để tiếp cận khám chữa bệnh tại chỗ.<br>- Giám sát các ô chuồng thuộc diện cách ly, kiểm dịch hoặc đang bị khóa y tế.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Nhân viên Chăm sóc</strong> <em>(Groom)</em></td>
+<td style="text-align: center;"><strong>ĐƯỢC XEM (Chăm sóc)</strong></td>
+<td style="text-align: left;">- Xem vị trí ô chuồng, có bộ lọc riêng <strong>"Chỉ ô chuồng của tôi"</strong> để tập trung chăm sóc các ô trong ca trực.<br>- Không xem được hồ sơ chủ sở hữu của các chiến mã không thuộc phạm vi ca trực của mình.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Chủ sở hữu Chiến mã</strong> <em>(Horse Owner)</em></td>
+<td style="text-align: center;"><strong>TUYỆT ĐỐI KHÔNG</strong></td>
+<td style="text-align: left;">- <strong>Chặn 100% quyền truy cập</strong>. Giao diện hoàn toàn không có mục Sơ đồ chuồng.<br>- <strong>Lý do nghiệp vụ:</strong> Bảo đảm an toàn sinh học nội bộ và bảo mật thông tin các chiến mã của chủ ngựa khác. Chủ ngựa chỉ theo dõi ngựa của mình tại mục <em>"Chiến mã của tôi"</em>.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>2. QUY TRÌNH 1: TIẾP NHẬN &amp; PHÂN CÔNG CHIẾN MÃ</h2>
+<h3>2.1. Phân công Chiến mã từ Quản lý CLB cho Huấn luyện viên</h3>
+<p>Khi Quản lý CLB thực hiện thao tác chỉ định một Huấn luyện viên Trưởng phụ trách chiến mã, hệ thống tự động kiểm tra nghiêm ngặt 5 điều kiện nghiệp vụ đồng thời:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Quy tắc Nghiệp vụ</th>
+<th style="text-align: left;">Nội dung Ràng buộc</th>
+<th style="text-align: left;">Xử lý &amp; Thông báo khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Ràng buộc Ô chuồng</strong></td>
+<td style="text-align: left;">Chiến mã phải đang được xếp vào một ô chuồng thực tế có hiệu lực hoạt động.</td>
+<td style="text-align: left;">Hệ thống hợp lệ, chuyển sang kiểm tra Khu chuồng phụ trách.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu phân công.<br><strong>Thông báo lỗi:</strong> <em>"Chiến mã chưa được xếp ô chuồng đang hoạt động."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Ràng buộc Khu chuồng (Barn)</strong></td>
+<td style="text-align: left;">Khu chuồng của ô chuồng nuôi dưỡng ngựa phải trùng khớp hoàn toàn với Khu chuồng mà HLV đang quản lý.</td>
+<td style="text-align: left;">Hệ thống xác nhận cùng khu chuồng, cho phép tiếp tục quy trình.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu phân công.<br><strong>Thông báo lỗi:</strong> <em>"HLV [Họ và tên HLV] phụ trách [Tên Khu chuồng HLV], không thể nhận ngựa ở [Tên Khu chuồng Ngựa]."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Ràng buộc Trạng thái Tài khoản HLV</strong></td>
+<td style="text-align: left;">HLV được phân công bắt buộc phải đang ở trạng thái <strong>Đang hoạt động chính thức (ACTIVE)</strong>. Các tài khoản mới được gửi thư mời (chưa kích hoạt mật khẩu) hoặc bị khóa đều không được phép tiếp nhận ngựa.</td>
+<td style="text-align: left;">Tài khoản HLV đang hoạt động, hệ thống hiển thị trong danh sách chọn.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Lọc bỏ 100% tài khoản chưa kích hoạt khỏi ô chọn. Nếu cố tình gửi yêu cầu, hệ thống chặn đứng.<br><strong>Thông báo lỗi:</strong> <em>"Huấn luyện viên không hợp lệ hoặc đang không hoạt động."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Định mức trần Quản lý</strong></td>
+<td style="text-align: left;">Mỗi Huấn luyện viên chỉ được phụ trách tối đa <strong>8 chiến mã đồng thời</strong>.</td>
+<td style="text-align: left;">Tổng số ngựa hiện tại của HLV &lt; 8, hệ thống cho phép giao thêm ngựa.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu phân công.<br><strong>Thông báo lỗi:</strong> <em>"HLV [Họ và tên HLV] đã đạt định mức tối đa 8 chiến mã đồng thời."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Hạn mức Tồn đọng (WIP Limit)</strong></td>
+<td style="text-align: left;">HLV chỉ được phép tồn tối đa <strong>1 chiến mã</strong> đã tiếp nhận nhưng chưa kích hoạt giáo án (nếu tồn từ 2 con trở lên sẽ bị nghẽn việc).</td>
+<td style="text-align: left;">Số ngựa chưa có giáo án chính thức &lt; 2, hệ thống xác nhận HLV đủ năng lực tiếp nhận việc mới.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu phân công.<br><strong>Thông báo lỗi:</strong> <em>"Huấn luyện viên [Họ và tên HLV] đang tồn [Số lượng] chiến mã chưa kích hoạt giáo án. Vui lòng hoàn tất giáo án hiện có trước khi phân công thêm."</em></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Kết quả khi Phân công Thành công</strong>:</li>
+<li>Hệ thống tự động khởi tạo bản ghi yêu cầu bàn giao kèm theo một liên kết xác thực có thời hạn hiệu lực đúng <strong>48 giờ</strong>.</li>
+<li>Trạng thái bàn giao của chiến mã chuyển sang <strong>Đang chờ Huấn luyện viên phản hồi</strong>.</li>
+<li>Hệ thống tự động gửi thư điện tử thông báo đến Huấn luyện viên kèm nút bấm dẫn thẳng tới trang tiếp nhận.</li>
+<li>Quản lý CLB nhận thông báo xác nhận: <em>"Đã gửi yêu cầu phân công chiến mã [Tên ngựa] đến HLV [Tên HLV]. Thời hạn phản hồi là 48 giờ."</em></li>
+</ul>
+<hr />
+<h3>2.2. Phản hồi Yêu cầu Bàn giao từ Huấn luyện viên (Thời hạn 48 Giờ)</h3>
+<p>Huấn luyện viên nhận được thông báo sẽ truy cập giao diện phản hồi để xem hồ sơ chiến mã và đưa ra quyết định:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Quyết định của HLV</th>
+<th style="text-align: left;">Điều kiện Nghiệp vụ</th>
+<th style="text-align: left;">Xử lý &amp; Thông báo khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Từ chối Tiếp nhận</strong></td>
+<td style="text-align: left;">HLV cung cấp lý do từ chối (tối thiểu 10 ký tự).</td>
+<td style="text-align: left;"><strong>Xử lý:</strong> Hủy yêu cầu phân công, đưa chiến mã về trạng thái Chưa phân công, đưa vào danh sách Tồn đọng chờ bổ nhiệm HLV mới trên Dashboard, gửi thông báo kèm lý do cho Quản lý CLB.<br><strong>Thông báo hiển thị:</strong> <em>"Đã từ chối tiếp nhận chiến mã [Tên ngựa]."</em></td>
+<td style="text-align: left;"><strong>Vi phạm:</strong> HLV gửi phản hồi khi yêu cầu đã quá hạn 48 giờ.<br><strong>Thông báo lỗi:</strong> <em>"Yêu cầu phân công đã hết hạn phản hồi (48 giờ)."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Đồng ý Tiếp nhận</strong></td>
+<td style="text-align: left;">HLV bấm nút xác nhận trong vòng 48 giờ kể từ lúc Quản lý tạo yêu cầu.</td>
+<td style="text-align: left;"><strong>Xử lý:</strong> Ghi nhận HLV chính thức phụ trách ngựa; trạng thái chuyển sang Đã phân công; <strong>tự động chuyển quyền sở hữu giáo án hiện có và các buổi tập từ ngày mai trở đi cho HLV mới</strong>; <strong>kích hoạt đồng hồ đếm ngược thời hạn lập giáo án cố định đúng 3 ngày (72 giờ)</strong>.<br><strong>Thông báo hiển thị:</strong> <em>"Đã tiếp nhận chiến mã [Tên ngựa]. Hạn lập giáo án hoàn thành: 3 ngày."</em></td>
+<td style="text-align: left;"><strong>Vi phạm:</strong> Bấm tiếp nhận khi yêu cầu đã quá hạn 48 giờ.<br><strong>Thông báo lỗi:</strong> <em>"Yêu cầu phân công đã hết hạn phản hồi (48 giờ)."</em></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Cơ chế Kế thừa Giáo án &amp; Buổi tập Tự động khi Tiếp nhận</strong>:</li>
+<li>Khi HLV bấm Đồng ý Tiếp nhận, nếu chiến mã đã có giáo án từ trước (trạng thái Bản nháp hoặc Đang áp dụng), hệ thống tự động gán HLV mới làm người chủ quản giáo án.</li>
+<li>Đối với các buổi tập đã lên lịch: Các buổi tập từ <strong>ngày mai trở đi</strong> (<code>00:00 ngày mai</code>) được tự động đổi sang HLV mới điều hành. Buổi tập của ngày hôm nay do HLV cũ hoàn thành nốt ca trực để tránh gián đoạn ngày tập.</li>
+</ul>
+<hr />
+<h3>2.3. Quy định Hạn chót Lập Giáo án (SLA 3 Ngày) &amp; Chế tài Xử lý Vi phạm</h3>
+<p>Sau khi bấm tiếp nhận chiến mã thành công, Huấn luyện viên có nghĩa vụ lập và kích hoạt giáo án huấn luyện chính thức trong vòng <strong>3 ngày (đúng 72 giờ độc lập cho từng con)</strong>.</p>
+<pre><code>[HLV bấm Tiếp nhận] ───&gt; Bắt đầu đếm ngược 72 giờ
+                                │
+        ┌───────────────────────┴───────────────────────┐
+        ▼                                               ▼
+[Hoàn thành trong 72 giờ]                       [Vượt quá 72 giờ]
+- Kích hoạt giáo án thành công                  - Giao diện: Hiện Huy hiệu Đỏ cảnh báo
+- Huy hiệu Vàng: &quot;Còn X ngày&quot;                   - Dashboard: Dòng chữ đỏ &quot;Quá hạn X ngày&quot;
+- Giải phóng hạn mức tồn đọng (WIP)             - Kích hoạt Chốt chặn tồn đọng (WIP Limit)
+- Ngựa chuyển sang: &quot;Đang huấn luyện&quot;           - Tự động gửi Email cảnh báo KPI Quá hạn
+</code></pre>
+<h4>Chi tiết Xử lý Hai nhánh SLA:</h4>
+<ol>
+<li><strong>Trường hợp Thực hiện Đúng hạn (Trong vòng 72 giờ)</strong>:</li>
+<li><strong>Giao diện Danh sách giáo án</strong>: Hiển thị Huy hiệu màu Vàng cam: <code>Mới tiếp nhận · Còn 3 ngày</code> (hoặc <code>Còn 2 ngày</code>, <code>Còn 1 ngày</code>). Nút thao tác hiển thị màu xanh nổi bật: <code>Lập giáo án ngay</code>.</li>
+<li><strong>Giao diện Bàn làm việc HLV (Dashboard)</strong>: Hiển thị dòng trạng thái: <code>Hạn lập giáo án: còn [X] ngày</code>.</li>
+<li>
+<p><strong>Khi kích hoạt giáo án thành công</strong>: Nghĩa vụ hoàn tất, huy hiệu đếm ngược biến mất, trạng thái chiến mã chuyển sang <code>Đang huấn luyện</code>, giải phóng 1 suất tồn đọng trong Hạn mức tồn đọng (WIP Limit).</p>
+</li>
+<li>
+<p><strong>Trường hợp Vi phạm Quá hạn (Sau 72 giờ chưa kích hoạt giáo án chính thức)</strong>:</p>
+</li>
+<li><strong>Cảnh báo trên Giao diện Danh sách giáo án</strong>: Chuyển ngay lập tức sang Huy hiệu màu Đỏ cảnh báo nguy cấp: <code>Mới tiếp nhận · Quá hạn [X] ngày</code>.</li>
+<li><strong>Cảnh báo trên Bàn làm việc HLV (Dashboard)</strong>: Xuất hiện dòng cảnh báo màu đỏ đậm: <code>Quá hạn lập giáo án: [X] ngày</code>.</li>
+<li><strong>Chế tài Giới hạn nhận việc mới (Kích hoạt WIP Limit)</strong>: Con ngựa quá hạn này vẫn bị tính là ngựa tồn đọng. Nếu HLV có từ 2 ngựa tồn đọng trở lên, Quản lý CLB sẽ bị hệ thống chặn đứng hoàn toàn, không thể giao thêm bất kỳ chiến mã nào mới cho HLV này cho đến khi giáo án được kích hoạt.</li>
+<li><strong>Chế tài Thư điện tử Cảnh báo KPI Tự động</strong>: Bộ quét ngầm định kỳ của hệ thống tự động kích hoạt thông báo cảnh báo hiệu suất đến hộp thư của cả Huấn luyện viên phụ trách và Quản lý CLB:<ul>
+<li><strong>Tiêu đề thư</strong>: <code>[TMEC Cảnh báo KPI] Quá hạn lập giáo án cho chiến mã [Tên chiến mã]</code></li>
+<li><strong>Nội dung thư</strong>: <em>"Chiến mã [Tên chiến mã] ([Mã số định danh]) đã được tiếp nhận ngày [Ngày tiếp nhận] nhưng quá hạn hoàn thành giáo án ([Hạn chót ngày/tháng/năm]) mà chưa kích hoạt giáo án. Vui lòng hoàn tất và kích hoạt giáo án ngay."</em></li>
+</ul>
+</li>
+</ol>
+<hr />
+<h3>2.4. Thời gian chờ 48 Giờ của HLV sau khi Hủy Nháp (Cooldown)</h3>
+<p>Để bảo đảm tính nghiêm túc trong công tác chuyên môn và tránh việc HLV liên tục tạo rồi hủy nháp gây sai lệch dữ liệu:<br />
+- <strong>Quy tắc</strong>: Nếu HLV chủ động hủy một bản nháp giáo án hoặc để bản nháp hết hạn đối với một chiến mã, hệ thống lập tức đưa HLV vào danh sách thời gian chờ <strong>48 giờ</strong> đối với riêng chiến mã đó.<br />
+- <strong>Trường hợp Hợp lệ</strong>: HLV chờ hết 48 giờ hoặc tạo giáo án cho các chiến mã hợp lệ khác.<br />
+- <strong>Trường hợp Vi phạm</strong>: HLV cố tình bấm tạo giáo án mới cho con ngựa vừa hủy nháp trong vòng 48 giờ:<br />
+  - <strong>Hành vi:</strong> Chặn mở màn hình tạo giáo án.<br />
+  - <strong>Thông báo lỗi hiển thị:</strong> <em>"Bạn đang trong thời gian chờ ([Số giờ] giờ còn lại) đối với chiến mã [Tên chiến mã] do vừa hủy hoặc để hết hạn bản nháp. Vui lòng liên hệ Quản lý CLB nếu cần mở khóa sớm."</em></p>
+<hr />
+<h3>2.5. Cơ chế Xử lý Chiến mã Tồn đọng &amp; Giao diện Thu gọn Thông minh (Preview Mode)</h3>
+<p>Khi Huấn luyện viên chuyển Khu chuồng, hoặc HLV cũ từ chối tiếp nhận / để hết hạn 48 giờ, chiến mã sẽ rơi vào trạng thái <strong>Tồn đọng Chờ Bổ nhiệm HLV</strong> (<code>UNASSIGNED</code>).</p>
+<ul>
+<li><strong>Cơ chế Cảnh báo trên Bàn làm việc Quản lý (Dashboard)</strong>:</li>
+<li>Khối cảnh báo <em>"Chiến mã Tồn đọng Chờ Bổ nhiệm HLV (Do Điều chuyển Nhân sự)"</em> xuất hiện nổi bật với viền cảnh báo màu cam.</li>
+<li><strong>Chế độ xem trước thông minh (Preview Mode)</strong>: Để tránh làm tràn màn hình khi có nhiều ngựa tồn đọng, hệ thống mặc định chỉ hiển thị <strong>1 đến 2 chiến mã tượng trưng</strong>.</li>
+<li><strong>Nút điều khiển Sổ ra / Thu gọn</strong>:<ul>
+<li>Nút <strong><code>Xem tất cả (N)</code></strong> (ở thanh tiêu đề và dưới chân khối): Cho phép Quản lý bấm để sổ ra toàn bộ danh sách khi cần rà soát và xử lý hàng loạt.</li>
+<li>Nút <strong><code>Thu gọn</code></strong>: Cho phép đóng gọn danh sách lại như ban đầu sau khi kiểm tra xong.</li>
+</ul>
+</li>
+<li><strong>3 Hành động Khắc phục Nhanh cho từng Chiến mã Tồn đọng</strong>:</li>
+<li><strong>Phân công HLV mới</strong>: Mở modal chọn HLV trưởng cùng Khu chuồng đang hoạt động (<code>ACTIVE</code>) để tiếp nhận ngựa.</li>
+<li><strong>Chuyển sang Barn khác</strong>: Dẫn sang Sơ đồ chuồng để chuyển ngựa sang khu chuồng có HLV còn dư định mức tiếp nhận.</li>
+<li><strong>Dời lịch tập +1 ngày</strong>: Tạm hoãn buổi tập của ngày hôm nay/ngày mai sang ngày kế tiếp để bảo vệ an toàn cho chiến mã khi chưa có người hướng dẫn.</li>
+</ul>
+<hr />
+<h3>2.6. Quy tắc Điều chuyển Khu chuồng của HLV &amp; Bàn giao Chia tách Thông minh</h3>
+<p>Khi Quản lý CLB thực hiện điều chuyển một Huấn luyện viên Trưởng sang phụ trách Khu chuồng (Barn) khác, hệ thống áp dụng cơ chế bàn giao an toàn:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Trường hợp Điều chuyển</th>
+<th style="text-align: left;">Ràng buộc Nghiệp vụ</th>
+<th style="text-align: left;">Xử lý khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>HLV đang có 0 chiến mã</strong></td>
+<td style="text-align: left;">HLV không quản lý bất kỳ chiến mã nào.</td>
+<td style="text-align: left;">Hệ thống chuyển Khu chuồng ngay lập tức.</td>
+<td style="text-align: left;">Không áp dụng ràng buộc bàn giao.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>HLV đang có chiến mã</strong></td>
+<td style="text-align: left;">Bắt buộc phải chọn một HLV đồng nghiệp <strong>cùng Khu chuồng hiện tại</strong> và <strong>đang hoạt động chính thức (<code>ACTIVE</code>)</strong> để nhận bàn giao.</td>
+<td style="text-align: left;">HLV đồng nghiệp hợp lệ, cùng khu và đang hoạt động.</td>
+<td style="text-align: left;">- Chưa chọn HLV nhận: <em>"Huấn luyện viên đang phụ trách [X] chiến mã. Vui lòng chọn Huấn luyện viên đồng nghiệp trong cùng khu chuồng để bàn giao trước khi chuyển khu."</em><br>- Chọn chính mình: <em>"Không thể tự bàn giao cho chính mình."</em><br>- Chọn HLV khác khu: <em>"Huấn luyện viên nhận bàn giao phải cùng phụ trách trong khu chuồng hiện tại."</em><br>- Chọn HLV chưa kích hoạt: <em>"Người nhận bàn giao phải là Huấn luyện viên trưởng đang hoạt động."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Chia tách Đàn ngựa Thông minh</strong></td>
+<td style="text-align: left;">HLV nhận bàn giao chỉ được nhận tối đa đến <strong>định mức 8 chiến mã</strong>.</td>
+<td style="text-align: left;">- Số ngựa trong định mức: Bàn giao trực tiếp sang HLV đồng nghiệp.<br>- Số ngựa vượt định mức (dôi dư): Tự động chuyển về diện <strong>Tồn đọng Chờ Bổ nhiệm HLV</strong> để Quản lý điều phối sau.</td>
+<td style="text-align: left;">Không để xảy ra tình trạng dồn ép quá tải (&gt; 8 ngựa) cho bất kỳ HLV nào.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2>3. QUY TRÌNH 2: LẬP &amp; ĐIỀU HÀNH VÒNG ĐỜI GIÁO ÁN HUẤN LUYỆN</h2>
+<h3>3.1. Các Trạng thái của Giáo án Huấn luyện</h3>
+<ol>
+<li><strong>Bản nháp (<code>DRAFT</code>)</strong>: HLV đang biên soạn mục tiêu, cơ cấu các giai đoạn sinh lý và lên danh sách các bài tập dự kiến.</li>
+<li><strong>Đang áp dụng (<code>ACTIVE</code>)</strong>: Giáo án đã được kích hoạt áp dụng thực tế trên chiến mã (mỗi chiến mã chỉ có DUY NHẤT một giáo án ở trạng thái này).</li>
+<li><strong>Đã hoàn thành (<code>COMPLETED</code>)</strong>: Chu kỳ huấn luyện đã kết thúc trọn vẹn và đã có báo cáo nghiệm thu tổng kết.</li>
+<li><strong>Đã hủy (<code>CANCELLED</code>)</strong>: Giáo án bị chấm dứt giữa chừng do điều kiện khách quan (chấn thương dài hạn, yêu cầu đột xuất từ chủ ngựa).</li>
+<li><strong>Đã lưu trữ (<code>ARCHIVED</code>)</strong>: Đưa vào kho hồ sơ lịch sử để phục vụ thống kê chuyên môn.</li>
+</ol>
+<hr />
+<h3>3.2. Điều kiện Khởi tạo Giáo án Mới</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Quy tắc Nghiệp vụ</th>
+<th style="text-align: left;">Tiêu chuẩn Thẩm định</th>
+<th style="text-align: left;">Xử lý khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Thể trạng Chiến mã</strong></td>
+<td style="text-align: left;">Ngựa phải đang hoạt động, không bị giải nghệ, không bị khóa y tế và không bị tạm giữ.</td>
+<td style="text-align: left;">Cho phép chọn ngựa để soạn giáo án.</td>
+<td style="text-align: left;">- Ngựa đã ngừng quản lý: <em>"Ngựa đã ngừng quản lý."</em><br>- Đang bị khóa y tế: <em>"Ngựa đang bị Khóa huấn luyện y tế. Không thể tạo giáo án mới cho đến khi Bác sĩ thú y gỡ khóa."</em><br>- Nợ tiền chuồng bị tạm giữ: <em>"Ngựa đang bị tạm giữ do nợ tiền chuồng. Không thể lập giáo án."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Chủ quyền Giáo án</strong></td>
+<td style="text-align: left;">Chiến mã chưa có giáo án Bản nháp hoặc Đang áp dụng của HLV khác.</td>
+<td style="text-align: left;">Hợp lệ, tiến hành phân bổ bản ghi mới.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn tạo mới.<br><strong>Thông báo lỗi:</strong> <em>"Chiến mã đã có giáo án của huấn luyện viên khác."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Định mức Giáo án HLV</strong></td>
+<td style="text-align: left;">Tổng số giáo án Bản nháp + Đang áp dụng của HLV không vượt quá 8.</td>
+<td style="text-align: left;">Hợp lệ, cấp quyền mở form soạn thảo.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn tạo mới.<br><strong>Thông báo lỗi:</strong> <em>"HLV đã đạt định mức tối đa 8 giáo án đang quản lý."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Đặt tên Giáo án</strong></td>
+<td style="text-align: left;">Tên giáo án phải có chữ cái, không được đặt hoàn toàn bằng chữ số.</td>
+<td style="text-align: left;">Tên hợp lệ, hiển thị tiêu đề giáo án.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu giáo án.<br><strong>Thông báo lỗi:</strong> <em>"Tên giáo án không hợp lệ. Phải chứa ít nhất một chữ cái và không được chỉ bao gồm chữ số."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Mục tiêu Giáo án</strong></td>
+<td style="text-align: left;">Mục tiêu phải bắt đầu bằng chữ cái, không bắt đầu bằng số/ký tự đặc biệt.</td>
+<td style="text-align: left;">Mục tiêu hợp lệ.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu giáo án.<br><strong>Thông báo lỗi:</strong> <em>"Mục tiêu giáo án phải bắt đầu bằng chữ cái, không được bắt đầu bằng số hoặc ký tự đặc biệt."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Thời lượng &amp; Ngày bắt đầu</strong></td>
+<td style="text-align: left;">- Tổng thời gian tối đa <strong>52 tuần</strong> (1 năm).<br>- Ngày bắt đầu phải từ ngày mai trở đi.</td>
+<td style="text-align: left;">Thời gian giáo án hợp lệ.</td>
+<td style="text-align: left;">- Quá 52 tuần: <em>"Giáo án tối đa 52 tuần."</em><br>- Bắt đầu hôm nay hoặc quá khứ: <em>"Ngày bắt đầu giáo án phải từ ngày mai trở đi."</em></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>3.3. Cấu trúc Giai đoạn Sinh lý (Kiểm tra từ 1 đến 12 Giai đoạn)</h3>
+<p>Mỗi giáo án được chia thành từ 1 đến 12 giai đoạn kế tiếp nhau với 5 loại hình sinh lý:<br />
+1. <strong>Xây dựng nền tảng</strong>: Rèn luyện thể lực cơ bản, tăng dung tích phổi.<br />
+2. <strong>Phát triển thể lực</strong>: Phát triển hệ cơ bắp và sức bền tim mạch.<br />
+3. <strong>Rèn luyện tốc độ</strong>: Tối ưu guồng chân và rèn luyện tốc độ bứt phá.<br />
+4. <strong>Chuẩn bị thi đấu</strong>: Siết cân, làm quen nhịp độ đường đua trước giải đấu.<br />
+5. <strong>Phục hồi thể trạng</strong>: Thả lỏng tích cực, tái tạo cơ bắp sau thi đấu hoặc tập nặng.</p>
+<h4>Ràng buộc Định lượng từng Giai đoạn:</h4>
+<ul>
+<li><strong>Mặt sân áp dụng</strong>: Sân cỏ, Sân cát hoặc Sân tổng hợp.</li>
+<li><strong>Tần suất buổi tập tuần</strong>: Từ 1 đến 14 buổi/tuần. Nếu nhập sai: Báo lỗi <em>"Số buổi mỗi tuần phải từ 1 đến 14 buổi."</em></li>
+<li><strong>Cự ly tích lũy tuần</strong>: Từ 500m đến 60.000m/tuần. Nếu nhập sai: Báo lỗi <em>"Cự ly tối đa mỗi tuần phải từ 500m đến 60.000m."</em></li>
+<li><strong>Tốc độ mục tiêu</strong>: Từ 10 đến 70 km/h. Nếu nhập sai: Báo lỗi <em>"Tốc độ mục tiêu phải từ 10 đến 70 km/h."</em></li>
+<li><strong>Thời lượng tối thiểu từng giai đoạn</strong>:</li>
+<li>Đối với giáo án ngắn (&lt; 14 ngày): Mỗi giai đoạn tối thiểu 3 ngày.</li>
+<li>Đối với giáo án thông thường (≥ 14 ngày): Giai đoạn Chuẩn bị thi đấu và Phục hồi tối thiểu 3 ngày; các giai đoạn rèn luyện nền tảng/thể lực/tốc độ tối thiểu <strong>7 ngày (1 tuần)</strong>.</li>
+<li><strong>Khung trần sinh lý an toàn tối đa từng giai đoạn (<code>Physiological Ceiling</code>)</strong>:</li>
+<li>Nhằm bảo vệ hệ gân cơ và chống chai lì phong độ, mỗi loại giai đoạn bị khống chế trần tối đa theo khoa học huấn luyện ngựa đua quốc tế (<em>Equine Exercise Physiology</em>):<ul>
+<li><strong>Nền tảng thể lực (<code>BASE</code>)</strong>: Tối đa <strong>56 ngày (8 tuần)</strong> (tránh chai lì hiếu khí và ì phản xạ).</li>
+<li><strong>Phát triển thể lực (<code>BUILD</code>)</strong>: Tối đa <strong>42 ngày (6 tuần)</strong> (tránh viêm bao hoạt dịch khớp).</li>
+<li><strong>Rèn luyện tốc độ (<code>SPEED</code>)</strong>: Tối đa <strong>28 ngày (4 tuần)</strong> (bảo vệ gân gót gập SDFT và xương mè trước áp lực nước rút).</li>
+<li><strong>Chuẩn bị thi đấu (<code>PRE_RACE</code>)</strong>: Tối đa <strong>14 ngày (2 tuần)</strong> (điểm rơi phong độ tối ưu, xả cơ tích lũy glycogen).</li>
+<li><strong>Phục hồi thể trạng (<code>RECOVERY</code>)</strong>: Tối đa <strong>21 ngày (3 tuần)</strong> (tránh teo cơ do thả lỏng quá lâu).</li>
+</ul>
+</li>
+<li>Khi người dùng điều chỉnh ngày, giao diện tự động khóa cứng (<em>clamping</em>) không cho chọn vượt trần sinh lý. Nếu gửi payload vi phạm, Backend chặn với mã lỗi <code>INVALID_PHASE</code>.</li>
+<li>Đối với giáo án siêu dài (&gt; 140 ngày), hệ thống yêu cầu cấu hình tối thiểu nhiều giai đoạn để đảm bảo tổng thời lượng không vượt quá tổng trần sinh lý của các giai đoạn cộng lại.</li>
+<li><strong>Ràng buộc Chống đè lấn Thời gian</strong>: Ngày bắt đầu của giai đoạn kế tiếp phải lớn hơn ngày kết thúc của giai đoạn liền trước.</li>
+<li><strong>Trường hợp Hợp lệ</strong>: Các giai đoạn nối tiếp liên tục, hệ thống chuyển sang bước lên lịch tập con.</li>
+<li><strong>Trường hợp Vi phạm (Thời gian bị trùng)</strong>: Hệ thống chặn lưu cấu trúc, báo lỗi trực tiếp trên giao diện: <em>"Giai đoạn bị trùng thời gian với giai đoạn [Tên giai đoạn liền trước]."</em></li>
+</ul>
+<hr />
+<h3>3.4. Kích hoạt Giáo án Chính thức &amp; Cơ chế Tịnh tiến Lịch tập Tự động</h3>
+<pre><code>[Bản nháp DRAFT] ───&gt; Bấm &quot;Kích hoạt giáo án&quot;
+                             │
+     ┌───────────────────────┴───────────────────────┐
+     ▼                                               ▼
+[Đủ điều kiện kích hoạt]                     [Thiếu điều kiện kích hoạt]
+- Trạng thái ngựa: RESTING -&gt; IN_TRAINING     - Chưa có buổi tập nào: Báo lỗi
+- Giáo án: DRAFT -&gt; ACTIVE                   - Không có bài tập tương lai: Báo lỗi
+- Tự động tịnh tiến lịch nếu kích hoạt trễ  - Ngựa có Khóa y tế: Báo lỗi
+- Xóa bỏ cảnh báo quá hạn SLA 3 ngày         - Đang theo dõi thú y mà chưa tích xác nhận: Báo lỗi
+</code></pre>
+<h4>Ma trận Thẩm định Kích hoạt Giáo án:</h4>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Tiêu chuẩn Kiểm tra</th>
+<th style="text-align: left;">Điều kiện Nghiệp vụ</th>
+<th style="text-align: left;">Xử lý khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Sự tồn tại của Buổi tập</strong></td>
+<td style="text-align: left;">Giáo án phải chứa ít nhất 1 buổi tập con.</td>
+<td style="text-align: left;">Chấp nhận kiểm tra tiếp tính khả thi.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn kích hoạt.<br><strong>Thông báo lỗi:</strong> <em>"Giáo án phải có ít nhất một buổi tập."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Tính khả thi Thời gian</strong></td>
+<td style="text-align: left;">Phải có ít nhất 1 buổi tập diễn ra từ ngày hôm nay trở đi.</td>
+<td style="text-align: left;">Chấp nhận giáo án có tính khả thi.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn kích hoạt.<br><strong>Thông báo lỗi:</strong> <em>"Giáo án không có buổi tập nào trong tương lai. Vui lòng bổ sung hoặc điều chỉnh lịch tập trước khi kích hoạt."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Tình trạng Y tế Ngựa</strong></td>
+<td style="text-align: left;">Ngựa không bị Bác sĩ thú y khóa y tế.</td>
+<td style="text-align: left;">Cho phép kích hoạt giáo án.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Nút Kích hoạt bị vô hiệu hóa.<br><strong>Thông báo lỗi:</strong> <em>"Chiến mã đang bị Khóa huấn luyện y tế. Không thể kích hoạt giáo án."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Xác nhận Tham vấn Thú y</strong></td>
+<td style="text-align: left;">Nếu ngựa đang thuộc diện theo dõi đặc biệt (chấn thương nhẹ, cách ly, nghi vấn), HLV bắt buộc phải tích chọn ô <em>"Đã tham vấn Bác sĩ thú y"</em>.</td>
+<td style="text-align: left;">Hệ thống ghi nhận biên bản tham vấn và cho phép kích hoạt.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn kích hoạt.<br><strong>Thông báo lỗi:</strong> <em>"Chiến mã đang trong diện theo dõi y tế đặc biệt. Bắt buộc phải tham vấn ý kiến Bác sĩ thú y trước khi kích hoạt giáo án."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Cơ chế Tịnh tiến Tự động</strong></td>
+<td style="text-align: left;">HLV kích hoạt giáo án trễ hơn so với ngày bắt đầu dự kiến ban đầu trong bản nháp.</td>
+<td style="text-align: left;"><strong>Hệ thống tự động tính độ lệch thời gian và dời toàn bộ ngày của các giai đoạn cũng như dời ngày của toàn bộ các buổi tập con về phía trước một khoảng tương ứng</strong>, bảo đảm không có bài tập nào bị rơi vào quá khứ.</td>
+<td style="text-align: left;">Không phát sinh lỗi; hệ thống tự động bảo toàn lịch trình.</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Kết quả khi Kích hoạt Thành công</strong>:</li>
+<li>Giáo án chuyển sang trạng thái <strong>Đang áp dụng</strong>.</li>
+<li>Chiến mã tự động chuyển trạng thái từ <strong>Nghỉ ngơi</strong> sang <strong>Đang huấn luyện</strong>.</li>
+<li>Toàn bộ nghĩa vụ SLA lập giáo án 3 ngày được thanh toán hoàn tất; xóa vĩnh viễn các badge/cảnh báo quá hạn.</li>
+</ul>
+<hr />
+<h3>3.5. Chỉnh sửa Giáo án Đang Hoạt động</h3>
+<ul>
+<li><strong>Ràng buộc Bảo vệ Dữ liệu Quá khứ</strong>: HLV không được phép thay đổi khoảng ngày của giáo án nếu sự thay đổi đó làm các buổi tập <strong>ĐÃ HOÀN THÀNH</strong> bị văng ra ngoài khung ngày mới.</li>
+<li><strong>Khi Hợp lệ</strong>: Khung ngày mới bao trọn toàn bộ các buổi tập đã hoàn thành, hệ thống cập nhật lịch trình thành công.</li>
+<li><strong>Khi Vi phạm</strong>: Hệ thống chặn lưu, báo lỗi: <em>"Không thể thay đổi khoảng ngày vì có buổi tập đã hoàn thành nằm ngoài khoảng ngày mới."</em></li>
+<li><strong>Ràng buộc Giai đoạn đã diễn ra</strong>: Giai đoạn đã có buổi tập hoàn thành thì không được phép xóa và không được sửa đổi ngày bắt đầu.</li>
+<li><strong>Khi Vi phạm</strong>: Hệ thống báo lỗi: <em>"Giai đoạn đã có buổi tập hoàn thành, không thể xóa hoặc sửa ngày bắt đầu."</em></li>
+</ul>
+<hr />
+<h3>3.6. Hoàn thành Giáo án &amp; Cơ chế Miễn trừ SLA Nghỉ ngơi</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Tiêu chuẩn Nghiệm thu</th>
+<th style="text-align: left;">Nội dung Yêu cầu Nghiệp vụ</th>
+<th style="text-align: left;">Xử lý khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Báo cáo Tổng kết Chu kỳ</strong></td>
+<td style="text-align: left;">HLV bắt buộc phải nhập nhận xét, đánh giá kết quả huấn luyện (từ 10 đến 2.000 ký tự).</td>
+<td style="text-align: left;">Báo cáo hợp lệ, đủ điều kiện đóng giáo án.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn hoàn thành giáo án.<br><strong>Thông báo lỗi:</strong> <em>"Báo cáo nhận xét tổng kết chu kỳ huấn luyện phải từ 10 đến 2000 ký tự."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Nghiệm thu Buổi tập Tồn đọng</strong></td>
+<td style="text-align: left;">Toàn bộ các buổi tập con trong giáo án phải được cập nhật kết quả đầy đủ (đã ghi nhận hoàn thành hoặc đã bấm hủy ca tập).</td>
+<td style="text-align: left;">Toàn bộ bài tập đã tất toán, hệ thống cho phép hoàn tất giáo án.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn hoàn tất.<br><strong>Thông báo lỗi:</strong> <em>"Còn [Số lượng] buổi tập chưa ghi kết quả: [Danh sách ngày]. Vui lòng cập nhật kết quả hoặc hủy buổi tập trước khi hoàn thành giáo án."</em></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Đặc quyền Miễn trừ SLA Chu kỳ Nghỉ ngơi (<code>isRestingCycle</code>)</strong>:</li>
+<li>Khi một giáo án được chuyển sang trạng thái Đã hoàn thành, chiến mã tự động chuyển từ trạng thái <code>Đang huấn luyện</code> về trạng thái <code>Nghỉ ngơi</code>.</li>
+<li>Hệ thống <strong>tự động xóa bỏ hạn chót SLA 3 ngày</strong>, gán nhãn Chu kỳ Nghỉ ngơi hồi phục.</li>
+<li>Trên Bàn làm việc HLV và Danh sách giáo án: Hiển thị Huy hiệu màu Xanh lá cây tươi sáng: <strong><code>Nghỉ ngơi hồi phục</code></strong>.</li>
+<li>Ý nghĩa nghiệp vụ: Chiến mã được quyền nghỉ ngơi thư giãn sau đợt thi đấu căng thẳng, <strong>HLV không bị ép buộc lập giáo án mới và hoàn toàn không bị phạt KPI quá hạn</strong>.</li>
+</ul>
+<hr />
+<h2>4. QUY TRÌNH 3: LẬP LỊCH, XẾP CA &amp; KIỂM SOÁT XUNG ĐỘT BUỔI TẬP</h2>
+<h3>4.1. Bảng Quy chuẩn 7 Loại Bài tập Chuyên sâu</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Tên Bài tập</th>
+<th style="text-align: left;">Mục tiêu Thể lực</th>
+<th style="text-align: center;">Thời lượng Tiêu chuẩn</th>
 <th style="text-align: center;">Quy chuẩn Cường độ</th>
 <th style="text-align: center;">Quy chuẩn Mặt sân</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><code>WALK</code></td>
-<td style="text-align: left;">Đi bộ</td>
-<td style="text-align: center;">45 phút</td>
-<td style="text-align: center;">Nhẹ (<code>LIGHT</code>)</td>
-<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+<td style="text-align: left;"><strong>Đi bộ thư giãn</strong></td>
+<td style="text-align: left;">Thả lỏng khớp, lưu thông khí huyết</td>
+<td style="text-align: center;"><strong>45 phút</strong></td>
+<td style="text-align: center;">Nhẹ</td>
+<td style="text-align: center;">Sân cỏ / Sân cát / Sân tổng hợp</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>TROT</code></td>
-<td style="text-align: left;">Chạy nước kiệu</td>
-<td style="text-align: center;">60 phút</td>
-<td style="text-align: center;">Nhẹ / Vừa (<code>LIGHT</code>/<code>MEDIUM</code>)</td>
-<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+<td style="text-align: left;"><strong>Chạy nước kiệu</strong></td>
+<td style="text-align: left;">Khởi động, kích thích cơ bắp</td>
+<td style="text-align: center;"><strong>60 phút</strong></td>
+<td style="text-align: center;">Nhẹ hoặc Vừa</td>
+<td style="text-align: center;">Sân cỏ / Sân cát / Sân tổng hợp</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>CANTER</code></td>
-<td style="text-align: left;">Chạy nước đại nhẹ</td>
-<td style="text-align: center;">60 phút</td>
-<td style="text-align: center;">Vừa (<code>MEDIUM</code>)</td>
-<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+<td style="text-align: left;"><strong>Chạy nước đại nhẹ</strong></td>
+<td style="text-align: left;">Rèn luyện dung tích phổi và nhịp thở</td>
+<td style="text-align: center;"><strong>60 phút</strong></td>
+<td style="text-align: center;">Vừa</td>
+<td style="text-align: center;">Sân cỏ / Sân cát / Sân tổng hợp</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>BREEZE</code></td>
-<td style="text-align: left;">Chạy tốc độ</td>
-<td style="text-align: center;">60 phút</td>
-<td style="text-align: center;"><strong>Luôn ép thành Nặng (<code>HEAVY</code>)</strong></td>
-<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+<td style="text-align: left;"><strong>Chạy tốc độ cao</strong></td>
+<td style="text-align: left;">Bứt phá tốc độ tối đa</td>
+<td style="text-align: center;"><strong>60 phút</strong></td>
+<td style="text-align: center;"><strong>Hệ thống luôn tự động ép thành NẶNG</strong></td>
+<td style="text-align: center;">Sân cỏ / Sân cát / Sân tổng hợp</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>TRIAL</code></td>
-<td style="text-align: left;">Chạy thử sát hạch</td>
-<td style="text-align: center;">90 phút</td>
-<td style="text-align: center;"><strong>Luôn ép thành Nặng (<code>HEAVY</code>)</strong></td>
-<td style="text-align: center;">Cỏ / Cát / Tổng hợp</td>
+<td style="text-align: left;"><strong>Chạy thử sát hạch</strong></td>
+<td style="text-align: left;">Sát hạch thi đấu đo cự ly và tốc độ</td>
+<td style="text-align: center;"><strong>90 phút</strong></td>
+<td style="text-align: center;"><strong>Hệ thống luôn tự động ép thành NẶNG</strong></td>
+<td style="text-align: center;">Sân cỏ / Sân cát / Sân tổng hợp</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>SWIM</code></td>
-<td style="text-align: left;">Bơi phục hồi</td>
-<td style="text-align: center;">45 phút</td>
-<td style="text-align: center;">Nhẹ / Vừa</td>
-<td style="text-align: center;"><strong>Ép thành <code>NONE</code> (Bể bơi)</strong></td>
+<td style="text-align: left;"><strong>Bơi phục hồi</strong></td>
+<td style="text-align: left;">Xả cơ bắp không chịu tải trọng khớp</td>
+<td style="text-align: center;"><strong>45 phút</strong></td>
+<td style="text-align: center;">Nhẹ hoặc Vừa</td>
+<td style="text-align: center;"><strong>Tự động ép thành: Khu Bể bơi</strong> <em>(Không dùng đường chạy)</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>TREADMILL</code></td>
-<td style="text-align: left;">Máy đi bộ trên cạn</td>
-<td style="text-align: center;">60 phút</td>
-<td style="text-align: center;">Nhẹ / Vừa</td>
-<td style="text-align: center;"><strong>Ép thành <code>NONE</code> (Khu máy)</strong></td>
+<td style="text-align: left;"><strong>Máy đi bộ trên cạn</strong></td>
+<td style="text-align: left;">Rèn bước chân trong không gian tĩnh</td>
+<td style="text-align: center;"><strong>60 phút</strong></td>
+<td style="text-align: center;">Nhẹ hoặc Vừa</td>
+<td style="text-align: center;"><strong>Tự động ép thành: Khu Máy tập</strong> <em>(Không dùng đường chạy)</em></td>
 </tr>
 </tbody>
 </table>
-<h3>4.2. Khung giờ &amp; Quy chuẩn Thời gian (Time Constraints):</h3>
-<ul>
-<li><strong>Giờ tập quy định trong ngày</strong>: Chỉ được phép xếp lịch từ <strong>04:00 đến 20:00</strong> (<code>withinTrainingHours</code>).</li>
-<li><strong>Khung giờ vàng (<code>Prime Time</code>: 06:15 - 08:00)</strong>: Thời điểm mát mẻ nhất trong ngày, mỗi HLV bị khống chế <strong>tối đa 2 buổi tập nặng</strong> (<code>MAX_PRIME_HEAVY_SESSIONS_PER_TRAINER = 2</code>) để công bằng tài nguyên sân bãi và bảo vệ ngựa.</li>
-<li><strong>Đệm thời gian của Huấn luyện viên</strong>: Bắt buộc cách nhau tối thiểu <strong>15 phút</strong> (<code>TRAINER_BUFFER_MINUTES = 15</code>) giữa 2 buổi tập của cùng 1 HLV.</li>
-<li><strong>Đệm thời gian của Nhân viên chăm sóc (Groom)</strong>: Bắt buộc đệm <strong>15 phút</strong> (<code>GROOM_BUFFER_MINUTES = 15</code>) để làm vệ sinh, tháo yên và tắm cho ngựa.</li>
-<li><strong>Định mức tải của Groom</strong>: 1 Groom chỉ được phân công tối đa <strong>4 buổi tập/ngày</strong> và <strong>không quá 2 bài tập nặng/ngày</strong> (<code>MAX_DAILY_WORKOUTS_PER_GROOM = 4</code>, <code>MAX_DAILY_HEAVY_WORKOUTS_PER_GROOM = 2</code>).</li>
-</ul>
-<h3>4.3. Kiểm soát Sức chứa Mặt sân Chạy (Track Capacity):</h3>
-<p>Hàm kiểm tra <code>checkTrackAvailability</code> tại <code>tracks.service.ts</code>:<br />
-- <strong>Đối với bài tập Nhẹ / Vừa</strong>: Mặt sân cho phép tối đa <strong>3 chiến mã cùng tập</strong> (<code>TRACK_MAX_LIGHT_HORSES = 3</code>).<br />
-- <strong>Đối với bài tập Nặng (<code>BREEZE</code>, <code>TRIAL</code>, <code>HEAVY</code>)</strong>: Áp dụng cơ chế <strong>Chiếm dụng độc quyền (<code>HEAVY_OCCUPIED</code>)</strong>. Khi có 1 chiến mã đang chạy tốc độ, sân bị khóa hoàn toàn, không cho bất kỳ ngựa nào khác vào sân trong khung giờ đó để tránh va chạm ở vận tốc cao.</p>
 <hr />
-<h2>5. QUY TRÌNH 4: THỰC THI BUỔI TẬP &amp; GHI NHẬN CHỈ SỐ SINH TRẮC (SESSION EXECUTION &amp; TELEMETRY METRICS)</h2>
-<p><em>Tệp nguồn: <code>BE/src/training/workouts.service.ts</code> (<code>startWorkout</code>, <code>recordWorkoutResult</code>), <code>training-rules.ts</code></em></p>
-<h3>5.1. Bắt đầu Buổi tập (<code>startWorkout</code>):</h3>
+<h3>4.2. Nguyên tắc HLV Tự Dẫn dắt Buổi tập &amp; Kiêm Nài ngựa</h3>
 <ul>
-<li><strong>Chốt chặn y tế</strong>: Kiểm tra <code>checkMedicalLock(horseId, workoutDate)</code>. Nếu ngựa đang có Khóa y tế hiệu lực $\rightarrow$ Chặn đứng, ném lỗi <code>400 BAD_REQUEST: MEDICAL_LOCK_ACTIVE</code>.</li>
-<li><strong>Chốt chặn thời gian</strong>: Chỉ được bấm Bắt đầu khi đến giờ tập thực tế (trừ khi bật cờ môi trường test dev <code>allowEarlyWorkoutStart()</code>).</li>
-<li>Trạng thái buổi tập chuyển sang <code>IN_PROGRESS</code>.</li>
+<li>Trong toàn bộ phân hệ Huấn luyện EquiFlow: <strong>Huấn luyện viên Trưởng của giáo án trực tiếp đứng lớp hướng dẫn và trực tiếp cưỡi ngựa (kiêm Nài ngựa) trên đường chạy</strong>.</li>
+<li>Trên Giao diện Xếp lịch buổi tập: <strong>Hoàn toàn không có trường lựa chọn Nhân viên chăm sóc chuồng trại (Groom)</strong>. Hệ thống tự động gán thông tin của chính Huấn luyện viên vào vị trí người phụ trách buổi tập và nài ngựa điều khiển.</li>
+<li>Phân định ranh giới: Nhân viên chăm sóc chuồng trại tuyệt đối không dẫn ngựa ra đường chạy và không cưỡi ngựa. Groom chỉ chăm sóc tĩnh tại khu chuồng trại (cho ăn, quét dọn phân, tắm rửa vệ sinh).</li>
 </ul>
-<h3>5.2. Ghi nhận Chỉ số Sinh trắc học &amp; Thể lực (<code>recordWorkoutResult</code>):</h3>
+<hr />
+<h3>4.3. Khung giờ Hoạt động &amp; Dòng thời gian Khả dụng Thông minh (Timeline Interval Slicing)</h3>
+<pre><code>05:30   06:15                   11:30   13:30   14:15                   17:00   18:00   19:00
+  │───────│───────────────────────│───────│───────│───────────────────────│───────│───────│
+  ▼       ▼                       ▼       ▼       ▼                       ▼       ▼       ▼
+Ăn sáng  [Khung rảnh sáng 🟢]   Ăn trưa Tắm xả   [Khung rảnh chiều 🟢]  Ăn tối &amp; Nghỉ đêm
+(Groom)  (Tự động trừ ca bận)   &amp; nghỉ  cơ móng  (Tự động trừ ca bận)   (Groom sinh hoạt)
+</code></pre>
 <ul>
-<li><strong>Thời hạn ghi kết quả</strong>: Tối đa trong vòng <strong>7 ngày</strong> kể từ khi buổi tập diễn ra (<code>LATE_RESULT_DAYS = 7</code>). Quá 7 ngày $\rightarrow$ Ném lỗi quá hạn ghi nhận.</li>
-<li><strong>Giới hạn kiểm tra tính hợp lý sinh học (Sanity Checks)</strong>:</li>
-<li>Cự ly thực tế: Tối đa <strong>10.000 mét / buổi</strong> (<code>MAX_SESSION_DISTANCE_METERS = 10000</code>).</li>
-<li>Vận tốc trung bình tính toán: Tối đa <strong>75 km/h</strong> (<code>MAX_AVERAGE_SPEED_KMH = 75</code> - do kỷ lục thế giới của loài ngựa đua xấp xỉ 70 km/h; vượt quá 75 km/h là dữ liệu nhập sai).</li>
-<li>Dải nhịp tim:<ul>
-<li>Nhịp tim nghỉ trước tập: 28 – 45 bpm.</li>
-<li>Nhịp tim đỉnh khi tập nặng: 120 – 240 bpm.</li>
-<li>Nhịp tim hồi phục sau 15 phút: Đo lường khả năng tản nhiệt và phục hồi tim mạch.</li>
+<li><strong>Thuật toán Tự động Cắt tỉa Khung giờ Khả dụng (Dynamic Interval Slicing)</strong>:</li>
+<li>Khi HLV mở màn hình xếp lịch tập hoặc tạo lịch tự động, hệ thống không hiển thị dải giờ chung chung mà <strong>tự động đối chiếu lịch bận thực tế của HLV</strong> trong ngày đó để chia nhỏ các khoảng thời gian rảnh.</li>
+<li><strong>Khung sáng (06:15 – 11:30)</strong>: Tự động trừ đi các ca HLV bận tập ngựa khác (ví dụ: bận 08:00 – 09:00) → Tự động tách thành:<ul>
+<li><code>06:15 – 08:00: Khung rảnh sáng</code> 👉 Huy hiệu màu xanh: <strong><code>Khả dụng</code></strong></li>
+<li><code>08:00 – 09:00: HLV bận: [Tên ngựa]</code> 👉 Huy hiệu màu cam: <strong><code>Đang bận</code></strong></li>
+<li><code>09:00 – 11:30: Khung rảnh sáng</code> 👉 Huy hiệu màu xanh: <strong><code>Khả dụng</code></strong></li>
 </ul>
 </li>
-<li>Điểm số phong độ (<code>performanceScore</code>): Thang điểm chuẩn từ 0 đến 100 điểm.</li>
-<li><strong>Cảnh báo Bất thường sau Buổi tập (<code>Post-workout Alerts</code>)</strong>:</li>
-<li>Nếu nhịp tim sau 15 phút nghỉ vẫn $&gt; 115$ bpm $\rightarrow$ Hệ thống tự động tạo bản ghi Cảnh báo mệt mỏi quá tải (<code>Exertion Alert</code>).</li>
-<li>Cảnh báo xuất hiện chấm đỏ trên Sidebar của HLV và gửi thông báo tới Bác sĩ thú y để kiểm tra nguy cơ chấn thương cơ/khớp.</li>
+<li><strong>Khung chiều (14:15 – 17:00)</strong>: Tương tự, tự động bắt đầu sau khi Groom hoàn tất ca tắm xả cơ móng (14:15) và trừ đi các ca tập chiều → Hiển thị chính xác các khoảng thời gian rảnh thực tế kèm huy hiệu <strong><code>Khả dụng</code></strong>.</li>
+<li><strong>Đồng nhất thuật ngữ</strong>: Loại bỏ hoàn toàn sự mâu thuẫn giữa nhãn "Khuyên dùng" và "Khả dụng"; toàn bộ các khoảng thời gian trống đủ điều kiện xếp lịch đều được định danh thống nhất là <strong><code>Khả dụng</code></strong>.</li>
 </ul>
-<hr />
-<h2>6. QUY TRÌNH 5: CƠ CHẾ LIÊN ĐỘNG KHÓA Y TẾ (MEDICAL LOCK INTERLOCK)</h2>
-<p><em>Tệp nguồn: <code>BE/src/health/health.service.ts</code>, <code>BE/src/training/workouts.service.ts</code>, <code>training-common.service.ts</code></em></p>
-<p>Khi Bác sĩ thú y (<code>VETERINARIAN</code>) chẩn đoán ngựa có vấn đề sức khỏe và kích hoạt lệnh Khóa y tế (<code>placeLock</code>):</p>
-<pre><code>       [Bác sĩ Thú y đặt Khóa y tế]
-                    │
-                    ▼
-     ┌──────────────────────────────┐
-     │  Horse.isMedicalLocked = true│
-     └──────────────┬───────────────┘
-                    │
-       Cơ chế Khóa liên động (Interlock)
-                    │
-     ┌──────────────┴──────────────┐
-     ▼                             ▼
-[Tại Module Huấn luyện]     [Tại Dashboard HLV]
-- Chặn tạo Plan mới          - Hiển thị Badge đỏ &quot;Khóa y tế&quot;
-- Chặn bấm Start Workout     - Khóa nút &quot;Bắt đầu tập&quot;
-- Hủy/Hoãn bài tập nặng      - Chuyển thành nút &quot;Xem bệnh án&quot;
-</code></pre>
-<ol>
-<li><strong>Khóa quyền Lập giáo án mới</strong>: Tại màn hình Plan Wizard, cờ <code>canAssign</code> chuyển thành <code>false</code>, hiển thị lý do: <em>"Ngựa đang bị Khóa huấn luyện y tế bởi Bác sĩ thú y"</em>.</li>
-<li><strong>Khóa quyền Bắt đầu Buổi tập</strong>: Tại API <code>startWorkout</code>, Backend kiểm tra hàm <code>checkMedicalLock</code>. Nếu phát hiện khóa đang active $\rightarrow$ Ném lỗi <code>400 BAD_REQUEST</code>, ngăn chặn 100% việc HLV ép ngựa ốm/chấn thương ra sân.</li>
-<li><strong>Tự động Hoãn/Chặn bài tập nặng</strong>: Các buổi tập <code>HEAVY</code>, <code>BREEZE</code>, <code>TRIAL</code> đã lên lịch trong thời gian khóa y tế tự động chuyển sang trạng thái <code>BLOCKED</code>.</li>
-<li><strong>Giải phóng Khóa y tế</strong>: Chỉ duy nhất Bác sĩ thú y có quyền gỡ khóa (<code>liftLock</code>) sau khi khám tái thẩm định. Khi khóa được gỡ, các buổi tập mới được mở khóa trở lại.</li>
-</ol>
-<hr />
-<h2>7. QUY TRÌNH 6: SÁT HẠCH CHẠY THỬ &amp; ĐĂNG KÝ THI ĐẤU (TRIAL RUNS &amp; RACE ENTRIES)</h2>
-<p><em>Tệp nguồn: <code>FE/src/features/training/pages/TrialRunsPage.tsx</code>, <code>FE/src/features/racing/pages/RaceEntryPage.tsx</code></em></p>
-<ol>
-<li><strong>Buổi Chạy thử Sát hạch (<code>Trial Run</code>)</strong>:</li>
-<li>Thời lượng: 90 phút (bài tập nặng nhất hệ thống).</li>
-<li>Đo đạc chính thức 3 cự ly chuẩn thi đấu quốc tế: <strong>1000m, 1200m, 1600m</strong>.</li>
-<li>Bắt buộc bố trí Nài ngựa chính quy thuộc danh bạ CLB (<code>CLUB_JOCKEYS</code>: Trần Văn Kiên, Lê Minh Quân, Nguyễn Tấn Lộc, Phạm Hữu Đạt) với cân nặng chuẩn 50 - 53 kg.</li>
-<li>Ghi nhận chỉ số Vận tốc bứt phá cực đại (<strong>Top Speed</strong>) và thời gian hoàn thành (giây).</li>
-<li><strong>Điều kiện Đăng ký Tham gia Giải đua (<code>Race Registration</code>)</strong>:</li>
-<li>Chiến mã phải đạt trạng thái sẵn sàng (<code>READY_FOR_RACE</code>).</li>
-<li>Tuyệt đối không có Khóa y tế (<code>isMedicalLocked === false</code>).</li>
-<li>Có kết quả Chạy thử sát hạch đạt chuẩn tốc độ (Top Speed $\ge 50$ km/h) làm căn cứ kỹ thuật để HLV Trưởng và Chủ ngựa tự tin gửi danh sách thi đấu.</li>
-</ol>
-<hr />
-<h2>8. QUY TRÌNH 7: MINH BẠCH ĐÁNH GIÁ TỪ CHỦ NGỰA (TRAINER REVIEWS)</h2>
-<p><em>Tệp nguồn: <code>BE/src/training/trainer-reviews.service.ts</code>, <code>FE/src/features/training/pages/TrainerReviewsPage.tsx</code></em></p>
-<ul>
-<li><strong>Phân quyền Một chiều</strong>:</li>
-<li>Chủ sở hữu ngựa (<code>HORSE_OWNER</code>) có quyền gửi đánh giá từ 1 đến 5 sao kèm nhận xét cho Huấn luyện viên đối với các giáo án đang áp dụng (<code>ACTIVE</code>) hoặc đã hoàn thành (<code>COMPLETED</code>).</li>
-<li>HLV Trưởng chỉ có quyền <strong>Xem đánh giá (<code>My Reviews</code>)</strong>, hoàn toàn <strong>KHÔNG có quyền can thiệp, chỉnh sửa hay xóa đánh giá</strong>.</li>
-<li><strong>Chỉ số đánh giá HLV</strong>:</li>
-<li>Điểm trung bình cộng sao (Average Rating).</li>
-<li>Tỷ lệ hoàn thành giáo án đúng hạn.</li>
-<li>Số lượng phản hồi tích cực từ cộng đồng chủ ngựa.</li>
-</ul>
-<hr />
-<h2>9. BẢNG TRA CỨU THAM SỐ &amp; HẰNG SỐ NGHIỆP VỤ CỐT LÕI (BUSINESS RULE MATRIX)</h2>
 <table>
 <thead>
 <tr>
-<th style="text-align: left;">Tên Hằng số / Quy tắc</th>
-<th style="text-align: center;">Giá trị</th>
-<th style="text-align: left;">Tệp nguồn trong Code</th>
-<th style="text-align: left;">Ý nghĩa Nghiệp vụ &amp; Cơ sở Khoa học</th>
+<th style="text-align: left;">Quy chuẩn Khung giờ</th>
+<th style="text-align: left;">Tiêu chuẩn Nghiệp vụ</th>
+<th style="text-align: left;">Xử lý khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><code>MAX_HORSES_PER_TRAINER</code></td>
-<td style="text-align: center;"><strong>8</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L69</code></td>
-<td style="text-align: left;">Định mức tối đa 8 ngựa / 1 HLV để đảm bảo chất lượng huấn luyện.</td>
+<td style="text-align: left;"><strong>Giờ Mở cửa Khuôn viên</strong></td>
+<td style="text-align: left;">Từ <strong>04:00 sáng đến 20:00 tối</strong>.</td>
+<td style="text-align: left;">Giờ tập nằm trong khung mở cửa hạ tầng.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu buổi tập.<br><strong>Thông báo lỗi:</strong> <em>"Giờ bắt đầu phải từ 04:00 đến 20:00."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>WIP Limit (Pending Plans)</code></td>
-<td style="text-align: center;"><strong>2</strong></td>
-<td style="text-align: left;"><code>BE/src/horses/horses.service.ts#L2305</code></td>
-<td style="text-align: left;">HLV tồn $\ge 2$ ngựa chưa có giáo án thì bị chặn không cho nhận thêm ngựa.</td>
+<td style="text-align: left;"><strong>Chốt chặn Sinh học Chiều</strong></td>
+<td style="text-align: left;">Buổi tập bắt buộc phải <strong>kết thúc trước hoặc đúng 17:00 chiều</strong> để ngựa tắm hạ nhiệt và ăn tối (17:00 - 18:00). Do bài tập kéo dài 45 - 60 phút, <strong>giờ bắt đầu muộn nhất được phép xếp là 16:00 chiều</strong>.</td>
+<td style="text-align: left;">Buổi tập kết thúc ≤ 17:00 chiều, đảm bảo thời gian ăn tối nghỉ đêm của ngựa.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu lịch tập.<br><strong>Thông báo lỗi:</strong> <em>"Buổi tập phải kết thúc trước hoặc đúng 17:00 chiều để đảm bảo giờ nghỉ ngơi và ăn tối của ngựa. Giờ bắt đầu muộn nhất là 16:00."</em><br><em>(Giao diện khống chế cứng ô chọn giờ từ 04:00 đến 16:00).</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>MAX_TRAINERS_PER_BARN</code></td>
-<td style="text-align: center;"><strong>2</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L72</code></td>
-<td style="text-align: left;">Mỗi Khu chuồng chỉ bố trí tối đa 2 HLV để tránh xung đột quản lý.</td>
+<td style="text-align: left;"><strong>Hạn ngạch Khung giờ Vàng</strong></td>
+<td style="text-align: left;"><strong>06:15 đến 08:00 sáng</strong>: Khung giờ thời tiết mát mẻ nhất. Mỗi HLV bị khống chế tối đa <strong>2 buổi tập nặng</strong> để bảo đảm công bằng tài nguyên đường chạy.</td>
+<td style="text-align: left;">HLV xếp ≤ 2 bài tập nặng trong khung 06:15 - 08:00.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu buổi tập.<br><strong>Thông báo lỗi:</strong> <em>"HLV đã đạt hạn ngạch tối đa 2 bài tập nặng trong khung giờ vàng buổi sáng (06:15 - 08:00). Vui lòng chọn khung giờ khác."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>HANDOVER_SLA_HOURS</code></td>
-<td style="text-align: center;"><strong>48h</strong></td>
-<td style="text-align: left;"><code>BE/src/horses/horses.service.ts#L2316</code></td>
-<td style="text-align: left;">Thời hạn tối đa để HLV bấm Tiếp nhận hoặc Từ chối ngựa quản lý giao.</td>
+<td style="text-align: left;"><strong>Các khung giờ khác trong ngày</strong></td>
+<td style="text-align: left;">Từ 08:15 đến 16:00 chiều: HLV được xếp thêm các bài tập nặng khác bình thường nếu đường chạy còn trống.</td>
+<td style="text-align: left;">Cho phép lưu lịch tập nếu đường chạy trống và cách ca trước ≥ 15 phút.</td>
+<td style="text-align: left;">Không bị giới hạn bởi hạn ngạch 2 bài của giờ vàng.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>4.4. Kiểm soát Xung đột Thời gian (Conflict Checks)</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Loại Xung đột</th>
+<th style="text-align: left;">Ràng buộc Nghiệp vụ</th>
+<th style="text-align: left;">Xử lý khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Thời gian Đệm nghỉ của HLV</strong></td>
+<td style="text-align: left;">Giữa 2 buổi tập liên tiếp của cùng 1 Huấn luyện viên bắt buộc phải có thời gian nghỉ tối thiểu <strong>15 phút</strong>.</td>
+<td style="text-align: left;">Ca tập mới cách ca trước/sau ≥ 15 phút.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu ca tập trùng.<br><strong>Thông báo lỗi:</strong> <em>"Huấn luyện viên [Họ và tên HLV] đã có buổi tập của ngựa [Tên ngựa] lúc [Khung giờ]. HLV chỉ có thể điều hành 1 buổi tập tại một thời điểm. Chọn giờ bắt đầu từ [Giờ trước] trở về trước hoặc từ [Giờ sau] trở đi."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>PLAN_CREATION_SLA_DAYS</code></td>
-<td style="text-align: center;"><strong>3 ngày</strong></td>
-<td style="text-align: left;"><code>BE/src/horses/horses.service.ts#L2467</code></td>
-<td style="text-align: left;">Hạn cố định 72 giờ để HLV lập và kích hoạt giáo án sau khi nhận ngựa.</td>
+<td style="text-align: left;"><strong>Xung đột Thể lực của Ngựa</strong></td>
+<td style="text-align: left;">Một chiến mã không thể tham gia 2 buổi tập cách nhau dưới <strong>30 phút</strong>.</td>
+<td style="text-align: left;">Hai buổi tập của ngựa cách nhau ≥ 30 phút.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu ca tập.<br><strong>Thông báo lỗi:</strong> <em>"Chiến mã đã có lịch tập khác quá gần khung giờ này (cần cách tối thiểu 30 phút)."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>FIRST_HOUR</code> - <code>LAST_HOUR</code></td>
-<td style="text-align: center;"><strong>04:00 - 20:00</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L146-L147</code></td>
-<td style="text-align: left;">Khung giờ cho phép tổ chức tập luyện trong ngày của CLB.</td>
+<td style="text-align: left;"><strong>Hạn mức Số ca tập trong Ngày</strong></td>
+<td style="text-align: left;">Một chiến mã được phép xếp <strong>tối đa 3 buổi tập trong cùng 1 ngày</strong> (<code>MAX_WORKOUTS_PER_DAY = 3</code>).</td>
+<td style="text-align: left;">Số buổi tập trong ngày của ngựa ≤ 3 buổi.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu buổi tập thứ 4 trong cùng một ngày.<br><strong>Thông báo lỗi:</strong> <em>"Mỗi ngựa tối đa 3 buổi tập mỗi ngày."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>PRIME_TIME</code></td>
-<td style="text-align: center;"><strong>06:15 - 08:00</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L80-L84</code></td>
-<td style="text-align: left;">Khung giờ vàng buổi sáng, khống chế tối đa 2 bài tập nặng / HLV.</td>
+<td style="text-align: left;"><strong>Thời gian Hồi phục Thể lực Bắt buộc (Rest Period)</strong></td>
+<td style="text-align: left;">Để bảo vệ tim mạch và ngăn ngừa đứt gân/chấn thương cơ xương khớp, hệ thống áp dụng quy chuẩn y học thể thao khắt khe:<br>• <strong>Bài tập nặng</strong> (Chạy tốc độ cao <code>BREEZE</code>, Chạy thử sát hạch <code>TRIAL</code>, hoặc Cường độ Nặng <code>HEAVY</code>): Bắt buộc cách buổi tập liền kề tối thiểu <strong>48 giờ</strong>.<br>• <strong>Bài tập vừa</strong> (Chạy nước kiệu <code>TROT</code>, Phi nước đại nhẹ <code>CANTER</code>): Bắt buộc cách buổi tập liền kề tối thiểu <strong>24 giờ</strong>.<br>• <strong>Bài tập phục hồi nhẹ</strong> (Đi bộ <code>WALK</code>, Bơi hồ xả cơ <code>SWIM</code>, Máy đi bộ <code>TREADMILL</code> ở cường độ Nhẹ/Vừa): Giãn cách yêu cầu là <strong>0 giờ</strong> (chỉ cần tuân thủ đệm nghỉ 30 phút giữa 2 ca). Đây là nhóm bài duy nhất được phép kết hợp để đạt trần 3 buổi/ngày.</td>
+<td style="text-align: left;">Khoảng cách giữa 2 buổi tập của ngựa đáp ứng đầy đủ thời gian hồi phục thể lực y tế.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu ca tập vi phạm giãn cách.<br><strong>Thông báo lỗi:</strong> <em>"Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu [24/48] giờ giãn cách giữa hai buổi tập."</em><br><em>(Mã hệ thống: <code>WORKOUT_REST_REQUIRED: horse needs 24/48 hours between these sessions.</code>)</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>TRAINER_BUFFER_MINUTES</code></td>
-<td style="text-align: center;"><strong>15 phút</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L75</code></td>
-<td style="text-align: left;">Thời gian đệm nghỉ tối thiểu giữa 2 ca tập của HLV.</td>
+<td style="text-align: left;"><strong>Thời điểm Tạo lịch Hôm nay</strong></td>
+<td style="text-align: left;">Nếu lên lịch cho buổi tập diễn ra ngay trong ngày hôm nay, giờ bắt đầu phải sau giờ hiện tại tối thiểu <strong>30 phút</strong>.</td>
+<td style="text-align: left;">Đặt lịch trước ít nhất 30 phút so với giờ chạy thực tế.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu lịch gấp.<br><strong>Thông báo lỗi:</strong> <em>"Giờ bắt đầu buổi tập phải cách thời điểm hiện tại ít nhất 30 phút."</em></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>4.5. Chọn Mặt sân &amp; Kiểm soát Sức chứa Đường chạy (Track Capacity)</h3>
+<ul>
+<li><strong>Luồng thao tác trên Giao diện</strong>:</li>
+<li>HLV chọn <strong>Loại Mặt sân</strong> (Sân cỏ, Sân cát, Sân tổng hợp, hoặc Bể bơi/Máy tập).</li>
+<li>
+<p>Dựa vào mặt sân đã chọn, hệ thống tự động lọc danh sách các <strong>Đường chạy thực tế</strong> trong khuôn viên CLB để HLV chọn đường chạy cụ thể.</p>
+</li>
+<li>
+<p><strong>Cơ chế Kiểm soát Hai Nhánh Sức chứa</strong>:</p>
+</li>
+<li><strong>Đối với Bài tập Nhẹ / Vừa (Đi bộ, Nước kiệu, Nước đại)</strong>:<ul>
+<li>Áp dụng cơ chế chia sẻ đường chạy theo sức chứa thiết kế (từ <strong>4 đến 6 chiến mã cùng lúc</strong> tùy theo từng đường chạy).</li>
+<li><strong>Trường hợp Hợp lệ</strong>: Số lượng ngựa đang tập trên đường chạy &lt; Sức chứa tối đa → Hệ thống cho phép xếp thêm ngựa vào tập luyện bình thường.</li>
+<li><strong>Trường hợp Vi phạm (Đường chạy đã đầy)</strong>: Hệ thống hiển thị nhãn Đầy sân, chặn không cho đặt lịch, yêu cầu HLV đổi đường chạy khác hoặc chuyển khung giờ.</li>
+</ul>
+</li>
+<li><strong>Đối với Bài tập Nặng (Chạy tốc độ cao, Chạy thử sát hạch)</strong>:<ul>
+<li>Áp dụng nguyên tắc <strong>Chiếm dụng Độc quyền 100%</strong>.</li>
+<li><strong>Trường hợp Hợp lệ</strong>: Khi đường chạy hoàn toàn trống trong khung giờ đó → Cho phép HLV xếp ca chạy tốc độ cao. Ngay khi được xếp lịch, đường chạy đó lập tức bị khóa kín trong suốt khung giờ diễn ra.</li>
+<li><strong>Trường hợp Vi phạm</strong>: Nếu có một HLV khác cố tình xếp bất kỳ bài tập nào (dù nhẹ hay nặng) vào cùng đường chạy đó trong khung giờ trên:</li>
+<li><strong>Hành vi:</strong> Hệ thống chặn đứng hoàn toàn để loại trừ triệt để nguy cơ tai nạn va chạm ở tốc độ cao (trên 60 km/h).</li>
+<li><strong>Thông báo lỗi hiển thị:</strong> <em>"Đường chạy [Tên đường chạy] đang có buổi tập tốc độ cao của chiến mã khác trong khung giờ này. Vui lòng chọn đường chạy hoặc khung giờ khác."</em></li>
+</ul>
+</li>
+</ul>
+<hr />
+<h2>5. QUY TRÌNH 4: THỰC THI BUỔI TẬP &amp; GHI NHẬN CHỈ SỐ SINH TRẮC HỌC</h2>
+<h3>5.1. Bắt đầu Buổi tập</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Tiêu chuẩn Kiểm tra</th>
+<th style="text-align: left;">Điều kiện Nghiệp vụ</th>
+<th style="text-align: left;">Xử lý khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Kiểm tra Khóa Y tế</strong></td>
+<td style="text-align: left;">Chiến mã không có Khóa y tế đang hiệu lực vào ngày diễn ra buổi tập.</td>
+<td style="text-align: left;">Nút <code>Bắt đầu buổi tập</code> khả dụng, cho phép bấm.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Nút Bắt đầu bị khóa, chuyển thành nút đỏ <code>Xem bệnh án</code>.<br><strong>Thông báo lỗi:</strong> <em>"Chiến mã đang bị Khóa huấn luyện y tế. Không thể bắt đầu buổi tập."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>GROOM_BUFFER_MINUTES</code></td>
-<td style="text-align: center;"><strong>15 phút</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L138</code></td>
-<td style="text-align: left;">Thời gian đệm tối thiểu của Groom để tháo yên, tắm rửa cho ngựa.</td>
+<td style="text-align: left;"><strong>Thời điểm Bắt đầu</strong></td>
+<td style="text-align: left;">Phải đến đúng hoặc sau giờ tập thực tế mới được phép bấm Bắt đầu.</td>
+<td style="text-align: left;">Trạng thái buổi tập chuyển sang <code>Đang diễn ra</code>. Bắt đầu tính giờ thực tế.</td>
+<td style="text-align: left;">Bấm trước giờ tập bị chặn (trừ chế độ mô phỏng kiểm thử nội bộ).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>5.2. Ghi nhận Chỉ số Sinh trắc &amp; Đánh giá Phong độ</h3>
+<p>Sau khi ca tập hoàn thành, Huấn luyện viên Trưởng trực tiếp nhập các chỉ số viễn trắc sinh học thu thập được:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Chỉ số / Tiêu chuẩn</th>
+<th style="text-align: left;">Giới hạn Nghiệp vụ &amp; Khoa học</th>
+<th style="text-align: left;">Xử lý khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Thời hạn Ghi kết quả</strong></td>
+<td style="text-align: left;">Tối đa trong vòng <strong>7 ngày</strong> kể từ khi buổi tập kết thúc.</td>
+<td style="text-align: left;">Kết quả được ghi nhận vào hồ sơ thể lực của ngựa.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Khóa form nhập kết quả.<br><strong>Thông báo lỗi:</strong> <em>"Đã quá 7 ngày, không thể ghi kết quả cho buổi tập đã bỏ lỡ."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>MAX_DAILY_WORKOUTS_PER_GROOM</code></td>
-<td style="text-align: center;"><strong>4 buổi</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L65</code></td>
-<td style="text-align: left;">Giới hạn an toàn lao động: 1 Groom không phụ trách quá 4 ca/ngày.</td>
+<td style="text-align: left;"><strong>Thời hạn Chỉnh sửa</strong></td>
+<td style="text-align: left;">Chỉ được sửa kết quả trong vòng <strong>48 giờ</strong> kể từ lần lưu đầu tiên.</td>
+<td style="text-align: left;">Cho phép lưu các điều chỉnh số liệu chính xác.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Khóa quyền chỉnh sửa.<br><strong>Thông báo lỗi:</strong> <em>"Đã hết hạn chỉnh sửa kết quả buổi tập (48 giờ kể từ lần ghi đầu tiên)."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>TRACK_MAX_LIGHT_HORSES</code></td>
-<td style="text-align: center;"><strong>3 ngựa</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L78</code></td>
-<td style="text-align: left;">Sức chứa tối đa của 1 mặt sân cho các bài tập nhẹ/vừa.</td>
+<td style="text-align: left;"><strong>Giới hạn Cự ly Buổi tập</strong></td>
+<td style="text-align: left;">Tối đa <strong>10.000 mét (10 km) / buổi tập</strong>.</td>
+<td style="text-align: left;">Cự ly hợp lệ, tiến hành tính toán tốc độ.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu dữ liệu.<br><strong>Thông báo lỗi:</strong> <em>"Cự ly tập luyện thực tế tối đa là 10.000 mét."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>HEAVY_OCCUPIED</code></td>
-<td style="text-align: center;"><strong>1 ngựa</strong></td>
-<td style="text-align: left;"><code>BE/src/training/tracks.service.ts</code></td>
-<td style="text-align: left;">Bài tập nặng chiếm dụng độc quyền sân, cấm các ngựa khác vào sân.</td>
+<td style="text-align: left;"><strong>Ngưỡng Vận tốc Sinh học</strong></td>
+<td style="text-align: left;">Tốc độ trung bình tính toán tối đa là <strong>75 km/h</strong> (kỷ lục thế giới loài ngựa đua xấp xỉ 70 km/h).</td>
+<td style="text-align: left;">Vận tốc hợp lệ, lưu vào biểu đồ phong độ.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu (chống nhập khống sai lệch).<br><strong>Thông báo lỗi:</strong> <em>"Vận tốc trung bình tính toán ([Tốc độ] km/h) vượt quá ngưỡng sinh học tối đa của loài ngựa (75 km/h). Vui lòng kiểm tra lại cự ly và thời gian."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>MAX_SESSION_DISTANCE_METERS</code></td>
-<td style="text-align: center;"><strong>10.000m</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L141</code></td>
-<td style="text-align: left;">Cự ly tối đa cho phép trong 1 buổi tập để chống nhập khống.</td>
+<td style="text-align: left;"><strong>Tốc độ Bứt phá Cực đại</strong></td>
+<td style="text-align: left;">Tốc độ cao nhất (Top Speed) không được nhỏ hơn Tốc độ trung bình.</td>
+<td style="text-align: left;">Ghi nhận chỉ số bứt phá thành công.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn lưu số liệu vô lý.<br><strong>Thông báo lỗi:</strong> <em>"Tốc độ bứt phá cực đại không thể nhỏ hơn tốc độ trung bình."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>MAX_AVERAGE_SPEED_KMH</code></td>
-<td style="text-align: center;"><strong>75 km/h</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L143</code></td>
-<td style="text-align: left;">Tốc độ tối đa giới hạn sinh học loài ngựa đua (kỷ lục thế giới $\approx 70$ km/h).</td>
+<td style="text-align: left;"><strong>Chỉ số Nhịp tim Chuẩn</strong></td>
+<td style="text-align: left;">- Nhịp tim nghỉ: 28 – 45 nhịp/phút.<br>- Nhịp tim đỉnh: 120 – 240 nhịp/phút.<br>- Nhịp tim hồi phục: <strong>Không được lớn hơn nhịp tim đỉnh</strong>.</td>
+<td style="text-align: left;">Dải nhịp tim an toàn, cập nhật hồ sơ tim mạch.</td>
+<td style="text-align: left;"><strong>Vi phạm:</strong> Nhập nhịp hồi phục &gt; nhịp đỉnh.<br><strong>Thông báo lỗi:</strong> <em>"Nhịp tim hồi phục không thể cao hơn nhịp tim đỉnh trong buổi tập."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>LATE_RESULT_DAYS</code></td>
-<td style="text-align: center;"><strong>7 ngày</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L145</code></td>
-<td style="text-align: left;">Hạn chót HLV phải nhập kết quả sau khi buổi tập kết thúc.</td>
+<td style="text-align: left;"><strong>Điểm số Phong độ</strong></td>
+<td style="text-align: left;">Chấm điểm cảm quan chuyên môn theo thang điểm từ <strong>0 đến 100 điểm</strong>.</td>
+<td style="text-align: left;">Điểm số được tích lũy vào hồ sơ xét duyệt thi đấu.</td>
+<td style="text-align: left;">Nhập ngoài dải 0 - 100 bị chặn báo lỗi.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3>5.3. Xử lý Dấu hiệu Bất thường &amp; Cảnh báo Y tế Khẩn cấp</h3>
+<pre><code>[HLV tích chọn Dấu hiệu Bất thường]
+                │
+                ▼ (Bắt buộc nhập mô tả ≥ 10 ký tự)
+   ┌────────────────────────────────────────┐
+   │ Hệ thống ghi nhận kết quả buổi tập     │
+   └────────────────────┬───────────────────┘
+                        │
+       ┌────────────────┴────────────────┐
+       ▼                                 ▼
+[Hệ thống Báo động Thú y]         [Cảnh báo Bàn làm việc HLV]
+- Bắn thông báo khẩn cấp tức thì  - Nếu nhịp tim sau 15p &gt; 115 bpm:
+  đến Bác sĩ thú y                - Gắn cờ Cảnh báo Mệt mỏi quá tải
+- Tự động tạo hồ sơ khám sơ bộ     trên Sidebar và Hồ sơ chiến mã
+</code></pre>
+<ol>
+<li><strong>Ràng buộc Mô tả Dấu hiệu Bất thường</strong>:</li>
+<li>Khi HLV phát hiện ngựa có dấu hiệu: Què chân / khập khiễng, Thở dốc kéo dài, Chảy máu mũi, Sưng khớp / sưng gân, hoặc Bỏ ăn / ủ rũ:</li>
+<li><strong>Trường hợp Hợp lệ</strong>: HLV nhập mô tả chi tiết từ 10 đến 500 ký tự → Hệ thống ghi nhận kết quả và <strong>ngay lập tức gửi thông báo khẩn cấp thời gian thực đến Bác sĩ thú y</strong> với tiêu đề: <em>"Phát hiện dấu hiệu bất thường sau buổi tập của chiến mã [Tên chiến mã]"</em>.</li>
+<li>
+<p><strong>Trường hợp Vi phạm</strong>: HLV tích chọn dấu hiệu nhưng để trống phần mô tả:</p>
+<ul>
+<li><strong>Hành vi:</strong> Chặn lưu kết quả buổi tập.</li>
+<li><strong>Thông báo lỗi:</strong> <em>"Vui lòng nhập mô tả chi tiết dấu hiệu bất thường để Bác sĩ thú y nắm thông tin."</em></li>
+</ul>
+</li>
+<li>
+<p><strong>Cảnh báo Mệt mỏi Quá tải (Exertion Alert)</strong>:</p>
+</li>
+<li>Nếu nhịp tim hồi phục sau 15 phút nghỉ ngơi vẫn <strong>vượt trên 115 nhịp/phút</strong>:</li>
+<li>Hệ thống tự động kích hoạt Cờ cảnh báo mệt mỏi quá tải màu Cam trên Bàn làm việc của Huấn luyện viên để HLV chủ động giảm tải trọng trong các ca tập kế tiếp.</li>
+</ol>
+<hr />
+<h3>5.4. Hủy Buổi tập Chưa Diễn ra</h3>
+<ul>
+<li><strong>Điều kiện</strong>: HLV chỉ được phép hủy các buổi tập chưa hoàn thành (Đã lên lịch, Bị chặn, hoặc Đã bỏ lỡ).</li>
+<li><strong>Ràng buộc Lý do Hủy</strong>: Nếu HLV chọn lý do hủy là <code>Khác</code>:</li>
+<li><strong>Trường hợp Hợp lệ</strong>: HLV nhập giải trình từ 10 đến 500 ký tự → Buổi tập chuyển sang trạng thái Đã hủy, giải phóng khung giờ trên đường chạy.</li>
+<li><strong>Trường hợp Vi phạm (Để trống giải trình)</strong>: Hệ thống chặn hủy, báo lỗi: <em>"Vui lòng nhập giải trình lý do hủy buổi tập (tối thiểu 10 ký tự)."</em></li>
+</ul>
+<hr />
+<h2>6. QUY TRÌNH 5: CƠ CHẾ LIÊN ĐỘNG KHÓA Y TẾ (MEDICAL LOCK INTERLOCK)</h2>
+<p>Cơ chế Khóa liên động là rào chắn an toàn tối thượng của hệ thống EquiFlow, được thiết kế để triệt tiêu hoàn toàn khả năng chiến mã đang có vấn đề sức khỏe bị ép ra sân tập.</p>
+<pre><code>       [Bác sĩ Thú y kích hoạt Khóa Y tế]
+                       │
+                       ▼
+         Chiến mã bị KHÓA Y TẾ TOÀN DIỆN
+                       │
+         ┌─────────────┴─────────────┐
+         ▼                           ▼
+[Tại Phân hệ Huấn luyện]     [Tại Giao diện HLV]
+- Chặn tạo giáo án mới       - Hiển thị Huy hiệu đỏ &quot;Khóa y tế&quot;
+- Chặn kích hoạt giáo án     - Nút &quot;Bắt đầu tập&quot; bị khóa cứng
+- Chặn bấm bắt đầu ca tập    - Chuyển thành nút đỏ &quot;Xem bệnh án&quot;
+- Tự động hoãn bài tập nặng
+</code></pre>
+<h3>Chi tiết Tác động Hai Nhánh của Khóa Y tế:</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Điểm Chặn Chức năng</th>
+<th style="text-align: left;">Hành vi của Hệ thống khi CÓ KHÓA Y TẾ</th>
+<th style="text-align: left;">Hành vi khi BÁC SĨ THÚ Y GỠ KHÓA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Tạo Giáo án Mới</strong></td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Chặn đứng tại bước chọn ngựa.<br><strong>Thông báo lỗi:</strong> <em>"Ngựa đang bị Khóa huấn luyện y tế. Không thể tạo giáo án mới cho đến khi Bác sĩ thú y gỡ khóa."</em></td>
+<td style="text-align: left;">Trạng thái bình thường, cho phép khởi tạo giáo án mới.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>MAX_PHASES</code></td>
-<td style="text-align: center;"><strong>12</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L185</code></td>
-<td style="text-align: left;">Số giai đoạn tối đa trong 1 giáo án huấn luyện.</td>
+<td style="text-align: left;"><strong>Kích hoạt Giáo án</strong></td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Vô hiệu hóa nút Kích hoạt.<br><strong>Thông báo lỗi:</strong> <em>"Chiến mã đang bị Khóa huấn luyện y tế. Không thể kích hoạt giáo án."</em></td>
+<td style="text-align: left;">Cho phép kích hoạt giáo án nếu đủ điều kiện buổi tập.</td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>MAX_PLAN_WEEKS</code></td>
+<td style="text-align: left;"><strong>Bắt đầu Buổi tập</strong></td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Nút <code>Bắt đầu buổi tập</code> bị khóa cứng, chuyển thành nút đỏ <code>Xem bệnh án</code>. Nếu cố tình gọi thao tác:<br><strong>Thông báo lỗi:</strong> <em>"Chiến mã đang bị Khóa huấn luyện y tế. Không thể bắt đầu buổi tập."</em></td>
+<td style="text-align: left;">Nút <code>Bắt đầu buổi tập</code> sáng trở lại, cho phép bấm khi đến giờ.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Lịch tập Nặng Đã lên lịch</strong></td>
+<td style="text-align: left;">Toàn bộ các buổi tập Chạy tốc độ cao, Chạy thử sát hạch trong khoảng thời gian khóa y tế <strong>tự động chuyển sang trạng thái BỊ CHẶN (Hoãn tập)</strong>.</td>
+<td style="text-align: left;">HLV được phép điều chỉnh lại lịch tập sau khi có chẩn đoán hồi phục.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Thẩm quyền Duy nhất</strong>: Chỉ duy nhất Bác sĩ thú y (<code>Role.VETERINARIAN</code>) có thẩm quyền Đặt khóa hoặc Gỡ khóa y tế sau khi tái khám chuyên môn. Huấn luyện viên Trưởng tuyệt đối không thể can thiệp bằng bất kỳ hình thức nào.</p>
+</blockquote>
+<hr />
+<h2>7. QUY TRÌNH 6: SÁT HẠCH CHẠY THỬ &amp; ĐĂNG KÝ THI ĐẤU</h2>
+<h3>7.1. Buổi Chạy thử Sát hạch Chuẩn Quốc tế</h3>
+<ul>
+<li><strong>Thời lượng</strong>: 90 phút (bài tập cường độ cao nhất hệ thống).</li>
+<li><strong>Cự ly đo đạc chính thức</strong>: Đo đạc thời gian cán đích ở 3 cự ly thi đấu quốc tế: <strong>1.000m, 1.200m, 1.600m</strong>.</li>
+<li><strong>Chỉ số bắt buộc thu thập</strong>: Tốc độ bứt phá cực đại (Top Speed) và điểm số phong độ.</li>
+</ul>
+<hr />
+<h3>7.2. Bảng Thẩm định 4 Trụ cột Sẵn sàng Thi đấu</h3>
+<p>Chiến mã chỉ được hệ thống công nhận <strong>Đủ điều kiện đăng ký thi đấu</strong> khi thỏa mãn đồng thời <strong>toàn bộ 4/4 tiêu chí khắt khe</strong>:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Trụ cột Thẩm định</th>
+<th style="text-align: left;">Tiêu chuẩn Nghiệp vụ</th>
+<th style="text-align: left;">Xử lý khi ĐẠT TIÊU CHÍ (ĐÚNG)</th>
+<th style="text-align: left;">Chế tài khi KHÔNG ĐẠT (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Trụ cột 1: Thể trạng Y tế</strong></td>
+<td style="text-align: left;">- Không bị Khóa y tế.<br>- Không ở diện chấn thương, cách ly.<br>- Không bị tạm giữ do nợ tiền chuồng.<br>- Không bị ngừng quản lý.</td>
+<td style="text-align: left;">Tiêu chí y tế đạt tích xanh.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Đánh dấu X đỏ tiêu chí y tế; khóa hoàn toàn nút nộp danh sách thi đấu.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Trụ cột 2: Tiến độ Giáo án</strong></td>
+<td style="text-align: left;">Có giáo án Đang áp dụng và tiến độ hoàn thành đạt <strong>từ 80% trở lên</strong> (hoặc đã tích lũy tối thiểu 8 buổi tập hoàn tất).</td>
+<td style="text-align: left;">Tiêu chí giáo án đạt tích xanh.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Đánh dấu X đỏ, cảnh báo: <em>"Chưa hoàn thành đủ 80% giáo án."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Trụ cột 3: Phong độ Chạy thử</strong></td>
+<td style="text-align: left;">Có ít nhất 1 bài Chạy thử sát hạch đạt <strong>Điểm phong độ ≥ 70 / 100 điểm</strong> và <strong>Vận tốc bứt phá cực đại ≥ 50 km/h</strong>.</td>
+<td style="text-align: left;">Tiêu chí sát hạch đạt tích xanh.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Đánh dấu X đỏ, cảnh báo: <em>"Chưa có bài chạy thử đạt chuẩn (Điểm ≥ 70 và Tốc độ ≥ 50 km/h)."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Trụ cột 4: An toàn Tải trọng</strong></td>
+<td style="text-align: left;">Tổng tải trọng vận động 7 ngày gần nhất không vượt quá <strong>130%</strong> mức tải trung bình tuần của 4 tuần trước đó (không có cảnh báo sốc tải trọng).</td>
+<td style="text-align: left;">Tiêu chí an toàn cơ bắp đạt tích xanh.</td>
+<td style="text-align: left;"><strong>Hành vi:</strong> Đánh dấu X đỏ, cảnh báo: <em>"Cảnh báo gai tải trọng vượt ngưỡng 130%. Nguy cơ chấn thương cao."</em></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Kết quả Thẩm định</strong>:</li>
+<li><strong>Khi ĐẠT 4/4 TIÊU CHÍ</strong>: Giao diện hiển thị Huy hiệu Xanh lá cây tươi sáng: <strong><code>Đủ điều kiện thi đấu</code></strong>. Mở khóa chức năng nộp danh sách đăng ký giải đua gửi Quản lý CLB.</li>
+<li><strong>Khi VI PHẠM (Dù chỉ 1 tiêu chí)</strong>: Giao diện hiển thị Huy hiệu Màu Xám: <strong><code>Chưa đủ điều kiện</code></strong>. Nút nộp danh sách bị khóa mờ; hệ thống liệt kê rõ ràng các tiêu chí chưa đạt để HLV tiếp tục bồi dưỡng.</li>
+</ul>
+<hr />
+<h2>8. QUY TRÌNH 7: MINH BẠCH ĐÁNH GIÁ TỪ CHỦ SỞ HỮU NGỰA</h2>
+<p>Nhằm bảo đảm tính khách quan và nâng cao chất lượng dịch vụ huấn luyện:<br />
+- <strong>Thẩm quyền Đánh giá</strong>: Chủ sở hữu chiến mã có quyền gửi đánh giá từ 1 đến 5 sao kèm nhận xét cho Huấn luyện viên đối với các giáo án đang áp dụng hoặc đã hoàn thành.<br />
+- <strong>Ranh giới Quyền hạn của HLV</strong>:<br />
+  - Huấn luyện viên Trưởng <strong>chỉ có quyền Xem danh sách đánh giá của tôi (<code>My Reviews</code>)</strong>.<br />
+  - <strong>HLV hoàn toàn KHÔNG có quyền chỉnh sửa, ẩn hoặc xóa bất kỳ đánh giá nào của Chủ ngựa</strong>.<br />
+- <strong>Bộ Chỉ số Uy tín Chuyên môn của HLV</strong>:<br />
+  - <strong>Điểm số hài lòng trung bình</strong> (tính theo số sao từ Chủ ngựa).<br />
+  - <strong>Tỷ lệ hoàn thành giáo án đúng hạn SLA 3 ngày</strong> (không bị cảnh báo quá hạn).<br />
+  - <strong>Tỷ lệ chiến mã sát hạch đạt chuẩn thi đấu thành công</strong>.</p>
+<hr />
+<h2>9. BẢNG TỔNG HỢP MA TRẬN QUY TẮC NGHIỆP VỤ ĐA NHÁNH (HỢP LỆ &amp; VI PHẠM)</h2>
+<p>Bảng ma trận dưới đây là tài liệu căn cứ cốt lõi dành cho BA nghiệm thu và Quản lý đối soát toàn bộ phân hệ:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Tên Quy tắc Nghiệp vụ</th>
+<th style="text-align: center;">Giá trị Chuẩn mực</th>
+<th style="text-align: left;">Xử lý &amp; Thông báo khi HỢP LỆ (ĐÚNG)</th>
+<th style="text-align: left;">Hành vi Chặn &amp; Thông báo khi VI PHẠM (SAI)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Định mức ngựa / HLV</strong></td>
+<td style="text-align: center;"><strong>Tối đa 8 ngựa</strong></td>
+<td style="text-align: left;">Cho phép Quản lý giao thêm ngựa cho HLV.</td>
+<td style="text-align: left;"><strong>Chặn phân công</strong>.<br>Thông báo: <em>"HLV [Họ và tên] đã đạt định mức tối đa 8 chiến mã đồng thời."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Hạn mức tồn đọng (WIP Limit)</strong></td>
+<td style="text-align: center;"><strong>Tồn &lt; 2 ngựa</strong> chưa có giáo án</td>
+<td style="text-align: left;">HLV được phép nhận thêm ngựa mới.</td>
+<td style="text-align: left;"><strong>Chặn phân công</strong>.<br>Thông báo: <em>"Huấn luyện viên [Họ và tên] đang tồn [X] chiến mã chưa kích hoạt giáo án. Vui lòng hoàn tất giáo án hiện có trước khi phân công thêm."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Ràng buộc Khu chuồng</strong></td>
+<td style="text-align: center;">Cùng Khu chuồng</td>
+<td style="text-align: left;">Cho phép giao ngựa và lên lịch tập.</td>
+<td style="text-align: left;"><strong>Chặn phân công</strong>.<br>Thông báo: <em>"HLV [Họ tên HLV] phụ trách [Barn HLV], không thể nhận ngựa ở [Barn Ngựa]."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Thời hạn phản hồi bàn giao</strong></td>
+<td style="text-align: center;"><strong>48 giờ</strong></td>
+<td style="text-align: left;">Cho phép HLV bấm Đồng ý hoặc Từ chối nhận ngựa.</td>
+<td style="text-align: left;"><strong>Chặn thao tác</strong>.<br>Thông báo: <em>"Yêu cầu phân công đã hết hạn phản hồi (48 giờ)."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>SLA Lập giáo án</strong></td>
+<td style="text-align: center;"><strong>Cố định 3 ngày (72 giờ)</strong></td>
+<td style="text-align: left;">- Giao diện: Badge vàng <em>"Còn X ngày"</em>. Nút <em>"Lập giáo án ngay"</em>. Khi kích hoạt giáo án: Giải phóng nghĩa vụ.</td>
+<td style="text-align: left;">- Giao diện: Badge đỏ <em>"Quá hạn X ngày"</em>. Dashboard báo đỏ.<br>- Tự động kích hoạt WIP Limit chặn nhận ngựa mới.<br>- Tự động gửi Email cảnh báo KPI: <code>[TMEC Cảnh báo KPI] Quá hạn lập giáo án cho chiến mã [Tên ngựa]</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Thời gian chờ hủy nháp (Cooldown)</strong></td>
+<td style="text-align: center;"><strong>48 giờ</strong></td>
+<td style="text-align: left;">Tạo giáo án cho các ngựa hợp lệ khác.</td>
+<td style="text-align: left;"><strong>Chặn tạo giáo án cho ngựa đó</strong>.<br>Thông báo: <em>"Bạn đang trong thời gian chờ ([X] giờ còn lại) đối với chiến mã [Tên] do vừa hủy hoặc để hết hạn bản nháp..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Thời lượng giáo án tối đa</strong></td>
 <td style="text-align: center;"><strong>52 tuần</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L186</code></td>
-<td style="text-align: left;">Thời lượng tối đa của một giáo án (1 năm).</td>
+<td style="text-align: left;">Giáo án hợp lệ, cho phép lưu nháp.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Giáo án tối đa 52 tuần."</em></td>
 </tr>
 <tr>
-<td style="text-align: left;"><code>CLUB_UTC_OFFSET_HOURS</code></td>
-<td style="text-align: center;"><strong>UTC+7</strong></td>
-<td style="text-align: left;"><code>BE/src/training/training-rules.ts#L152</code></td>
-<td style="text-align: left;">Quy đổi múi giờ chuẩn Việt Nam, loại bỏ sai lệch ngày giờ hệ thống.</td>
+<td style="text-align: left;"><strong>Tên &amp; Mục tiêu giáo án</strong></td>
+<td style="text-align: center;">Phải có chữ cái, bắt đầu bằng chữ cái</td>
+<td style="text-align: left;">Chấp nhận lưu thông tin giáo án.</td>
+<td style="text-align: left;">- Tên toàn số: <em>"Tên giáo án không hợp lệ..."</em><br>- Mục tiêu bắt đầu bằng số: <em>"Mục tiêu giáo án phải bắt đầu bằng chữ cái..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Thời lượng tối thiểu giai đoạn</strong></td>
+<td style="text-align: center;">3 ngày hoặc 7 ngày</td>
+<td style="text-align: left;">Cho phép lưu cấu trúc giai đoạn.</td>
+<td style="text-align: left;">Báo lỗi thời lượng giai đoạn không đạt ngưỡng tối thiểu.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Trùng lặp giai đoạn</strong></td>
+<td style="text-align: center;">Không chồng chéo ngày</td>
+<td style="text-align: left;">Các giai đoạn nối tiếp liên tục.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Giai đoạn bị trùng thời gian với giai đoạn [Tên phase trước]."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Kích hoạt thiếu buổi tập</strong></td>
+<td style="text-align: center;">Phải có ≥ 1 buổi tập khả thi</td>
+<td style="text-align: left;">Giáo án kích hoạt thành công, ngựa chuyển sang <code>Đang huấn luyện</code>.</td>
+<td style="text-align: left;">- Không có buổi tập: <em>"Giáo án phải có ít nhất một buổi tập."</em><br>- Không có bài tương lai: <em>"Giáo án không có buổi tập nào trong tương lai..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Tham vấn thú y khi kích hoạt</strong></td>
+<td style="text-align: center;">Bắt buộc tích xác nhận</td>
+<td style="text-align: left;">Ghi nhận tham vấn, kích hoạt bình thường.</td>
+<td style="text-align: left;"><strong>Chặn kích hoạt</strong>.<br>Thông báo: <em>"Chiến mã đang trong diện theo dõi y tế đặc biệt. Bắt buộc phải tham vấn ý kiến Bác sĩ thú y..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Nghiệm thu đóng giáo án</strong></td>
+<td style="text-align: center;">Không còn bài tập dở dang</td>
+<td style="text-align: left;">Đóng giáo án thành công, ngựa chuyển sang <code>Nghỉ ngơi hồi phục</code>, miễn trừ SLA 3 ngày.</td>
+<td style="text-align: left;"><strong>Chặn kết thúc giáo án</strong>.<br>Thông báo: <em>"Còn [X] buổi tập chưa ghi kết quả: [Danh sách ngày]..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Khung giờ mở cửa khuôn viên</strong></td>
+<td style="text-align: center;"><strong>04:00 - 20:00</strong></td>
+<td style="text-align: left;">Lịch tập nằm trong giờ mở cửa.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Giờ bắt đầu phải từ 04:00 đến 20:00."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Chốt chặn sinh học buổi chiều</strong></td>
+<td style="text-align: center;"><strong>Kết thúc ≤ 17:00</strong> (bắt đầu muộn nhất 16:00)</td>
+<td style="text-align: left;">Đảm bảo giờ ngựa tắm hạ nhiệt và ăn tối (17:00 - 18:00).</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Buổi tập phải kết thúc trước hoặc đúng 17:00 chiều để đảm bảo giờ nghỉ ngơi và ăn tối của ngựa. Giờ bắt đầu muộn nhất là 16:00."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Hạn ngạch giờ vàng (06:15-08:00)</strong></td>
+<td style="text-align: center;"><strong>Tối đa 2 bài tập nặng</strong></td>
+<td style="text-align: left;">Chia sẻ công bằng đường chạy buổi sáng.</td>
+<td style="text-align: left;"><strong>Chặn lưu bài thứ 3</strong>.<br>Thông báo: <em>"HLV đã đạt hạn ngạch tối đa 2 bài tập nặng trong khung giờ vàng buổi sáng (06:15 - 08:00)..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Đệm nghỉ của HLV</strong></td>
+<td style="text-align: center;"><strong>Tối thiểu 15 phút</strong></td>
+<td style="text-align: left;">HLV được nghỉ ngơi giữa 2 ca tập.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Huấn luyện viên [Tên] đã có buổi tập của ngựa [Tên ngựa] lúc [Giờ]..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Khoảng cách 2 ca tập của ngựa</strong></td>
+<td style="text-align: center;"><strong>Tối thiểu 30 phút</strong></td>
+<td style="text-align: left;">Ngựa được hồi phục giữa 2 ca vận động.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Chiến mã đã có lịch tập khác quá gần khung giờ này..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Giới hạn số ca tập trong ngày</strong></td>
+<td style="text-align: center;"><strong>Tối đa 3 buổi / ngày</strong></td>
+<td style="text-align: left;">Tránh ép ngựa tập luyện quá tải trong ngày.</td>
+<td style="text-align: left;"><strong>Chặn lưu ca thứ 4</strong>.<br>Thông báo: <em>"Mỗi ngựa tối đa 3 buổi tập mỗi ngày."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Thời gian hồi phục giữa 2 ca tập</strong></td>
+<td style="text-align: center;"><strong>Nghỉ 24h (bài vừa) / 48h (bài nặng)</strong></td>
+<td style="text-align: left;">Bảo vệ gân cơ, khớp chân và tim mạch ngựa.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu [24/48] giờ giãn cách giữa hai buổi tập."</em><br><em>(Mã lỗi: <code>WORKOUT_REST_REQUIRED</code>).</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Sức chứa đường chạy bài nhẹ/vừa</strong></td>
+<td style="text-align: center;"><strong>4 - 6 ngựa / đường</strong></td>
+<td style="text-align: left;">Cho phép nhiều ngựa cùng tập nhẹ.</td>
+<td style="text-align: left;">Hiển thị trạng thái Đầy sân, chặn không cho đặt thêm.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Độc quyền đường chạy bài nặng</strong></td>
+<td style="text-align: center;"><strong>1 ngựa độc quyền</strong></td>
+<td style="text-align: left;">Khóa kín đường chạy, an toàn tốc độ cao.</td>
+<td style="text-align: left;"><strong>Chặn xếp trùng ca</strong>.<br>Thông báo: <em>"Đường chạy [Tên] đang có buổi tập tốc độ cao của chiến mã khác trong khung giờ này..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Hạn nộp kết quả ca tập</strong></td>
+<td style="text-align: center;"><strong>Trong vòng 7 ngày</strong></td>
+<td style="text-align: left;">Kết quả được ghi nhận vào hồ sơ.</td>
+<td style="text-align: left;"><strong>Khóa form nhập</strong>.<br>Thông báo: <em>"Đã quá 7 ngày, không thể ghi kết quả cho buổi tập đã bỏ lỡ."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Hạn sửa kết quả ca tập</strong></td>
+<td style="text-align: center;"><strong>Trong vòng 48 giờ</strong></td>
+<td style="text-align: left;">Cho phép điều chỉnh sai lệch số liệu.</td>
+<td style="text-align: left;"><strong>Khóa quyền sửa</strong>.<br>Thông báo: <em>"Đã hết hạn chỉnh sửa kết quả buổi tập (48 giờ kể từ lần ghi đầu tiên)."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Trần cự ly buổi tập</strong></td>
+<td style="text-align: center;"><strong>Tối đa 10.000m</strong></td>
+<td style="text-align: left;">Cự ly hợp lệ.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Cự ly tập luyện thực tế tối đa là 10.000 mét."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Trần tốc độ sinh học</strong></td>
+<td style="text-align: center;"><strong>Tối đa 75 km/h</strong></td>
+<td style="text-align: left;">Tốc độ nằm trong giới hạn loài ngựa.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Vận tốc trung bình tính toán ([X] km/h) vượt quá ngưỡng sinh học tối đa của loài ngựa (75 km/h)..."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Dấu hiệu bất thường &amp; Mô tả</strong></td>
+<td style="text-align: center;">Bắt buộc mô tả ≥ 10 ký tự</td>
+<td style="text-align: left;">Ghi nhận kết quả, tự động bắn thông báo khẩn cấp tức thời cho Bác sĩ thú y.</td>
+<td style="text-align: left;"><strong>Chặn lưu</strong>.<br>Thông báo: <em>"Vui lòng nhập mô tả chi tiết dấu hiệu bất thường để Bác sĩ thú y nắm thông tin."</em></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Cảnh báo mệt mỏi quá tải</strong></td>
+<td style="text-align: center;">Nhịp hồi phục sau 15p ≤ 115 bpm</td>
+<td style="text-align: left;">Thể lực hồi phục tốt.</td>
+<td style="text-align: left;">Tự động gắn cờ Cảnh báo Mệt mỏi Quá tải (màu cam) trên Bàn làm việc HLV nếu nhịp tim sau 15p &gt; 115 bpm.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Tác động Khóa Y tế</strong></td>
+<td style="text-align: center;">Đặt / Gỡ độc quyền bởi Thú y</td>
+<td style="text-align: left;">Tự động mở khóa các tính năng khi thú y gỡ khóa.</td>
+<td style="text-align: left;">- Chặn tạo giáo án mới: <em>"Ngựa đang bị Khóa huấn luyện y tế..."</em><br>- Chặn kích hoạt giáo án: <em>"Chiến mã đang bị Khóa huấn luyện y tế..."</em><br>- Nút Bắt đầu ca tập bị khóa cứng, chuyển thành nút đỏ <em>"Xem bệnh án"</em>, ném lỗi: <em>"Chiến mã đang bị Khóa huấn luyện y tế..."</em><br>- Tự động chuyển toàn bộ bài tập nặng sang trạng thái BỊ CHẶN (Hoãn tập).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Thẩm định Đủ chuẩn Thi đấu</strong></td>
+<td style="text-align: center;">Đạt đồng thời <strong>4/4 tiêu chí</strong></td>
+<td style="text-align: left;">Cấp nhãn Xanh lá: <strong><code>Đủ điều kiện thi đấu</code></strong>, mở khóa gửi đăng ký thi đấu cho Quản lý.</td>
+<td style="text-align: left;">Cấp nhãn Xám: <strong><code>Chưa đủ điều kiện</code></strong>, liệt kê cụ thể các tiêu chí vi phạm, khóa nút gửi đăng ký.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Minh bạch Đánh giá Chủ ngựa</strong></td>
+<td style="text-align: center;">HLV chỉ có quyền Xem</td>
+<td style="text-align: left;">Đánh giá được bảo vệ toàn vẹn, tính vào bộ chỉ số uy tín và xếp hạng HLV.</td>
+<td style="text-align: left;">HLV hoàn toàn không có nút Sửa hoặc Xóa đánh giá của Chủ ngựa.</td>
 </tr>
 </tbody>
 </table>

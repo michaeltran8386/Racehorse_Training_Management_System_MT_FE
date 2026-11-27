@@ -12,6 +12,7 @@ import { ROLE_LABEL } from "@/shared/lib/permissions";
 import type { PublicAccount, Role } from "@/shared/types/auth";
 import { createAccount, getBarnStaffing } from "../api";
 import type { BarnStaffingItem } from "../api";
+import { BarnSlotPicker } from "./BarnSlotPicker";
 import { fullNameError } from "@/shared/lib/name";
 
 import { tr } from "@/shared/i18n/tr";
@@ -75,7 +76,10 @@ export function CreateAccountModal({ onClose, onCreated }: CreateAccountModalPro
     if (!mail) found.email = tr("Email is required.");
     else if (!EMAIL_RE.test(mail)) found.email = tr("Email must be a @gmail.com address.");
     if (role === "HEAD_TRAINER" && !assignedBarnId) {
-      found.barn = "Vui lòng chọn Khu chuồng phụ trách cho Huấn luyện viên.";
+      found.barn = tr("Please select 1 open slot for the Head Trainer.");
+    }
+    if (role === "GROOM" && !assignedBarnId) {
+      found.barn = tr("Please select 1 open slot for the Groom.");
     }
     if (found.name || found.email || found.barn) return setErrors(found);
 
@@ -86,7 +90,7 @@ export function CreateAccountModal({ onClose, onCreated }: CreateAccountModalPro
         fullName: fullName.trim(),
         email: mail,
         role,
-        assignedBarnId: role === "HEAD_TRAINER" ? assignedBarnId : undefined,
+        assignedBarnId: role === "HEAD_TRAINER" || role === "GROOM" ? assignedBarnId : undefined,
       });
       onCreated(res.account);
     } catch (err) {
@@ -97,17 +101,11 @@ export function CreateAccountModal({ onClose, onCreated }: CreateAccountModalPro
     }
   }
 
-  const barnOptions = barns.map((b) => ({
-    value: b.id,
-    label: `${b.name} (${b.trainersCount}/${b.maxTrainers} HLV)${b.isFull ? " [Đầy]" : " [Còn " + (b.maxTrainers - b.trainersCount) + " chỗ]"}`,
-    disabled: b.isFull,
-  }));
-
   return (
     <Modal
       title={tr("Create account")}
       subtitle={tr("An invitation email will be sent to activate the account.")}
-      width={460}
+      width={540}
       onClose={onClose}
     >
       <form onSubmit={onSubmit} noValidate style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -130,22 +128,26 @@ export function CreateAccountModal({ onClose, onCreated }: CreateAccountModalPro
         <Field label={tr("Role")} required>
           <Select
             value={role}
-            onChange={(e) => setRole(e.target.value as Role)}
+            onChange={(e) => {
+              const r = e.target.value as Role;
+              setRole(r);
+              if (r !== "HEAD_TRAINER" && r !== "GROOM") setAssignedBarnId("");
+            }}
             options={CREATABLE_ROLES.map((r) => ({ value: r, label: tr(ROLE_LABEL[r]) }))}
           />
         </Field>
 
-        {role === "HEAD_TRAINER" && (
-          <Field label="Khu chuồng phụ trách" required error={errors.barn}>
-            <Select
-              value={assignedBarnId}
-              onChange={(e) => setAssignedBarnId(e.target.value)}
-              options={[
-                { value: "", label: "-- Chọn Khu chuồng --", disabled: true },
-                ...barnOptions,
-              ]}
-            />
-          </Field>
+        {(role === "HEAD_TRAINER" || role === "GROOM") && (
+          <BarnSlotPicker
+            mode={role === "GROOM" ? "groom" : "trainer"}
+            value={assignedBarnId}
+            onChange={(barnId) => {
+              setAssignedBarnId(barnId);
+              if (errors.barn) setErrors((prev) => ({ ...prev, barn: undefined }));
+            }}
+            barns={barns}
+            error={errors.barn}
+          />
         )}
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 9 }}>

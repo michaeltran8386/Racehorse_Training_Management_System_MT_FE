@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Icon } from "@/shared/components/ui/Icon";
@@ -6,6 +7,7 @@ import { Alert } from "@/shared/components/ui/Alert";
 import { Select } from "@/shared/components/form/Select";
 import { Field } from "@/shared/components/form/Field";
 import { useToast } from "@/shared/components/ui/Toast";
+import { tr } from "@/shared/i18n/tr";
 import { messageFor } from "@/shared/lib/messages";
 import { getGrooms, bulkAssignGroom, type GroomOption } from "../api";
 import type { Stall } from "../types";
@@ -27,6 +29,7 @@ export function BulkAssignGroomModal({
   onClose,
   onDone,
 }: BulkAssignGroomModalProps) {
+  useTranslation();
   const toast = useToast();
   const [grooms, setGrooms] = useState<GroomOption[]>([]);
   const [selectedGroomId, setSelectedGroomId] = useState<string>("");
@@ -114,7 +117,7 @@ export function BulkAssignGroomModal({
         allocationIds: selectedAllocationIds,
       });
       toast.show(
-        `Đã phân công thành công ${res.count} ô chuồng cho Groom ${res.groomName}!`,
+        tr("Assigned {{count}} stall(s) to Groom {{name}} successfully!", { count: res.count, name: res.groomName }),
         "ok",
       );
       onDone();
@@ -127,18 +130,18 @@ export function BulkAssignGroomModal({
 
   return (
     <Modal
-      title={`Phân công nhanh Groom — ${zoneName}`}
-      subtitle="Chỉ định nhân sự chăm sóc cho nhiều ô chuồng có ngựa cùng lúc (Khóa cứng tối đa 6 ô/Groom)"
+      title={tr("Quick Assign Groom — {{zone}}", { zone: zoneName })}
+      subtitle={tr("Assign care staff to multiple occupied stalls at once (hard limit 6 stalls/Groom)")}
       width={620}
       onClose={busy ? undefined : onClose}
       foot={
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
           <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
-            Đã chọn: <strong style={{ color: "var(--brand)" }}>{selectedAllocationIds.length}</strong> / {remainingSlots} ô cho phép
+            {tr("Selected:")} <strong style={{ color: "var(--brand)" }}>{selectedAllocationIds.length}</strong> / {tr("{{max}} allowed", { max: remainingSlots })}
           </span>
           <div style={{ display: "flex", gap: 8 }}>
             <Button tone="ghost" disabled={busy} onClick={onClose}>
-              Hủy
+              {tr("Cancel")}
             </Button>
             <Button
               tone="primary"
@@ -146,7 +149,7 @@ export function BulkAssignGroomModal({
               form="bulk-assign-groom-form"
               disabled={busy || loading || !selectedGroomId || selectedAllocationIds.length === 0 || isGroomFull}
             >
-              {busy ? "Đang lưu..." : `Phân công (${selectedAllocationIds.length} ô)`}
+              {busy ? tr("Saving...") : tr("Assign ({{count}} stalls)", { count: selectedAllocationIds.length })}
             </Button>
           </div>
         </div>
@@ -156,12 +159,12 @@ export function BulkAssignGroomModal({
         {error && <Alert tone="danger">{error}</Alert>}
 
         {loading ? (
-          <p style={{ textAlign: "center", padding: 20 }}>Đang tải danh sách Groom...</p>
+          <p style={{ textAlign: "center", padding: 20 }}>{tr("Loading Groom list...")}</p>
         ) : (
           <>
             {/* Chọn Groom và thông tin định mức */}
             <div style={{ background: "var(--surface-2)", padding: 14, borderRadius: "var(--r)", border: "1px solid var(--border)" }}>
-              <Field label="Chọn Groom phụ trách" required>
+              <Field label={tr("Select Assigned Groom")} required>
                 <Select
                   value={selectedGroomId}
                   onChange={(e) => {
@@ -170,7 +173,7 @@ export function BulkAssignGroomModal({
                   }}
                   options={grooms.map((g) => ({
                     value: g.id,
-                    label: `${g.fullName} (${g.horseCount}/${MAX_STALLS_PER_GROOM} ô chuồng đang phụ trách)`,
+                    label: `${g.fullName} (${tr("{{count}}/{{max}} assigned stalls", { count: g.horseCount, max: MAX_STALLS_PER_GROOM })})`,
                   }))}
                 />
               </Field>
@@ -179,13 +182,13 @@ export function BulkAssignGroomModal({
                 <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-caption)" }}>
                     <span>
-                      Tải hiện tại: <strong>{currentCount}/{MAX_STALLS_PER_GROOM}</strong> ô chuồng
+                      {tr("Current load:")} <strong>{currentCount}/{MAX_STALLS_PER_GROOM}</strong> {tr("stalls")}
                     </span>
                     <span style={{ color: isGroomFull ? "var(--danger)" : "var(--ok)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
                       {isGroomFull ? (
-                        <><Icon name="ban" size={14} inline /> Đã đạt tải tối đa 6 ô chuồng (Không thể gán thêm)</>
+                        <><Icon name="ban" size={14} inline /> {tr("Reached max capacity of 6 stalls (Cannot assign more)")}</>
                       ) : (
-                        <><Icon name="checkCircle" size={14} inline /> Còn nhận được tối đa: {remainingSlots} ô chuồng</>
+                        <><Icon name="checkCircle" size={14} inline /> {tr("Can accept up to {{count}} more stall(s)", { count: remainingSlots })}</>
                       )}
                     </span>
                   </div>
@@ -208,7 +211,7 @@ export function BulkAssignGroomModal({
             <div style={{ display: "grid", gap: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <span style={{ fontWeight: 600, fontSize: "var(--fs-body)" }}>
-                  Danh sách ô chuồng có ngựa tại {zoneName} ({occupiedStalls.length} ô)
+                  {tr("Occupied stalls in {{zone}} ({{count}} stalls)", { zone: zoneName, count: occupiedStalls.length })}
                 </span>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button
@@ -224,7 +227,7 @@ export function BulkAssignGroomModal({
                       padding: 0,
                     }}
                   >
-                    Chọn nhanh tối đa ({remainingSlots})
+                    {tr("Quick select max ({{count}})", { count: remainingSlots })}
                   </button>
                   <span style={{ color: "var(--border)" }}>|</span>
                   <button
@@ -239,14 +242,14 @@ export function BulkAssignGroomModal({
                       padding: 0,
                     }}
                   >
-                    Bỏ chọn
+                    {tr("Clear selection")}
                   </button>
                 </div>
               </div>
 
               {occupiedStalls.length === 0 ? (
                 <div style={{ padding: 24, textAlign: "center", border: "1px dashed var(--border)", borderRadius: "var(--r)", color: "var(--text-muted)" }}>
-                  Phân khu này hiện không có ô chuồng nào có ngựa.
+                  {tr("This zone currently has no occupied stalls.")}
                 </div>
               ) : (
                 <div
@@ -283,7 +286,7 @@ export function BulkAssignGroomModal({
                           cursor: isLocked || isGroomFull ? "not-allowed" : "pointer",
                           transition: "all 0.15s ease",
                         }}
-                        title={isLocked ? `Đã chọn đủ ${remainingSlots} ô cho phép của Groom này` : undefined}
+                        title={isLocked ? tr("Reached max {{max}} stalls allowed for this Groom", { max: remainingSlots }) : undefined}
                       >
                         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <input
@@ -304,9 +307,9 @@ export function BulkAssignGroomModal({
 
                         <div style={{ fontSize: "var(--fs-caption)", color: "var(--text-muted)" }}>
                           {alloc.assignedGroom ? (
-                            <span>Groom: {alloc.assignedGroom.fullName}</span>
+                            <span>{tr("Groom:")} {alloc.assignedGroom.fullName}</span>
                           ) : (
-                            <span style={{ color: "#d97706", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="alert" size={13} inline /> Chưa gán nhân viên chăm sóc</span>
+                            <span style={{ color: "#d97706", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}><Icon name="alert" size={13} inline /> {tr("No Groom assigned")}</span>
                           )}
                         </div>
                       </label>

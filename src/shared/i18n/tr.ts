@@ -139,9 +139,49 @@ export function toEnglish(text: string): string {
  */
 export function localizeServerText(text: string | null | undefined): string {
   if (!text) return "";
-  // Không dựa vào dấu tiếng Việt để đoán ngôn ngữ: câu tiếng Anh có thể chứa tên riêng tiếng Việt.
-  // tr() / toEnglish() chỉ đổi khi tìm thấy câu trong bảng, không thì giữ nguyên.
-  return isVietnamese() ? tr(text) : toEnglish(text);
+  if (isVietnamese()) {
+    // 1. Cắt sạch mọi tiền tố mã code thô dạng [MÃ_LỖI]: hoặc CODE_NAME:
+    const cleaned = text.replace(/^[A-Z0-9_]{3,}:\s*/g, "");
+
+    // 2. Xử lý các mẫu câu tiếng Anh đặc thù từ Backend nếu chưa có trong từ điển
+    const restMatch = cleaned.match(/horse needs (\d+)\s*hours between these sessions/i) || text.match(/horse needs (\d+)\s*hours/i);
+    if (restMatch) {
+      const hours = restMatch[1];
+      if (hours === "48") {
+        return "Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu 48 giờ giãn cách giữa hai buổi tập nặng để bảo vệ tim mạch và thể lực.";
+      }
+      return `Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu ${hours} giờ giãn cách giữa hai buổi tập để đảm bảo an toàn thể lực.`;
+    }
+    if (cleaned.includes("overlapping legacy workouts need a verified physical-track mapping")) {
+      return "Buổi tập cần được gắn với một đường chạy thực tế cụ thể.";
+    }
+    if (cleaned.includes("Selected track is inactive or does not match the surface")) {
+      return "Đường chạy đã chọn không hoạt động hoặc không khớp với loại mặt sân.";
+    }
+    if (cleaned.includes("Select a physical training track")) {
+      return "Vui lòng chọn một đường chạy thực tế.";
+    }
+    if (cleaned.includes("This horse already has an overlapping workout")) {
+      return "Chiến mã này đã có một buổi tập khác trong cùng khung giờ này.";
+    }
+    if (cleaned.includes("A horse can have at most 3 workouts per day")) {
+      return "Mỗi chiến mã chỉ được tập tối đa 3 buổi mỗi ngày để bảo vệ sức khỏe tim mạch.";
+    }
+
+    const translated = tr(cleaned);
+    // Nếu tr(cleaned) không dịch được mà chuỗi vẫn là tiếng Anh thuần, thử dịch các từ khóa phổ biến
+    if (translated === cleaned && /^[A-Za-z0-9 ,.!?'-]+$/.test(cleaned) && cleaned.length > 5) {
+      if (cleaned.toLowerCase().includes("conflict")) return "Đã xảy ra xung đột khung giờ hoặc tài nguyên huấn luyện.";
+      if (cleaned.toLowerCase().includes("required")) return "Thiếu thông tin bắt buộc hoặc chưa thỏa mãn điều kiện.";
+      if (cleaned.toLowerCase().includes("not allowed") || cleaned.toLowerCase().includes("forbidden")) return "Thao tác không được phép thực hiện.";
+    }
+    // Tuyệt đối không để lộ mã lỗi thô dạng MÃ_LỖI (VD: WORKOUT_REST_REQUIRED, TRAINER_TIME_CONFLICT) trên giao diện
+    if (/^[A-Z0-9_]{3,}$/.test(translated.trim())) {
+      return "Thao tác không thể hoàn tất do quy định hệ thống. Vui lòng kiểm tra lại.";
+    }
+    return translated;
+  }
+  return toEnglish(text);
 }
 
 // Dịch nếu là chuỗi, giữ nguyên nếu là phần tử React / số.

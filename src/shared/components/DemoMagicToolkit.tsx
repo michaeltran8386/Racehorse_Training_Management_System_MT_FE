@@ -2,7 +2,7 @@ import { DemoDataChatPanel } from "@/features/demo-data/DemoDataChatPanel";
 import { useAuth } from "@/shared/components/layout/AuthProvider";
 import { useState, useEffect } from "react";
 import { Icon } from "@/shared/components/ui/Icon";
-import { getDemoDate, setDemoDate, clubParts } from "@/features/training/api";
+import { getDemoDate, getDemoTime, setDemoDate, clubParts } from "@/features/training/api";
 import { login } from "@/shared/lib/auth";
 import styles from "./DemoMagicToolkit.module.css";
 
@@ -44,7 +44,7 @@ const DEMO_ACCOUNTS = [
   {
     role: "Chăm sóc (Groom)",
     roleKey: "GROOM",
-    name: "Phạm Văn Chăm",
+    name: "Lê Văn Bình",
     email: "groom@gmail.com",
     icon: "user",
     defaultPath: "/stable/my-shift",
@@ -52,7 +52,7 @@ const DEMO_ACCOUNTS = [
   {
     role: "Chủ ngựa",
     roleKey: "HORSE_OWNER",
-    name: "Trịnh Bích Ngọc",
+    name: "Phạm Gia Bảo",
     email: "owner@gmail.com",
     icon: "file",
     defaultPath: "/financial-reports",
@@ -75,13 +75,13 @@ const DEMO_SCENARIOS = [
   {
     id: "overdue-debt",
     title: "2. Tình huống Quá hạn & Khóa Nợ (isDebtImpounded)",
-    desc: "Tua +15 ngày (quá hạn 7 ngày): kích hoạt phong tỏa ngựa, chỉ tính phí lưu chuồng.",
+    desc: "Mở tài khoản Chủ ngựa có nợ xấu (Trịnh Bích Ngọc) để xem phong tỏa công nợ & hóa đơn quá hạn.",
     run: async (
       switchAccount: (email: string, path: string) => Promise<void>,
     ) => {
       const futureDate = addDaysToYmd(realTodayClub(), 15);
       setDemoDate(futureDate);
-      await switchAccount("owner@gmail.com", "/financial-reports");
+      await switchAccount("owner4@gmail.com", "/financial-reports");
     },
   },
   {
@@ -117,12 +117,13 @@ export function DemoMagicToolkit() {
   const [customInputDate, setCustomInputDate] = useState<string>(
     () => getDemoDate() || realTodayClub(),
   );
+  const [customInputTime, setCustomInputTime] = useState(() => getDemoTime() ?? "");
   const [demoAmount, setDemoAmount] = useState<string>(() => {
     return localStorage.getItem("equiflow_demo_pay_amount") || "2000";
   });
 
   const realToday = realTodayClub();
-  const isTimeShifted = Boolean(getDemoDate() && getDemoDate() !== realToday);
+  const isTimeShifted = Boolean(getDemoDate());
 
   useEffect(() => {
     const handleToggle = () => setIsOpen((prev) => !prev);
@@ -131,6 +132,7 @@ export function DemoMagicToolkit() {
       const current = getDemoDate() || realTodayClub();
       setActiveDate(current);
       setCustomInputDate(current);
+      setCustomInputTime(getDemoTime() ?? "");
     };
 
     window.addEventListener("equiflow_toggle_magic_toolkit", handleToggle);
@@ -144,13 +146,13 @@ export function DemoMagicToolkit() {
     };
   }, []);
 
-  const handleApplyDate = (targetDate: string | null) => {
-    if (targetDate === null || targetDate === realToday) {
+  const handleApplyDate = (targetDate: string | null, targetTime?: string | null) => {
+    if (targetDate === null) {
       setDemoDate(null);
       setActiveDate(realToday);
       setCustomInputDate(realToday);
     } else {
-      setDemoDate(targetDate);
+      setDemoDate(targetDate, targetTime);
       setActiveDate(targetDate);
       setCustomInputDate(targetDate);
     }
@@ -219,7 +221,7 @@ export function DemoMagicToolkit() {
               </h3>
               <span className={styles.headerSubtitle}>
                 {user?.fullName || "Phiên demo"} ·{" "}
-                {isTimeShifted ? `Giả lập ${activeDate}` : `Hôm nay ${realToday}`}
+                {isTimeShifted ? `Giả lập ${activeDate} ${getDemoTime() ?? "(giờ thực)"}` : `Hôm nay ${realToday}`}
               </span>
             </div>
           </div>
@@ -280,7 +282,7 @@ export function DemoMagicToolkit() {
                 }`}
               >
                 {isTimeShifted
-                  ? `Mô phỏng: ${activeDate}`
+                  ? `Mô phỏng: ${activeDate} ${getDemoTime() ?? "(giờ thực)"}`
                   : `Thực tế: ${activeDate}`}
               </span>
             </div>
@@ -327,17 +329,33 @@ export function DemoMagicToolkit() {
               <input
                 type="date"
                 className={styles.dateInput}
+                aria-label="Ngày giả lập"
                 value={customInputDate}
                 onChange={(e) => setCustomInputDate(e.target.value)}
               />
+              <input type="time" step={900} className={styles.dateInput}
+                aria-label="Giờ giả lập (UTC+7)" title="Để trống để dùng giờ thực"
+                value={customInputTime} onChange={e=>setCustomInputTime(e.target.value)} />
               <button
                 type="button"
                 className={styles.applyButton}
-                onClick={() => handleApplyDate(customInputDate)}
+                disabled={!customInputDate}
+                onClick={() => handleApplyDate(customInputDate, customInputTime)}
               >
                 Áp dụng
               </button>
             </div>
+          </div>
+
+          <div className={styles.section}>
+            <div className={styles.sectionTitle}>Thử khung giờ tập (UTC+7)</div>
+            <div className={styles.presetGrid}>
+              {[{time:'06:00',label:'06:00 · Trước buổi sáng'}, {time:'13:45',label:'13:45 · Trước buổi chiều'}, {time:'16:30',label:'16:30 · Cuối ngày'}].map(preset=>(
+                <button key={preset.time} type="button" className={styles.presetButton}
+                  onClick={()=>handleApplyDate(activeDate,preset.time)}>{preset.label}</button>
+              ))}
+            </div>
+            <p className={styles.assistantDesc}>Đặt giờ để thử lịch buổi sáng, buổi chiều hoặc sau giờ tập. Múi giờ Việt Nam (UTC+7).</p>
           </div>
 
           {/* Section 2: PayOS Payment Amount */}

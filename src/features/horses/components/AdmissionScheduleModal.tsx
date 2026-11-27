@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
 import { getWorkMembers, type WorkMember } from '@/features/staff/workApi';
 import { Modal } from "@/shared/components/ui/Modal";
@@ -10,8 +11,9 @@ import { Textarea } from "@/shared/components/form/Textarea";
 import { useToast } from "@/shared/components/ui/Toast";
 import { tr } from "@/shared/i18n/tr";
 import { messageFor } from "@/shared/lib/messages";
-import { scheduleAdmission } from "../services/admissionService";
+import { extractAdmissionDocumentPhotos, scheduleAdmission } from "../services/admissionService";
 import type { HorseAdmissionRecord } from "../types/admission.types";
+import { LegalDocumentsGallery } from "./LegalDocumentsUploader";
 import design from "./AdmissionDesign.module.css";
 
 interface Props { record: HorseAdmissionRecord; onClose: () => void; onSuccess: () => void }
@@ -22,6 +24,7 @@ function localInputValue(date: Date): string {
 }
 
 export function AdmissionScheduleModal({ record, onClose, onSuccess }: Props) {
+  useTranslation();
   const toast = useToast();
   const user = useCurrentUser();
   const [members, setMembers] = useState<WorkMember[]>([]);
@@ -56,8 +59,8 @@ export function AdmissionScheduleModal({ record, onClose, onSuccess }: Props) {
     event.preventDefault();
     if (loading) return;
     if (!appointmentDate) { setError(tr("Select an admission appointment date and time.")); return; }
-    if (!managerId || !vetId) { setError('Vui lòng chọn Quản lý và bác sĩ cùng tham gia.'); return; }
-    if (!endDate || endDate <= appointmentDate) { setError('Giờ kết thúc phải sau giờ bắt đầu.'); return; }
+    if (!managerId || !vetId) { setError(tr("Please select both a Manager and a Veterinarian.")); return; }
+    if (!endDate || endDate <= appointmentDate) { setError(tr("End time must be after start time.")); return; }
     setLoading(true);
     setError("");
     try {
@@ -76,20 +79,52 @@ export function AdmissionScheduleModal({ record, onClose, onSuccess }: Props) {
     finally { setLoading(false); }
   }
 
+  const ownerDocs = extractAdmissionDocumentPhotos(record);
+
   return <Modal title={tr("Schedule Admission Appointment — {{code}}", { code: record.admissionCode })}
-    subtitle={`${record.horse.name} · ${record.owner.fullName}`} width={560} dialogClassName={design.dialog} overlayClassName={design.overlay} onClose={onClose}>
+    subtitle={`${record.horse.name} · ${record.owner.fullName}`} width={600} dialogClassName={design.dialog} overlayClassName={design.overlay} onClose={onClose}>
     <form className={design.form} onSubmit={submit}>
-      <p className={design.helper}>Một lịch hẹn chung: Quản lý xác minh chip và pháp lý; bác sĩ khám sức khỏe. Giờ hiển thị theo CLB (UTC+7).</p>
-      <Field label="Quản lý phụ trách *"><Select value={managerId} onChange={e => setManagerId(e.target.value)} disabled={loading || membersLoading} required
-        options={[{ value: '', label: 'Chọn Quản lý' }, ...members.filter(m => m.role === 'CLUB_MANAGER').map(m => ({ value: m.id, label: m.fullName }))]} /></Field>
-      <Field label="Bác sĩ tham gia *"><Select value={vetId} onChange={e => setVetId(e.target.value)} disabled={loading || membersLoading} required
-        options={[{ value: '', label: 'Chọn bác sĩ' }, ...members.filter(m => m.role === 'VETERINARIAN').map(m => ({ value: m.id, label: m.fullName }))]} /></Field>
-      <Field label="Bắt đầu (giờ CLB) *">
+      <p className={design.helper}>{tr("Shared appointment: Manager verifies microchip and legal documents; Veterinarian evaluates health. Times shown in club timezone (UTC+7).")}</p>
+      {(record.ownerNotes || ownerDocs.length > 0) && (
+        <div
+          style={{
+            padding: "0.85rem 1rem",
+            borderRadius: "10px",
+            background: "rgba(239, 246, 255, 0.7)",
+            border: "1px solid rgba(59, 130, 246, 0.35)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.65rem",
+          }}
+        >
+          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#1e40af" }}>
+            {tr("Owner declaration ({{name}})", { name: record.owner.fullName })}
+          </div>
+          {record.ownerNotes && (
+            <div style={{ fontSize: "0.85rem", lineHeight: 1.45, color: "#0f172a", whiteSpace: "pre-wrap" }}>
+              <strong>{tr("Notes / Preferences:")}</strong> {record.ownerNotes}
+            </div>
+          )}
+          {ownerDocs.length > 0 && (
+            <div>
+              <div style={{ fontSize: "0.78rem", fontWeight: 600, color: "#334155", marginBottom: 6 }}>
+                {tr("Pre-submitted legal document photos ({{count}} photo(s) — click to zoom):", { count: ownerDocs.length })}
+              </div>
+              <LegalDocumentsGallery photos={ownerDocs} compact />
+            </div>
+          )}
+        </div>
+      )}
+      <Field label={tr("Assigned Manager *")}><Select value={managerId} onChange={e => setManagerId(e.target.value)} disabled={loading || membersLoading} required
+        options={[{ value: '', label: tr("Select Manager") }, ...members.filter(m => m.role === 'CLUB_MANAGER').map(m => ({ value: m.id, label: m.fullName }))]} /></Field>
+      <Field label={tr("Participating Veterinarian *")}><Select value={vetId} onChange={e => setVetId(e.target.value)} disabled={loading || membersLoading} required
+        options={[{ value: '', label: tr("Select Veterinarian") }, ...members.filter(m => m.role === 'VETERINARIAN').map(m => ({ value: m.id, label: m.fullName }))]} /></Field>
+      <Field label={tr("Start time (Club time) *")}>
         <Input nativePicker type="datetime-local" value={appointmentDate} disabled={loading}
           onChange={(e) => setAppointmentDate(e.target.value)} required />
       </Field>
-      <Field label="Kết thúc (giờ CLB) *"><Input nativePicker type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} disabled={loading} required /></Field>
-      <p className={design.helper}>Mặc định 60 phút, có thể điều chỉnh. Hệ thống kiểm tra trùng lịch của cả Quản lý và bác sĩ khi lưu.</p>
+      <Field label={tr("End time (Club time) *")}><Input nativePicker type="datetime-local" value={endDate} onChange={e => setEndDate(e.target.value)} disabled={loading} required /></Field>
+      <p className={design.helper}>{tr("Defaults to 60 minutes, adjustable. The system checks schedule conflicts for both Manager and Veterinarian upon saving.")}</p>
       <Field label={tr("Reception & Document Guidance")}>
         <Textarea value={notes} disabled={loading} onChange={(e) => setNotes(e.target.value)} rows={4}
           placeholder={tr("e.g. Gate A reception, arrival 15 mins prior, required documents...")} />

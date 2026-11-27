@@ -1,4 +1,5 @@
 import type { HorseStatus } from "@/shared/types/enums";
+import type { AdmissionDocumentPhoto, HorseAdmissionRecord } from "./types/admission.types";
 
 /** Lý do Ngừng quản lý (DL-1.08). DECEASED không được kích hoạt lại. */
 export type RetireReason = "RETIRED" | "SOLD" | "DECEASED" | "TRANSFERRED";
@@ -54,6 +55,8 @@ export interface Horse {
     lockedAt: string;
     veterinarian?: { fullName: string };
   }>;
+  latestAdmission?: HorseAdmissionRecord | null;
+  admissionRecords?: HorseAdmissionRecord[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -92,6 +95,9 @@ export interface CreateHorsePayload {
   weightKg: number;
   microchip: string;
   avatarUrl?: string;
+  documentsUrl?: string;
+  documentPhotos?: AdmissionDocumentPhoto[];
+  ownerNotes?: string;
 }
 
 export interface UpdateHorsePayload {

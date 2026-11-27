@@ -65,13 +65,15 @@ export function TrainingTrackPicker({
 }) {
   const { tracks, loading, error, reload } = catalog;
   useEffect(() => {
-    if (
-      !loading &&
-      !error &&
-      value &&
-      !tracks.some((track) => track.id === value && track.surface === surface && track.isActive)
-    )
-      onChange('');
+    if (loading || error || surface === 'NONE' || tracks.length === 0) return;
+    const isValid = tracks.some((track) => track.id === value && track.surface === surface && track.isActive);
+    if (!isValid) {
+      const fallback = tracks.find((track) => track.surface === surface && track.isActive);
+      const newId = fallback ? fallback.id : '';
+      if (newId !== value) {
+        onChange(newId);
+      }
+    }
   }, [tracks, surface, value, loading, error, onChange]);
 
   if (surface === 'NONE') return null;

@@ -264,6 +264,124 @@ export function ClubCashflowReportView() {
             </Card>
           </div>
 
+          <Card
+            title={
+              isVietnamese
+                ? "Cơ cấu Tài chính (Biểu đồ tròn & Thống kê)"
+                : "Financial Breakdown (Donut & Stats)"
+            }
+            subtitle={
+              isVietnamese
+                ? "Tỷ trọng các nguồn thu dịch vụ, chi vật tư và đối trừ thưởng giải đấu"
+                : "Share of service revenues, supply imports, and tournament prize offsets"
+            }
+          >
+            {(() => {
+              const activeInvoices = data.revenueItems.filter(
+                (i) => i.status !== "CANCELLED",
+              );
+              const boardingSum = activeInvoices.reduce(
+                (s, i) => s + i.boardingFee,
+                0,
+              );
+              const trainingSum = activeInvoices.reduce(
+                (s, i) => s + i.trainingFee,
+                0,
+              );
+              const medicalSum = activeInvoices.reduce(
+                (s, i) => s + i.medicalFee,
+                0,
+              );
+              const supplySum = summary.supplyImportExpense || 0;
+              const prizeSum = activeInvoices.reduce(
+                (s, i) => s + i.prizeCredit,
+                0,
+              );
+              const slices = [
+                {
+                  key: "boarding",
+                  label: isVietnamese ? "Phí lưu chuồng" : "Boarding Fee",
+                  value: boardingSum,
+                  color: "#2563eb",
+                },
+                {
+                  key: "training",
+                  label: isVietnamese ? "Phí huấn luyện" : "Training Fee",
+                  value: trainingSum,
+                  color: "#16a34a",
+                },
+                {
+                  key: "medical",
+                  label: isVietnamese ? "Phí y tế & thuốc" : "Medical & Rx",
+                  value: medicalSum,
+                  color: "#d97706",
+                },
+                {
+                  key: "supplies",
+                  label: isVietnamese ? "Chi nhập vật tư" : "Supply Imports",
+                  value: supplySum,
+                  color: "#dc2626",
+                },
+                {
+                  key: "prizes",
+                  label: isVietnamese ? "Thưởng giải đấu đối trừ" : "Prize Credits",
+                  value: prizeSum,
+                  color: "#7c3aed",
+                },
+              ];
+              const totalVolume = slices.reduce((s, x) => s + x.value, 0);
+              let cursor = 0;
+              const stops =
+                totalVolume > 0
+                  ? slices
+                      .map((item) => {
+                        const pct = (item.value / totalVolume) * 100;
+                        const start = cursor;
+                        cursor += pct;
+                        return `${item.color} ${start.toFixed(2)}% ${cursor.toFixed(2)}%`;
+                      })
+                      .join(", ")
+                  : "var(--border) 0% 100%";
+              return (
+                <div className={styles.donutWrap}>
+                  <div
+                    className={styles.donutRing}
+                    style={{ background: `conic-gradient(${stops})` }}
+                    aria-label={
+                      isVietnamese ? "Biểu đồ tròn tài chính" : "Financial donut chart"
+                    }
+                  >
+                    <div className={styles.donutHole}>
+                      <div>
+                        <small>{isVietnamese ? "Tổng quy mô" : "Total Volume"}</small>
+                        <strong>{formatCurrency(totalVolume)}</strong>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={styles.legendList}>
+                    {slices.map((item) => {
+                      const pct =
+                        totalVolume > 0
+                          ? ((item.value / totalVolume) * 100).toFixed(1)
+                          : "0.0";
+                      return (
+                        <div key={item.key} className={styles.legendRow}>
+                          <span
+                            className={styles.legendDot}
+                            style={{ background: item.color }}
+                          />
+                          <span>{item.label}</span>
+                          <span className={styles.legendPct}>{pct}%</span>
+                          <strong>{formatVND(item.value)}</strong>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+          </Card>
+
           <Card pad={0}>
             <div className={styles.tabsBar}>
               <Tabs

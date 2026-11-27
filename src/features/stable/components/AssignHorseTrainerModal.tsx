@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Field } from "@/shared/components/form/Field";
 import { Select } from "@/shared/components/form/Select";
@@ -7,6 +8,7 @@ import { Textarea } from "@/shared/components/form/Textarea";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
+import { tr } from "@/shared/i18n/tr";
 import { ApiError } from "@/shared/lib/api";
 import { messageFor } from "@/shared/lib/messages";
 import type { Horse } from "@/features/horses/types";
@@ -25,6 +27,7 @@ export function AssignHorseTrainerModal({
   onClose,
   onAssigned,
 }: AssignHorseTrainerModalProps) {
+  useTranslation();
   const [barns, setBarns] = useState<BarnStaffingItem[]>([]);
   const [selectedTrainerId, setSelectedTrainerId] = useState(horse.assignedTrainerId || "");
   const [notes, setNotes] = useState("");
@@ -58,12 +61,14 @@ export function AssignHorseTrainerModal({
     (b) =>
       b.name === horse.zone ||
       b.code === horse.zone ||
-      (horse.stallCode && horse.stallCode.startsWith(b.code)) ||
-      (horse.stallCode && horse.stallCode.startsWith(b.name.charAt(b.name.length - 1))),
-  );
+      (horse.zone && (b.name.includes(horse.zone) || horse.zone.includes(b.name))) ||
+      (horse.stallCode && (horse.stallCode.startsWith(b.code) || horse.stallCode.startsWith(b.name.charAt(b.name.length - 1)))),
+  ) || (horse.stallCode && barns.length > 0 ? barns[0] : undefined);
 
-  // Danh sách HLV thuộc Barn này
-  const eligibleTrainers = horseBarn ? horseBarn.trainers : [];
+  // Danh sách HLV thuộc Barn này và ĐANG HOẠT ĐỘNG CHÍNH THỨC (ACTIVE)
+  const allBarnTrainers = horseBarn ? horseBarn.trainers : [];
+  const eligibleTrainers = allBarnTrainers.filter((t) => t.status === "ACTIVE");
+  const invitedTrainersCount = allBarnTrainers.filter((t) => t.status && t.status !== "ACTIVE").length;
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -79,7 +84,7 @@ export function AssignHorseTrainerModal({
       onAssigned();
     } catch (err) {
       if (err instanceof ApiError) setError(messageFor(err));
-      else setError("Không thể phân công HLV. Vui lòng kiểm tra lại.");
+      else setError(tr("Could not assign trainer. Please check again."));
     } finally {
       setBusy(false);
     }
@@ -92,15 +97,20 @@ export function AssignHorseTrainerModal({
     const remaining = Math.max(0, max - load);
     return {
       value: t.id,
-      label: `${t.fullName} — Tải: ${load}/${max} con ${isFull ? "[Đầy tải]" : `[Còn ${remaining} chỗ]`}`,
+      label: tr("{{name}} — Load: {{load}}/{{max}} {{suffix}}", {
+        name: t.fullName,
+        load,
+        max,
+        suffix: isFull ? tr("[Full]") : tr("[{{count}} open]", { count: remaining }),
+      }),
       disabled: isFull,
     };
   });
 
   return (
     <Modal
-      title="Phân công Huấn luyện viên phụ trách chiến mã"
-      subtitle={`Chiến mã: ${horse.name} (${horse.horseCode || "—"})`}
+      title={tr("Assign Head Trainer to Horse")}
+      subtitle={`${tr("Horse:")} ${horse.name} (${horse.horseCode || "—"})`}
       width={480}
       onClose={onClose}
     >
@@ -118,58 +128,60 @@ export function AssignHorseTrainerModal({
           }}
         >
           <div>
-            <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-2)" }}>Ô chuồng: </span>
-            <strong>{horse.stallCode || "Chưa xếp chuồng"}</strong>
+            <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-2)" }}>{tr("Stall:")} </span>
+            <strong>{horse.stallCode || tr("Unassigned stall")}</strong>
             {horse.zone && <span style={{ marginLeft: 6, color: "var(--text-2)" }}>({horse.zone})</span>}
           </div>
           <div>
-            <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-2)" }}>Khu chuồng (Barn): </span>
+            <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-2)" }}>{tr("Barn Zone:")} </span>
             {horseBarn ? (
               <Badge tone="info">{horseBarn.name}</Badge>
             ) : (
-              <Badge tone="warn">Chưa xác định Khu chuồng</Badge>
+              <Badge tone="warn">{tr("Barn unassigned")}</Badge>
             )}
           </div>
           <div>
-            <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-2)" }}>Trạng thái phân công: </span>
+            <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-2)" }}>{tr("Assignment status:")} </span>
             {horse.trainerAssignmentStatus === "ASSIGNED" ? (
-              <Badge tone="ok">Đã tiếp nhận ({horse.assignedTrainer?.fullName})</Badge>
+              <Badge tone="ok">{tr("Accepted ({{name}})", { name: horse.assignedTrainer?.fullName ?? "" })}</Badge>
             ) : horse.trainerAssignmentStatus === "PENDING_ACCEPTANCE" ? (
-              <Badge tone="warn">Chờ HLV tiếp nhận (48h)</Badge>
+              <Badge tone="warn">{tr("Awaiting acceptance (48h)")}</Badge>
             ) : horse.trainerAssignmentStatus === "DECLINED" ? (
-              <Badge tone="danger">HLV đã từ chối: {horse.trainerDeclineReason || "—"}</Badge>
+              <Badge tone="danger">{tr("Declined: {{reason}}", { reason: horse.trainerDeclineReason || "—" })}</Badge>
             ) : (
-              <Badge tone="neutral">Chưa phân công</Badge>
+              <Badge tone="neutral">{tr("Unassigned")}</Badge>
             )}
           </div>
         </div>
 
         {!horse.stallCode ? (
           <Alert tone="warn">
-            Chiến mã chưa được xếp vào ô chuồng thuộc Khu chuồng (Barn). Vui lòng xếp ô chuồng trước khi phân công HLV.
+            {tr("This horse has not been assigned to a Barn stall yet. Please assign a stall before assigning a trainer.")}
           </Alert>
         ) : eligibleTrainers.length === 0 ? (
           <Alert tone="warn">
-            Khu chuồng này hiện chưa có Huấn luyện viên nào phụ trách. Vui lòng vào trang Quản lý tài khoản để gán HLV vào Khu chuồng này trước.
+            {invitedTrainersCount > 0
+              ? tr("This Barn has {{count}} invited trainer(s) pending activation. Please activate an account first.", { count: invitedTrainersCount })
+              : tr("This Barn currently has no Head Trainer assigned. Please assign a trainer in Accounts first.")}
           </Alert>
         ) : (
           <>
-            <Field label="Chọn Huấn luyện viên phụ trách (Cùng Khu chuồng)" required>
+            <Field label={tr("Select Head Trainer (Same Barn)")} required>
               <Select
                 value={selectedTrainerId}
                 disabled={loading || busy}
                 onChange={(e) => setSelectedTrainerId(e.target.value)}
                 options={[
-                  { value: "", label: "-- Chọn Huấn luyện viên --", disabled: true },
+                  { value: "", label: tr("-- Select Head Trainer --"), disabled: true },
                   ...trainerOptions,
                 ]}
               />
             </Field>
 
-            <Field label="Ghi chú phân công (gửi kèm email)">
+            <Field label={tr("Assignment notes (included in email)")}>
               <Textarea
                 rows={3}
-                placeholder="Ví dụ: Chiến mã đang hồi phục thể lực, ưu tiên bài tập nhẹ..."
+                placeholder={tr("e.g. Horse recovering fitness, prioritize light workouts...")}
                 value={notes}
                 disabled={busy}
                 onChange={(e) => setNotes(e.target.value)}
@@ -186,21 +198,21 @@ export function AssignHorseTrainerModal({
                 borderRadius: "var(--r-sm)",
               }}
             >
-              Hệ thống sẽ gửi email thông báo kèm liên kết xác nhận đến HLV. HLV có <strong>48 giờ</strong> để xác nhận tiếp nhận chiến mã (SLA-HANDOVER-48H).
+              {tr("An email notification with a confirmation link will be sent to the trainer. The trainer has")} <strong>{tr("48 hours")}</strong> {tr("to accept custody (SLA-HANDOVER-48H).")}
             </div>
           </>
         )}
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 9, marginTop: 6 }}>
           <Button tone="secondary" size="sm" onClick={onClose} disabled={busy}>
-            Hủy
+            {tr("Cancel")}
           </Button>
           <Button
             type="submit"
             size="sm"
             disabled={loading || busy || !selectedTrainerId || !horse.stallCode || eligibleTrainers.length === 0}
           >
-            {busy ? "Đang gửi…" : "Phân công & Gửi email (SLA 48h)"}
+            {busy ? tr("Sending…") : tr("Assign & Send Email (48h SLA)")}
           </Button>
         </div>
       </form>

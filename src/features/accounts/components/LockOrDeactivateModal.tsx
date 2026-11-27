@@ -173,7 +173,7 @@ export function LockOrDeactivateModal({
                   {assignments.plans.map((p) => (
                     <div key={p.id} className={styles.itemCard}>
                       <span className={styles.itemMain}>
-                        {p.planCode ? `[${p.planCode}] ` : ""}{p.phaseName} · Ngựa: {p.horse.name}
+                        {p.planCode ? `[${p.planCode}] ` : ""}{p.phaseName} · {isVietnamese ? "Ngựa:" : "Horse:"} {p.horse.name}
                       </span>
                       <span className={styles.itemSub}>
                         {isVietnamese ? "Thời gian:" : "Duration:"} {p.startDate} → {p.endDate}
@@ -205,7 +205,7 @@ export function LockOrDeactivateModal({
                     return (
                       <div key={w.id} className={styles.itemCard}>
                         <span className={styles.itemMain}>
-                          {dateStr} · {w.workoutType} · Ngựa: {w.horse.name}
+                          {dateStr} · {w.workoutType} · {isVietnamese ? "Ngựa:" : "Horse:"} {w.horse.name}
                         </span>
                         <span className={styles.itemSub}>
                           {isVietnamese ? "Cường độ:" : "Intensity:"} {w.intensity}
@@ -227,11 +227,11 @@ export function LockOrDeactivateModal({
                   {assignments.stalls.map((s) => (
                     <div key={s.id} className={styles.itemCard}>
                       <span className={styles.itemMain}>
-                        {isVietnamese ? "Chuồng:" : "Stall:"} {s.stall.code} ({s.stall.zone}) · Ngựa: {s.horse.name}
+                        {isVietnamese ? "Chuồng:" : "Stall:"} {s.stall.code} ({s.stall.zone}) · {isVietnamese ? "Ngựa:" : "Horse:"} {s.horse.name}
                       </span>
                       {s.horse.horseCode && (
                         <span className={styles.itemSub}>
-                          Mã ngựa: {s.horse.horseCode}
+                          {isVietnamese ? "Mã ngựa:" : "Horse code:"} {s.horse.horseCode}
                         </span>
                       )}
                     </div>

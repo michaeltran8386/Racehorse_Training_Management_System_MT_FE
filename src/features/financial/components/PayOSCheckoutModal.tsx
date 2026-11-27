@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { useToast } from "@/shared/components/ui/Toast";
+import { useAppLanguage } from "@/shared/lib/language";
+import { tr } from "@/shared/i18n/tr";
 import { formatNumber } from "@/shared/lib/format";
 import {
   createPayOSLink,
@@ -23,6 +26,8 @@ export function PayOSCheckoutModal({
   onClose,
   onSuccess,
 }: PayOSCheckoutModalProps) {
+  useTranslation();
+  const { isVietnamese } = useAppLanguage();
   const toast = useToast();
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -90,7 +95,7 @@ export function PayOSCheckoutModal({
       const res = await createPayOSLink(invoice.id, amountToUse);
       setPayLinkData(res);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Không thể tạo link thanh toán PayOS";
+      const msg = err instanceof Error ? err.message : tr("Failed to create PayOS payment link");
       toast.show(msg, "danger");
     } finally {
       setLoading(false);
@@ -112,7 +117,7 @@ export function PayOSCheckoutModal({
         const check = await checkPayOSStatus(invoice.id, payLinkData.orderCode);
         if (check.paid) {
           setIsPaidSuccess(true);
-          toast.show("Thanh toán thành công! Sổ công nợ và hạn chế đã được giải tỏa.", "ok");
+          toast.show(tr("Payment successful! Debt balance and restrictions have been cleared."), "ok");
           clearInterval(interval);
           onSuccess(check.invoice);
         }
@@ -132,13 +137,13 @@ export function PayOSCheckoutModal({
       const check = await checkPayOSStatus(invoice.id, payLinkData.orderCode);
       if (check.paid) {
         setIsPaidSuccess(true);
-        toast.show("Thanh toán thành công!", "ok");
+        toast.show(tr("Payment successful!"), "ok");
         onSuccess(check.invoice);
       } else {
-        toast.show("Hệ thống chưa nhận được tiền từ ngân hàng. Vui lòng thử lại sau vài giây.", "info");
+        toast.show(tr("Bank payment not received yet. Please try again in a few seconds."), "info");
       }
     } catch (err: unknown) {
-      toast.show(err instanceof Error ? err.message : "Lỗi kiểm tra thanh toán", "danger");
+      toast.show(err instanceof Error ? err.message : tr("Payment verification error"), "danger");
     } finally {
       setChecking(false);
     }
@@ -149,10 +154,10 @@ export function PayOSCheckoutModal({
       setChecking(true);
       const updated = await simulatePayOSPaid(invoice.id);
       setIsPaidSuccess(true);
-      toast.show("⚡ Giả lập thanh toán thành công! Hóa đơn đã chốt PAID.", "ok");
+      toast.show(tr("⚡ Simulated payment succeeded! Invoice marked as PAID."), "ok");
       onSuccess(updated);
     } catch (err: unknown) {
-      toast.show(err instanceof Error ? err.message : "Giả lập thanh toán thất bại", "danger");
+      toast.show(err instanceof Error ? err.message : tr("Failed to simulate payment"), "danger");
     } finally {
       setChecking(false);
     }
@@ -161,27 +166,26 @@ export function PayOSCheckoutModal({
   const copyText = (txt: string, label: string) => {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(txt);
-      toast.show(`Đã sao chép ${label}: ${txt}`, "ok");
+      toast.show(tr("Copied {{label}}: {{text}}", { label, text: txt }), "ok");
     }
   };
 
   return (
     <Modal
-      title={isPaidSuccess ? "Thanh toán Thành Công" : "Thanh toán VietQR / PayOS"}
-      subtitle={`Hóa đơn ${invoice.billingPeriod} · Ngựa ${invoice.horse?.name ?? "—"}`}
+      title={isPaidSuccess ? tr("Payment Successful") : tr("VietQR / PayOS Payment")}
+      subtitle={tr("Statement {{period}} · Horse {{horse}}", { period: invoice.billingPeriod, horse: invoice.horse?.name ?? "—" })}
       width={480}
       onClose={onClose}
     >
       {isPaidSuccess ? (
         <div className={styles.successContainer}>
           <div className={styles.successIconBadge}>✓</div>
-          <h3 className={styles.successTitle}>Xác Nhận Đã Thanh Toán</h3>
+          <h3 className={styles.successTitle}>{tr("Payment Confirmed")}</h3>
           <p className={styles.successDesc}>
-            Hóa đơn kỳ <strong>{invoice.billingPeriod}</strong> đã được đối soát thành công.
-            Mọi lệnh phong tỏa công nợ đã tự động giải phóng.
+            {tr("Statement for period")} <strong>{invoice.billingPeriod}</strong> {tr("has been reconciled. All debt holds have been automatically released.")}
           </p>
           <Button tone="primary" onClick={() => { onSuccess(); onClose(); }}>
-            Hoàn tất & Đóng
+            {tr("Done & Close")}
           </Button>
         </div>
       ) : (
@@ -189,10 +193,10 @@ export function PayOSCheckoutModal({
           {/* Amount Box with Demo Switcher */}
           <div className={styles.amountBanner}>
             <div className={styles.amountInfo}>
-              <span className={styles.amountLabel}>Số tiền thanh toán</span>
+              <span className={styles.amountLabel}>{tr("Amount due")}</span>
               <span className={styles.amountValue}>
                 {formatNumber(activeAmount)}
-                <small>VNĐ</small>
+                <small>VND</small>
               </span>
             </div>
 
@@ -201,17 +205,17 @@ export function PayOSCheckoutModal({
                 type="button"
                 className={`${styles.toggleBtn} ${useDemoAmount ? styles.toggleBtnActive : ""}`}
                 onClick={() => setUseDemoAmount(true)}
-                title="Sử dụng số tiền nhỏ để quét thử bằng app ngân hàng thật"
+                title={tr("Use a small amount for scanning with a real banking app")}
               >
-                Demo ({demoAmountValue.toLocaleString("vi-VN")}đ)
+                Demo ({demoAmountValue.toLocaleString(isVietnamese ? "vi-VN" : "en-US")}đ)
               </button>
               <button
                 type="button"
                 className={`${styles.toggleBtn} ${!useDemoAmount ? styles.toggleBtnActive : ""}`}
                 onClick={() => setUseDemoAmount(false)}
-                title="Sử dụng số tiền gốc của hóa đơn"
+                title={tr("Use the original invoice amount")}
               >
-                Gốc
+                {tr("Original")}
               </button>
             </div>
           </div>
@@ -224,9 +228,9 @@ export function PayOSCheckoutModal({
               onClick={() => setShowBreakdown((prev) => !prev)}
             >
               <span className={styles.toggleArrow}>{showBreakdown ? "▼" : "▶"}</span>
-              <span>BẢNG PHÍ & CHI TIẾT CẤU THÀNH ĐƠN NÀY</span>
+              <span>{tr("FEE BREAKDOWN & STATEMENT DETAILS")}</span>
               <span className={styles.toggleActionText}>
-                ({showBreakdown ? "Thu gọn" : "Xem chi tiết"})
+                ({showBreakdown ? tr("Collapse") : tr("View details")})
               </span>
             </button>
 
@@ -234,27 +238,27 @@ export function PayOSCheckoutModal({
               <div className={styles.breakdownCard}>
                 <div className={styles.breakdownItem}>
                   <span className={styles.breakdownName}>
-                    Phí lưu chuồng & chăm sóc ({invoice.boardingDays ?? 30} ngày):
+                    {tr("Boarding & care fee ({{days}} days):", { days: invoice.boardingDays ?? 30 })}
                   </span>
                   <span className={styles.breakdownValue}>{formatNumber(invoice.boardingFee)}đ</span>
                 </div>
                 <div className={styles.breakdownItem}>
-                  <span className={styles.breakdownName}>Chăm sóc thú y & thuốc điều trị:</span>
+                  <span className={styles.breakdownName}>{tr("Veterinary care & medications:")}</span>
                   <span className={styles.breakdownValue}>{formatNumber(invoice.medicalFee)}đ</span>
                 </div>
                 <div className={styles.breakdownItem}>
-                  <span className={styles.breakdownName}>Dịch vụ huấn luyện (HLV Trưởng):</span>
+                  <span className={styles.breakdownName}>{tr("Training services (Head Trainer):")}</span>
                   <span className={styles.breakdownValue}>{formatNumber(invoice.trainingFee)}đ</span>
                 </div>
                 {invoice.prizeCredit > 0 && (
                   <div className={`${styles.breakdownItem} ${styles.breakdownCredit}`}>
-                    <span className={styles.breakdownName}>Khấu trừ thưởng giải đua (đã chia tỷ lệ):</span>
+                    <span className={styles.breakdownName}>{tr("Race prize credit (pro-rated):")}</span>
                     <span className={styles.breakdownValue}>-{formatNumber(invoice.prizeCredit)}đ</span>
                   </div>
                 )}
                 <div className={styles.breakdownTotalDivider} />
                 <div className={styles.breakdownItemTotal}>
-                  <span>Tổng tiền hóa đơn gốc:</span>
+                  <span>{tr("Original statement total:")}</span>
                   <strong className={styles.breakdownTotalValue}>{formatNumber(invoice.netAmount)}đ</strong>
                 </div>
               </div>
@@ -266,23 +270,23 @@ export function PayOSCheckoutModal({
             <div className={styles.qrImageFrame}>
               {loading || !payLinkData ? (
                 <div className={styles.qrLoading}>
-                  <span>Đang tạo mã VietQR…</span>
+                  <span>{tr("Generating VietQR code…")}</span>
                 </div>
               ) : currentQrSrc ? (
                 <img
                   src={currentQrSrc}
-                  alt="Mã QR thanh toán PayOS / VietQR"
+                  alt={tr("PayOS / VietQR Payment QR Code")}
                   className={styles.qrImage}
                   onError={handleQrError}
                 />
               ) : (
                 <div className={styles.qrLoading}>
-                  <span>Không tìm thấy mã QR</span>
+                  <span>{tr("QR code not found")}</span>
                 </div>
               )}
             </div>
             <p className={styles.qrTip}>
-              Quét mã bằng app Mobile Banking hoặc ví điện tử bất kỳ để chuyển tiền tức thì.
+              {tr("Scan with any Mobile Banking app or e-wallet to transfer instantly.")}
             </p>
             {payLinkData?.checkoutUrl && (
               <a
@@ -291,7 +295,7 @@ export function PayOSCheckoutModal({
                 rel="noreferrer"
                 style={{ fontSize: "12px", color: "#2563eb", fontWeight: 600, textDecoration: "underline" }}
               >
-                Mở cổng thanh toán PayOS trực tiếp ↗
+                {tr("Open PayOS checkout page ↗")}
               </a>
             )}
           </div>
@@ -300,36 +304,36 @@ export function PayOSCheckoutModal({
           {payLinkData && (
             <div className={styles.bankDetailsCard}>
               <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>Ngân hàng</span>
+                <span className={styles.detailLabel}>{tr("Bank")}</span>
                 <span style={{ fontWeight: 600 }}>{payLinkData.bankName}</span>
               </div>
               <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>Số tài khoản</span>
+                <span className={styles.detailLabel}>{tr("Account number")}</span>
                 <div className={styles.detailValueGroup}>
                   <span>{payLinkData.accountNumber}</span>
                   <button
                     type="button"
                     className={styles.copyBtn}
-                    onClick={() => copyText(payLinkData.accountNumber, "Số tài khoản")}
+                    onClick={() => copyText(payLinkData.accountNumber, tr("Account number"))}
                   >
-                    Sao chép
+                    {tr("Copy")}
                   </button>
                 </div>
               </div>
               <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>Chủ tài khoản</span>
+                <span className={styles.detailLabel}>{tr("Account holder")}</span>
                 <span style={{ fontWeight: 600 }}>{payLinkData.accountName}</span>
               </div>
               <div className={styles.detailRow}>
-                <span className={styles.detailLabel}>Nội dung</span>
+                <span className={styles.detailLabel}>{tr("Transfer reference")}</span>
                 <div className={styles.detailValueGroup}>
                   <span style={{ color: "#d97706" }}>{payLinkData.description}</span>
                   <button
                     type="button"
                     className={styles.copyBtn}
-                    onClick={() => copyText(payLinkData.description, "Nội dung")}
+                    onClick={() => copyText(payLinkData.description, tr("Transfer reference"))}
                   >
-                    Sao chép
+                    {tr("Copy")}
                   </button>
                 </div>
               </div>
@@ -343,9 +347,9 @@ export function PayOSCheckoutModal({
               className={styles.demoSimulateBtn}
               onClick={handleSimulateInstantSuccess}
               disabled={checking}
-              title="Nhấn để giả lập thanh toán thành công ngay lập tức phục vụ demo"
+              title={tr("Simulate an instant successful payment for demo purposes")}
             >
-              ⚡ Giả lập thành công (Demo)
+              {tr("⚡ Simulate Paid (Demo)")}
             </button>
 
             <button
@@ -354,7 +358,7 @@ export function PayOSCheckoutModal({
               onClick={handleManualCheck}
               disabled={checking || loading}
             >
-              {checking ? "Đang kiểm tra…" : "Kiểm tra thanh toán"}
+              {checking ? tr("Checking…") : tr("Check payment status")}
             </button>
           </div>
         </div>

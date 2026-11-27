@@ -169,5 +169,5 @@ export function resolveHorseAvatar(avatarUrl?: string | null, horseCode?: string
   if (horseCode === "HRS-DEMO-01" || horseName === "Bạch Long Mã") return "/images/horses/horse-01.jpg";
   if (horseCode === "HRS-DEMO-02" || horseName === "Xích Thố") return "/images/horses/horse-02.jpg";
   const found = HORSE_AVATAR_PRESETS.find(p => p.horseCode === horseCode || (horseName && p.name.toLowerCase() === horseName.toLowerCase()));
-  return found?.url || "/images/horses/horse-01.jpg";
+  return found?.url || DEFAULT_HORSE_AVATAR;
 }

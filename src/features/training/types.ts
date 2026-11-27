@@ -394,6 +394,7 @@ export interface OverviewRow {
     ownerName?: string | null;
     ownerPhone?: string | null;
     fromManagerName?: string | null;
+    assignedTrainer?: { id: string; fullName: string; email?: string } | null;
   };
   plan: {
     id: string;

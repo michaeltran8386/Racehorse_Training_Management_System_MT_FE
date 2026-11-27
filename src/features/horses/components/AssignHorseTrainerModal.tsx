@@ -1,10 +1,13 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Field } from "@/shared/components/form/Field";
 import { Textarea } from "@/shared/components/form/Textarea";
+import { useToast } from "@/shared/components/ui/Toast";
+import { tr } from "@/shared/i18n/tr";
 import { getBarnStaffing, type BarnStaffingItem } from "@/features/accounts/api";
 import { assignHorseTrainer } from "@/features/horses/api";
 import { messageFor } from "@/shared/lib/messages";
@@ -32,6 +35,8 @@ export function AssignHorseTrainerModal({
   onClose,
   onSuccess,
 }: AssignHorseTrainerModalProps) {
+  useTranslation();
+  const toast = useToast();
   const [barns, setBarns] = useState<BarnStaffingItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedTrainerId, setSelectedTrainerId] = useState<string>("");
@@ -62,11 +67,14 @@ export function AssignHorseTrainerModal({
 
   // Tìm khu chuồng của ngựa
   const currentBarn = barns.find((b) => b.id === zoneId || b.name === zoneName || (stallCode && b.code && stallCode.startsWith(b.code)));
-  const trainers = currentBarn ? currentBarn.trainers : barns.flatMap((b) => b.trainers);
+  const allBarnTrainers = currentBarn ? currentBarn.trainers : barns.flatMap((b) => b.trainers);
+  // Chỉ lọc các Huấn luyện viên ĐANG HOẠT ĐỘNG CHÍNH THỨC (ACTIVE)
+  const activeTrainers = allBarnTrainers.filter((t) => t.status === "ACTIVE");
+  const invitedTrainers = allBarnTrainers.filter((t) => t.status && t.status !== "ACTIVE");
 
   async function handleSubmit() {
     if (!selectedTrainerId) {
-      setError("Vui lòng chọn Huấn luyện viên trưởng tiếp nhận.");
+      setError(tr("Please select a receiving Head Trainer."));
       return;
     }
     setSubmitting(true);
@@ -76,7 +84,7 @@ export function AssignHorseTrainerModal({
         trainerUserId: selectedTrainerId,
         notes: notes.trim() || undefined,
       });
-      alert(`Phân công HLV cho chiến mã ${horseName} thành công. Yêu cầu bàn giao đã được gửi qua chuông và email tới HLV.`);
+      toast.show(tr("Assigned trainer for {{name}} successfully. Handover request sent via notifications and email.", { name: horseName }), "ok");
       onSuccess();
       onClose();
     } catch (err) {
@@ -88,8 +96,8 @@ export function AssignHorseTrainerModal({
 
   return (
     <Modal
-      title={`Phân công Huấn luyện viên Trưởng: ${horseName}`}
-      subtitle={`Mã số: ${horseCode}${stallCode ? ` · Ô chuồng: ${stallCode}` : ""}${zoneName ? ` (${zoneName})` : ""}`}
+      title={tr("Assign Head Trainer: {{name}}", { name: horseName })}
+      subtitle={`${tr("Code:")} ${horseCode}${stallCode ? ` · ${tr("Stall:")} ${stallCode}` : ""}${zoneName ? ` (${zoneName})` : ""}`}
       width={560}
       onClose={onClose}
     >
@@ -97,21 +105,23 @@ export function AssignHorseTrainerModal({
         {error && <Alert tone="danger">{error}</Alert>}
 
         <Alert tone="info">
-          Theo nguyên tắc vận hành, chiến mã chỉ được phân công cho Huấn luyện viên trưởng đang phụ trách cùng Khu chuồng (Barn) và chưa vượt quá định mức 8 chiến mã.
+          {tr("By operating policy, a horse may only be assigned to an active Head Trainer in the same Barn who has not exceeded the 8-horse limit.")}
         </Alert>
 
         {loading ? (
           <div style={{ padding: "20px", textAlign: "center", color: "var(--text-muted)" }}>
-            Đang tải danh sách Huấn luyện viên phụ trách khu chuồng...
+            {tr("Loading barn Head Trainers...")}
           </div>
-        ) : trainers.length === 0 ? (
+        ) : activeTrainers.length === 0 ? (
           <Alert tone="warn">
-            Khu chuồng này hiện chưa có Huấn luyện viên trưởng nào được phân công. Vui lòng vào trang Quản lý tài khoản để bổ nhiệm HLV cho Khu chuồng trước.
+            {invitedTrainers.length > 0
+              ? tr("This Barn has no active Head Trainer ready yet ({{count}} invited pending email activation). Please activate the trainer account before assigning horses.", { count: invitedTrainers.length })
+              : tr("This Barn currently has no Head Trainer assigned. Please go to Accounts to assign a Head Trainer to this Barn first.")}
           </Alert>
         ) : (
-          <Field label="Chọn Huấn luyện viên trưởng tiếp nhận (*)" required>
+          <Field label={tr("Select receiving Head Trainer (*)")} required>
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginTop: "6px" }}>
-              {trainers.map((t) => {
+              {activeTrainers.map((t) => {
                 const load = t.currentLoad ?? 0;
                 const max = t.maxCapacity ?? 8;
                 const isFull = load >= max;
@@ -150,14 +160,18 @@ export function AssignHorseTrainerModal({
                     <div>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         <strong style={{ fontSize: "14px", color: "var(--ink)" }}>{t.fullName}</strong>
-                        {isSelected && <Badge tone="ok">Đã chọn</Badge>}
+                        {isSelected && <Badge tone="ok">{tr("Selected")}</Badge>}
+                      </div>
+                      <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
+                        {t.email}
                       </div>
                     </div>
+
                     <div>
                       {isFull ? (
-                        <Badge tone="danger">Tải: {load}/{max} [Đầy tải]</Badge>
+                        <Badge tone="danger">{tr("Load: {{load}}/{{max}} [Full]", { load, max })}</Badge>
                       ) : (
-                        <Badge tone="ok">Tải: {load}/{max} con · Còn {max - load} chỗ</Badge>
+                        <Badge tone="neutral">{tr("Load: {{load}}/{{max}} · {{left}} slot(s) left", { load, max, left: max - load })}</Badge>
                       )}
                     </div>
                   </div>
@@ -167,9 +181,9 @@ export function AssignHorseTrainerModal({
           </Field>
         )}
 
-        <Field label="Ghi chú bàn giao điều hành (Tùy chọn)">
+        <Field label={tr("Handover notes (Optional)")}>
           <Textarea
-            placeholder="Nhập ghi chú hoặc yêu cầu đặc biệt khi bàn giao chiến mã..."
+            placeholder={tr("Enter handover notes or special instructions...")}
             rows={3}
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -178,14 +192,14 @@ export function AssignHorseTrainerModal({
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
           <Button tone="secondary" onClick={onClose} disabled={submitting}>
-            Hủy
+            {tr("Cancel")}
           </Button>
           <Button
             tone="primary"
             onClick={handleSubmit}
             disabled={submitting || !selectedTrainerId || loading}
           >
-            {submitting ? "Đang xử lý phân công..." : "Xác nhận phân công HLV"}
+            {submitting ? tr("Assigning trainer...") : tr("Confirm Trainer Assignment")}
           </Button>
         </div>
       </div>

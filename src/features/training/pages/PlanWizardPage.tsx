@@ -51,6 +51,24 @@ const SURFACE_VIETNAMESE: Record<PhaseSurface, string> = {
   SYNTHETIC: "Sân nhân tạo / Hỗn hợp",
 };
 
+/** Khung trần sinh lý tối đa theo loại giai đoạn huấn luyện ngựa (Equine Exercise Physiology) */
+export function getMaxDaysForPhase(phType: PhaseType): number {
+  switch (phType) {
+    case "BASE":
+      return 56; // 8 tuần - Đạt đỉnh mao mạch hóa và dung tích phổi
+    case "BUILD":
+      return 42; // 6 tuần - Tái cấu trúc cơ bắp, chống viêm khớp
+    case "SPEED":
+      return 28; // 4 tuần - Bảo vệ gân chân trước SDFT và xương mè
+    case "PRE_RACE":
+      return 14; // 2 tuần - Điểm rơi phong độ tối ưu
+    case "RECOVERY":
+      return 21; // 3 tuần - Tái tạo thể trạng, chống teo cơ
+    default:
+      return 56;
+  }
+}
+
 function addDays(date: string, days: number): string {
   const d = new Date(`${date}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + days);
@@ -147,6 +165,18 @@ function validatePlanForm(
       errors.endDate = isVietnamese
         ? `Thời gian giáo án (${totalDays} ngày) không đủ cho ${phases.length} giai đoạn (mỗi giai đoạn tối thiểu từ 1 ngày).`
         : tr("Plan duration is too short for {{count}} phases (min 1 day/phase).", { count: phases.length });
+    } else if (phases.length > 0) {
+      const totalMaxDays = phases.reduce((sum, ph) => sum + getMaxDaysForPhase(ph.type), 0);
+      if (totalDays > totalMaxDays) {
+        const minPhasesNeeded = Math.ceil(totalDays / 40);
+        errors.endDate = isVietnamese
+          ? `Thời lượng giáo án (${totalDays} ngày) vượt quá trần sinh lý an toàn của ${phases.length} giai đoạn hiện tại (${totalMaxDays} ngày). Vui lòng tăng thêm giai đoạn (tối thiểu ${minPhasesNeeded} giai đoạn) để bảo vệ sức khỏe chiến mã.`
+          : tr("Plan duration ({{days}}d) exceeds safe physiological ceiling of {{count}} phases ({{max}}d). Please add more phases.", {
+              days: totalDays,
+              count: phases.length,
+              max: totalMaxDays,
+            });
+      }
     }
   }
 
@@ -198,6 +228,7 @@ function validatePlanForm(
         const pDays = Math.round((new Date(`${p.endDate}T00:00:00Z`).getTime() - new Date(`${p.startDate}T00:00:00Z`).getTime()) / (1000 * 60 * 60 * 24)) + 1;
         const isSpecial = p.type === "PRE_RACE" || p.type === "RECOVERY";
         const minDays = isMicro ? 3 : (isSpecial ? 3 : 7);
+        const maxDays = getMaxDaysForPhase(p.type);
         if (pDays < minDays) {
           pErr.endDate = isVietnamese
             ? (isMicro
@@ -206,6 +237,10 @@ function validatePlanForm(
                   ? `Giai đoạn nước rút / phục hồi tối thiểu 3 ngày.`
                   : `Giai đoạn rèn luyện tiêu chuẩn tối thiểu 7 ngày.`)
             : tr("Phase must be at least {{min}} days.", { min: minDays });
+        } else if (maxDays && pDays > maxDays) {
+          pErr.endDate = isVietnamese
+            ? `Giai đoạn "${p.name}" (${PHASE_TYPE_VIETNAMESE[p.type] || p.type}) tối đa ${maxDays} ngày theo giới hạn an toàn sinh lý.`
+            : tr("Phase cannot exceed {{max}} days.", { max: maxDays });
         }
       }
 
@@ -821,22 +856,18 @@ export default function PlanWizardPage() {
     const e = new Date(`${end}T00:00:00Z`).getTime();
     const totalDays = Math.max(boundedCount, Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1);
 
-    const baseDays = Math.floor(totalDays / boundedCount);
-    const remainder = totalDays % boundedCount;
-
-    const generated: TrainingPhase[] = [];
-    let curStart = start;
-
+    // Xác định type và default name theo từng vị trí chu kỳ
+    const types: PhaseType[] = [];
+    const names: string[] = [];
     for (let i = 0; i < boundedCount; i++) {
-      const isLast = i === boundedCount - 1;
-      const phaseDays = baseDays + (i < remainder ? 1 : 0);
-      const curEnd = isLast ? end : addDays(curStart, Math.max(0, phaseDays - 1));
       const existing = existingPhases[i];
-
       let pType: PhaseType = "BASE";
       let defaultName = isVi ? `Giai đoạn ${i + 1}` : `Phase ${i + 1}`;
 
-      if (boundedCount === 1) {
+      if (existing?.type) {
+        pType = existing.type;
+        defaultName = existing.name || defaultName;
+      } else if (boundedCount === 1) {
         pType = "BASE";
         defaultName = isVi ? "Giai đoạn 1: Nền tảng toàn diện" : "Phase 1: Comprehensive Base";
       } else if (boundedCount === 2) {
@@ -866,11 +897,48 @@ export default function PlanWizardPage() {
           defaultName = isVi ? `Giai đoạn ${i + 1}: Tăng cường sức bền (Build)` : `Phase ${i + 1}: Strength & Endurance`;
         }
       }
+      types.push(pType);
+      names.push(defaultName);
+    }
+
+    // Phân bổ thời lượng thỏa mãn cả [minDays, maxDays] sinh lý
+    const mins = types.map((t) => getMinDaysForPhase(t));
+    const maxs = types.map((t) => getMaxDaysForPhase(t));
+    const durations = [...mins];
+    let remaining = Math.max(0, totalDays - mins.reduce((a, b) => a + b, 0));
+
+    while (remaining > 0) {
+      let added = false;
+      for (let i = 0; i < boundedCount; i++) {
+        if (remaining <= 0) break;
+        if (durations[i] < maxs[i]) {
+          durations[i]++;
+          remaining--;
+          added = true;
+        }
+      }
+      if (!added) {
+        durations[0] += remaining;
+        remaining = 0;
+        break;
+      }
+    }
+
+    const generated: TrainingPhase[] = [];
+    let curStart = start;
+
+    for (let i = 0; i < boundedCount; i++) {
+      const isLast = i === boundedCount - 1;
+      const phaseDays = durations[i];
+      const curEnd = isLast ? end : addDays(curStart, Math.max(0, phaseDays - 1));
+      const existing = existingPhases[i];
+      const pType = types[i];
+      const defaultName = names[i];
 
       generated.push({
         id: existing?.id || (typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : `ph-${Date.now()}-${i}-${Math.random().toString(36).slice(2, 6)}`),
         name: existing?.name || defaultName,
-        type: existing?.type || pType,
+        type: pType,
         startDate: curStart,
         endDate: curEnd,
         sessionsPerWeek: existing?.sessionsPerWeek ?? (pType === "PRE_RACE" ? 4 : pType === "SPEED" ? 5 : 6),
@@ -970,6 +1038,8 @@ export default function PlanWizardPage() {
 
       const minDays = getMinDaysForPhase(target.type);
       const minValidEnd = addDays(target.startDate, minDays - 1);
+      const maxDays = getMaxDaysForPhase(target.type);
+      const maxPhysioEnd = addDays(target.startDate, maxDays - 1);
 
       // Cận trên: Các giai đoạn sau index cần ít nhất tổng số ngày tối thiểu
       let subsequentMinDays = 0;
@@ -981,6 +1051,7 @@ export default function PlanWizardPage() {
       let clampedEnd = newEnd;
       if (clampedEnd < minValidEnd) clampedEnd = minValidEnd;
       if (clampedEnd > maxValidEnd) clampedEnd = maxValidEnd;
+      if (clampedEnd > maxPhysioEnd) clampedEnd = maxPhysioEnd;
 
       updated[index] = { ...target, endDate: clampedEnd };
 
@@ -1254,11 +1325,14 @@ export default function PlanWizardPage() {
           <div id={`field-phase-${ph.id}-endDate`}>
             {(() => {
               const phaseMinDays = getMinDaysForPhase(ph.type);
+              const phaseMaxDays = getMaxDaysForPhase(ph.type);
               let subsequentMinDays = 0;
               for (let j = i + 1; j < phases.length; j++) {
                 subsequentMinDays += getMinDaysForPhase(phases[j].type);
               }
-              const maxEndForPhase = addDays(endDate, -subsequentMinDays);
+              const maxEndBySubsequent = addDays(endDate, -subsequentMinDays);
+              const maxEndByPhysio = addDays(ph.startDate, phaseMaxDays - 1);
+              const maxEndForPhase = maxEndBySubsequent < maxEndByPhysio ? maxEndBySubsequent : maxEndByPhysio;
               const curPhaseDays = Math.round((new Date(`${ph.endDate}T00:00:00Z`).getTime() - new Date(`${ph.startDate}T00:00:00Z`).getTime()) / (1000 * 60 * 60 * 24)) + 1;
               return (
                 <Field
@@ -1266,9 +1340,9 @@ export default function PlanWizardPage() {
                   required
                   hint={i === phases.length - 1
                     ? (isVietnamese
-                        ? `${curPhaseDays} ngày (Kết thúc giáo án)`
-                        : `${curPhaseDays} days (Plan end)`)
-                    : `${curPhaseDays} ${isVietnamese ? `ngày (tối thiểu ${phaseMinDays} ngày)` : `days (min ${phaseMinDays}d)`}`
+                        ? `${curPhaseDays} ngày (Kết thúc giáo án · Trần sinh lý: tối đa ${phaseMaxDays} ngày)`
+                        : `${curPhaseDays} days (Plan end · Max ceiling: ${phaseMaxDays}d)`)
+                    : `${curPhaseDays} ${isVietnamese ? `ngày (Khung sinh lý: ${phaseMinDays} – ${phaseMaxDays} ngày)` : `days (Physio window: ${phaseMinDays}–${phaseMaxDays}d)`}`
                   }
                   error={isPhaseFieldVisible(ph.id, "endDate") ? formErrors.phases?.[ph.id]?.endDate : undefined}
                 >
