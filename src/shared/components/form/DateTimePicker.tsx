@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/shared/components/ui/Icon";
@@ -82,7 +83,7 @@ export function DateTimePicker({
   // Split value into date and time
   const [datePart, timePart] = useMemo(() => {
     if (!value || !value.includes("T")) {
-      const now = new Date();
+      const now = effectiveClubNow();
       const dStr = toIsoDate(now.getFullYear(), now.getMonth(), now.getDate());
       return [value || dStr, "08:00"];
     }
@@ -104,8 +105,8 @@ export function DateTimePicker({
     return null;
   }, [datePart]);
 
-  const [viewYear, setViewYear] = useState(() => parsedDate?.year ?? new Date().getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => parsedDate?.month ?? new Date().getMonth());
+  const [viewYear, setViewYear] = useState(() => parsedDate?.year ?? effectiveClubNow().getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => parsedDate?.month ?? effectiveClubNow().getMonth());
   const [prevValue, setPrevValue] = useState(value);
 
   // Keep view aligned when value changes externally
@@ -134,7 +135,7 @@ export function DateTimePicker({
   }, [isOpen]);
 
   const todayIso = useMemo(() => {
-    const d = new Date();
+    const d = effectiveClubNow();
     return toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
   }, []);
 
@@ -244,7 +245,7 @@ export function DateTimePicker({
   };
 
   const handleSelectNow = () => {
-    const d = new Date();
+    const d = effectiveClubNow();
     const dateStr = toIsoDate(d.getFullYear(), d.getMonth(), d.getDate());
     const timeStr = `${padZero(d.getHours())}:${padZero(d.getMinutes())}`;
     onChange?.(`${dateStr}T${timeStr}`);

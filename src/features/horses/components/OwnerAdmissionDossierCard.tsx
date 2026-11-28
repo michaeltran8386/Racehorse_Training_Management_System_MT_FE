@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -13,7 +14,6 @@ import { useToast } from "@/shared/components/ui/Toast";
 import { localizeServerText, tr } from "@/shared/i18n/tr";
 import { formatDateTime } from "@/shared/lib/format";
 import { messageFor } from "@/shared/lib/messages";
-import { getDemoDate } from "@/features/training/api";
 import {
   cancelAdmission,
   extractAdmissionDocumentPhotos,
@@ -47,12 +47,7 @@ const STEPS = [
 ] as const;
 
 function currentEffectiveTimeMs(): number {
-  const demoYmd = getDemoDate();
-  if (!demoYmd) return Date.now();
-  const now = new Date();
-  const timePart = now.toISOString().slice(11, 19);
-  const parsed = Date.parse(`${demoYmd}T${timePart}+07:00`);
-  return Number.isNaN(parsed) ? Date.now() : parsed;
+  return effectiveClubNow().getTime();
 }
 
 interface Props {

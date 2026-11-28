@@ -1,3 +1,5 @@
+import { clubParts } from "@/shared/lib/demo-clock";
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { Modal } from "@/shared/components/ui/Modal";
 import { ConfirmModal } from "@/shared/components/ui/ConfirmModal";
 import { useTranslation as useScreenTranslation } from "react-i18next";
@@ -74,11 +76,11 @@ function UndoTaskButton({
   onUndo: () => void;
 }) {
   const expiresAt = undoUntil ? new Date(undoUntil).getTime() || 0 : 0;
-  const [nowMs, setNowMs] = useState(Date.now);
+  const [nowMs, setNowMs] = useState(() => effectiveClubNow().getTime());
   useEffect(() => {
-    if (expiresAt <= Date.now()) return;
+    if (expiresAt <= effectiveClubNow().getTime()) return;
     const timer = window.setInterval(() => {
-      const now = Date.now();
+      const now = effectiveClubNow().getTime();
       setNowMs(now);
       if (expiresAt <= now) window.clearInterval(timer);
     }, 1000);
@@ -149,11 +151,11 @@ export default function DailyChecklistPage() {
   const [error, setError] = useState("");
 
   const [currentMinute, setCurrentMinute] = useState(() =>
-    new Date().toTimeString().slice(0, 5),
+    clubParts(effectiveClubNow().toISOString()).time,
   );
   useEffect(() => {
     const timer = window.setInterval(
-      () => setCurrentMinute(new Date().toTimeString().slice(0, 5)),
+      () => setCurrentMinute(clubParts(effectiveClubNow().toISOString()).time),
       1000,
     );
     return () => window.clearInterval(timer);

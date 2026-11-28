@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { HorseAvatar } from "../components/HorseAvatar";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
@@ -69,7 +70,7 @@ function ageOf(dob?: string): string {
   if (!dob) return "—";
   const d = new Date(dob);
   if (Number.isNaN(d.getTime())) return "—";
-  const now = new Date();
+  const now = effectiveClubNow();
   let age = now.getFullYear() - d.getFullYear();
   if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) age -= 1;
   const num = Math.max(age, 0);

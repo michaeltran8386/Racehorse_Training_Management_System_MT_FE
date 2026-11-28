@@ -13,53 +13,76 @@ export function clubIso(date: string, time: string): string {
   return `${date}T${time}:00+07:00`;
 }
 
-export function getDemoDate(): string | null {
-  if (typeof window === "undefined" || import.meta.env?.PROD) return null;
-  const val = localStorage.getItem("equiflow_demo_date");
-  return val && /^\d{4}-\d{2}-\d{2}$/.test(val) ? val : null;
+export interface DemoClockState {
+  serverNow: string;
+  realNow: string;
+  simulated: boolean;
+  revision: string;
 }
-
-export function getDemoTime(): string | null {
-  if (typeof window === "undefined" || import.meta.env?.PROD) return null;
-  const time = localStorage.getItem("equiflow_demo_time");
-  return time && /^([01]\d|2[0-3]):[0-5]\d$/.test(time) ? time : null;
+interface ClockCache {
+  state: DemoClockState;
+  receivedAt: number;
 }
-
-export function effectiveClubNow(): Date {
-  const now = new Date();
-  const date = getDemoDate();
-  if (!date) return now;
-  const time = getDemoTime();
-  const clock = time
-    ? `${time}:00.000`
-    : new Date(+now + CLUB_OFFSET_MS).toISOString().slice(11, 23);
-  return new Date(`${date}T${clock}+07:00`);
-}
-
-export function setDemoDate(date: string | null, time?: string | null) {
-  if (typeof window === "undefined") return;
-  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    localStorage.setItem("equiflow_demo_date", date);
-  } else {
-    localStorage.removeItem("equiflow_demo_date");
+const KEY = "equiflow_business_clock";
+let cache: ClockCache | null | undefined;
+function currentClock(): ClockCache | null {
+  if (import.meta.env?.PROD) return null;
+  if (cache !== undefined) return cache;
+  try {
+    const raw =
+      typeof localStorage === "undefined" ? null : localStorage.getItem(KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    cache =
+      parsed &&
+      Number.isFinite(Date.parse(parsed.state?.serverNow)) &&
+      typeof parsed.receivedAt === "number"
+        ? parsed
+        : null;
+  } catch {
+    cache = null;
   }
-  if (
-    date &&
-    /^\d{4}-\d{2}-\d{2}$/.test(date) &&
-    time &&
-    /^([01]\d|2[0-3]):[0-5]\d$/.test(time)
-  ) {
-    localStorage.setItem("equiflow_demo_time", time);
-  } else localStorage.removeItem("equiflow_demo_time");
-  window.dispatchEvent(
-    new CustomEvent("equiflow_date_changed", { detail: { date } }),
-  );
+  return cache ?? null;
 }
-
+export function applyDemoClockState(state: DemoClockState) {
+  if (
+    !Number.isFinite(Date.parse(state.serverNow)) ||
+    typeof state.simulated !== "boolean" ||
+    typeof state.revision !== "string"
+  )
+    throw new Error("Invalid server clock");
+  const changed = currentClock()?.state.revision !== state.revision;
+  cache = { state, receivedAt: Date.now() };
+  if (typeof localStorage !== "undefined") {
+    localStorage.setItem(KEY, JSON.stringify(cache));
+    localStorage.removeItem("equiflow_demo_date");
+    localStorage.removeItem("equiflow_demo_time");
+  }
+  if (changed && typeof window !== "undefined")
+    window.dispatchEvent(new CustomEvent("equiflow_date_changed"));
+}
+export function effectiveClubNow(): Date {
+  const clock = currentClock();
+  return clock
+    ? new Date(
+        Date.parse(clock.state.serverNow) + Date.now() - clock.receivedAt,
+      )
+    : new Date();
+}
+export function getDemoDate(): string | null {
+  return currentClock()?.state.simulated
+    ? clubParts(effectiveClubNow().toISOString()).date
+    : null;
+}
+export function getDemoTime(): string | null {
+  return currentClock()?.state.simulated
+    ? clubParts(effectiveClubNow().toISOString()).time
+    : null;
+}
+export function getDemoClockRevision(): string | null {
+  return currentClock()?.state.revision ?? null;
+}
 export function todayClub(): string {
-  const demo = getDemoDate();
-  if (demo) return demo;
-  return clubParts(new Date().toISOString()).date;
+  return clubParts(effectiveClubNow().toISOString()).date;
 }
 
 /** Ngày mai theo giờ câu lạc bộ: giáo án chỉ được bắt đầu từ ngày này. */

@@ -529,7 +529,9 @@ export type HorsePlanState =
   | 'DRAFT_OTHER'
   | 'MEDICAL_LOCKED'
   | 'DEBT_IMPOUNDED'
-  | 'COOLDOWN_SELF';
+  | 'COOLDOWN_SELF'
+  | 'PENDING_ACCEPTANCE'
+  | 'UNASSIGNED_TRAINER';
 
 export interface AssignableHorse {
   id: string;

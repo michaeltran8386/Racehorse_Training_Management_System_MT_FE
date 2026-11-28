@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import type { ExerciseSession, Tone } from "../types";
 import { SESSION_STATUS_LABEL, SESSION_STATUS_TONE } from "../types";
 import { tr } from "@/shared/i18n/tr";
@@ -50,16 +51,17 @@ export function sessionButtons(s: ExerciseSession, role: string, allowEarly = fa
   const planOpen = s.planStatus === undefined || s.planStatus === "DRAFT" || s.planStatus === "ACTIVE";
   const scheduledTime = new Date(s.scheduledAt).getTime();
   // Chỉ khi bật cờ dev: đã mô phỏng xong thì cho ghi kết quả trước giờ tập.
-  const started = scheduledTime <= Date.now() || (allowEarly && isSimulatedAwaitingResult(s));
+  const started = scheduledTime <= effectiveClubNow().getTime() || (allowEarly && isSimulatedAwaitingResult(s));
+  const canRecordScheduled = started || allowEarly;
   // Bug #62: BE tính hạn ghi muộn đến 00:00 ngày thứ 8 sau ngày tập (startOfClubDay + 8 ngày).
   const deadline = startOfDay(new Date(s.scheduledAt)).getTime() + 8 * DAY;
-  const missedInTime = s.status === "MISSED" && Date.now() < deadline;
+  const missedInTime = s.status === "MISSED" && effectiveClubNow().getTime() < deadline;
   return {
     edit: ht && planOpen && s.status === "SCHEDULED" && !started,
     cancel: ht && (s.status === "SCHEDULED" || s.status === "BLOCKED" || s.status === "MISSED"),
-    record: ht && ((s.status === "SCHEDULED" && started) || missedInTime),
+    record: ht && ((s.status === "SCHEDULED" && canRecordScheduled) || missedInTime),
     recordDisabledReason:
-      ht && s.status === "SCHEDULED" && !started
+      ht && s.status === "SCHEDULED" && !canRecordScheduled
         ? tr("Training session has not reached its scheduled start time.")
         : undefined,
     viewResult: s.status === "COMPLETED",

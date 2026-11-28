@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { tr, isVietnamese } from "@/shared/i18n/tr";
 import { downloadXlsx, type Cell } from "@/shared/lib/xlsx";
 import { invoiceStatusLabel } from "./invoiceStatus";
@@ -46,7 +47,7 @@ export function exportStatementXlsx(invoices: FinancialInvoice[], periodLabel: s
         [tr("Prize credit"), -t.prize],
         [tr("Net amount"), t.net],
         [],
-        [tr("Exported at"), new Date().toLocaleString(isVietnamese() ? "vi-VN" : "en-US", { timeZone: "Asia/Ho_Chi_Minh" })],
+        [tr("Exported at"), effectiveClubNow().toLocaleString(isVietnamese() ? "vi-VN" : "en-US", { timeZone: "Asia/Ho_Chi_Minh" })],
       ],
     },
   ]);
@@ -77,7 +78,7 @@ export function printStatement(invoices: FinancialInvoice[], periodLabel: string
   @page { size: A4; margin: 14mm; }
 </style></head><body>
 <h1>${esc(tr("Cost statement"))} — ${esc(periodLabel)}</h1>
-<p class="meta">${ownerName ? `${esc(tr("Owner"))}: ${esc(ownerName)} · ` : ""}${esc(tr("Exported at"))}: ${esc(new Date().toLocaleString(isVietnamese() ? "vi-VN" : "en-US", { timeZone: "Asia/Ho_Chi_Minh" }))}</p>
+<p class="meta">${ownerName ? `${esc(tr("Owner"))}: ${esc(ownerName)} · ` : ""}${esc(tr("Exported at"))}: ${esc(effectiveClubNow().toLocaleString(isVietnamese() ? "vi-VN" : "en-US", { timeZone: "Asia/Ho_Chi_Minh" }))}</p>
 <table><thead><tr>${invoiceHeader().map((h) => `<th>${esc(h)}</th>`).join("")}</tr></thead><tbody>${rows}</tbody></table>
 <table class="summary"><tbody>
 <tr><td>${esc(tr("Boarding"))}</td><td class="num">${money(t.boarding)}</td></tr>

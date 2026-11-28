@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -291,7 +292,7 @@ export default function RecordListPage() {
                       {r.followUpDate ? (
                         <div style={{ display: "grid" }}>
                           <span>{formatDate(r.followUpDate)}</span>
-                          {new Date(r.followUpDate) < new Date() && r.status === "OPEN" && (
+                          {new Date(r.followUpDate) < effectiveClubNow() && r.status === "OPEN" && (
                             <span style={{ fontSize: "var(--fs-caption)", color: "var(--danger)", fontWeight: 600 }}>
                               {tr("Overdue")}
                             </span>

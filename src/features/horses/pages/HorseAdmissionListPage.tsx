@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from 'react-router-dom';
@@ -15,7 +16,6 @@ import { tr } from "@/shared/i18n/tr";
 import { formatDateTime } from "@/shared/lib/format";
 import { messageFor } from "@/shared/lib/messages";
 import { getAdmissions, cancelAdmission, getAdmissionCapacity, deferAdmissionForCapacity, getAdmissionRecord, extractAdmissionDocumentPhotos } from "../services/admissionService";
-import { getDemoDate } from "@/features/training/api";
 import type { HorseAdmissionRecord, AdmissionStatus } from "../types/admission.types";
 import { AdmissionInspectionModal } from "../components/AdmissionInspectionModal";
 import { AdmissionScheduleModal } from "../components/AdmissionScheduleModal";
@@ -199,10 +199,7 @@ export default function HorseAdmissionListPage() {
                 const appointed = rec.status === "APPOINTED";
                 const canInspect = (appointed || rec.status === "INSPECTION_IN_PROGRESS") && (isManager || (isVet && rec.veterinarianUserId === currentUser.id));
                 const canSchedule = (pending || appointed) && isManager;
-                const demoYmd = getDemoDate();
-                const nowMs = demoYmd
-                  ? Date.parse(`${demoYmd}T${new Date().toISOString().slice(11, 19)}+07:00`) || Date.now()
-                  : Date.now();
+                const nowMs = effectiveClubNow().getTime();
                 const overdueDays = rec.appointmentDate
                   ? Math.floor((nowMs - Date.parse(rec.appointmentDate)) / 86400000)
                   : 0;

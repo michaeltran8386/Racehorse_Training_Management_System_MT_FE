@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useEffect, useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useCurrentUser } from '@/shared/components/layout/AuthProvider';
@@ -36,7 +37,7 @@ export function AdmissionScheduleModal({ record, onClose, onSuccess }: Props) {
       const value = localInputValue(new Date(record.appointmentDate));
       if (value) return value;
     }
-    const tomorrow = new Date();
+    const tomorrow = effectiveClubNow();
     tomorrow.setDate(tomorrow.getDate() + 1);
     tomorrow.setHours(9, 0, 0, 0);
     return localInputValue(tomorrow);

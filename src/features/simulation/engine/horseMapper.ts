@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "../../../shared/lib/demo-clock.ts";
 import type { Coat, HorseProfile, Lifecycle, StallHealth, Strategy } from './engine.ts';
 
 // shortcut: BE has no simulator biometric profile fields; keep deterministic local defaults until those fields become domain data.
@@ -20,7 +21,7 @@ export function toHorseProfile(horse: any, index: number): HorseProfile & { stal
   if (horse.dob) {
     const dobMs = new Date(horse.dob).getTime();
     if (!isNaN(dobMs)) {
-      ageYears = Math.max(1, Math.min(30, Math.floor((Date.now() - dobMs) / (365.25 * 24 * 60 * 60 * 1000))));
+      ageYears = Math.max(1, Math.min(30, Math.floor((effectiveClubNow().getTime() - dobMs) / (365.25 * 24 * 60 * 60 * 1000))));
     }
   }
 

@@ -104,7 +104,7 @@ export function DemoDataChatPanel({
                 : timeArgs.mode === "OFFSET_DAYS"
                   ? addDaysYmd(baseToday, timeArgs.days ?? 0)
                   : (timeArgs.date ?? null);
-            setDemoDate(next);
+            await setDemoDate(next);
             setActiveDemoDate(next);
             return { activeDate: next };
           },
@@ -414,10 +414,14 @@ export function DemoDataChatPanel({
     }
   };
 
-  const handleQuickTimeJump = (days: number | null) => {
+  const handleQuickTimeJump = async (days: number | null) => {
     const next = days === null ? null : addDaysYmd(realToday, days);
-    setDemoDate(next);
-    setActiveDemoDate(next);
+    try {
+      await setDemoDate(next);
+      setActiveDemoDate(next);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Không thay đổi được đồng hồ máy chủ");
+    }
   };
 
   const handleCanvasHorseSubmit = (scenario: DemoScenario, horseName: string) => {
@@ -438,7 +442,7 @@ export function DemoDataChatPanel({
           Mỗi yêu cầu tối đa một ngựa hoặc điều chỉnh thời gian mô phỏng.
         </p>
         <p className={styles.chatClock}>
-          Thời gian thật · UTC+7
+          Đồng hồ hệ thống · UTC+7
           {context
             ? ` · Máy chủ lúc mở: ${new Intl.DateTimeFormat("vi-VN", { timeZone: "Asia/Ho_Chi_Minh", dateStyle: "short", timeStyle: "short" }).format(new Date(context.serverTime))}`
             : ""}
@@ -448,7 +452,7 @@ export function DemoDataChatPanel({
         </p>
         {(timeShifted || activeDemoDate) && (
           <p className={styles.chatNotice}>
-            Đang giả lập ngày: {activeDemoDate || "hôm nay"}. Trợ lý tạo mẫu vẫn ghi nhận giờ thật.
+            Đang giả lập ngày: {activeDemoDate || "hôm nay"}. Trợ lý tạo mẫu dùng cùng đồng hồ hệ thống.
           </p>
         )}
         <label className={styles.chatLabel} htmlFor={`${fieldId}-owner`}>

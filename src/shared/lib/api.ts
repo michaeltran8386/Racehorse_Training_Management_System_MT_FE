@@ -1,4 +1,3 @@
-import { getDemoDate, getDemoTime } from './demo-clock';
 // CỔNG DUY NHẤT gọi backend. Trang và component KHÔNG gọi fetch trực tiếp.
 //  - fetch tới VITE_API_URL, gửi kèm "Authorization: Bearer <access token>"
 //  - backend bọc kết quả trong { success, data } => trả về phần data
@@ -86,17 +85,6 @@ async function request<T>(
   if (body !== undefined) headers["Content-Type"] = "application/json";
   const accessToken = getTokens()?.accessToken;
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  if (import.meta.env.DEV && !path.startsWith("/demo-data")) {
-    try {
-      const demoDate = getDemoDate();
-      if (demoDate && /^\d{4}-\d{2}-\d{2}$/.test(demoDate)) {
-        const demoTime = getDemoTime();
-        headers["X-Demo-Date"] = demoTime ? `${demoDate}T${demoTime}` : demoDate;
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }
 
   let res: Response;
   try {

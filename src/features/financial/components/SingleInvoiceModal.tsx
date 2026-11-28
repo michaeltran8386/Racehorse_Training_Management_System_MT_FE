@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState } from "react";
 import type { Horse } from "@/features/horses/types";
 import { SearchSelect } from "@/shared/components/form/SearchSelect";
@@ -172,7 +173,7 @@ function SingleInvoiceModalContent({
 
 /** Tháng gần nhất đã kết thúc (giờ VN): chỉ được lập hóa đơn cho tháng đã khép lại. */
 export function defaultClosedMonth(): string {
-  const now = new Date(Date.now() + 7 * 3600000);
+  const now = new Date(effectiveClubNow().getTime() + 7 * 3600000);
   now.setUTCDate(1);
   now.setUTCMonth(now.getUTCMonth() - 1);
   return now.toISOString().slice(0, 7);

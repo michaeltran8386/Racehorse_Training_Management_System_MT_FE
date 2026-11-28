@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { tr } from "@/shared/i18n/tr";
@@ -15,7 +16,7 @@ function formatTimeRemaining(createdAt?: string): string {
   if (!createdAt) return tr("Invited");
   const created = new Date(createdAt).getTime();
   const expiresAt = created + 48 * 3600 * 1000;
-  const diffMs = expiresAt - Date.now();
+  const diffMs = expiresAt - effectiveClubNow().getTime();
   if (diffMs <= 0) return tr("Expired 48h");
   const hours = Math.floor(diffMs / (3600 * 1000));
   return tr("{{hours}}h left", { hours });

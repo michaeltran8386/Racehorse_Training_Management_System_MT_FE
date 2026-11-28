@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { MedicalLocksPanel } from "@/features/health/components/MedicalLocksPanel";
 import { HorseAvatar } from "../components/HorseAvatar";
 import { useTranslation as useScreenTranslation } from "react-i18next";
@@ -167,7 +168,7 @@ export default function HorseDetailPage() {
   let ageText = "—";
   if (horse.dob) {
     const birthDate = new Date(horse.dob);
-    const today = new Date();
+    const today = effectiveClubNow();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {

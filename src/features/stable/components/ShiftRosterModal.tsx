@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState } from 'react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Field } from '@/shared/components/form/Field';
@@ -79,7 +80,7 @@ export function ShiftRosterModal({
     }
   };
 
-  const canDelete = currentRosters.length > 0 && new Date(`${date}T23:59:59`) >= new Date();
+  const canDelete = currentRosters.length > 0 && new Date(`${date}T23:59:59`) >= effectiveClubNow();
 
   const handleDelete = async () => {
     if (!window.confirm(tr('Are you sure you want to delete this shift schedule?'))) return;

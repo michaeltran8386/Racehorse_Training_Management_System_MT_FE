@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { ImagePicker } from "@/shared/components/form/ImagePicker";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { Checkbox } from "@/shared/components/form/Checkbox";
@@ -96,9 +97,9 @@ export default function HorseFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState("");
 
-  const now = new Date();
+  const now = effectiveClubNow();
   const todayStr = now.toISOString().split("T")[0];
-  const twelveYearsAgo = new Date();
+  const twelveYearsAgo = effectiveClubNow();
   twelveYearsAgo.setFullYear(now.getFullYear() - 12);
   const minDobStr = twelveYearsAgo.toISOString().split("T")[0];
 
@@ -182,8 +183,8 @@ export default function HorseFormPage() {
       errs.dob = "Date of birth is required.";
     } else {
       const birth = new Date(dob);
-      const now = new Date();
-      const twelveYearsAgo = new Date();
+      const now = effectiveClubNow();
+      const twelveYearsAgo = effectiveClubNow();
       twelveYearsAgo.setFullYear(now.getFullYear() - 12);
 
       if (birth > now) {

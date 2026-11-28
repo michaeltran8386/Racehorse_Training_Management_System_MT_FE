@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { api, ApiError } from "@/shared/lib/api";
 import type {
   CloseRecordInput,
@@ -217,7 +218,7 @@ export const createRecord = async (input: CreateMedicalRecordInput): Promise<{ r
   const bePayload: Record<string, unknown> = {
     horseId: input.horseId,
     incidentId: input.incidentId,
-    examinationDate: input.examinationDate || new Date().toISOString(),
+    examinationDate: input.examinationDate || effectiveClubNow().toISOString(),
     examinationType: input.examinationType || "Routine Clinical",
     reason,
     symptoms: input.symptoms?.trim() || undefined,
@@ -255,7 +256,7 @@ export const createRecord = async (input: CreateMedicalRecordInput): Promise<{ r
       .filter((t) => t.result && t.result.trim().length >= 5)
       .map((t) => ({
         testType: t.testType || "Blood Test",
-        datePerformed: t.testDate || new Date().toISOString().split("T")[0],
+        datePerformed: t.testDate || effectiveClubNow().toISOString().split("T")[0],
         result: t.result.trim(),
       }));
     if (validLabTests.length > 0) {
@@ -315,7 +316,7 @@ export const updateRecord = async (recordId: string, input: UpdateMedicalRecordI
       .filter((t) => t.result && t.result.trim().length >= 5)
       .map((t) => ({
         testType: t.testType || "Blood Test",
-        datePerformed: t.testDate || new Date().toISOString().split("T")[0],
+        datePerformed: t.testDate || effectiveClubNow().toISOString().split("T")[0],
         result: t.result.trim(),
       }));
   }
@@ -365,7 +366,7 @@ export const updateTreatmentPhase = async (
 
 // P2-02: Kê đơn thuốc (FR-3.07)
 export const addPrescription = async (recordId: string, input: PrescriptionInput): Promise<{ prescription: PrescriptionItem; record?: MedicalRecord; warning: string | null }> => {
-  const startD = new Date(input.startDate || Date.now());
+  const startD = new Date(input.startDate || effectiveClubNow().getTime());
   const days = Number(input.daysCount) > 0 ? Number(input.daysCount) : 1;
   const calculatedEndDate =
     input.endDate ||
@@ -512,7 +513,7 @@ export const applyTrainingLock = async (
   horseId: string,
   input: { appliedMedicalStatus: string; lockReason: string; reviewDate: string; unlockConditions?: string; medicalRecordId?: string },
 ) => {
-  const restDays = Math.max(1, Math.ceil((new Date(input.reviewDate).getTime() - Date.now()) / 86400000));
+  const restDays = Math.max(1, Math.ceil((new Date(input.reviewDate).getTime() - effectiveClubNow().getTime()) / 86400000));
 
   return await api<{ impactAssessment?: MedicalFollowUpResult }>("POST", "/medical/locks", {
     horseId,

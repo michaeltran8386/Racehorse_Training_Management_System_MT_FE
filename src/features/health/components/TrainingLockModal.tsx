@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useRef, useState } from "react";
 import { Icon } from "@/shared/components/ui/Icon";
 import type { FormEvent } from "react";
@@ -48,8 +49,8 @@ export function TrainingLockModal({
   onLiftLock,
   onExtendLock,
 }: TrainingLockModalProps) {
-  const minDate = new Date(Date.now() + 86400000).toISOString().split("T")[0];
-  const maxDate = new Date(Date.now() + 180 * 86400000).toISOString().split("T")[0];
+  const minDate = new Date(effectiveClubNow().getTime() + 86400000).toISOString().split("T")[0];
+  const maxDate = new Date(effectiveClubNow().getTime() + 180 * 86400000).toISOString().split("T")[0];
 
   const [selectedHorseId, setSelectedHorseId] = useState(horseId || "");
   const [reason, setReason] = useState("");
