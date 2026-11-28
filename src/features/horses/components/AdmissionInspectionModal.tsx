@@ -13,6 +13,7 @@ import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { tr } from "@/shared/i18n/tr";
 import {
   extractAdmissionDocumentPhotos,
+  getAdmissionRecord,
   inspectAdmission,
   approveAdmission,
   rejectAdmission,
@@ -53,8 +54,27 @@ export function AdmissionInspectionModal({
     return () => { active = false; };
   }, []);
 
-  // Stored record state updated whenever inspection is saved
+  // Stored record state updated whenever inspection is saved or refreshed on open
   const [currentRecord, setCurrentRecord] = useState<HorseAdmissionRecord>(record);
+
+  useEffect(() => {
+    let active = true;
+    getAdmissionRecord(record.id)
+      .then((fresh) => {
+        if (!active) return;
+        setCurrentRecord(fresh);
+        if (!isManager) {
+          setIsHealthEligible(fresh.isHealthEligible ?? null);
+          setHealthCheckNotes(fresh.healthCheckNotes || "");
+        }
+      })
+      .catch(() => {
+        // Keep initial prop record if background refresh fails
+      });
+    return () => {
+      active = false;
+    };
+  }, [record.id, isManager]);
 
   // Form states - Block 1: Microchip & Legal (Club Manager)
   const declaredMicrochip =
@@ -110,13 +130,23 @@ export function AdmissionInspectionModal({
   const isChipMismatch =
     !isChipEmpty && (!trimmedDeclared || trimmedScanned !== trimmedDeclared);
 
-  // Eligible to approve only when 3 criteria are met from STORED record values (never local radio state of an out-of-scope field)
-  const canApprove =
-    Boolean(
-      currentRecord.microchipVerified &&
-      currentRecord.legalVerified &&
-      currentRecord.isHealthEligible && currentRecord.healthFinalizedAt
-    ) && isManager && capacity !== null && capacity > 0 && !!placement.stallId && !!placement.assignedGroomUserId;
+  // Manager readiness criteria: allows 1-click approve (auto-saving Manager's matched chip & legal check first if not saved yet),
+  // while Vet health conclusion strictly reads the finalized stored record.
+  const chipReady = isManager ? isChipMatched : Boolean(currentRecord.microchipVerified);
+  const legalReady = isManager ? legalVerified : Boolean(currentRecord.legalVerified);
+  const healthReady = Boolean(currentRecord.isHealthEligible && currentRecord.healthFinalizedAt);
+  const placementReady = Boolean(
+    capacity !== null && capacity > 0 && placement.stallId && placement.assignedGroomUserId,
+  );
+  const managerNeedsSave =
+    isManager &&
+    (!currentRecord.microchipVerified ||
+      !currentRecord.legalVerified ||
+      trimmedScanned !== (currentRecord.scannedMicrochip || "").trim().toUpperCase() ||
+      legalVerified !== Boolean(currentRecord.legalVerified) ||
+      legalDocumentsNote.trim() !== (currentRecord.legalDocumentsNote || "").trim());
+
+  const canApprove = isManager && chipReady && legalReady && healthReady && placementReady;
 
   const handleSaveInspection = async () => {
     if (capacity === null || capacity === 0) { toast.show(tr("Cannot perform inspection when no stalls are available. Please reload the list."), 'danger'); return; }
@@ -161,6 +191,14 @@ export function AdmissionInspectionModal({
     if (!canApprove) return;
     try {
       setApproving(true);
+      if (managerNeedsSave) {
+        const updated = await inspectAdmission(currentRecord.id, {
+          scannedMicrochip: trimmedScanned,
+          legalVerified,
+          legalDocumentsNote: legalDocumentsNote.trim(),
+        });
+        setCurrentRecord(updated);
+      }
       await approveAdmission(currentRecord.id, placement);
       toast.show(
         tr("Congratulations: Horse {{name}} has officially joined the club!", {
@@ -498,6 +536,43 @@ export function AdmissionInspectionModal({
                 {tr("Section 3: Stall & Primary Groom Placement")}
               </h3>
               <GroomPlacementFields value={placement} onChange={setPlacement} disabled={approving} />
+            </div>
+          )}
+          {isManager && (
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "0.5rem",
+                alignItems: "center",
+                fontSize: "0.8rem",
+              }}
+              aria-label={tr("Admission approval checklist")}
+            >
+              {[
+                { ok: chipReady, label: tr("Microchip matched") },
+                { ok: legalReady, label: tr("Legal verified") },
+                { ok: healthReady, label: tr("Vet finalized pass") },
+                { ok: placementReady, label: tr("Stall & Groom selected") },
+              ].map((item) => (
+                <span
+                  key={item.label}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.3rem",
+                    padding: "4px 10px",
+                    borderRadius: "999px",
+                    fontWeight: 600,
+                    background: item.ok ? "var(--ok-bg, #ecfdf5)" : "var(--bg-subtle, #f1f5f9)",
+                    color: item.ok ? "var(--ok, #047857)" : "var(--text-muted, #64748b)",
+                    border: `1px solid ${item.ok ? "var(--ok, #10b981)" : "var(--border-subtle, #cbd5e1)"}`,
+                  }}
+                >
+                  <Icon name={item.ok ? "check" : "clock"} size={13} />
+                  {item.label}
+                </span>
+              ))}
             </div>
           )}
           {/* Action buttons bar */}

@@ -5504,6 +5504,11 @@ export const VI_TEXT: Record<string, string> = {
   "Showing {{count}} available Groom(s) in {{zone}}": "Đang hiện {{count}} Groom khả dụng tại {{zone}}",
   " ({{hidden}} in other zones or at 6/6 capacity hidden)": " (đã ẩn {{hidden}} Groom thuộc khu khác hoặc đủ 6/6 ô)",
   "No eligible Groom is available in {{zone}}. Please pick a stall in another zone or assign more Grooms.": "Chưa có Groom nào khả dụng tại {{zone}}. Hãy chọn ô chuồng ở khu khác hoặc phân công thêm Groom.",
+  "Admission approval checklist": "Điều kiện phê duyệt tiếp nhận",
+  "Microchip matched": "Chip khớp 100%",
+  "Legal verified": "Pháp lý gốc đạt",
+  "Vet finalized pass": "Bác sĩ chốt Đạt",
+  "Stall & Groom selected": "Đã chọn Chuồng & Groom",
 };
 
 
