@@ -5488,6 +5488,22 @@ export const VI_TEXT: Record<string, string> = {
   "Training session has not reached its scheduled start time.": "Chưa đến giờ bắt đầu buổi tập.",
   "Attached legal document": "Giấy tờ pháp lý đính kèm",
   "Magic Demo Toolkit": "Nút Thần Thánh",
+  "Legal Documents": "Giấy tờ pháp lý",
+  "Notes for the Club": "Ghi chú gửi CLB",
+  "Section 3: Stall & Primary Groom Placement": "Khối 3: Bố trí ô chuồng & Nhân viên chăm sóc",
+  "Upload": "Tải ảnh",
+  "Passport": "Hộ chiếu",
+  "Horse Passport": "Hộ chiếu & Sở hữu",
+  "Vaccination Book": "Sổ tiêm phòng",
+  "Sample:": "Mẫu:",
+  "Quick sample documents:": "Chèn nhanh mẫu:",
+  "Up to 3 JPG/PNG photos (bring originals to the inspection)": "Tối đa 3 ảnh JPG/PNG (mang bản gốc khi thẩm định)",
+  "{{count}}/1000 characters": "{{count}}/1000 ký tự",
+  "{{count}} available": "{{count}} khả dụng",
+  "No available Groom in this zone": "Không có Groom khả dụng tại khu này",
+  "Showing {{count}} available Groom(s) in {{zone}}": "Đang hiện {{count}} Groom khả dụng tại {{zone}}",
+  " ({{hidden}} in other zones or at 6/6 capacity hidden)": " (đã ẩn {{hidden}} Groom thuộc khu khác hoặc đủ 6/6 ô)",
+  "No eligible Groom is available in {{zone}}. Please pick a stall in another zone or assign more Grooms.": "Chưa có Groom nào khả dụng tại {{zone}}. Hãy chọn ô chuồng ở khu khác hoặc phân công thêm Groom.",
 };
 
 

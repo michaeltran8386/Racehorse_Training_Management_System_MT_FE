@@ -54,6 +54,12 @@ export function GroomPlacementFields({
     color: 'inherit',
   };
 
+  const selectedStall = options?.stalls.find((s) => s.id === stallId);
+  const eligibleGrooms = (options?.grooms ?? [])
+    .filter((g) => g.eligible)
+    .sort((a, b) => a.count - b.count || a.fullName.localeCompare(b.fullName, 'vi'));
+  const ineligibleCount = (options?.grooms ?? []).length - eligibleGrooms.length;
+
   return (
     <div className={design.form}>
       {error && (
@@ -94,7 +100,7 @@ export function GroomPlacementFields({
         <select
           aria-label={tr('Primary Care Groom')}
           style={selectStyle}
-          disabled={disabled || !options || !stallId}
+          disabled={disabled || !options || !stallId || eligibleGrooms.length === 0}
           value={value.assignedGroomUserId}
           onChange={(e) =>
             onChange({
@@ -105,15 +111,38 @@ export function GroomPlacementFields({
             })
           }
         >
-          <option value="">{tr('Select primary care Groom')}</option>
-          {options?.grooms.map((g) => (
-            <option key={g.id} value={g.id} disabled={!g.eligible}>
+          <option value="">
+            {!stallId
+              ? tr('Select primary care Groom')
+              : eligibleGrooms.length > 0
+                ? `${tr('Select primary care Groom')} (${tr('{{count}} available', { count: eligibleGrooms.length })})`
+                : tr('No available Groom in this zone')}
+          </option>
+          {eligibleGrooms.map((g) => (
+            <option key={g.id} value={g.id}>
               {g.fullName} — {tr('{{count}}/{{max}} stalls', { count: g.count, max: g.max })}
-              {!g.eligible ? ` ${tr('(at capacity or different zone)')}` : ''}
             </option>
           ))}
         </select>
       </label>
+      {stallId && options && (
+        <p className={design.helper}>
+          {eligibleGrooms.length > 0
+            ? `${tr('Showing {{count}} available Groom(s) in {{zone}}', {
+                count: eligibleGrooms.length,
+                zone: selectedStall?.zoneRef?.name || tr('the selected zone'),
+              })}${
+                ineligibleCount > 0
+                  ? tr(' ({{hidden}} in other zones or at 6/6 capacity hidden)', {
+                      hidden: ineligibleCount,
+                    })
+                  : ''
+              }.`
+            : tr('No eligible Groom is available in {{zone}}. Please pick a stall in another zone or assign more Grooms.', {
+                zone: selectedStall?.zoneRef?.name || tr('this zone'),
+              })}
+        </p>
+      )}
     </div>
   );
 }

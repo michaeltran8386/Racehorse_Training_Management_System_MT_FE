@@ -491,7 +491,15 @@ export function AdmissionInspectionModal({
           {reviewing && <label>{tr("Supplementary review reason (10–500 characters)")}<Textarea aria-label={tr("Supplementary review reason")} value={reviewReason} maxLength={500} onChange={e => setReviewReason(e.target.value)} />
             <Button tone="secondary" onClick={() => { setReviewing(false); setIsHealthEligible(currentRecord.isHealthEligible ?? null); setHealthCheckNotes(currentRecord.healthCheckNotes || ''); }}>{tr("Cancel supplementary review")}</Button>
           </label>}
-          {isManager && <GroomPlacementFields value={placement} onChange={setPlacement} disabled={approving} />}
+          {isManager && (
+            <div className={styles.block}>
+              <h3 className={styles.blockTitle}>
+                <Icon name="grid" size={18} />
+                {tr("Section 3: Stall & Primary Groom Placement")}
+              </h3>
+              <GroomPlacementFields value={placement} onChange={setPlacement} disabled={approving} />
+            </div>
+          )}
           {/* Action buttons bar */}
           <div className={styles.actions}>
             <div>
