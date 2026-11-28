@@ -325,14 +325,26 @@ function DailyRoutineTimeline({
  * - BE trả VET_CONFIRMATION_REQUIRED -> hiện ô xác nhận (DL-2.06).
  * - BE trả WARNINGS_NEED_CONFIRMATION -> hiện khung vàng, bấm Lưu lần 2 để xác nhận.
  */
+function defaultStartTimeForDate(targetDate: string): string {
+  if (targetDate !== todayClub()) return "06:30";
+  const now = new Date(Date.now() + 7 * 60 * 60 * 1000 + 45 * 60 * 1000);
+  const mins = now.getUTCHours() * 60 + now.getUTCMinutes();
+  const rounded = Math.ceil(mins / 15) * 15;
+  const clamped = Math.max(6 * 60 + 30, Math.min(16 * 60, rounded));
+  const h = String(Math.floor(clamped / 60)).padStart(2, "0");
+  const m = String(clamped % 60).padStart(2, "0");
+  return `${h}:${m}`;
+}
+
 export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, defaultType, onClose, onSaved }: WorkoutDialogProps) {
   const { isVietnamese } = useAppLanguage();
   const toast = useToast();
   const editing = Boolean(session);
   const [planId, setPlanId] = useState(session?.planId ?? fixedPlan?.id ?? plans?.[0]?.id ?? "");
   const [phaseId, setPhaseId] = useState(session?.phaseId ?? "");
-  const [date, setDate] = useState(session?.sessionDate ?? defaultDate ?? todayClub());
-  const [time, setTime] = useState(session?.startTime ?? "06:30");
+  const initialDate = session?.sessionDate ?? defaultDate ?? todayClub();
+  const [date, setDate] = useState(initialDate);
+  const [time, setTime] = useState(() => session?.startTime ?? defaultStartTimeForDate(initialDate));
   const [type, setType] = useState<ExerciseType>(session?.sessionType ?? defaultType ?? "CANTER");
   const [intensity, setIntensity] = useState<ExerciseIntensity>(session?.intensity ?? "MEDIUM");
   const [distance, setDistance] = useState(session?.targetDistanceMeters ?? 1200);
@@ -669,6 +681,16 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
         {error && <Alert tone="danger" title={tr("Cannot save")}>{error}</Alert>}
         {availability.loading && <p role="status">{tr('Checking current track and trainer availability…')}</p>}
         {availability.error && <Alert tone="warn">{availability.error}</Alert>}
+        {!availability.loading && !availability.error && Object.keys(fieldErrors).length > 0 && (
+          <Alert tone="warn">{Object.values(fieldErrors)[0]}</Alert>
+        )}
+        {!availability.loading && !availability.error && Object.keys(fieldErrors).length === 0 && repeatInvalid && (
+          <Alert tone="warn">
+            {isVietnamese
+              ? "Vui lòng chọn ít nhất 1 thứ lặp lại và ngày kết thúc hợp lệ trong giai đoạn."
+              : "Please select at least one weekday and a valid repeat end date within the phase."}
+          </Alert>
+        )}
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
           <Button
             type="button"
