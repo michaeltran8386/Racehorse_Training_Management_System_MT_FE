@@ -1,7 +1,8 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { Badge } from "@/shared/components/ui/Badge";
-import { evaluateReadiness } from "../lib/readiness";
+import { tr } from "@/shared/i18n/tr";
 import type { ReadinessCriteria } from "../lib/readiness";
 
 interface Props {
@@ -9,24 +10,25 @@ interface Props {
 }
 
 export function ReadinessChecklistWidget({ criteria }: Props) {
+  useTranslation();
   const items = [
     {
-      label: "1. Y tế & Thể trạng",
+      label: tr("1. Health & Fitness"),
       ok: criteria.healthOk,
       details: criteria.healthDetails,
     },
     {
-      label: "2. Tiến độ giáo án",
+      label: tr("2. Training Plan Progress"),
       ok: criteria.planOk,
       details: criteria.planDetails,
     },
     {
-      label: "3. Điểm phong độ chạy thử",
+      label: tr("3. Trial Run Score"),
       ok: criteria.scoreOk,
       details: criteria.scoreDetails,
     },
     {
-      label: "4. An toàn tải trọng 7 ngày",
+      label: tr("4. 7-Day Workload Safety"),
       ok: criteria.loadOk,
       details: criteria.loadDetails,
     },
@@ -46,10 +48,10 @@ export function ReadinessChecklistWidget({ criteria }: Props) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontWeight: 600, fontSize: "var(--fs-body)", color: "var(--text)" }}>
-          Bảng thẩm định tiêu chuẩn thi đấu:
+          {tr("Race Readiness Assessment:")}
         </span>
         <Badge tone={criteria.isEligible ? "ok" : "warn"}>
-          {criteria.isEligible ? "⭐ Đủ chuẩn thi đấu (4/4)" : `⚠️ Đạt ${criteria.passedCount}/4 tiêu chuẩn`}
+          {criteria.isEligible ? tr("⭐ Race Ready (4/4)") : tr("⚠️ Passed {{count}}/4 criteria", { count: criteria.passedCount })}
         </Badge>
       </div>
 
@@ -81,7 +83,7 @@ export function ReadinessChecklistWidget({ criteria }: Props) {
 
       {!criteria.isEligible && (
         <div style={{ fontSize: "12px", color: "var(--warn)", fontStyle: "italic", marginTop: "2px" }}>
-          💡 Lưu ý HLV trưởng: Chiến mã chưa thỏa mãn đầy đủ các chỉ số an toàn. Bạn vẫn có thể tiếp tục nếu đã thẩm định chuyên môn thực địa.
+          {tr("💡 Head Trainer notice: This horse has not met all safety criteria. You may still proceed based on on-track assessment.")}
         </div>
       )}
     </div>

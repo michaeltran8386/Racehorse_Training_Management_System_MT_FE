@@ -1,6 +1,7 @@
 import { GroomPlacementFields } from './GroomPlacementFields';
 import type { AdmissionPlacement } from '../types/admission.types';
 import { useState, useId, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Input } from "@/shared/components/form/Input";
@@ -38,6 +39,7 @@ export function AdmissionInspectionModal({
   onClose,
   onSuccess,
 }: AdmissionInspectionModalProps) {
+  useTranslation();
   const toast = useToast();
   const currentUser = useCurrentUser();
   const isManager = currentUser?.role === "CLUB_MANAGER";
@@ -47,7 +49,7 @@ export function AdmissionInspectionModal({
   useEffect(() => {
     let active = true;
     getAdmissionCapacity().then(r => { if (active) setCapacity(r.available); })
-      .catch(err => { if (active) setCapacityError(err instanceof Error ? err.message : 'Không kiểm tra được chuồng trống.'); });
+      .catch(err => { if (active) setCapacityError(err instanceof Error ? err.message : tr("Unable to check available stalls.")); });
     return () => { active = false; };
   }, []);
 
@@ -114,10 +116,10 @@ export function AdmissionInspectionModal({
       currentRecord.microchipVerified &&
       currentRecord.legalVerified &&
       currentRecord.isHealthEligible && currentRecord.healthFinalizedAt
-    ) && isManager && capacity !== null && capacity > 0 && !!placement.stallId && !!placement.assignedGroomUserId && !!placement.receivingGroomUserId;
+    ) && isManager && capacity !== null && capacity > 0 && !!placement.stallId && !!placement.assignedGroomUserId;
 
   const handleSaveInspection = async () => {
-    if (capacity === null || capacity === 0) { toast.show('Chưa thể thẩm định khi chưa có chuồng trống. Vui lòng tải lại danh sách.', 'danger'); return; }
+    if (capacity === null || capacity === 0) { toast.show(tr("Cannot perform inspection when no stalls are available. Please reload the list."), 'danger'); return; }
     try {
       setSaving(true);
       // Role-scoped payload: CLUB_MANAGER sends microchip & legal; VETERINARIAN sends health
@@ -216,14 +218,14 @@ export function AdmissionInspectionModal({
   return (
     <>
       <Modal
-        title={isVet ? `Khám thẩm định sức khỏe — ${record.admissionCode}` : tr("Horse Admission Inspection — {{code}}", { code: record.admissionCode })}
-        subtitle="Một cuộc hẹn chung: Quản lý xác minh pháp lý và chip, bác sĩ kết luận sức khỏe. Chỉ tiếp nhận khi cả hai phần đạt."
+        title={isVet ? tr("Clinical Health Inspection — {{code}}", { code: record.admissionCode }) : tr("Horse Admission Inspection — {{code}}", { code: record.admissionCode })}
+        subtitle={tr("Shared appointment: Manager verifies microchip and legal documents; Veterinarian concludes health status. Admission is approved only when both pass.")}
         width={680}
         dialogClassName={design.dialog}
         overlayClassName={design.overlay}
         onClose={onClose}
       >
-        <p role="status" className={design.helper}>{capacityError || (capacity === null ? 'Đang kiểm tra chuồng trống…' : capacity === 0 ? 'CLB đã hết chuồng. Chưa thể lưu thẩm định hoặc duyệt tiếp nhận; vui lòng quay lại danh sách để hoãn và hẹn mới.' : `Còn ${capacity} ô chuồng có thể tiếp nhận. Hệ thống kiểm tra lại khi lưu và giữ ô được chọn khi duyệt.`)}</p>
+        <p role="status" className={design.helper}>{capacityError || (capacity === null ? tr("Checking stall availability…") : capacity === 0 ? tr("No stalls are available. Cannot save inspection or approve admission; return to the list to defer and reschedule.") : tr("{{count}} stall(s) available for admission. Rechecked upon saving and reserved upon approval.", { count: capacity }))}</p>
         <div className={styles.container}>
           {/* Thông tin tóm tắt hồ sơ */}
           <div className={styles.summaryHeader}>
@@ -290,7 +292,7 @@ export function AdmissionInspectionModal({
             <div className={styles.block}>
               <h3 className={styles.blockTitle}>
                 <Icon name="file" size={18} />
-                Tờ khai &amp; Giấy tờ pháp lý Chủ ngựa nộp trực tuyến
+                {tr("Owner Declaration & Online Legal Documents")}
               </h3>
               <div className={styles.fieldGroup}>
                 {currentRecord.ownerNotes && (
@@ -305,18 +307,18 @@ export function AdmissionInspectionModal({
                       whiteSpace: "pre-wrap",
                     }}
                   >
-                    <strong>Ghi chú / Mong muốn của chủ ngựa:</strong>
+                    <strong>{tr("Owner notes / preferences:")}</strong>
                     <div>{currentRecord.ownerNotes}</div>
                   </div>
                 )}
                 <div>
                   <span className={styles.label}>
-                    Ảnh giấy tờ pháp lý đính kèm ({submittedDocPhotos.length} ảnh — đối chiếu với bản gốc)
+                    {tr("Attached legal document photos ({{count}} photo(s) — verify against originals)", { count: submittedDocPhotos.length })}
                   </span>
                   <LegalDocumentsGallery
                     photos={submittedDocPhotos}
                     compact
-                    emptyText="Chủ ngựa chưa tải ảnh giấy tờ pháp lý trực tuyến — vui lòng kiểm tra trực tiếp bản gốc."
+                    emptyText={tr("Owner has not uploaded legal document photos online — please verify the originals in person.")}
                   />
                 </div>
               </div>
@@ -482,12 +484,12 @@ export function AdmissionInspectionModal({
           </div>
 
           {currentRecord.healthFinalizedAt && <div className={styles.block}>
-            <p role="status">Kết luận đã chốt lúc {formatDateTime(currentRecord.healthFinalizedAt)}. Bản đã chốt được giữ nguyên trong lịch sử.</p>
-            {currentRecord.healthReviews?.map(r => <p key={r.id}>{formatDateTime(r.createdAt)} — {r.veterinarianName}: {r.isHealthEligible ? 'Đạt' : 'Không đạt'} — {r.notes}{r.reason ? ` — Lý do đánh giá bổ sung: ${r.reason}` : ''}</p>)}
-            {isVet && !reviewing && <Button tone="secondary" onClick={() => { setReviewing(true); setReviewReason(''); }}>Đánh giá bổ sung</Button>}
+            <p role="status">{tr("Conclusion finalized at {{time}}. Finalized records remain preserved in history.", { time: formatDateTime(currentRecord.healthFinalizedAt) })}</p>
+            {currentRecord.healthReviews?.map(r => <p key={r.id}>{formatDateTime(r.createdAt)} — {r.veterinarianName}: {r.isHealthEligible ? tr("Eligible") : tr("Ineligible")} — {r.notes}{r.reason ? ` — ${tr("Supplementary review reason")}: ${r.reason}` : ''}</p>)}
+            {isVet && !reviewing && <Button tone="secondary" onClick={() => { setReviewing(true); setReviewReason(''); }}>{tr("Supplementary Review")}</Button>}
           </div>}
-          {reviewing && <label>Lý do đánh giá bổ sung (10–500 ký tự)<Textarea aria-label="Lý do đánh giá bổ sung" value={reviewReason} maxLength={500} onChange={e => setReviewReason(e.target.value)} />
-            <Button tone="secondary" onClick={() => { setReviewing(false); setIsHealthEligible(currentRecord.isHealthEligible ?? null); setHealthCheckNotes(currentRecord.healthCheckNotes || ''); }}>Hủy đánh giá bổ sung</Button>
+          {reviewing && <label>{tr("Supplementary review reason (10–500 characters)")}<Textarea aria-label={tr("Supplementary review reason")} value={reviewReason} maxLength={500} onChange={e => setReviewReason(e.target.value)} />
+            <Button tone="secondary" onClick={() => { setReviewing(false); setIsHealthEligible(currentRecord.isHealthEligible ?? null); setHealthCheckNotes(currentRecord.healthCheckNotes || ''); }}>{tr("Cancel supplementary review")}</Button>
           </label>}
           {isManager && <GroomPlacementFields value={placement} onChange={setPlacement} disabled={approving} />}
           {/* Action buttons bar */}
@@ -512,35 +514,28 @@ export function AdmissionInspectionModal({
                 onClick={() => isVet ? setConfirmHealth(true) : void handleSaveInspection()}
                 disabled={saving || approving || capacity === null || capacity === 0 || (isVet && (healthReadOnly || isHealthEligible === null || healthCheckNotes.trim().length < 2 || (reviewing && reviewReason.trim().length < 10)))}
               >
-                {saving ? tr("Saving...") : isVet ? 'Chốt kết luận khám' : tr("Save inspection results")}
+                {saving ? tr("Saving...") : isVet ? tr("Finalize Health Conclusion") : tr("Save inspection results")}
               </Button>
 
               {isManager && (
-                <div className={styles.approval}>
-                  <Button
-                    tone="primary"
-                    className={design.primary}
-                    onClick={handleApprove}
-                    disabled={!canApprove || saving || approving}
-                  >
-                    <Icon name="check" size={16} />
-                    {approving ? tr("Approving...") : tr("Approve Club Admission")}
-                  </Button>
-                  {!canApprove && (
-                    <span className={styles.criteriaNotice}>
-                      {tr("* Requires 3 verified criteria: Matched microchip, Legal approved, and Vet health passed.")}
-                    </span>
-                  )}
-                </div>
+                <Button
+                  tone="primary"
+                  className={design.primary}
+                  onClick={handleApprove}
+                  disabled={!canApprove || saving || approving}
+                >
+                  <Icon name="check" size={16} />
+                  {approving ? tr("Approving...") : tr("Approve Club Admission")}
+                </Button>
               )}
             </div>
           </div>
         </div>
       </Modal>
 
-      {confirmHealth && <Modal title="Xác nhận chốt kết luận khám" onClose={() => !saving && setConfirmHealth(false)} dialogClassName={design.dialog} overlayClassName={design.overlay} width={480}>
-        <p>Kết luận: <strong>{isHealthEligible ? 'Đạt' : 'Không đạt'}</strong>. Sau khi chốt, bác sĩ không được sửa kết quả và ghi chú của lượt khám này.</p>
-        <div className={design.actions}><Button tone="secondary" disabled={saving} onClick={() => setConfirmHealth(false)}>Kiểm tra lại</Button><Button disabled={saving} onClick={handleSaveInspection}>Xác nhận chốt</Button></div>
+      {confirmHealth && <Modal title={tr("Confirm Finalizing Health Conclusion")} onClose={() => !saving && setConfirmHealth(false)} dialogClassName={design.dialog} overlayClassName={design.overlay} width={480}>
+        <p>{tr("Conclusion:")} <strong>{isHealthEligible ? tr("Eligible") : tr("Ineligible")}</strong>. {tr("Once finalized, the Veterinarian cannot edit the conclusion or notes of this examination.")}</p>
+        <div className={design.actions}><Button tone="secondary" disabled={saving} onClick={() => setConfirmHealth(false)}>{tr("Review again")}</Button><Button disabled={saving} onClick={handleSaveInspection}>{tr("Confirm Finalize")}</Button></div>
       </Modal>}
       {/* Mandatory reason rejection popup */}
       {showRejectDialog && (

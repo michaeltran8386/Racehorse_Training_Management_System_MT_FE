@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { HorseAvatar } from "@/features/horses/components/HorseAvatar";
 import { useState, useEffect, type ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -333,7 +334,7 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
         stHorse.isMedicalLocked ||
         ["RETIRED", "INJURED", "ISOLATED"].includes(stHorse.status);
       if (blocked || row?.plan) return [];
-      const daysInStall = Math.floor((Date.now() - new Date(activeAlloc.startDate).getTime()) / 86_400_000);
+      const daysInStall = Math.floor((effectiveClubNow().getTime() - new Date(activeAlloc.startDate).getTime()) / 86_400_000);
       if (daysInStall <= 3) return [];
       return [{ horseName: stHorse.name, stallCode: st.code, zoneName: st.zoneRef?.name || st.zone, days: daysInStall }];
     });
@@ -851,7 +852,7 @@ export function TrainerDashboard() {
                       {req.horse.name} <span style={{ color: "var(--muted)", fontWeight: 400 }}>({req.horse.horseCode})</span>
                     </strong>
                     <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
-                      {req.horse.breed ? tr(req.horse.breed) : "Thần mã"} · {req.horse.stallAllocations?.[0]?.stall?.code || "Barn A"}
+                      {req.horse.breed ? tr(req.horse.breed) : tr("Racehorse")} · {req.horse.stallAllocations?.[0]?.stall?.code || "Barn A"}
                     </div>
                     <div style={{ fontSize: "11.5px", color: "var(--brand, #2563eb)", marginTop: "2px" }}>
                       {isVi ? `Người giao: Quản lý ${req.fromManager.fullName}` : `Assigned by: ${req.fromManager.fullName}`}
@@ -900,13 +901,13 @@ export function TrainerDashboard() {
               </span>
               <div style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "2px" }}>
                 {isVi
-                  ? `Đàn ngựa hiện tại: ${totalHorses}/8 chiến mã · ${withoutPlan} chiến mã chờ lập giáo án (Hạn 3 ngày sau tiếp nhận).`
-                  : `Current herd: ${totalHorses}/8 horses · ${withoutPlan} awaiting plan (3 days deadline).`}
+                  ? `Đàn ngựa hiện tại: ${totalHorses}/8 chiến mã · ${withoutPlan} chiến mã chưa có giáo án.`
+                  : `Current herd: ${totalHorses}/8 horses · ${withoutPlan} without training plan.`}
               </div>
             </div>
           </div>
           <div style={{ display: "flex", gap: "8px" }}>
-            <LinkButton to="/training/plans" tone="primary" size="sm">
+            <LinkButton to="/training/plans?tab=UNPLANNED" tone="primary" size="sm">
               {isVi ? "Xem danh sách & Lập giáo án →" : "View & Setup Plan →"}
             </LinkButton>
           </div>
@@ -923,7 +924,7 @@ export function TrainerDashboard() {
           value={overview.loading ? "—" : `${totalHorses} / 8`}
           trend={
             <span>
-              {inTraining} {isVi ? "có giáo án" : "with plan"} · {withoutPlan} {isVi ? "chờ lập giáo án" : "unplanned"}
+              {inTraining} {isVi ? "có giáo án" : "with plan"} · {withoutPlan} {isVi ? "chưa có giáo án" : "unplanned"}
             </span>
           }
           to="/training/plans?status=ACTIVE"
@@ -932,7 +933,7 @@ export function TrainerDashboard() {
           icon="alert"
           iconBg={withoutPlan > 0 ? "var(--warn-bg)" : "var(--surface-sunken)"}
           iconColor={withoutPlan > 0 ? "var(--warn)" : "var(--muted)"}
-          label={isVi ? "Chờ lập giáo án" : "Needs training plan"}
+          label={isVi ? "Chưa có giáo án" : "Unplanned"}
           value={overview.loading ? "—" : withoutPlan}
           trend={
             withoutPlan > 0 ? (
@@ -1190,7 +1191,7 @@ export function TrainerDashboard() {
                                 );
                               }
                               const diffDays = Math.ceil(
-                                (new Date(r.horse.planDeadlineAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                                (new Date(r.horse.planDeadlineAt).getTime() - effectiveClubNow().getTime()) / (1000 * 60 * 60 * 24)
                               );
                               if (diffDays < 0) {
                                 return (
@@ -1664,7 +1665,7 @@ function UpcomingFollowUpsWidget() {
     ])
       .then(([recordsRes, locksRes]) => {
         if (cancelled) return;
-        const now = new Date();
+        const now = effectiveClubNow();
         const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         const list: FollowUpDashboardItem[] = [];
 

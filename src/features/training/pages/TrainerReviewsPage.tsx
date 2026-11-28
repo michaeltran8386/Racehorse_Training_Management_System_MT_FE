@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation as useScreenTranslation } from "react-i18next";
@@ -59,7 +60,7 @@ export default function TrainerReviewsPage() {
   const me = isManager ? undefined : trainers[0];
   const reviewedPlans = new Set(byTrainer.map((r) => r.trainingPlan.id)).size;
   const reviewablePlans = me ? me.activePlans + me.completedPlans : 0;
-  const now = Date.now();
+  const now = effectiveClubNow().getTime();
   const recent = scope.filter((r) => {
     const age = now - Date.parse(r.updatedAt);
     return age >= 0 && age <= 30 * DAY;

@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { Card } from "@/shared/components/ui/Card";
 import { Alert } from "@/shared/components/ui/Alert";
 import { formatCurrency } from "@/shared/lib/format";
@@ -46,7 +47,7 @@ export function PlanSummaryCard({ plan, sessions }: Props) {
     k,
     count: live.filter((s) => s.intensity === k).length,
   }));
-  const ageYears = plan.horseDob ? Math.floor((Date.now() - Date.parse(plan.horseDob)) / (365.25 * DAY)) : null;
+  const ageYears = plan.horseDob ? Math.floor((effectiveClubNow().getTime() - Date.parse(plan.horseDob)) / (365.25 * DAY)) : null;
   // Chủ ngựa: "nên trao đổi với HLV"; HLV (người soạn) / staff: tự kiểm tra khối lượng.
   const forOwner = useCurrentUser().role === "HORSE_OWNER";
   const advice = planAdvice(ageYears, heavyShare, plan.horseStatus, forOwner);

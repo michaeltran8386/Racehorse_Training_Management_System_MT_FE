@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "./demo-clock";
 import { useEffect, useState } from "react";
 
 // Đọc query string (?next=...&email=...) của trang hiện tại.
@@ -26,7 +27,7 @@ export function useCountdown(target: number | null): number {
 export function useToday(): Date | null {
   const [today, setToday] = useState<Date | null>(null);
   useEffect(() => {
-    setToday(new Date());
+    setToday(effectiveClubNow());
   }, []);
   return today;
 }

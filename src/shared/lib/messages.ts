@@ -203,6 +203,35 @@ const DYNAMIC_EN: Record<string, (d: Record<string, unknown>) => string | undefi
 
 // Câu có chèn dữ liệu BE gửi kèm (data) - Tiếng Việt
 const DYNAMIC_VI: Record<string, (d: Record<string, unknown>) => string | undefined> = {
+  WORKOUT_REST_REQUIRED: (d) => {
+    const raw = String(d?.rawMessage || "");
+    if (d?.restHours === 48 || raw.includes("48")) {
+      return "Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu 48 giờ giãn cách giữa hai buổi tập nặng để đảm bảo an toàn tim mạch và thể lực.";
+    }
+    return "Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu 24 giờ giãn cách giữa hai buổi tập để đảm bảo an toàn thể lực.";
+  },
+  MAX_WORKOUTS_PER_DAY: () => "Mỗi chiến mã chỉ được tập tối đa 3 buổi mỗi ngày để bảo vệ sức khỏe tim mạch.",
+  TRAINER_TIME_CONFLICT: (d) => {
+    const horse = d?.horse ? ` của ngựa ${d.horse}` : "";
+    const time = d?.time ? ` lúc ${d.time}` : "";
+    const trainer = d?.trainer ? `HLV ${d.trainer}` : "Huấn luyện viên";
+    return `${trainer} đã có buổi tập${horse}${time}. HLV chỉ có thể điều hành 1 buổi tập tại một thời điểm.`;
+  },
+  HORSE_WORKOUT_TIME_CONFLICT: (d) => {
+    const time = d?.time ? ` lúc ${d.time}` : "";
+    return `Chiến mã đã có một buổi tập khác${time}. Vui lòng chọn khung giờ khác (cần cách nhau ít nhất 30 phút).`;
+  },
+  TRACK_HEAVY_COLLISION: (d) => {
+    const horse = d?.horse ? ` của ngựa ${d.horse}` : "";
+    const surface = d?.surface ? `Mặt sân ${d.surface}` : "Mặt sân";
+    return `${surface} đang có buổi tập${horse}. Bài tập tốc độ cao yêu cầu độc quyền đường chạy để tránh va chạm.`;
+  },
+  TRACK_HEAVY_OCCUPIED: (d) => {
+    const horse = d?.horse ? ` của ngựa ${d.horse}` : "";
+    const surface = d?.surface ? `Mặt sân ${d.surface}` : "Mặt sân";
+    return `${surface} đang có lượt chạy tốc độ cao${horse}. Không thể cho ngựa khác vào sân trong khung giờ này.`;
+  },
+  TRACK_CAPACITY_EXCEEDED: () => "Sân tập đã đạt sức chứa tối đa trong khung giờ này. Vui lòng chọn khung giờ hoặc đường chạy khác.",
   STALL_OCCUPIED: (d) =>
     d.horseName ? `Ô chuồng ${d.stallCode ? `${d.stallCode} ` : ""}đang có ngựa ${d.horseName}. Vui lòng chuyển ngựa trước.` : undefined,
   HORSE_HAS_STALL: (d) => (d.stallCode ? `Ngựa đã ở trong ô chuồng ${d.stallCode}. Vui lòng dùng chức năng Chuyển ô chuồng.` : undefined),
@@ -220,6 +249,100 @@ const DYNAMIC_VI: Record<string, (d: Record<string, unknown>) => string | undefi
     d.item
       ? `Kho không đủ ${d.item}: Cần ${d.required} ${d.unit || "kg"} (hiện còn ${d.available} ${d.unit || "kg"}).`
       : undefined,
+};
+
+const GENERIC_VI: Record<string, string> = {
+  // Huấn luyện & Buổi tập
+  WORKOUT_REST_REQUIRED: "Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu 24 giờ (hoặc 48 giờ đối với bài tập nặng) giãn cách giữa hai buổi tập để đảm bảo an toàn thể lực.",
+  HORSE_WORKOUT_TIME_CONFLICT: "Chiến mã đã có một buổi tập khác trong cùng khung giờ này.",
+  TRAINER_BUSY_SLOT: "Huấn luyện viên đã có lịch huấn luyện chiến mã khác trong khung giờ này.",
+  TRAINER_TIME_CONFLICT: "Huấn luyện viên đã có lịch huấn luyện chiến mã khác trong khung giờ này.",
+  TRAINING_TRACK_REQUIRED: "Vui lòng chọn đường chạy thực tế.",
+  TRAINING_TRACK_UNAVAILABLE: "Đường chạy đã chọn không khả dụng hoặc không khớp với loại mặt sân.",
+  TRACK_MAPPING_REQUIRED: "Buổi tập cần được gắn với một đường chạy thực tế cụ thể.",
+  TRACK_CAPACITY_EXCEEDED: "Sân tập đã đạt sức chứa tối đa trong khung giờ này. Vui lòng chọn khung giờ hoặc đường chạy khác.",
+  TRACK_HEAVY_COLLISION: "Mặt sân đang có buổi tập của ngựa khác. Bài tập tốc độ cao yêu cầu độc quyền đường chạy để tránh va chạm.",
+  TRACK_HEAVY_OCCUPIED: "Mặt sân đang có lượt chạy tốc độ cao của chiến mã khác. Không thể cho ngựa khác vào sân trong thời gian này.",
+  MAX_WORKOUTS_PER_DAY: "Mỗi chiến mã chỉ được tập tối đa 3 buổi mỗi ngày để bảo vệ sức khỏe tim mạch.",
+  TRIAL_SLOT_TAKEN: "Mặt sân đã có lượt chạy thử của chiến mã khác trong khung giờ này.",
+  TARGET_SPEED_REQUIRED: "Tốc độ mục tiêu là bắt buộc đối với bài chạy tốc độ và chạy thử.",
+  SESSION_DISTANCE_TOO_LONG: "Tổng cự ly buổi tập (cự ly × số hiệp) không được vượt quá 10.000 mét.",
+  INVALID_TRAINER: "Huấn luyện viên phụ trách giáo án không còn hoạt động.",
+  VET_CONFIRMATION_REQUIRED: "Chiến mã đang ở trạng thái theo dõi y tế. Bắt buộc phải xác nhận tham vấn ý kiến Bác sĩ thú y trước khi lên lịch bài tập nặng.",
+  PRIME_TIME_QUOTA_EXCEEDED: "HLV đã đạt hạn ngạch tối đa 2 bài tập nặng trong khung giờ vàng buổi sáng (06:15 - 08:00). Vui lòng chọn khung giờ khác.",
+  OUTSIDE_TRAINING_HOURS: "Giờ bắt đầu buổi tập phải trong khoảng từ 04:00 đến 20:00.",
+  EXCEEDS_AFTERNOON_LIMIT: "Buổi tập phải kết thúc trước hoặc đúng 17:00 chiều để đảm bảo giờ nghỉ ngơi và ăn tối của ngựa.",
+  TIME_TOO_SOON: "Giờ bắt đầu buổi tập phải cách thời điểm hiện tại ít nhất 30 phút.",
+  DATE_IN_PAST: "Không thể xếp buổi tập vào ngày đã qua.",
+  OUTSIDE_PHASE_DATES: "Ngày tập phải nằm trong khoảng thời gian của giai đoạn giáo án.",
+  OUTSIDE_PLAN_DATES: "Ngày tập phải nằm trong khoảng thời gian của giáo án.",
+  MEDICAL_LOCK_ACTIVE: "Chiến mã đang bị Khóa huấn luyện y tế. Không thể lên lịch hoặc thực hiện bài tập.",
+  DEBT_IMPOUNDED: "Chiến mã đang bị lưu giữ do nợ phí. Không thể xếp lịch huấn luyện.",
+  NO_REPEAT_DATES: "Không có ngày nào khớp với các thứ đã chọn.",
+  TOO_MANY_REPEATS: "Mỗi lần chỉ được tạo tối đa 60 buổi tập.",
+  PLAN_HAS_NO_WORKOUTS: "Giáo án cần có ít nhất một buổi tập trước khi kích hoạt.",
+  HORSE_HAS_ACTIVE_PLAN: "Chiến mã này đã có một giáo án đang áp dụng. Vui lòng hoàn thành hoặc hủy giáo án cũ trước.",
+  WORKOUT_NOT_STARTED: "Chỉ có thể ghi kết quả sau khi buổi tập đã bắt đầu.",
+  LATE_RESULT_EXPIRED: "Đã quá 7 ngày, không thể ghi kết quả cho buổi tập đã bỏ lỡ.",
+  WORKOUT_NOT_EDITABLE: "Chỉ có thể chỉnh sửa buổi tập đang ở trạng thái Đã lên lịch.",
+  WORKOUT_NOT_FOUND: "Buổi tập này không còn tồn tại.",
+  PLAN_NOT_FOUND: "Giáo án huấn luyện này không còn tồn tại.",
+  PLAN_CLOSED: "Giáo án đã hoàn tất hoặc đã bị hủy, không thể chỉnh sửa.",
+  PHASES_REQUIRED: "Giáo án cần có ít nhất một giai đoạn huấn luyện.",
+  SUMMARY_REQUIRED: "Mô tả tổng kết phải từ 10 đến 2000 ký tự.",
+  INVALID_GROOM: "Vui lòng chọn nhân viên chăm sóc đang hoạt động.",
+  HORSE_HAS_OTHER_TRAINER: "Chiến mã này đang được phụ trách bởi một giáo án của huấn luyện viên khác.",
+  PLAN_ENDED: "Giáo án này đã quá ngày kết thúc.",
+  PLAN_NOT_DELETABLE: "Chỉ có thể xóa giáo án nháp chưa có buổi tập nào hoàn thành. Vui lòng chọn Hủy giáo án thay thế.",
+
+  // Hệ thống chung & Tài khoản
+  NETWORK_ERROR: "Không thể kết nối đến máy chủ. Vui lòng kiểm tra đường truyền mạng.",
+  TIMEOUT: "Máy chủ phản hồi quá lâu. Vui lòng thử lại sau giây lát.",
+  SERVER_ERROR: "Đã có lỗi xảy ra ở máy chủ. Vui lòng thử lại sau giây lát.",
+  SERVICE_UNAVAILABLE: "Dịch vụ tạm thời không khả dụng. Dữ liệu chưa thay đổi. Vui lòng thử lại.",
+  FORBIDDEN: "Bạn không có quyền thực hiện thao tác này.",
+  NOT_FOUND: "Không tìm thấy dữ liệu yêu cầu.",
+  RATE_LIMITED: "Quá nhiều yêu cầu từ thiết bị này. Vui lòng chờ 1 phút và thử lại.",
+  EMAIL_TAKEN: "Địa chỉ email này đã được sử dụng trong hệ thống.",
+  WEAK_PASSWORD: "Mật khẩu phải có ít nhất 8 ký tự, gồm chữ hoa, chữ số và ký tự đặc biệt.",
+  ATTEMPTS_EXCEEDED: "Đã nhập sai mật khẩu quá nhiều lần. Vui lòng thử lại sau hoặc dùng Quên mật khẩu.",
+  CANNOT_LOCK_SELF: "Bạn không thể tự khóa tài khoản của chính mình.",
+  CANNOT_CHANGE_SELF: "Bạn không thể tự thay đổi vai trò tài khoản của chính mình.",
+  CANNOT_DELETE_USED: "Tài khoản đã có dữ liệu hoạt động, không thể xóa vĩnh viễn. Vui lòng chuyển sang Vô hiệu hóa.",
+  INVALID_STATE: "Dữ liệu vừa được cập nhật bởi thao tác khác. Vui lòng tải lại trang.",
+  LAST_MANAGER: "Câu lạc bộ phải duy trì ít nhất một Quản lý đang hoạt động.",
+  RESET_EXPIRED: "Phiên đặt lại mật khẩu đã hết hạn. Vui lòng gửi lại yêu cầu.",
+
+  // Hồ sơ ngựa & Chuồng trại
+  HORSE_NOT_FOUND: "Hồ sơ chiến mã này không còn tồn tại hoặc đã bị xóa.",
+  ROLE_RESTRICTION: "Vai trò của bạn không được phép thay đổi trạng thái này.",
+  HORSE_RETIRED: "Chiến mã đã ngừng quản lý. Cần có Quản lý CLB kích hoạt lại trước khi thao tác.",
+  HORSE_DECEASED: "Chiến mã đã qua đời, không thể kích hoạt lại.",
+  RETIRE_REASON_REQUIRED: "Vui lòng chọn lý do ngừng quản lý chiến mã.",
+  REASON_REQUIRED: "Lý do phải từ 10 đến 500 ký tự.",
+  SAME_STATUS: "Chiến mã đã ở sẵn trạng thái này.",
+  CONFIRM_NAME_MISMATCH: "Tên chiến mã nhập vào để xác nhận không trùng khớp.",
+  HORSE_LOCKED: "Không thể xóa hồ sơ chiến mã khi đang có Khóa huấn luyện y tế hiệu lực.",
+  HAS_DEPENDENT_DATA: "Chiến mã đã có dữ liệu huấn luyện, y tế hoặc thi đấu. Vui lòng dùng tính năng Ngừng quản lý thay vì Xóa.",
+  UNDO_EXPIRED: "Đã hết thời hạn hoàn tác xóa. Bạn có thể khôi phục từ danh sách Ngựa đã xóa.",
+  STALL_OCCUPIED: "Ô chuồng này hiện đã có chiến mã khác.",
+  STALL_MAINTENANCE: "Ô chuồng này đang trong quá trình bảo trì.",
+  STALL_UNAVAILABLE: "Ô chuồng này đang bảo trì hoặc ngừng sử dụng.",
+  STALL_NOT_FOUND: "Ô chuồng này không còn tồn tại.",
+  ALLOCATION_NOT_FOUND: "Chiến mã không còn ở trong ô chuồng này.",
+  SAME_STALL: "Vui lòng chọn ô chuồng khác với ô chuồng hiện tại.",
+  HORSE_HAS_STALL: "Chiến mã đã có ô chuồng. Vui lòng dùng chức năng Chuyển ô chuồng.",
+  ZONE_NOT_FOUND: "Khu chuồng này không còn tồn tại.",
+  ZONE_INACTIVE: "Khu chuồng này đang ngừng hoạt động. Cần kích hoạt lại trước khi thêm ô chuồng.",
+  ZONE_HAS_HORSES: "Khu chuồng vẫn còn chiến mã. Vui lòng chuyển ngựa ra ngoài trước.",
+  DUPLICATE_ZONE_CODE: "Mã khu chuồng này đã tồn tại.",
+  DUPLICATE_ZONE_NAME: "Tên khu chuồng này đã tồn tại.",
+  DUPLICATE_STALL_CODE: "Mã ô chuồng này đã tồn tại.",
+  INVALID_BREED: "Giống ngựa này không tồn tại hoặc đã ngừng sử dụng.",
+  INVALID_COLOR: "Màu lông này không tồn tại hoặc đã ngừng sử dụng.",
+  DUPLICATE_CATALOG_CODE: "Mã danh mục này đã tồn tại.",
+  DUPLICATE_CATALOG_NAME: "Tên danh mục này đã tồn tại.",
+  CATALOG_ITEM_NOT_FOUND: "Mục danh mục này không còn tồn tại.",
 };
 
 const VI_TO_EN: Record<string, string> = {
@@ -297,12 +420,19 @@ function localizeLines(text: string): string {
 
 export function messageFor(err: unknown): string {
   if (err instanceof ApiError) {
-    if (err.status >= 500) return isVietnamese() ? tr(GENERIC.SERVER_ERROR) : GENERIC.SERVER_ERROR;
+    if (err.status >= 500) return isVietnamese() ? (GENERIC_VI.SERVER_ERROR || tr(GENERIC.SERVER_ERROR)) : GENERIC.SERVER_ERROR;
 
     if (isVietnamese()) {
-      const dynamicVi = DYNAMIC_VI[err.code]?.(err.data as Record<string, unknown>);
+      // 1. Ánh xạ động theo mã lỗi có dữ liệu bổ trợ
+      const dynamicVi = DYNAMIC_VI[err.code]?.({ ...(err.data as Record<string, unknown>), rawMessage: err.message });
       if (dynamicVi) return dynamicVi;
 
+      // 2. Tra bảng mã lỗi Tiếng Việt trực tiếp
+      if (GENERIC_VI[err.code]) {
+        return GENERIC_VI[err.code];
+      }
+
+      // 3. Nếu có thông điệp cụ thể từ server, làm sạch tiền tố mã lỗi và dịch sang Tiếng Việt
       if (
         err.message &&
         err.message !== err.code &&
@@ -315,7 +445,7 @@ export function messageFor(err: unknown): string {
       }
 
       const enGeneric = GENERIC[err.code];
-      return enGeneric ? tr(enGeneric) : tr("Something went wrong. Try again.");
+      return enGeneric ? tr(enGeneric) : "Đã xảy ra lỗi trong quá trình xử lý. Vui lòng thử lại sau.";
     } else {
       // English mode
       const dynamicEn = DYNAMIC_EN[err.code]?.(err.data as Record<string, unknown>);
@@ -338,7 +468,7 @@ export function messageFor(err: unknown): string {
       return "Something went wrong. Try again.";
     }
   }
-  return isVietnamese() ? tr("Something went wrong. Try again.") : "Something went wrong. Try again.";
+  return isVietnamese() ? "Đã xảy ra lỗi trong quá trình xử lý. Vui lòng thử lại sau." : "Something went wrong. Try again.";
 }
 
 // Câu lỗi cho ô nhập mã OTP.

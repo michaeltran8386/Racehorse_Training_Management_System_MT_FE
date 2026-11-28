@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/shared/components/layout/PageHeader";
 import { Card } from "@/shared/components/ui/Card";
 import { Button, LinkButton } from "@/shared/components/ui/Button";
@@ -6,22 +7,24 @@ import { Input } from "@/shared/components/form/Input";
 import { Tabs } from "@/shared/components/ui/Tabs";
 import { Alert } from "@/shared/components/ui/Alert";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
+import { tr } from "@/shared/i18n/tr";
 import { messageFor } from "@/shared/lib/messages";
 import { getAdmissions } from "../services/admissionService";
 import type { AdmissionStatus, HorseAdmissionRecord } from "../types/admission.types";
 import { OwnerAdmissionDossierCard } from "../components/OwnerAdmissionDossierCard";
 
 const STATUS_TABS: Array<{ id: AdmissionStatus | "ALL"; label: string }> = [
-  { id: "ALL", label: "Tất cả hồ sơ" },
-  { id: "PENDING_VERIFICATION", label: "Chờ xếp lịch" },
-  { id: "APPOINTED", label: "Đã có lịch hẹn" },
-  { id: "INSPECTION_IN_PROGRESS", label: "Đang thẩm định" },
-  { id: "APPROVED", label: "Đã tiếp nhận" },
-  { id: "REJECTED", label: "Bị từ chối" },
-  { id: "CANCELLED", label: "Đã rút / hủy" },
+  { id: "ALL", label: "All records" },
+  { id: "PENDING_VERIFICATION", label: "Pending scheduling" },
+  { id: "APPOINTED", label: "Appointed" },
+  { id: "INSPECTION_IN_PROGRESS", label: "Inspection in progress" },
+  { id: "APPROVED", label: "Approved" },
+  { id: "REJECTED", label: "Rejected" },
+  { id: "CANCELLED", label: "Cancelled" },
 ];
 
 export default function OwnerAdmissionsPage() {
+  useTranslation();
   const [status, setStatus] = useState<AdmissionStatus | "ALL">("ALL");
   const [search, setSearch] = useState("");
   const [records, setRecords] = useState<HorseAdmissionRecord[]>([]);
@@ -56,15 +59,15 @@ export default function OwnerAdmissionsPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.25rem" }}>
       <PageHeader
-        title="Hồ sơ đăng ký đã nộp"
-        description="Theo dõi tiến độ tiếp nhận chiến mã, lịch hẹn thẩm định, lời nhắn hướng dẫn từ CLB và giấy tờ pháp lý đã nộp."
+        title={tr("Submitted Admissions")}
+        description={tr("Track horse admission progress, inspection appointments, club guidance messages, and submitted legal documents.")}
         action={
           <>
             <Button tone="secondary" icon="refresh" disabled={loading} onClick={reload}>
-              Làm mới
+              {tr("Refresh")}
             </Button>
             <LinkButton to="/horses/new" tone="primary" icon="plus">
-              Nộp hồ sơ mới
+              {tr("Submit new admission")}
             </LinkButton>
           </>
         }
@@ -73,10 +76,10 @@ export default function OwnerAdmissionsPage() {
       <Card pad={16}>
         <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
           <Tabs
-            label="Lọc trạng thái hồ sơ"
+            label={tr("Filter admission status")}
             items={STATUS_TABS.map((t) => ({
               id: t.id,
-              label: t.label,
+              label: tr(t.label),
               count: t.id === status && !loading && !error ? total : undefined,
             }))}
             active={status}
@@ -85,7 +88,7 @@ export default function OwnerAdmissionsPage() {
           <div style={{ maxWidth: 420 }}>
             <Input
               icon="search"
-              placeholder="Tìm theo mã hồ sơ ADM, tên chiến mã hoặc microchip..."
+              placeholder={tr("Search by ADM code, horse name or microchip...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -94,7 +97,7 @@ export default function OwnerAdmissionsPage() {
       </Card>
 
       {error && (
-        <Alert tone="danger" title="Không tải được danh sách hồ sơ">
+        <Alert tone="danger" title={tr("Could not load admission list")}>
           {error}
         </Alert>
       )}
@@ -102,26 +105,26 @@ export default function OwnerAdmissionsPage() {
       {loading ? (
         <Card pad={32}>
           <p style={{ margin: 0, color: "var(--ink-muted)" }} role="status">
-            Đang tải danh sách hồ sơ đăng ký của bạn...
+            {tr("Loading your submitted admission records...")}
           </p>
         </Card>
       ) : records.length === 0 ? (
         <Card pad={32}>
           <EmptyState
             icon="clipboard"
-            title={
+            title={tr(
               status !== "ALL" || search.trim()
-                ? "Không có hồ sơ nào khớp bộ lọc"
-                : "Bạn chưa nộp hồ sơ đăng ký ngựa nào"
-            }
-            description={
+                ? "No admission records match your filter"
+                : "You have not submitted any horse admissions yet",
+            )}
+            description={tr(
               status !== "ALL" || search.trim()
-                ? "Hãy thử chọn trạng thái khác hoặc xóa từ khóa tìm kiếm."
-                : "Điền tờ khai thông tin chiến mã, đính kèm ảnh giấy tờ pháp lý và ghi chú mong muốn để gửi CLB xét duyệt."
-            }
+                ? "Try selecting another status or clearing your search keyword."
+                : "Complete the horse registration form, attach legal document photos and optional notes to submit for club review.",
+            )}
             action={
               <LinkButton to="/horses/new" tone="primary" icon="plus">
-                Nộp hồ sơ đăng ký đầu tiên
+                {tr("Submit first admission")}
               </LinkButton>
             }
           />

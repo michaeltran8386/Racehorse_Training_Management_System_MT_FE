@@ -1,17 +1,17 @@
 import { useId, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/shared/components/ui/Button";
 import { Icon } from "@/shared/components/ui/Icon";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Select } from "@/shared/components/form/Select";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 import { compressImageFile } from "@/shared/utils/imageCompressor";
 import type { AdmissionDocumentPhoto } from "../types/admission.types";
 import styles from "./LegalDocumentsUploader.module.css";
 
 export const LEGAL_DOC_TYPE_OPTIONS = [
-  { value: "Giấy chứng nhận sở hữu / Hộ chiếu ngựa", label: "Giấy chứng nhận sở hữu / Hộ chiếu ngựa" },
-  { value: "Giấy chứng nhận phả hệ (Pedigree)", label: "Giấy chứng nhận phả hệ (Pedigree)" },
-  { value: "Sổ tiêm phòng & Kiểm dịch thú y", label: "Sổ tiêm phòng & Kiểm dịch thú y" },
-  { value: "Hợp đồng mua bán / Chuyển nhượng", label: "Hợp đồng mua bán / Chuyển nhượng" },
+  { value: "Giấy chứng nhận sở hữu / Hộ chiếu ngựa", label: "Ownership Certificate / Horse Passport" },
+  { value: "Sổ tiêm phòng & Kiểm dịch thú y", label: "Vaccination & Veterinary Quarantine Book" },
 ];
 
 const MAX_LEGAL_DOCS = 3;
@@ -70,16 +70,18 @@ interface GalleryProps {
 
 export function LegalDocumentsGallery({
   photos,
-  emptyText = "Chủ ngựa chưa đính kèm ảnh giấy tờ pháp lý.",
+  emptyText,
   compact = false,
 }: GalleryProps) {
+  useTranslation();
   const [preview, setPreview] = useState<AdmissionDocumentPhoto | null>(null);
+  const resolvedEmpty = emptyText ?? tr("The owner has not attached any legal document photos.");
 
   if (!photos.length) {
     return (
       <div className={styles.emptyBox}>
         <Icon name="file" size={16} />
-        <span>{emptyText}</span>
+        <span>{resolvedEmpty}</span>
       </div>
     );
   }
@@ -90,39 +92,42 @@ export function LegalDocumentsGallery({
         className={styles.grid}
         style={compact ? { gridTemplateColumns: "repeat(auto-fill, minmax(145px, 1fr))" } : undefined}
       >
-        {photos.map((doc, idx) => (
+        {photos.map((doc, idx) => {
+          const localizedLabel = localizeServerText(doc.label);
+          return (
           <div key={`${doc.label}-${idx}`} className={styles.card}>
             <button
               type="button"
               className={styles.thumbBtn}
               style={compact ? { height: 100 } : undefined}
               onClick={() => setPreview(doc)}
-              title={`Xem rõ: ${doc.label}`}
+              title={tr("View details: {{label}}", { label: localizedLabel })}
             >
-              <img src={doc.url} alt={doc.label} />
+              <img src={doc.url} alt={localizedLabel} />
               <span className={styles.zoomChip}>
                 <Icon name="eye" size={12} />
-                Phóng to
+                {tr("Zoom")}
               </span>
             </button>
             <div className={styles.cardMeta}>
-              <span className={styles.docLabel}>{doc.label}</span>
+              <span className={styles.docLabel}>{localizedLabel}</span>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {preview && (
         <Modal
-          title={preview.label}
-          subtitle="Ảnh giấy tờ pháp lý chủ ngựa đã đính kèm trực tuyến"
+          title={localizeServerText(preview.label)}
+          subtitle={tr("Legal document photo submitted online by the owner")}
           width={760}
           onClose={() => setPreview(null)}
         >
           <div className={styles.lightboxBody}>
-            <img src={preview.url} alt={preview.label} className={styles.lightboxImg} />
+            <img src={preview.url} alt={localizeServerText(preview.label)} className={styles.lightboxImg} />
             <Button tone="secondary" onClick={() => setPreview(null)}>
-              Đóng xem ảnh
+              {tr("Close preview")}
             </Button>
           </div>
         </Modal>
@@ -150,6 +155,7 @@ export function LegalDocumentsUploader({
   microchip,
   ownerName,
 }: UploaderProps) {
+  useTranslation();
   const inputId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
   const [selectedType, setSelectedType] = useState(LEGAL_DOC_TYPE_OPTIONS[0].value);
@@ -163,7 +169,7 @@ export function LegalDocumentsUploader({
   async function handleFileSelect(file?: File) {
     if (!file) return;
     if (value.length >= MAX_LEGAL_DOCS) {
-      setError(`Chỉ đính kèm tối đa ${MAX_LEGAL_DOCS} ảnh giấy tờ pháp lý.`);
+      setError(tr("You can attach at most {{max}} legal document photos.", { max: MAX_LEGAL_DOCS }));
       return;
     }
     setBusy(true);
@@ -181,7 +187,7 @@ export function LegalDocumentsUploader({
       setError(
         err instanceof Error
           ? err.message
-          : "Không thể đọc tệp ảnh này. Vui lòng chọn ảnh JPG/PNG rõ nét khác.",
+          : tr("Could not read this image file. Please select another clear JPG/PNG photo."),
       );
     } finally {
       setBusy(false);
@@ -210,9 +216,9 @@ export function LegalDocumentsUploader({
       <div className={styles.toolbar}>
         <div className={styles.typeSelect}>
           <Select
-            aria-label="Loại giấy tờ pháp lý"
+            aria-label={tr("Legal document type")}
             value={selectedType}
-            options={LEGAL_DOC_TYPE_OPTIONS}
+            options={LEGAL_DOC_TYPE_OPTIONS.map((opt) => ({ value: opt.value, label: tr(opt.label) }))}
             disabled={Boolean(disabled) || busy}
             onChange={(e) => setSelectedType(e.target.value)}
           />
@@ -225,7 +231,7 @@ export function LegalDocumentsUploader({
             disabled={locked}
             onClick={() => fileRef.current?.click()}
           >
-            {busy ? "Đang tải..." : `Tải ảnh (${value.length}/${MAX_LEGAL_DOCS})`}
+            {busy ? tr("Processing image...") : `${tr("Upload")} (${value.length}/${MAX_LEGAL_DOCS})`}
           </Button>
         </div>
       </div>
@@ -243,52 +249,55 @@ export function LegalDocumentsUploader({
         }}
       />
 
-      {busy && <p className={styles.statusText} role="status">Đang nén ảnh rõ chữ...</p>}
+      {busy && <p className={styles.statusText} role="status">{tr("Compressing high-resolution image...")}</p>}
       {error && <p className={styles.errorText} role="alert">{error}</p>}
 
       {value.length > 0 ? (
         <>
           <div className={styles.grid}>
-            {value.map((doc, idx) => (
-              <div key={`${doc.label}-${idx}`} className={styles.card}>
-                <button
-                  type="button"
-                  className={styles.thumbBtn}
-                  onClick={() => setPreview(doc)}
-                  title={`Phóng to: ${doc.label}`}
-                >
-                  <img src={doc.url} alt={doc.label} />
-                  <span className={styles.zoomChip}>
-                    <Icon name="eye" size={11} />
-                    Xem
-                  </span>
-                </button>
-                <div className={styles.cardMeta}>
-                  <span className={styles.docLabel} title={doc.label}>{doc.label}</span>
-                  {!disabled && (
-                    <button
-                      type="button"
-                      className={styles.removeBtn}
-                      title="Gỡ ảnh này"
-                      aria-label={`Gỡ ${doc.label}`}
-                      onClick={() => removeAt(idx)}
-                    >
-                      <Icon name="trash" size={13} />
-                    </button>
-                  )}
+            {value.map((doc, idx) => {
+              const localizedLabel = localizeServerText(doc.label);
+              return (
+                <div key={`${doc.label}-${idx}`} className={styles.card}>
+                  <button
+                    type="button"
+                    className={styles.thumbBtn}
+                    onClick={() => setPreview(doc)}
+                    title={tr("Zoom: {{label}}", { label: localizedLabel })}
+                  >
+                    <img src={doc.url} alt={localizedLabel} />
+                    <span className={styles.zoomChip}>
+                      <Icon name="eye" size={11} />
+                      {tr("Zoom")}
+                    </span>
+                  </button>
+                  <div className={styles.cardMeta}>
+                    <span className={styles.docLabel} title={localizedLabel}>{localizedLabel}</span>
+                    {!disabled && (
+                      <button
+                        type="button"
+                        className={styles.removeBtn}
+                        title={tr("Remove this photo")}
+                        aria-label={tr("Remove {{label}}", { label: localizedLabel })}
+                        onClick={() => removeAt(idx)}
+                      >
+                        <Icon name="trash" size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           {!reachedLimit && !disabled && (
             <div className={styles.sampleInline} style={{ color: "var(--ink-muted)" }}>
-              <span>Chèn nhanh mẫu:</span>
+              <span>{tr("Quick sample documents:")}</span>
               <button type="button" className={styles.sampleLink} disabled={locked} onClick={() => addSample("passport")}>
-                Hộ chiếu &amp; Sở hữu
+                {tr("Horse Passport")}
               </button>
               <span>·</span>
               <button type="button" className={styles.sampleLink} disabled={locked} onClick={() => addSample("vaccine")}>
-                Sổ tiêm phòng
+                {tr("Vaccination Book")}
               </button>
             </div>
           )}
@@ -297,17 +306,17 @@ export function LegalDocumentsUploader({
         <div className={styles.dropBar}>
           <span className={styles.dropLeft}>
             <Icon name="image" size={15} />
-            <span>Tối đa 3 ảnh JPG/PNG (mang bản gốc khi thẩm định)</span>
+            <span>{tr("Up to 3 JPG/PNG photos (bring originals to the inspection)")}</span>
           </span>
           {!disabled && (
             <span className={styles.sampleInline}>
-              <span>Mẫu:</span>
+              <span>{tr("Sample:")}</span>
               <button type="button" className={styles.sampleLink} disabled={locked} onClick={() => addSample("passport")}>
-                Hộ chiếu
+                {tr("Passport")}
               </button>
               <span>·</span>
               <button type="button" className={styles.sampleLink} disabled={locked} onClick={() => addSample("vaccine")}>
-                Sổ tiêm
+                {tr("Vaccination")}
               </button>
             </span>
           )}
@@ -316,15 +325,15 @@ export function LegalDocumentsUploader({
 
       {preview && (
         <Modal
-          title={preview.label}
-          subtitle="Xem trước ảnh giấy tờ pháp lý sẽ nộp cho CLB"
+          title={localizeServerText(preview.label)}
+          subtitle={tr("Preview legal document photo to submit to the club")}
           width={760}
           onClose={() => setPreview(null)}
         >
           <div className={styles.lightboxBody}>
-            <img src={preview.url} alt={preview.label} className={styles.lightboxImg} />
+            <img src={preview.url} alt={localizeServerText(preview.label)} className={styles.lightboxImg} />
             <Button tone="secondary" onClick={() => setPreview(null)}>
-              Đóng xem trước
+              {tr("Close preview")}
             </Button>
           </div>
         </Modal>

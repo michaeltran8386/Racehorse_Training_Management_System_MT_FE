@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Field } from "@/shared/components/form/Field";
@@ -25,7 +26,7 @@ interface StopPrescriptionModalProps {
 export function StopPrescriptionModal({ medicationName, onClose, onSubmit }: StopPrescriptionModalProps) {
   const [stoppedReason, setStoppedReason] = useState("Resolved");
   const [stopNotes, setStopNotes] = useState("");
-  const [stoppedDate, setStoppedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [stoppedDate, setStoppedDate] = useState(effectiveClubNow().toISOString().split("T")[0]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

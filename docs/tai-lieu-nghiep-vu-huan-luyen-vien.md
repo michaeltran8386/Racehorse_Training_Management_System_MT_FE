@@ -39,17 +39,30 @@ Huấn luyện viên Trưởng là nhân sự chuyên môn cấp cao, chịu tr�
 | **4** | **Ghi nhận sinh trắc & Phong độ** | Cập nhật số liệu vận động thực tế, thông số nhịp tim và đánh giá điểm số phong độ. | Tự động tính toán tốc độ trung bình, cảnh báo vượt ngưỡng sinh học và gắn cờ cảnh báo mệt mỏi quá tải. |
 | **5** | **Xem bệnh án & Khóa y tế** | Tra cứu lịch sử chẩn đoán y khoa và theo dõi tình trạng phong tỏa huấn luyện vì lý do sức khỏe. | Xem chi tiết nguyên nhân chấn thương do Bác sĩ thú y ghi nhận. **HLV tuyệt đối không có quyền tự ý đặt hoặc gỡ khóa y tế** (quyền này thuộc độc quyền của Bác sĩ thú y). |
 
+### 1.3. Ma trận Phân quyền Truy cập Sơ đồ Chuồng trại (Stall Map RBAC)
+
+Sơ đồ chuồng trại là khu vực vận hành nhạy cảm liên quan đến an ninh tài sản và an toàn sinh học. Hệ thống áp dụng quy tắc phân quyền chặt chẽ theo nguyên tắc tối thiểu thông tin:
+
+| Vai trò Người dùng | Thẩm quyền Xem Sơ đồ Chuồng | Phạm vi & Chức năng Cho phép |
+| :--- | :---: | :--- |
+| **Quản lý CLB** *(Club Manager)* | **ĐƯỢC XEM (Toàn quyền)** | - Xem toàn bộ các Khu chuồng và ô chuồng trong khuôn viên.<br>- Xem khối **Ban điều hành & Định mức nhân sự** (định mức HLV, Groom, tình trạng đủ/thiếu người).<br>- Thực hiện các thao tác: Xếp ô chuồng, chuyển ô, trả ô, phân công HLV, gán Groom và bật/tắt bảo trì ô. |
+| **Huấn luyện viên Trưởng** *(Head Trainer)* | **ĐƯỢC XEM (Chuyên môn)** | - Xem sơ đồ các khu chuồng để nắm vị trí ô chuồng của đàn ngựa mình và đồng nghiệp phụ trách.<br>- Theo dõi trạng thái thể lực của ngựa tại ô (sẵn sàng, đang tập, cách ly, khóa y tế). |
+| **Bác sĩ Thú y** *(Veterinarian)* | **ĐƯỢC XEM (Y tế)** | - Định vị nhanh ô chuồng của ngựa bệnh để tiếp cận khám chữa bệnh tại chỗ.<br>- Giám sát các ô chuồng thuộc diện cách ly, kiểm dịch hoặc đang bị khóa y tế. |
+| **Nhân viên Chăm sóc** *(Groom)* | **ĐƯỢC XEM (Chăm sóc)** | - Xem vị trí ô chuồng, có bộ lọc riêng **"Chỉ ô chuồng của tôi"** để tập trung chăm sóc các ô trong ca trực.<br>- Không xem được hồ sơ chủ sở hữu của các chiến mã không thuộc phạm vi ca trực của mình. |
+| **Chủ sở hữu Chiến mã** *(Horse Owner)* | **TUYỆT ĐỐI KHÔNG** | - **Chặn 100% quyền truy cập**. Giao diện hoàn toàn không có mục Sơ đồ chuồng.<br>- **Lý do nghiệp vụ:** Bảo đảm an toàn sinh học nội bộ và bảo mật thông tin các chiến mã của chủ ngựa khác. Chủ ngựa chỉ theo dõi ngựa của mình tại mục *"Chiến mã của tôi"*. |
+
 ---
 
 ## 2. QUY TRÌNH 1: TIẾP NHẬN & PHÂN CÔNG CHIẾN MÃ
 
 ### 2.1. Phân công Chiến mã từ Quản lý CLB cho Huấn luyện viên
-Khi Quản lý CLB thực hiện thao tác chỉ định một Huấn luyện viên Trưởng phụ trách chiến mã, hệ thống tự động kiểm tra nghiêm ngặt 4 điều kiện nghiệp vụ đồng thời:
+Khi Quản lý CLB thực hiện thao tác chỉ định một Huấn luyện viên Trưởng phụ trách chiến mã, hệ thống tự động kiểm tra nghiêm ngặt 5 điều kiện nghiệp vụ đồng thời:
 
 | Quy tắc Nghiệp vụ | Nội dung Ràng buộc | Xử lý & Thông báo khi HỢP LỆ (ĐÚNG) | Hành vi Chặn & Thông báo khi VI PHẠM (SAI) |
 | :--- | :--- | :--- | :--- |
 | **Ràng buộc Ô chuồng** | Chiến mã phải đang được xếp vào một ô chuồng thực tế có hiệu lực hoạt động. | Hệ thống hợp lệ, chuyển sang kiểm tra Khu chuồng phụ trách. | **Hành vi:** Chặn lưu phân công.<br>**Thông báo lỗi:** *"Chiến mã chưa được xếp ô chuồng đang hoạt động."* |
 | **Ràng buộc Khu chuồng (Barn)** | Khu chuồng của ô chuồng nuôi dưỡng ngựa phải trùng khớp hoàn toàn với Khu chuồng mà HLV đang quản lý. | Hệ thống xác nhận cùng khu chuồng, cho phép tiếp tục quy trình. | **Hành vi:** Chặn lưu phân công.<br>**Thông báo lỗi:** *"HLV [Họ và tên HLV] phụ trách [Tên Khu chuồng HLV], không thể nhận ngựa ở [Tên Khu chuồng Ngựa]."* |
+| **Ràng buộc Trạng thái Tài khoản HLV** | HLV được phân công bắt buộc phải đang ở trạng thái **Đang hoạt động chính thức (ACTIVE)**. Các tài khoản mới được gửi thư mời (chưa kích hoạt mật khẩu) hoặc bị khóa đều không được phép tiếp nhận ngựa. | Tài khoản HLV đang hoạt động, hệ thống hiển thị trong danh sách chọn. | **Hành vi:** Lọc bỏ 100% tài khoản chưa kích hoạt khỏi ô chọn. Nếu cố tình gửi yêu cầu, hệ thống chặn đứng.<br>**Thông báo lỗi:** *"Huấn luyện viên không hợp lệ hoặc đang không hoạt động."* |
 | **Định mức trần Quản lý** | Mỗi Huấn luyện viên chỉ được phụ trách tối đa **8 chiến mã đồng thời**. | Tổng số ngựa hiện tại của HLV < 8, hệ thống cho phép giao thêm ngựa. | **Hành vi:** Chặn lưu phân công.<br>**Thông báo lỗi:** *"HLV [Họ và tên HLV] đã đạt định mức tối đa 8 chiến mã đồng thời."* |
 | **Hạn mức Tồn đọng (WIP Limit)** | HLV chỉ được phép tồn tối đa **1 chiến mã** đã tiếp nhận nhưng chưa kích hoạt giáo án (nếu tồn từ 2 con trở lên sẽ bị nghẽn việc). | Số ngựa chưa có giáo án chính thức < 2, hệ thống xác nhận HLV đủ năng lực tiếp nhận việc mới. | **Hành vi:** Chặn lưu phân công.<br>**Thông báo lỗi:** *"Huấn luyện viên [Họ và tên HLV] đang tồn [Số lượng] chiến mã chưa kích hoạt giáo án. Vui lòng hoàn tất giáo án hiện có trước khi phân công thêm."* |
 
@@ -66,8 +79,12 @@ Huấn luyện viên nhận được thông báo sẽ truy cập giao diện ph�
 
 | Quyết định của HLV | Điều kiện Nghiệp vụ | Xử lý & Thông báo khi HỢP LỆ (ĐÚNG) | Hành vi Chặn & Thông báo khi VI PHẠM (SAI) |
 | :--- | :--- | :--- | :--- |
-| **Từ chối Tiếp nhận** | HLV cung cấp lý do từ chối (tối thiểu 10 ký tự). | **Xử lý:** Hủy yêu cầu phân công, đưa chiến mã về trạng thái Chưa phân công, gửi thông báo kèm lý do cho Quản lý CLB.<br>**Thông báo hiển thị:** *"Đã từ chối tiếp nhận chiến mã [Tên ngựa]."* | **Vi phạm:** HLV gửi phản hồi khi yêu cầu đã quá hạn 48 giờ.<br>**Thông báo lỗi:** *"Yêu cầu phân công đã hết hạn phản hồi (48 giờ)."* |
-| **Đồng ý Tiếp nhận** | HLV bấm nút xác nhận trong vòng 48 giờ kể từ lúc Quản lý tạo yêu cầu. | **Xử lý:** Ghi nhận HLV chính thức phụ trách ngựa; trạng thái chuyển sang Đã phân công; **kích hoạt đồng hồ đếm ngược thời hạn lập giáo án cố định đúng 3 ngày (72 giờ)**.<br>**Thông báo hiển thị:** *"Đã tiếp nhận chiến mã [Tên ngựa]. Hạn lập giáo án hoàn thành: 3 ngày."* | **Vi phạm:** Bấm tiếp nhận khi yêu cầu đã quá hạn 48 giờ.<br>**Thông báo lỗi:** *"Yêu cầu phân công đã hết hạn phản hồi (48 giờ)."* |
+| **Từ chối Tiếp nhận** | HLV cung cấp lý do từ chối (tối thiểu 10 ký tự). | **Xử lý:** Hủy yêu cầu phân công, đưa chiến mã về trạng thái Chưa phân công, đưa vào danh sách Tồn đọng chờ bổ nhiệm HLV mới trên Dashboard, gửi thông báo kèm lý do cho Quản lý CLB.<br>**Thông báo hiển thị:** *"Đã từ chối tiếp nhận chiến mã [Tên ngựa]."* | **Vi phạm:** HLV gửi phản hồi khi yêu cầu đã quá hạn 48 giờ.<br>**Thông báo lỗi:** *"Yêu cầu phân công đã hết hạn phản hồi (48 giờ)."* |
+| **Đồng ý Tiếp nhận** | HLV bấm nút xác nhận trong vòng 48 giờ kể từ lúc Quản lý tạo yêu cầu. | **Xử lý:** Ghi nhận HLV chính thức phụ trách ngựa; trạng thái chuyển sang Đã phân công; **tự động chuyển quyền sở hữu giáo án hiện có và các buổi tập từ ngày mai trở đi cho HLV mới**; **kích hoạt đồng hồ đếm ngược thời hạn lập giáo án cố định đúng 3 ngày (72 giờ)**.<br>**Thông báo hiển thị:** *"Đã tiếp nhận chiến mã [Tên ngựa]. Hạn lập giáo án hoàn thành: 3 ngày."* | **Vi phạm:** Bấm tiếp nhận khi yêu cầu đã quá hạn 48 giờ.<br>**Thông báo lỗi:** *"Yêu cầu phân công đã hết hạn phản hồi (48 giờ)."* |
+
+- **Cơ chế Kế thừa Giáo án & Buổi tập Tự động khi Tiếp nhận**:
+  - Khi HLV bấm Đồng ý Tiếp nhận, nếu chiến mã đã có giáo án từ trước (trạng thái Bản nháp hoặc Đang áp dụng), hệ thống tự động gán HLV mới làm người chủ quản giáo án.
+  - Đối với các buổi tập đã lên lịch: Các buổi tập từ **ngày mai trở đi** (`00:00 ngày mai`) được tự động đổi sang HLV mới điều hành. Buổi tập của ngày hôm nay do HLV cũ hoàn thành nốt ca trực để tránh gián đoạn ngày tập.
 
 ---
 
@@ -111,6 +128,35 @@ Sau khi bấm tiếp nhận chiến mã thành công, Huấn luyện viên có n
 - **Trường hợp Vi phạm**: HLV cố tình bấm tạo giáo án mới cho con ngựa vừa hủy nháp trong vòng 48 giờ:
   - **Hành vi:** Chặn mở màn hình tạo giáo án.
   - **Thông báo lỗi hiển thị:** *"Bạn đang trong thời gian chờ ([Số giờ] giờ còn lại) đối với chiến mã [Tên chiến mã] do vừa hủy hoặc để hết hạn bản nháp. Vui lòng liên hệ Quản lý CLB nếu cần mở khóa sớm."*
+
+---
+
+### 2.5. Cơ chế Xử lý Chiến mã Tồn đọng & Giao diện Thu gọn Thông minh (Preview Mode)
+
+Khi Huấn luyện viên chuyển Khu chuồng, hoặc HLV cũ từ chối tiếp nhận / để hết hạn 48 giờ, chiến mã sẽ rơi vào trạng thái **Tồn đọng Chờ Bổ nhiệm HLV** (`UNASSIGNED`).
+
+- **Cơ chế Cảnh báo trên Bàn làm việc Quản lý (Dashboard)**:
+  - Khối cảnh báo *"Chiến mã Tồn đọng Chờ Bổ nhiệm HLV (Do Điều chuyển Nhân sự)"* xuất hiện nổi bật với viền cảnh báo màu cam.
+  - **Chế độ xem trước thông minh (Preview Mode)**: Để tránh làm tràn màn hình khi có nhiều ngựa tồn đọng, hệ thống mặc định chỉ hiển thị **1 đến 2 chiến mã tượng trưng**.
+  - **Nút điều khiển Sổ ra / Thu gọn**:
+    - Nút **`Xem tất cả (N)`** (ở thanh tiêu đề và dưới chân khối): Cho phép Quản lý bấm để sổ ra toàn bộ danh sách khi cần rà soát và xử lý hàng loạt.
+    - Nút **`Thu gọn`**: Cho phép đóng gọn danh sách lại như ban đầu sau khi kiểm tra xong.
+- **3 Hành động Khắc phục Nhanh cho từng Chiến mã Tồn đọng**:
+  1. **Phân công HLV mới**: Mở modal chọn HLV trưởng cùng Khu chuồng đang hoạt động (`ACTIVE`) để tiếp nhận ngựa.
+  2. **Chuyển sang Barn khác**: Dẫn sang Sơ đồ chuồng để chuyển ngựa sang khu chuồng có HLV còn dư định mức tiếp nhận.
+  3. **Dời lịch tập +1 ngày**: Tạm hoãn buổi tập của ngày hôm nay/ngày mai sang ngày kế tiếp để bảo vệ an toàn cho chiến mã khi chưa có người hướng dẫn.
+
+---
+
+### 2.6. Quy tắc Điều chuyển Khu chuồng của HLV & Bàn giao Chia tách Thông minh
+
+Khi Quản lý CLB thực hiện điều chuyển một Huấn luyện viên Trưởng sang phụ trách Khu chuồng (Barn) khác, hệ thống áp dụng cơ chế bàn giao an toàn:
+
+| Trường hợp Điều chuyển | Ràng buộc Nghiệp vụ | Xử lý khi HỢP LỆ (ĐÚNG) | Hành vi Chặn & Thông báo khi VI PHẠM (SAI) |
+| :--- | :--- | :--- | :--- |
+| **HLV đang có 0 chiến mã** | HLV không quản lý bất kỳ chiến mã nào. | Hệ thống chuyển Khu chuồng ngay lập tức. | Không áp dụng ràng buộc bàn giao. |
+| **HLV đang có chiến mã** | Bắt buộc phải chọn một HLV đồng nghiệp **cùng Khu chuồng hiện tại** và **đang hoạt động chính thức (`ACTIVE`)** để nhận bàn giao. | HLV đồng nghiệp hợp lệ, cùng khu và đang hoạt động. | - Chưa chọn HLV nhận: *"Huấn luyện viên đang phụ trách [X] chiến mã. Vui lòng chọn Huấn luyện viên đồng nghiệp trong cùng khu chuồng để bàn giao trước khi chuyển khu."*<br>- Chọn chính mình: *"Không thể tự bàn giao cho chính mình."*<br>- Chọn HLV khác khu: *"Huấn luyện viên nhận bàn giao phải cùng phụ trách trong khu chuồng hiện tại."*<br>- Chọn HLV chưa kích hoạt: *"Người nhận bàn giao phải là Huấn luyện viên trưởng đang hoạt động."* |
+| **Chia tách Đàn ngựa Thông minh** | HLV nhận bàn giao chỉ được nhận tối đa đến **định mức 8 chiến mã**. | - Số ngựa trong định mức: Bàn giao trực tiếp sang HLV đồng nghiệp.<br>- Số ngựa vượt định mức (dôi dư): Tự động chuyển về diện **Tồn đọng Chờ Bổ nhiệm HLV** để Quản lý điều phối sau. | Không để xảy ra tình trạng dồn ép quá tải (> 8 ngựa) cho bất kỳ HLV nào. |
 
 ---
 
@@ -247,17 +293,24 @@ Mỗi giáo án được chia thành từ 1 đến 12 giai đoạn kế tiếp n
 
 ---
 
-### 4.3. Khung giờ Hoạt động & Chốt chặn Sinh học Bắt buộc
+### 4.3. Khung giờ Hoạt động & Dòng thời gian Khả dụng Thông minh (Timeline Interval Slicing)
 
 ```
-04:00                           11:30   14:30           16:00   17:00           20:00
-  │───────── Khung Sáng ──────────│       │── Khung Chiều ──│       │               │
-  │     (Khuyên dùng 🟢)         │       │ (Khả dụng 🟢)  │       │               │
-  ▼                               ▼       ▼                 ▼       ▼               ▼
-Mở cửa                         Ăn trưa  Tắm xong        Ca tập   Ăn tối          Đóng cửa
-khuôn viên                     & nghỉ   xả cơ           muộn     & nghỉ          khuôn viên
-                                                        nhất     đêm
+05:30   06:15                   11:30   13:30   14:15                   17:00   18:00   19:00
+  │───────│───────────────────────│───────│───────│───────────────────────│───────│───────│
+  ▼       ▼                       ▼       ▼       ▼                       ▼       ▼       ▼
+Ăn sáng  [Khung rảnh sáng 🟢]   Ăn trưa Tắm xả   [Khung rảnh chiều 🟢]  Ăn tối & Nghỉ đêm
+(Groom)  (Tự động trừ ca bận)   & nghỉ  cơ móng  (Tự động trừ ca bận)   (Groom sinh hoạt)
 ```
+
+- **Thuật toán Tự động Cắt tỉa Khung giờ Khả dụng (Dynamic Interval Slicing)**:
+  - Khi HLV mở màn hình xếp lịch tập hoặc tạo lịch tự động, hệ thống không hiển thị dải giờ chung chung mà **tự động đối chiếu lịch bận thực tế của HLV** trong ngày đó để chia nhỏ các khoảng thời gian rảnh.
+  - **Khung sáng (06:15 – 11:30)**: Tự động trừ đi các ca HLV bận tập ngựa khác (ví dụ: bận 08:00 – 09:00) $\rightarrow$ Tự động tách thành:
+    - `06:15 – 08:00: Khung rảnh sáng` 👉 Huy hiệu màu xanh: **`Khả dụng`**
+    - `08:00 – 09:00: HLV bận: [Tên ngựa]` 👉 Huy hiệu màu cam: **`Đang bận`**
+    - `09:00 – 11:30: Khung rảnh sáng` 👉 Huy hiệu màu xanh: **`Khả dụng`**
+  - **Khung chiều (14:15 – 17:00)**: Tương tự, tự động bắt đầu sau khi Groom hoàn tất ca tắm xả cơ móng (14:15) và trừ đi các ca tập chiều $\rightarrow$ Hiển thị chính xác các khoảng thời gian rảnh thực tế kèm huy hiệu **`Khả dụng`**.
+  - **Đồng nhất thuật ngữ**: Loại bỏ hoàn toàn sự mâu thuẫn giữa nhãn "Khuyên dùng" và "Khả dụng"; toàn bộ các khoảng thời gian trống đủ điều kiện xếp lịch đều được định danh thống nhất là **`Khả dụng`**.
 
 | Quy chuẩn Khung giờ | Tiêu chuẩn Nghiệp vụ | Xử lý khi HỢP LỆ (ĐÚNG) | Hành vi Chặn & Thông báo khi VI PHẠM (SAI) |
 | :--- | :--- | :--- | :--- |
@@ -274,6 +327,8 @@ khuôn viên                     & nghỉ   xả cơ           muộn     & ngh�
 | :--- | :--- | :--- | :--- |
 | **Thời gian Đệm nghỉ của HLV** | Giữa 2 buổi tập liên tiếp của cùng 1 Huấn luyện viên bắt buộc phải có thời gian nghỉ tối thiểu **15 phút**. | Ca tập mới cách ca trước/sau ≥ 15 phút. | **Hành vi:** Chặn lưu ca tập trùng.<br>**Thông báo lỗi:** *"Huấn luyện viên [Họ và tên HLV] đã có buổi tập của ngựa [Tên ngựa] lúc [Khung giờ]. HLV chỉ có thể điều hành 1 buổi tập tại một thời điểm. Chọn giờ bắt đầu từ [Giờ trước] trở về trước hoặc từ [Giờ sau] trở đi."* |
 | **Xung đột Thể lực của Ngựa** | Một chiến mã không thể tham gia 2 buổi tập cách nhau dưới **30 phút**. | Hai buổi tập của ngựa cách nhau ≥ 30 phút. | **Hành vi:** Chặn lưu ca tập.<br>**Thông báo lỗi:** *"Chiến mã đã có lịch tập khác quá gần khung giờ này (cần cách tối thiểu 30 phút)."* |
+| **Hạn mức Số ca tập trong Ngày** | Một chiến mã được phép xếp **tối đa 3 buổi tập trong cùng 1 ngày** (`MAX_WORKOUTS_PER_DAY = 3`). | Số buổi tập trong ngày của ngựa ≤ 3 buổi. | **Hành vi:** Chặn lưu buổi tập thứ 4 trong cùng một ngày.<br>**Thông báo lỗi:** *"Mỗi ngựa tối đa 3 buổi tập mỗi ngày."* |
+| **Thời gian Hồi phục Thể lực Bắt buộc (Rest Period)** | Để bảo vệ tim mạch và ngăn ngừa đứt gân/chấn thương cơ xương khớp, hệ thống áp dụng quy chuẩn y học thể thao khắt khe:<br>• **Bài tập nặng** (Chạy tốc độ cao `BREEZE`, Chạy thử sát hạch `TRIAL`, hoặc Cường độ Nặng `HEAVY`): Bắt buộc cách buổi tập liền kề tối thiểu **48 giờ**.<br>• **Bài tập vừa** (Chạy nước kiệu `TROT`, Phi nước đại nhẹ `CANTER`): Bắt buộc cách buổi tập liền kề tối thiểu **24 giờ**.<br>• **Bài tập phục hồi nhẹ** (Đi bộ `WALK`, Bơi hồ xả cơ `SWIM`, Máy đi bộ `TREADMILL` ở cường độ Nhẹ/Vừa): Giãn cách yêu cầu là **0 giờ** (chỉ cần tuân thủ đệm nghỉ 30 phút giữa 2 ca). Đây là nhóm bài duy nhất được phép kết hợp để đạt trần 3 buổi/ngày. | Khoảng cách giữa 2 buổi tập của ngựa đáp ứng đầy đủ thời gian hồi phục thể lực y tế. | **Hành vi:** Chặn lưu ca tập vi phạm giãn cách.<br>**Thông báo lỗi:** *"Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu [24/48] giờ giãn cách giữa hai buổi tập."*<br>*(Mã hệ thống: `WORKOUT_REST_REQUIRED: horse needs 24/48 hours between these sessions.`)* |
 | **Thời điểm Tạo lịch Hôm nay** | Nếu lên lịch cho buổi tập diễn ra ngay trong ngày hôm nay, giờ bắt đầu phải sau giờ hiện tại tối thiểu **30 phút**. | Đặt lịch trước ít nhất 30 phút so với giờ chạy thực tế. | **Hành vi:** Chặn lưu lịch gấp.<br>**Thông báo lỗi:** *"Giờ bắt đầu buổi tập phải cách thời điểm hiện tại ít nhất 30 phút."* |
 
 ---
@@ -459,6 +514,8 @@ Bảng ma trận dưới đây là tài liệu căn cứ cốt lõi dành cho BA
 | **Hạn ngạch giờ vàng (06:15-08:00)** | **Tối đa 2 bài tập nặng** | Chia sẻ công bằng đường chạy buổi sáng. | **Chặn lưu bài thứ 3**.<br>Thông báo: *"HLV đã đạt hạn ngạch tối đa 2 bài tập nặng trong khung giờ vàng buổi sáng (06:15 - 08:00)..."* |
 | **Đệm nghỉ của HLV** | **Tối thiểu 15 phút** | HLV được nghỉ ngơi giữa 2 ca tập. | **Chặn lưu**.<br>Thông báo: *"Huấn luyện viên [Tên] đã có buổi tập của ngựa [Tên ngựa] lúc [Giờ]..."* |
 | **Khoảng cách 2 ca tập của ngựa** | **Tối thiểu 30 phút** | Ngựa được hồi phục giữa 2 ca vận động. | **Chặn lưu**.<br>Thông báo: *"Chiến mã đã có lịch tập khác quá gần khung giờ này..."* |
+| **Giới hạn số ca tập trong ngày** | **Tối đa 3 buổi / ngày** | Tránh ép ngựa tập luyện quá tải trong ngày. | **Chặn lưu ca thứ 4**.<br>Thông báo: *"Mỗi ngựa tối đa 3 buổi tập mỗi ngày."* |
+| **Thời gian hồi phục giữa 2 ca tập** | **Nghỉ 24h (bài vừa) / 48h (bài nặng)** | Bảo vệ gân cơ, khớp chân và tim mạch ngựa. | **Chặn lưu**.<br>Thông báo: *"Bắt buộc nghỉ hồi phục: Chiến mã cần tối thiểu [24/48] giờ giãn cách giữa hai buổi tập."*<br>*(Mã lỗi: `WORKOUT_REST_REQUIRED`).* |
 | **Sức chứa đường chạy bài nhẹ/vừa** | **4 - 6 ngựa / đường** | Cho phép nhiều ngựa cùng tập nhẹ. | Hiển thị trạng thái Đầy sân, chặn không cho đặt thêm. |
 | **Độc quyền đường chạy bài nặng** | **1 ngựa độc quyền** | Khóa kín đường chạy, an toàn tốc độ cao. | **Chặn xếp trùng ca**.<br>Thông báo: *"Đường chạy [Tên] đang có buổi tập tốc độ cao của chiến mã khác trong khung giờ này..."* |
 | **Hạn nộp kết quả ca tập** | **Trong vòng 7 ngày** | Kết quả được ghi nhận vào hồ sơ. | **Khóa form nhập**.<br>Thông báo: *"Đã quá 7 ngày, không thể ghi kết quả cho buổi tập đã bỏ lỡ."* |

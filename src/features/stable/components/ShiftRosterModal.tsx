@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState } from 'react';
 import { Modal } from '@/shared/components/ui/Modal';
 import { Field } from '@/shared/components/form/Field';
@@ -79,7 +80,7 @@ export function ShiftRosterModal({
     }
   };
 
-  const canDelete = currentRosters.length > 0 && new Date(`${date}T23:59:59`) >= new Date();
+  const canDelete = currentRosters.length > 0 && new Date(`${date}T23:59:59`) >= effectiveClubNow();
 
   const handleDelete = async () => {
     if (!window.confirm(tr('Are you sure you want to delete this shift schedule?'))) return;
@@ -105,7 +106,7 @@ export function ShiftRosterModal({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (busy) return;
-    if (!dutyTypes.length) { setError('Chọn ít nhất một nhiệm vụ trong ca.'); return; }
+    if (!dutyTypes.length) { setError(tr('Please select at least one duty for this shift.')); return; }
 
     setBusy(true);
     setError('');

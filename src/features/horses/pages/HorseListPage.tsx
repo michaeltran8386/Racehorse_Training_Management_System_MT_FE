@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { HorseAvatar } from "../components/HorseAvatar";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
@@ -55,7 +56,7 @@ const LOCK_OPTIONS = [
 ];
 
 const SORT_OPTIONS = [
-  { value: "readiness_asc", label: "Ưu tiên: Sẵn sàng thi đấu" },
+  { value: "readiness_asc", label: "Priority: Race Ready" },
   { value: "name_asc", label: "Sort: Name A–Z" },
   { value: "name_desc", label: "Sort: Name Z–A" },
   { value: "horseCode_asc", label: "Sort: Horse ID" },
@@ -69,7 +70,7 @@ function ageOf(dob?: string): string {
   if (!dob) return "—";
   const d = new Date(dob);
   if (Number.isNaN(d.getTime())) return "—";
-  const now = new Date();
+  const now = effectiveClubNow();
   let age = now.getFullYear() - d.getFullYear();
   if (now.getMonth() < d.getMonth() || (now.getMonth() === d.getMonth() && now.getDate() < d.getDate())) age -= 1;
   const num = Math.max(age, 0);
@@ -305,7 +306,7 @@ export default function HorseListPage() {
     },
     {
       key: "trainer",
-      header: "HLV phụ trách",
+      header: tr("Assigned Trainer"),
       render: (h) => (
         <span className="nowrap">
           {h.assignedTrainer?.fullName ? (
@@ -327,7 +328,7 @@ export default function HorseListPage() {
           items={[
             { label: tr("View profile"), icon: "eye", to: `/horses/${h.id}` },
             {
-              label: "Phân công HLV…",
+              label: tr("Assign trainer…"),
               hidden: currentUser.role !== "CLUB_MANAGER" || h.status === "RETIRED",
               onSelect: () => setAssignTrainerHorse(h),
             },
@@ -373,7 +374,7 @@ export default function HorseListPage() {
             )}
             {isOwner && (
               <LinkButton to="/horses/my-admissions" tone="secondary" icon="clipboard">
-                Hồ sơ đã nộp
+                {tr("Submitted Admissions")}
               </LinkButton>
             )}
             {canEdit && (

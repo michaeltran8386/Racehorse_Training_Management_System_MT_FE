@@ -3,6 +3,8 @@
  * Dành cho Huấn luyện viên trưởng thẩm định chiến mã trực quan.
  */
 
+import { tr } from "@/shared/i18n/tr";
+
 export interface ReadinessCriteria {
   healthOk: boolean;
   healthDetails: string;
@@ -29,12 +31,12 @@ export function evaluateReadiness(row: {
   const isDebt = Boolean(h.isDebtImpounded);
   const healthOk = !isMedicalUnfit && !isDebt && h.status !== "RETIRED";
   const healthDetails = healthOk
-    ? "Sức khỏe hoàn hảo, không có rào cản y tế"
+    ? tr("Clear health status, no medical restrictions")
     : h.isMedicalLocked
-      ? "Đang bị Khóa huấn luyện y tế"
+      ? tr("Active Veterinary Training Lock")
       : isDebt
-        ? "Đang bị tạm giữ do nợ phí chăm sóc"
-        : `Trạng thái y tế chưa an toàn (${h.status})`;
+        ? tr("Impounded for unpaid care fees")
+        : tr("Health status is not cleared ({{status}})", { status: tr(h.status ?? "") });
 
   // 2. Tiêu chí Giáo án: Có giáo án và tiến độ >= 80%
   const total = row.progress?.total || row.progress?.due || 0;
@@ -42,21 +44,24 @@ export function evaluateReadiness(row: {
   const pct = total > 0 ? (completed / total) * 100 : 0;
   const planOk = Boolean(row.plan) && (pct >= 80 || completed >= 8);
   const planDetails = row.plan
-    ? `Đã hoàn thành ${completed}/${total} bài tập (${Math.round(pct)}%)`
-    : "Chưa có giáo án huấn luyện";
+    ? tr("Completed {{completed}}/{{total}} workouts ({{pct}}%)", { completed, total, pct: Math.round(pct) })
+    : tr("No training plan yet");
 
   // 3. Tiêu chí Điểm số phong độ chạy thử: Điểm >= 7.0
   const score = row.latestScore ?? null;
   const scoreOk = score !== null && score >= 7.0;
   const scoreDetails = score !== null
-    ? `Điểm đánh giá gần nhất: ${score.toFixed(1)} / 10 ${score >= 7.0 ? "(Đạt chuẩn)" : "(Dưới mốc 7.0)"}`
-    : "Chưa có bài chạy thử (Trial Run) kiểm tra tốc độ";
+    ? tr("Latest score: {{score}} / 10 {{status}}", {
+        score: score.toFixed(1),
+        status: score >= 7.0 ? tr("(Pass)") : tr("(Below 7.0)"),
+      })
+    : tr("No speed evaluation trial run yet");
 
   // 4. Tiêu chí Tải trọng 7 ngày: Không quá tải
   const loadOk = !row.loadSpike;
   const loadDetails = loadOk
-    ? "Cường độ tải 7 ngày an toàn, không quá tải"
-    : "Tải trọng tăng đột ngột vượt 130% ngưỡng an toàn";
+    ? tr("7-day workload is within safe limits")
+    : tr("Sudden workload spike exceeding 130% safe ceiling");
 
   const passedCount = (healthOk ? 1 : 0) + (planOk ? 1 : 0) + (scoreOk ? 1 : 0) + (loadOk ? 1 : 0);
   const isEligible = passedCount === 4;

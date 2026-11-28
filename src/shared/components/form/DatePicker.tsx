@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/shared/components/ui/Icon";
@@ -83,7 +84,7 @@ export function DatePicker({
 
   // Today ISO
   const today = useMemo(() => {
-    const d = new Date();
+    const d = effectiveClubNow();
     return toIsoString(d.getFullYear(), d.getMonth(), d.getDate());
   }, []);
 
@@ -99,8 +100,8 @@ export function DatePicker({
   }, [value]);
 
   // Current view month & year in popover
-  const [viewYear, setViewYear] = useState(() => parsedValue?.year ?? new Date().getFullYear());
-  const [viewMonth, setViewMonth] = useState(() => parsedValue?.month ?? new Date().getMonth());
+  const [viewYear, setViewYear] = useState(() => parsedValue?.year ?? effectiveClubNow().getFullYear());
+  const [viewMonth, setViewMonth] = useState(() => parsedValue?.month ?? effectiveClubNow().getMonth());
   const [prevValue, setPrevValue] = useState(value);
 
   // Keep view aligned when value changes externally

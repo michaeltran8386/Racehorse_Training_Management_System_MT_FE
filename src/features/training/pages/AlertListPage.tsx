@@ -58,7 +58,7 @@ export default function AlertListPage() {
     try {
       const updated = await trainingApi.acknowledgeAlert(selected.id, vetNotes.trim());
       setAlerts((current) => current.map((alert) => alert.id === updated.id ? updated : alert));
-      toast.show("Alert acknowledged.", "ok");
+      toast.show(tr("Alert acknowledged."), "ok");
       setSelected(null);
       setVetNotes("");
     } catch (err) {

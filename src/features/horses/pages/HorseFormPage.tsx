@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { ImagePicker } from "@/shared/components/form/ImagePicker";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { Checkbox } from "@/shared/components/form/Checkbox";
@@ -51,9 +52,9 @@ function generateIsoMicrochip(): string {
 }
 
 const QUICK_OWNER_WISHES = [
-  { label: "+ Hẹn buổi sáng", text: "Mong muốn xếp lịch thẩm định buổi sáng (08:30 – 11:00)." },
-  { label: "+ Gửi nuôi & tập luyện", text: "Mong muốn gửi nuôi dài hạn kết hợp giáo án huấn luyện thể lực." },
-  { label: "+ Ngựa nhạy tiếng ồn", text: "Ngựa hơi nhạy cảm với tiếng động lớn, mong được tiếp đón nhẹ nhàng." },
+  { label: "+ Hẹn buổi sáng", text: "Prefer a morning inspection slot (08:30 – 11:00)." },
+  { label: "+ Gửi nuôi & tập luyện", text: "Looking for long-term boarding combined with a physical conditioning plan." },
+  { label: "+ Ngựa nhạy tiếng ồn", text: "Horse is sensitive to loud noises, please handle gently upon arrival." },
 ];
 
 export default function HorseFormPage() {
@@ -96,9 +97,9 @@ export default function HorseFormPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [generalError, setGeneralError] = useState("");
 
-  const now = new Date();
+  const now = effectiveClubNow();
   const todayStr = now.toISOString().split("T")[0];
-  const twelveYearsAgo = new Date();
+  const twelveYearsAgo = effectiveClubNow();
   twelveYearsAgo.setFullYear(now.getFullYear() - 12);
   const minDobStr = twelveYearsAgo.toISOString().split("T")[0];
 
@@ -182,8 +183,8 @@ export default function HorseFormPage() {
       errs.dob = "Date of birth is required.";
     } else {
       const birth = new Date(dob);
-      const now = new Date();
-      const twelveYearsAgo = new Date();
+      const now = effectiveClubNow();
+      const twelveYearsAgo = effectiveClubNow();
       twelveYearsAgo.setFullYear(now.getFullYear() - 12);
 
       if (birth > now) {
@@ -218,7 +219,7 @@ export default function HorseFormPage() {
     }
 
     if (!isEdit && !declarationAccepted) {
-      errs.declaration = "Vui lòng xác nhận cam kết thông tin hồ sơ trước khi nộp.";
+      errs.declaration = "Please confirm the declaration before submitting.";
     }
 
     setErrors(errs);
@@ -245,7 +246,7 @@ export default function HorseFormPage() {
           microchip: finalMicrochip,
         };
         const saved = await updateHorse(id, payload);
-        toast.show(`Horse profile ${saved.name} updated successfully.`, "ok");
+        toast.show(tr("Horse profile {{name}} updated successfully.", { name: saved.name }), "ok");
         setIsDirty(false);
         navigate(`/horses/${saved.id}`);
       } else {
@@ -269,8 +270,8 @@ export default function HorseFormPage() {
         const saved = await createHorse(payload);
         toast.show(
           reapplyId
-            ? `Đã nộp lại hồ sơ đăng ký cho chiến mã ${saved.name}!`
-            : `Đã nộp hồ sơ đăng ký chiến mã ${saved.name} thành công!`,
+            ? tr("Resubmitted admission dossier for {{name}}!", { name: saved.name })
+            : tr("Submitted admission dossier for {{name}} successfully!", { name: saved.name }),
           "ok",
         );
 
@@ -292,16 +293,16 @@ export default function HorseFormPage() {
     } catch (err: any) {
       if (err instanceof ApiError) {
         if (err.code === "DUPLICATE_NAME") {
-          setErrors((prev) => ({ ...prev, name: "Horse name already exists in the stable system." }));
+          setErrors((prev) => ({ ...prev, name: tr("Horse name already exists in the stable system.") }));
         } else if (err.code === "DUPLICATE_MICROCHIP") {
-          setErrors((prev) => ({ ...prev, microchip: "Microchip number is already registered to another horse." }));
+          setErrors((prev) => ({ ...prev, microchip: tr("Microchip number is already registered to another horse.") }));
         } else if (err.code === "INVALID_DOB") {
           setErrors((prev) => ({ ...prev, dob: localizeServerText(err.message) || tr("Invalid date of birth.") }));
         } else {
           setGeneralError(localizeServerText(err.message) || tr("An error occurred while saving the horse profile."));
         }
       } else {
-        setGeneralError("Server connection error. Please try again.");
+        setGeneralError(tr("Server connection error. Please try again."));
       }
     } finally {
       setSubmitting(false);
@@ -351,21 +352,21 @@ export default function HorseFormPage() {
       <PageHeader
         title={
           isEdit
-            ? tr(`Edit ${name || horseCode}`)
+            ? tr("Edit {{name}}", { name: name || horseCode })
             : reapplyId
-              ? `Nộp lại hồ sơ tiếp nhận — ${name || "Chiến mã"}`
-              : "Tờ khai đăng ký tiếp nhận chiến mã"
+              ? tr("Resubmit Admission Dossier — {{name}}", { name: name || tr("Horse") })
+              : tr("Horse Admission Registration Form")
         }
         description={
           isEdit
             ? tr("Update identity and profile details.")
-            : "Cung cấp đầy đủ thông tin chiến mã, ảnh giấy tờ pháp lý và ghi chú mong muốn (theo mẫu nộp hồ sơ trực tuyến)."
+            : tr("Provide full horse identity details, legal document photos and preferences for online admission.")
         }
       />
 
       {reapplyId && (
-        <Alert tone="info" title="Đang nộp lại hồ sơ dựa trên dữ liệu cũ">
-          Hệ thống đã điền sẵn thông tin chiến mã và mã Microchip cũ. Hãy kiểm tra lại giấy tờ pháp lý / ghi chú mong muốn trước khi bấm nộp hồ sơ.
+        <Alert tone="info" title={tr("Resubmitting dossier based on previous record")}>
+          {tr("Existing horse details and Microchip code have been prefilled. Please review your legal documents and notes before submitting.")}
         </Alert>
       )}
 
@@ -530,7 +531,7 @@ export default function HorseFormPage() {
             <div className={styles.formGrid}>
               {/* Cột trái: Giấy tờ pháp lý đính kèm */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                <h3 className={styles.sectionTitle}>Giấy tờ pháp lý</h3>
+                <h3 className={styles.sectionTitle}>{tr("Legal Documents")}</h3>
                 <LegalDocumentsUploader
                   value={documentPhotos}
                   onChange={(next) => {
@@ -547,17 +548,17 @@ export default function HorseFormPage() {
 
               {/* Cột phải: Ghi chú & Mong muốn gửi CLB */}
               <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                <h3 className={styles.sectionTitle}>Ghi chú gửi CLB</h3>
+                <h3 className={styles.sectionTitle}>{tr("Notes for the Club")}</h3>
                 <Field
-                  label="Mong muốn của chủ ngựa (tùy chọn)"
-                  hint={`${ownerNotes.length}/1000 ký tự`}
+                  label={tr("Owner notes / preferences")}
+                  hint={tr("{{count}}/1000 characters", { count: ownerNotes.length })}
                 >
                   <Textarea
                     rows={3}
                     maxLength={1000}
                     value={ownerNotes}
                     disabled={submitting}
-                    placeholder="Khung giờ thuận tiện mang ngựa tới, lưu ý tính cách hoặc mục tiêu nuôi tập..."
+                    placeholder={tr("e.g. I prefer Saturday morning (09:00) for inspection and long-distance conditioning...")}
                     onChange={(e) => {
                       setOwnerNotes(e.target.value);
                       setIsDirty(true);
@@ -565,35 +566,38 @@ export default function HorseFormPage() {
                   />
                 </Field>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-                  {QUICK_OWNER_WISHES.map((preset) => (
-                    <button
-                      key={preset.label}
-                      type="button"
-                      disabled={submitting}
-                      onClick={() => {
-                        setOwnerNotes((prev) =>
-                          prev.includes(preset.text)
-                            ? prev
-                            : prev.trim()
-                              ? `${prev.trim()}\n- ${preset.text}`
-                              : `- ${preset.text}`,
-                        );
-                        setIsDirty(true);
-                      }}
-                      style={{
-                        border: "1px solid var(--border)",
-                        background: "transparent",
-                        color: "var(--ink-secondary, #475569)",
-                        borderRadius: "999px",
-                        padding: "3px 10px",
-                        fontSize: "0.76rem",
-                        fontWeight: 500,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {preset.label}
-                    </button>
-                  ))}
+                  {QUICK_OWNER_WISHES.map((preset) => {
+                    const localizedText = tr(preset.text);
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        disabled={submitting}
+                        onClick={() => {
+                          setOwnerNotes((prev) =>
+                            prev.includes(localizedText)
+                              ? prev
+                              : prev.trim()
+                                ? `${prev.trim()}\n- ${localizedText}`
+                                : `- ${localizedText}`,
+                          );
+                          setIsDirty(true);
+                        }}
+                        style={{
+                          border: "1px solid var(--border)",
+                          background: "transparent",
+                          color: "var(--ink-secondary, #475569)",
+                          borderRadius: "999px",
+                          padding: "3px 10px",
+                          fontSize: "0.76rem",
+                          fontWeight: 500,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -607,11 +611,11 @@ export default function HorseFormPage() {
                     setErrors((prev) => ({ ...prev, declaration: "" }));
                   }
                 }}
-                label="Tôi cam kết thông tin và ảnh giấy tờ đính kèm là chính xác, sẽ mang bản gốc đến đối chiếu theo lịch hẹn."
+                label={tr("I declare that all provided details and attached legal document photos are truthful, and I will bring originals for verification upon arrival.")}
               />
               {errors.declaration && (
                 <div style={{ color: "var(--danger, #dc2626)", fontSize: "0.82rem", marginTop: 4 }}>
-                  {errors.declaration}
+                  {tr(errors.declaration)}
                 </div>
               )}
             </div>
@@ -628,7 +632,7 @@ export default function HorseFormPage() {
               disabled={submitting || imageBusy || docUploadBusy}
               onClick={() => handleSave(true)}
             >
-              Nộp &amp; Đăng ký thêm ngựa khác
+              {tr("Submit & Register Another Horse")}
             </Button>
           )}
           <Button
@@ -637,12 +641,12 @@ export default function HorseFormPage() {
             onClick={() => handleSave(false)}
           >
             {submitting
-              ? "Đang gửi hồ sơ..."
+              ? tr("Submitting dossier...")
               : isEdit
                 ? tr("Save Profile")
                 : reapplyId
-                  ? "Nộp lại hồ sơ đăng ký"
-                  : "Nộp hồ sơ đăng ký"}
+                  ? tr("Resubmit Admission Dossier")
+                  : tr("Submit Admission Dossier")}
           </Button>
         </div>
       </Card>

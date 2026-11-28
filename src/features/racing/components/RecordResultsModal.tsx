@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { formatNumber, formatVND } from "@/shared/lib/format";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Icon } from "@/shared/components/ui/Icon";
@@ -154,7 +155,7 @@ export function RecordResultsModal({
   const isCompleted = currentTourney.status === "COMPLETED";
   const isClosedReg = currentTourney.status === "CLOSED_REGISTRATION";
   const hasExistingResults = (currentTourney.registrations || []).some((r: any) => r.result !== null);
-  const isRaceFinished = new Date() >= new Date(currentTourney.raceDate) || isClosedReg || hasExistingResults;
+  const isRaceFinished = effectiveClubNow() >= new Date(currentTourney.raceDate) || isClosedReg || hasExistingResults;
   const canRecord = isClubManager && isClosedReg && !isCompleted;
   const isReadOnly = isCompleted || !isClubManager || !isClosedReg;
 

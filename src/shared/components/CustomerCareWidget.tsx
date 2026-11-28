@@ -19,19 +19,19 @@ interface DepartmentContact {
 const DEPARTMENTS: DepartmentContact[] = [
   {
     id: "sales",
-    name: "Kinh Doanh",
+    name: "Sales",
     avatarText: "KD",
     zaloUrl: ZALO_URL,
   },
   {
     id: "technical",
-    name: "Hỗ Trợ Kỹ Thuật",
+    name: "Technical Support",
     avatarText: "KT",
     zaloUrl: ZALO_URL,
   },
   {
     id: "warranty",
-    name: "Hỗ Trợ Bảo Hành",
+    name: "Warranty Support",
     avatarText: "BH",
     zaloUrl: ZALO_URL,
   },
@@ -105,7 +105,7 @@ export function CustomerCareWidget() {
           {/* Header với màu thương hiệu trang web */}
           <div className={styles.cardHeader}>
             <h2 id="customer-care-title" className={styles.cardTitle}>
-              {tr("Liên hệ với TMEC")}
+              {tr("Contact TMEC")}
             </h2>
             <button
               type="button"
@@ -134,10 +134,10 @@ export function CustomerCareWidget() {
                     target="_blank"
                     rel="noopener noreferrer"
                     className={styles.zaloChatBtn}
-                    title="Nhắn tin qua Zalo"
+                    title={tr("Message via Zalo")}
                   >
                     <span className={styles.zaloBadgeIcon}>Zalo</span>
-                    <span>{tr("Nhắn tin")}</span>
+                    <span>{tr("Message")}</span>
                   </a>
                 </div>
               ))}
@@ -146,7 +146,7 @@ export function CustomerCareWidget() {
             {/* Phần liên hệ nhanh bên dưới */}
             <div className={styles.footerSection}>
               <div className={styles.footerLabel}>
-                {tr("LIÊN HỆ VỚI CHÚNG TÔI TẠI:")}
+                {tr("CONNECT WITH US:")}
               </div>
               <div className={styles.channelsRow}>
                 {/* Zalo Icon */}
@@ -155,7 +155,7 @@ export function CustomerCareWidget() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`${styles.channelCircle} ${styles.zaloCircle}`}
-                  title="Nhắn Zalo: 0983989059"
+                  title={tr("Zalo Chat: 0983989059")}
                   aria-label="Zalo TMEC"
                 >
                   <span className={styles.zaloCircleText}>Zalo</span>
@@ -165,7 +165,7 @@ export function CustomerCareWidget() {
                 <a
                   href={HOTLINE_TEL}
                   className={`${styles.channelCircle} ${styles.phoneCircle}`}
-                  title={`Gọi Hotline: ${HOTLINE_DISPLAY}`}
+                  title={tr("Call Hotline: {{phone}}", { phone: HOTLINE_DISPLAY })}
                   aria-label={`Hotline ${HOTLINE_DISPLAY}`}
                 >
                   <Icon name="phone" size={22} />

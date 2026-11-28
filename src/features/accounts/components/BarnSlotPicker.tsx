@@ -1,4 +1,7 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import { tr } from "@/shared/i18n/tr";
 import type { BarnStaffingItem } from "../api";
 
 interface BarnSlotPickerProps {
@@ -10,16 +13,17 @@ interface BarnSlotPickerProps {
 }
 
 function formatTimeRemaining(createdAt?: string): string {
-  if (!createdAt) return "Đang mời";
+  if (!createdAt) return tr("Invited");
   const created = new Date(createdAt).getTime();
   const expiresAt = created + 48 * 3600 * 1000;
-  const diffMs = expiresAt - Date.now();
-  if (diffMs <= 0) return "Hết hạn 48h";
+  const diffMs = expiresAt - effectiveClubNow().getTime();
+  if (diffMs <= 0) return tr("Expired 48h");
   const hours = Math.floor(diffMs / (3600 * 1000));
-  return `Còn ${hours}h`;
+  return tr("{{hours}}h left", { hours });
 }
 
 export function BarnSlotPicker({ value, onChange, barns, error, mode = "trainer" }: BarnSlotPickerProps) {
+  useTranslation();
   const [hoveredSlotKey, setHoveredSlotKey] = useState<string | null>(null);
   const [selectedSlotKey, setSelectedSlotKey] = useState<string | null>(null);
 
@@ -50,10 +54,10 @@ export function BarnSlotPicker({ value, onChange, barns, error, mode = "trainer"
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontSize: "var(--fs-caption, 12px)", fontWeight: 600, color: "var(--text)" }}>
-          Sơ đồ Khu chuồng phụ trách <span style={{ color: "var(--danger, #DC2626)" }}>*</span>
+          {tr("Assigned Barn Map")} <span style={{ color: "var(--danger, #DC2626)" }}>*</span>
         </span>
         <span style={{ fontSize: "11px", color: "var(--muted)" }}>
-          {mode === "groom" ? "Định mức: Tối đa 4 Groom / Khu chuồng" : "Định mức: Tối đa 2 HLV / Khu chuồng"}
+          {mode === "groom" ? tr("Limit: Max 4 Grooms / Barn") : tr("Limit: Max 2 Trainers / Barn")}
         </span>
       </div>
 
@@ -71,7 +75,7 @@ export function BarnSlotPicker({ value, onChange, barns, error, mode = "trainer"
           const isFull = mode === "groom" ? (b.isGroomFull ?? (b.groomsCount ?? 0) >= 4) : b.isFull;
           const currentCount = mode === "groom" ? (b.groomsCount ?? b.grooms?.length ?? 0) : b.trainersCount;
           const maxCount = mode === "groom" ? 4 : 2;
-          const roleLabel = mode === "groom" ? "Groom" : "HLV";
+          const roleLabel = mode === "groom" ? tr("Groom") : tr("Trainer");
           const hasSelectedSlot = selectedSlotKey && selectedSlotKey.startsWith(`${b.id}-`);
 
           return (
@@ -109,7 +113,9 @@ export function BarnSlotPicker({ value, onChange, barns, error, mode = "trainer"
                     borderRadius: 4,
                   }}
                 >
-                  {isFull ? `Đã đủ định mức (${maxCount}/${maxCount} ${roleLabel})` : `${currentCount}/${maxCount} ${roleLabel}`}
+                  {isFull
+                    ? tr("At capacity ({{count}}/{{max}} {{role}})", { count: maxCount, max: maxCount, role: roleLabel })
+                    : `${currentCount}/${maxCount} ${roleLabel}`}
                 </span>
               </div>
 
@@ -135,7 +141,7 @@ export function BarnSlotPicker({ value, onChange, barns, error, mode = "trainer"
                           gap: 3,
                           cursor: "not-allowed",
                         }}
-                        title={isInvited ? "Ghế này đang giữ chỗ cho lời mời" : `${roleLabel} chính thức đang phụ trách`}
+                        title={isInvited ? tr("Reserved for a pending invitation") : tr("Assigned {{role}}", { role: roleLabel })}
                       >
                         <span
                           style={{
@@ -163,7 +169,7 @@ export function BarnSlotPicker({ value, onChange, barns, error, mode = "trainer"
                                   fontSize: 10,
                                 }}
                               >
-                                Đang mời
+                                {tr("Invited")}
                               </span>
                               <span style={{ color: "#D97706", fontSize: 10 }}>
                                 {formatTimeRemaining(person.createdAt)}
@@ -181,12 +187,12 @@ export function BarnSlotPicker({ value, onChange, barns, error, mode = "trainer"
                                   fontSize: 10,
                                 }}
                               >
-                                Chính thức
+                                {tr("Active")}
                               </span>
                               <span style={{ color: "var(--muted)", fontSize: 10 }}>
                                 {mode === "groom"
-                                  ? `${person.currentLoad ?? 0}/6 ô`
-                                  : `${person.currentLoad ?? 0}/8 ngựa`}
+                                  ? tr("{{count}}/6 stalls", { count: person.currentLoad ?? 0 })
+                                  : tr("{{count}}/8 horses", { count: person.currentLoad ?? 0 })}
                               </span>
                             </>
                           )}
@@ -235,7 +241,7 @@ export function BarnSlotPicker({ value, onChange, barns, error, mode = "trainer"
                           color: isSlotSelected ? "var(--brand, #2563EB)" : isHovered ? "var(--brand, #2563EB)" : "var(--text)",
                         }}
                       >
-                        {isSlotSelected ? "Vị trí được chọn" : "Chỗ trống"}
+                        {isSlotSelected ? tr("Selected Slot") : tr("Available Slot")}
                       </span>
                       <span
                         style={{
@@ -244,7 +250,7 @@ export function BarnSlotPicker({ value, onChange, barns, error, mode = "trainer"
                           fontWeight: isSlotSelected ? 600 : 400,
                         }}
                       >
-                        {isSlotSelected ? `Sẽ gán ${roleLabel} vào đây` : "Bấm để chọn vị trí này"}
+                        {isSlotSelected ? tr("Assign {{role}} here", { role: roleLabel }) : tr("Click to select this slot")}
                       </span>
                     </button>
                   );

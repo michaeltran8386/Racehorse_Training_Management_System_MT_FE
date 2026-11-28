@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import type { FormEvent } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Field } from "@/shared/components/form/Field";
 import { Select } from "@/shared/components/form/Select";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
+import { tr } from "@/shared/i18n/tr";
 import { ApiError } from "@/shared/lib/api";
 import { messageFor } from "@/shared/lib/messages";
 import type { PublicAccount } from "@/shared/types/auth";
@@ -19,6 +21,7 @@ interface AssignTrainerBarnModalProps {
 }
 
 export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrainerBarnModalProps) {
+  useTranslation();
   const [barns, setBarns] = useState<BarnStaffingItem[]>([]);
   const [targetBarnId, setTargetBarnId] = useState("");
   const [handoverTrainerId, setHandoverTrainerId] = useState("");
@@ -61,10 +64,10 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
     };
   }, [account.id, account.assignedBarnId]);
 
-  // Tìm các HLV đồng nghiệp trong cùng Khu chuồng hiện tại
+  // Tìm các HLV đồng nghiệp trong cùng Khu chuồng hiện tại đang hoạt động chính thức (ACTIVE)
   const currentBarn = barns.find((b) => b.id === account.assignedBarnId);
   const colleagueTrainers = currentBarn
-    ? currentBarn.trainers.filter((t) => t.id !== account.id)
+    ? currentBarn.trainers.filter((t) => t.id !== account.id && t.status === "ACTIVE")
     : [];
 
   const selectedColleague = colleagueTrainers.find((t) => t.id === handoverTrainerId);
@@ -79,7 +82,7 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
     if (busy || !targetBarnId) return;
 
     if (activeHorsesCount > 0 && !handoverTrainerId) {
-      setError("Vui lòng chọn HLV đồng nghiệp trong cùng khu chuồng để bàn giao chiến mã.");
+      setError(tr("Please select a colleague trainer in the same Barn to hand over the horses."));
       return;
     }
 
@@ -93,7 +96,7 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
       onSaved(res.account);
     } catch (err) {
       if (err instanceof ApiError) setError(messageFor(err));
-      else setError("Không thể chuyển Khu chuồng. Vui lòng thử lại.");
+      else setError(tr("Could not transfer Barn. Please try again."));
     } finally {
       setBusy(false);
     }
@@ -101,9 +104,9 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
 
   const barnOptions = barns.map((b) => {
     const isCurrent = b.id === account.assignedBarnId;
-    let label = `${b.name} (${b.trainersCount}/${b.maxTrainers} HLV)`;
-    if (isCurrent) label += " [Hiện tại]";
-    else if (b.isFull) label += " [Đầy]";
+    let label = tr("{{name}} ({{count}}/{{max}} trainers)", { name: b.name, count: b.trainersCount, max: b.maxTrainers });
+    if (isCurrent) label += ` [${tr("Current")}]`;
+    else if (b.isFull) label += ` [${tr("Full")}]`;
     return {
       value: b.id,
       label,
@@ -113,8 +116,8 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
 
   return (
     <Modal
-      title="Điều chuyển Khu chuồng (Barn)"
-      subtitle={`Huấn luyện viên: ${account.fullName} · Định mức tối đa 2 HLV / Barn`}
+      title={tr("Transfer Barn Assignment")}
+      subtitle={tr("Head Trainer: {{name}} · Max 2 trainers / Barn", { name: account.fullName })}
       width={520}
       onClose={onClose}
     >
@@ -123,24 +126,24 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
 
         <div>
           <span style={{ fontSize: "var(--fs-caption)", color: "var(--text-2)", display: "block", marginBottom: 4 }}>
-            Khu chuồng hiện tại:
+            {tr("Current Barn:")}
           </span>
           <div style={{ fontWeight: 600 }}>
             {account.assignedBarn?.name ? (
               <Badge tone="info">{account.assignedBarn.name}</Badge>
             ) : (
-              <Badge tone="warn">Chưa phân công Khu chuồng</Badge>
+              <Badge tone="warn">{tr("No Barn Assigned")}</Badge>
             )}
           </div>
         </div>
 
-        <Field label="Chọn Khu chuồng đích" required>
+        <Field label={tr("Select Target Barn")} required>
           <Select
             value={targetBarnId}
             disabled={loading || busy}
             onChange={(e) => setTargetBarnId(e.target.value)}
             options={[
-              { value: "", label: "-- Chọn Khu chuồng --", disabled: true },
+              { value: "", label: tr("-- Select Barn --"), disabled: true },
               ...barnOptions,
             ]}
           />
@@ -159,29 +162,32 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
             }}
           >
             <div style={{ fontWeight: 600, color: "var(--warning)" }}>
-              Bàn giao chiến mã ({activeHorsesCount} con đang phụ trách)
+              {tr("Horse handover ({{count}} assigned)", { count: activeHorsesCount })}
             </div>
             <p style={{ margin: 0, fontSize: "var(--fs-caption)", color: "var(--text-2)" }}>
-              HLV hiện đang phụ trách {activeHorsesCount} chiến mã. Khi chuyển sang Khu chuồng mới,
-              hệ thống sẽ áp dụng cơ chế bàn giao kế thừa sang HLV đồng nghiệp cùng Barn.
+              {tr("This trainer currently manages {{count}} horse(s). Moving to a new Barn will hand over custody to a colleague in the same Barn.", { count: activeHorsesCount })}
             </p>
 
             {colleagueTrainers.length === 0 ? (
               <Alert tone="warn">
-                Khu chuồng hiện tại không có HLV đồng nghiệp nào khác để bàn giao. Vui lòng phân công thêm HLV vào Khu chuồng trước hoặc chuyển trạng thái các giáo án sang Hoàn thành / Hủy.
+                {tr("No other colleague trainer is available in this Barn for handover. Please assign another trainer first or complete/cancel active plans.")}
               </Alert>
             ) : (
               <>
-                <Field label="HLV đồng nghiệp tiếp nhận bàn giao" required>
+                <Field label={tr("Receiving colleague trainer")} required>
                   <Select
                     value={handoverTrainerId}
                     disabled={busy}
                     onChange={(e) => setHandoverTrainerId(e.target.value)}
                     options={[
-                      { value: "", label: "-- Chọn HLV tiếp nhận --", disabled: true },
+                      { value: "", label: tr("-- Select receiving trainer --"), disabled: true },
                       ...colleagueTrainers.map((t) => ({
                         value: t.id,
-                        label: `${t.fullName} (Đang phụ trách ${t.currentLoad ?? 0}/8 con · Còn trống ${Math.max(0, 8 - (t.currentLoad ?? 0))} chỗ)`,
+                        label: tr("{{name}} ({{load}}/8 horses · {{left}} slot(s) free)", {
+                          name: t.fullName,
+                          load: t.currentLoad ?? 0,
+                          left: Math.max(0, 8 - (t.currentLoad ?? 0)),
+                        }),
                       })),
                     ]}
                   />
@@ -189,13 +195,23 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
 
                 {selectedColleague && (
                   willSplit ? (
-                    <Alert tone="warn" title="Cơ chế Bàn giao Chia tách Tự động">
-                      HLV {selectedColleague.fullName} hiện chỉ còn trống {availableSlots} chỗ (đang có {colleagueLoad}/8 con).
-                      Hệ thống sẽ tự động bàn giao <strong>{toHandover} chiến mã</strong> cho HLV này (đạt đủ trần 8/8), và <strong>{excess} chiến mã dôi dư</strong> sẽ tự động chuyển về trạng thái <em>Chờ phân công HLV mới</em> để bảo đảm an toàn vận hành.
+                    <Alert tone="warn" title={tr("Automatic Split Handover")}>
+                      {tr("Trainer {{name}} only has {{slots}} free slot(s) ({{load}}/8 horses). {{handover}} horse(s) will transfer up to the 8/8 cap, and {{excess}} remaining horse(s) will move to Awaiting New Trainer for operational safety.", {
+                        name: selectedColleague.fullName,
+                        slots: availableSlots,
+                        load: colleagueLoad,
+                        handover: toHandover,
+                        excess,
+                      })}
                     </Alert>
                   ) : (
                     <Alert tone="ok">
-                      HLV {selectedColleague.fullName} còn trống {availableSlots} chỗ (đang có {colleagueLoad}/8 con). Toàn bộ <strong>{activeHorsesCount} chiến mã</strong> sẽ được bàn giao trọn vẹn.
+                      {tr("Trainer {{name}} has {{slots}} free slot(s) ({{load}}/8 horses). All {{count}} horse(s) will be handed over cleanly.", {
+                        name: selectedColleague.fullName,
+                        slots: availableSlots,
+                        load: colleagueLoad,
+                        count: activeHorsesCount,
+                      })}
                     </Alert>
                   )
                 )}
@@ -206,7 +222,7 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
 
         <div style={{ display: "flex", justifyContent: "flex-end", gap: 9, marginTop: 8 }}>
           <Button tone="secondary" size="sm" onClick={onClose} disabled={busy}>
-            Hủy
+            {tr("Cancel")}
           </Button>
           <Button
             type="submit"
@@ -219,10 +235,10 @@ export function AssignTrainerBarnModal({ account, onClose, onSaved }: AssignTrai
             }
           >
             {busy
-              ? "Đang xử lý…"
+              ? tr("Processing…")
               : willSplit
-                ? "Xác nhận chuyển Barn & Bàn giao chia tách"
-                : "Xác nhận chuyển Khu chuồng"}
+                ? tr("Confirm Barn Transfer & Split Handover")
+                : tr("Confirm Barn Transfer")}
           </Button>
         </div>
       </form>

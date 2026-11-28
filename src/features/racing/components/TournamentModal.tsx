@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import formLayout from "@/shared/components/form/FormLayout.module.css";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useState, useEffect } from "react";
@@ -52,10 +53,10 @@ export function TournamentModal({
       setStatus(initialData.status);
     } else {
       setName("");
-      const now = new Date();
+      const now = effectiveClubNow();
       now.setDate(now.getDate() + 30);
       setRaceDate(now.toISOString().split("T")[0]);
-      const dl = new Date();
+      const dl = effectiveClubNow();
       dl.setDate(dl.getDate() + 20);
       setRegistrationDeadline(dl.toISOString().split("T")[0]);
       setLocation("");
@@ -95,7 +96,7 @@ export function TournamentModal({
       return;
     }
 
-    const isDeadlinePassed = new Date(registrationDeadline + "T23:59:59") < new Date();
+    const isDeadlinePassed = new Date(registrationDeadline + "T23:59:59") < effectiveClubNow();
     if (status === "OPEN_REGISTRATION" && isDeadlinePassed) {
       setError(tr("Cannot open registration because the registration deadline has already passed"));
       return;
@@ -199,7 +200,7 @@ export function TournamentModal({
               value={registrationDeadline}
               onChange={(val) => {
                 setRegistrationDeadline(val);
-                if (val && new Date(val + "T23:59:59") < new Date() && status === "OPEN_REGISTRATION") {
+                if (val && new Date(val + "T23:59:59") < effectiveClubNow() && status === "OPEN_REGISTRATION") {
                   setStatus("CLOSED_REGISTRATION");
                 }
               }}
@@ -358,7 +359,7 @@ export function TournamentModal({
               {tr("Status")}
             </label>
             {(() => {
-              const isDeadlinePassed = registrationDeadline ? new Date(registrationDeadline + "T23:59:59") < new Date() : false;
+              const isDeadlinePassed = registrationDeadline ? new Date(registrationDeadline + "T23:59:59") < effectiveClubNow() : false;
               return (
                 <>
                   <select

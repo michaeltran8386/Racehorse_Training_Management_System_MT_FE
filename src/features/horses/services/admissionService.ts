@@ -36,7 +36,7 @@ export function extractAdmissionDocumentPhotos(
     return record.documentPhotos.filter((p) => p && typeof p.url === "string" && p.url.trim().length > 0);
   }
   if (record.documentsUrl && record.documentsUrl.trim().length > 0) {
-    return [{ label: "Giấy tờ pháp lý đính kèm", url: record.documentsUrl.trim() }];
+    return [{ label: "Attached legal document", url: record.documentsUrl.trim() }];
   }
   return [];
 }

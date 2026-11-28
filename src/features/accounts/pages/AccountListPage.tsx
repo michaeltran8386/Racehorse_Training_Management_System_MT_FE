@@ -269,14 +269,14 @@ export default function AccountListPage() {
               <div style={{ marginTop: 2 }}>
                 {r.status === "INVITED" ? (
                   r.assignedBarn?.name ? (
-                    <Badge tone="neutral">Chờ nhận việc: {r.assignedBarn.name}</Badge>
+                    <Badge tone="neutral">{tr("Pending assignment: {{name}}", { name: r.assignedBarn.name })}</Badge>
                   ) : (
-                    <Badge tone="warn">Chưa gán Barn</Badge>
+                    <Badge tone="warn">{tr("No Barn assigned")}</Badge>
                   )
                 ) : r.assignedBarn?.name ? (
                   <Badge tone="info">{r.assignedBarn.name}</Badge>
                 ) : (
-                  <Badge tone="warn">Chưa gán Barn</Badge>
+                  <Badge tone="warn">{tr("No Barn assigned")}</Badge>
                 )}
               </div>
             </div>
@@ -358,7 +358,7 @@ export default function AccountListPage() {
             items={[
               { label: "Edit account", icon: "edit", onSelect: () => setDialog({ kind: "edit", target: r }) },
               {
-                label: "Đổi Khu chuồng (Barn)",
+                label: tr("Change Barn"),
                 hidden: r.role !== "HEAD_TRAINER",
                 onSelect: () => setDialog({ kind: "assignBarn", target: r }),
               },
@@ -652,7 +652,7 @@ export default function AccountListPage() {
           onSaved={(updated) => {
             replace(updated);
             setDialog(null);
-            toast.show("Đã cập nhật Khu chuồng cho HLV thành công.", "ok");
+            toast.show(tr("Trainer Barn assignment updated successfully."), "ok");
           }}
         />
       )}

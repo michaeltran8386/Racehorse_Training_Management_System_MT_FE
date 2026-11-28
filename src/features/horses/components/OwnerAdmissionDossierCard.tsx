@@ -1,5 +1,7 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Button, LinkButton } from "@/shared/components/ui/Button";
 import { Alert } from "@/shared/components/ui/Alert";
@@ -9,9 +11,9 @@ import { Field } from "@/shared/components/form/Field";
 import { Input } from "@/shared/components/form/Input";
 import { Textarea } from "@/shared/components/form/Textarea";
 import { useToast } from "@/shared/components/ui/Toast";
+import { localizeServerText, tr } from "@/shared/i18n/tr";
 import { formatDateTime } from "@/shared/lib/format";
 import { messageFor } from "@/shared/lib/messages";
-import { getDemoDate } from "@/features/training/api";
 import {
   cancelAdmission,
   extractAdmissionDocumentPhotos,
@@ -29,28 +31,23 @@ const STATUS_META: Record<
   AdmissionStatus,
   { label: string; tone: "ok" | "warn" | "danger" | "info" | "neutral" }
 > = {
-  PENDING_VERIFICATION: { label: "Chờ CLB xếp lịch", tone: "info" },
-  APPOINTED: { label: "Đã có lịch hẹn", tone: "warn" },
-  INSPECTION_IN_PROGRESS: { label: "Đang thẩm định tại CLB", tone: "info" },
-  APPROVED: { label: "Đã tiếp nhận chính thức", tone: "ok" },
-  REJECTED: { label: "Từ chối tiếp nhận", tone: "danger" },
-  CANCELLED: { label: "Đã rút / hủy hồ sơ", tone: "neutral" },
+  PENDING_VERIFICATION: { label: "Pending scheduling", tone: "info" },
+  APPOINTED: { label: "Appointed", tone: "warn" },
+  INSPECTION_IN_PROGRESS: { label: "Inspection in progress", tone: "info" },
+  APPROVED: { label: "Approved", tone: "ok" },
+  REJECTED: { label: "Rejected", tone: "danger" },
+  CANCELLED: { label: "Cancelled", tone: "neutral" },
 };
 
 const STEPS = [
-  { key: "SUBMITTED", title: "1. Đã nộp hồ sơ", sub: "Chờ CLB tiếp nhận" },
-  { key: "APPOINTED", title: "2. Xếp lịch hẹn", sub: "Có giờ & phụ trách" },
-  { key: "INSPECTION", title: "3. Thẩm định trực tiếp", sub: "Chip · Pháp lý · Thú y" },
-  { key: "APPROVED", title: "4. Hoàn tất", sub: "Nhập chuồng & hoạt động" },
+  { key: "SUBMITTED", title: "1. Submitted", sub: "Awaiting club review" },
+  { key: "APPOINTED", title: "2. Scheduled", sub: "Time & staff assigned" },
+  { key: "INSPECTION", title: "3. On-site Inspection", sub: "Chip · Legal · Vet" },
+  { key: "APPROVED", title: "4. Completed", sub: "Stalled & active" },
 ] as const;
 
 function currentEffectiveTimeMs(): number {
-  const demoYmd = getDemoDate();
-  if (!demoYmd) return Date.now();
-  const now = new Date();
-  const timePart = now.toISOString().slice(11, 19);
-  const parsed = Date.parse(`${demoYmd}T${timePart}+07:00`);
-  return Number.isNaN(parsed) ? Date.now() : parsed;
+  return effectiveClubNow().getTime();
 }
 
 interface Props {
@@ -60,6 +57,7 @@ interface Props {
 }
 
 export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated }: Props) {
+  useTranslation();
   const toast = useToast();
   const [showHistory, setShowHistory] = useState(false);
 
@@ -140,7 +138,7 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
         documentPhotos: draftPhotos,
         documentsUrl: draftPhotos[0]?.url || "",
       });
-      toast.show("Đã cập nhật ghi chú và giấy tờ pháp lý cho hồ sơ.", "ok");
+      toast.show(tr("Updated notes and legal documents for the admission record."), "ok");
       setEditOpen(false);
       onUpdated?.();
     } catch (err) {
@@ -156,7 +154,7 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
     setCancelError("");
     try {
       await cancelAdmission(record.id, { reason: cancelReason.trim() || undefined });
-      toast.show("Đã rút / hủy hồ sơ đăng ký tiếp nhận.", "ok");
+      toast.show(tr("Admission record withdrawn / cancelled."), "ok");
       setCancelOpen(false);
       setCancelReason("");
       onUpdated?.();
@@ -168,44 +166,44 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
   }
 
   return (
-    <section className={styles.dossier} aria-label={`Hồ sơ tiếp nhận ${record.admissionCode}`}>
+    <section className={styles.dossier} aria-label={tr("Admission dossier {{code}}", { code: record.admissionCode })}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <span className={styles.eyebrow}>
             <Icon name="clipboard" size={14} />
-            Phiếu theo dõi hồ sơ đăng ký tiếp nhận trực tuyến
+            {tr("Online admission tracking dossier")}
           </span>
           <div className={styles.titleRow}>
             <h3 className={styles.title}>
               {horseLink ? (
                 <Link to={`/horses/${record.horseId}`} style={{ color: "inherit", textDecoration: "none" }}>
-                  {record.horse?.name || "Chiến mã"}
+                  {record.horse?.name || tr("Horse")}
                 </Link>
               ) : (
-                record.horse?.name || "Chiến mã"
+                record.horse?.name || tr("Horse")
               )}
             </h3>
             <span className={styles.codePill}>{record.admissionCode}</span>
-            <Badge tone={badge.tone}>{badge.label}</Badge>
+            <Badge tone={badge.tone}>{tr(badge.label)}</Badge>
           </div>
           <div className={styles.submittedMeta}>
-            <span>Ngày nộp: {formatDateTime(record.createdAt)}</span>
+            <span>{tr("Submitted:")} {formatDateTime(record.createdAt)}</span>
             {(record.declaredMicrochip || record.horse?.microchip) && (
-              <span>Microchip: {record.declaredMicrochip || record.horse?.microchip}</span>
+              <span>{tr("Microchip:")} {record.declaredMicrochip || record.horse?.microchip}</span>
             )}
-            <span>Giấy tờ đính kèm: {photos.length} ảnh</span>
+            <span>{tr("Attached documents: {{count}} photo(s)", { count: photos.length })}</span>
           </div>
         </div>
 
         <div className={styles.headerActions}>
           {horseLink && (
             <LinkButton to={`/horses/${record.horseId}`} tone="secondary" size="sm" icon="eye">
-              Xem hồ sơ ngựa
+              {tr("View horse profile")}
             </LinkButton>
           )}
           {canEditSubmission && (
             <Button tone="secondary" size="sm" icon="edit" onClick={openEditModal}>
-              Bổ sung giấy tờ / Ghi chú
+              {tr("Add documents / Notes")}
             </Button>
           )}
           {canCancel && (
@@ -219,7 +217,7 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
                 setCancelOpen(true);
               }}
             >
-              Rút hồ sơ
+              {tr("Withdraw dossier")}
             </Button>
           )}
           {canReapply && (
@@ -229,7 +227,7 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
               size="sm"
               icon="refresh"
             >
-              Nộp lại hồ sơ
+              {tr("Resubmit dossier")}
             </LinkButton>
           )}
         </div>
@@ -237,7 +235,7 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
 
       <div className={styles.body}>
         {/* 4-step progress tracker */}
-        <ol className={styles.stepper} aria-label="Tiến độ xử lý hồ sơ">
+        <ol className={styles.stepper} aria-label={tr("Admission processing progress")}>
           {STEPS.map((step, idx) => {
             const st = stepState(idx);
             const cls =
@@ -254,8 +252,8 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
                   {st === "done" ? <Icon name="check" size={13} /> : idx + 1}
                 </span>
                 <div className={styles.stepLabel}>
-                  <strong>{step.title}</strong>
-                  <span>{step.sub}</span>
+                  <strong>{tr(step.title)}</strong>
+                  <span>{tr(step.sub)}</span>
                 </div>
               </li>
             );
@@ -264,8 +262,8 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
 
         {/* Contextual Alerts */}
         {record.capacityDeferredAt && record.status === "PENDING_VERIFICATION" && (
-          <Alert tone="warn" title="Tạm hoãn xếp lịch do CLB hết ô chuồng trống">
-            Hồ sơ của bạn được bảo lưu thứ tự ưu tiên từ {formatDateTime(record.capacityDeferredAt)}. Ngay khi có ô chuồng trống, Quản lý CLB sẽ liên hệ và xếp lịch hẹn mới cho bạn.
+          <Alert tone="warn" title={tr("Scheduling deferred because all club stalls are full")}>
+            {tr("Your priority queue position is preserved since {{time}}. As soon as a stall opens, the Club Manager will contact you to schedule an appointment.", { time: formatDateTime(record.capacityDeferredAt) })}
           </Alert>
         )}
 
@@ -274,28 +272,28 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
             tone={overdueDays >= 3 ? "danger" : "warn"}
             title={
               overdueDays >= 3
-                ? `Lịch hẹn đã quá hạn ${overdueDays} ngày`
-                : "Đã qua giờ hẹn tiếp nhận tại CLB"
+                ? tr("Appointment is {{days}} day(s) overdue", { days: overdueDays })
+                : tr("Appointment time has passed")
             }
           >
             {overdueDays >= 3
-              ? "Lịch hẹn đã quá hạn từ 3 ngày trở lên. Quản lý CLB có quyền hủy hồ sơ quá hạn — vui lòng liên hệ ngay để dời lịch hoặc nộp lại hồ sơ mới."
-              : "Bạn đã qua thời điểm hẹn mang ngựa tới CLB. Vui lòng liên hệ Quản lý CLB để dời lịch hẹn mới (hồ sơ có thể bị hủy nếu quá hạn từ 3 ngày trở lên)."}
+              ? tr("The appointment is 3 or more days overdue. The Club Manager may cancel overdue dossiers — please contact the club immediately to reschedule or submit a new application.")
+              : tr("Your scheduled arrival time has passed. Please contact the Club Manager to reschedule (dossiers overdue by 3+ days may be cancelled).")}
           </Alert>
         )}
 
         {record.status === "REJECTED" && (
-          <Alert tone="danger" title="Hồ sơ chưa đạt yêu cầu tiếp nhận">
-            <strong>Lý do từ CLB:</strong> {record.rejectionReason || "Chưa đạt tiêu chuẩn tiếp nhận."}
+          <Alert tone="danger" title={tr("Dossier did not meet admission requirements")}>
+            <strong>{tr("Reason from Club:")}</strong> {localizeServerText(record.rejectionReason) || tr("Did not meet admission standards.")}
             <div style={{ marginTop: "0.45rem" }}>
-              Bạn có thể khắc phục giấy tờ/sức khỏe theo phản hồi trên và bấm <strong>Nộp lại hồ sơ</strong> bất cứ lúc nào.
+              {tr("You can update the documents or health status based on this feedback and click")} <strong>{tr("Resubmit dossier")}</strong> {tr("at any time.")}
             </div>
           </Alert>
         )}
 
         {record.status === "APPROVED" && (
-          <Alert tone="ok" title="Chiến mã đã chính thức gia nhập CLB Thiên Mã!">
-            Hồ sơ được phê duyệt lúc {record.admittedAt ? formatDateTime(record.admittedAt) : formatDateTime(record.updatedAt)}. Chiến mã đã được tiếp nhận và bố trí khu chăm sóc tại CLB.
+          <Alert tone="ok" title={tr("Horse has officially joined Thien Ma Equestrian Club!")}>
+            {tr("Approved at {{time}}. The horse has been admitted and assigned a stall at the club.", { time: record.admittedAt ? formatDateTime(record.admittedAt) : formatDateTime(record.updatedAt) })}
           </Alert>
         )}
 
@@ -311,47 +309,47 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
           >
             <h4 className={styles.panelTitle}>
               <Icon name="calendar" size={16} />
-              Lịch hẹn &amp; Phản hồi từ CLB
+              {tr("Appointment & Club Feedback")}
             </h4>
 
             {record.appointmentDate ? (
               <>
                 <div className={styles.kvGrid}>
                   <div>
-                    <div className={styles.kvLabel}>Thời gian bắt đầu</div>
+                    <div className={styles.kvLabel}>{tr("Start time")}</div>
                     <div className={styles.kvValue}>{formatDateTime(record.appointmentDate)}</div>
                   </div>
                   <div>
-                    <div className={styles.kvLabel}>Kết thúc dự kiến</div>
+                    <div className={styles.kvLabel}>{tr("Estimated end")}</div>
                     <div className={styles.kvValue}>
-                      {record.appointmentEndDate ? formatDateTime(record.appointmentEndDate) : "Sau 60 phút"}
+                      {record.appointmentEndDate ? formatDateTime(record.appointmentEndDate) : tr("After 60 minutes")}
                     </div>
                   </div>
                   <div>
-                    <div className={styles.kvLabel}>Quản lý phụ trách</div>
+                    <div className={styles.kvLabel}>{tr("Assigned Manager")}</div>
                     <div className={styles.kvValue}>
-                      {record.manager?.fullName || "Quản lý CLB"}
+                      {record.manager?.fullName || tr("Club Manager")}
                     </div>
                   </div>
                   <div>
-                    <div className={styles.kvLabel}>Bác sĩ thú y tham gia</div>
+                    <div className={styles.kvLabel}>{tr("Examining Veterinarian")}</div>
                     <div className={styles.kvValue}>
-                      {record.veterinarian?.fullName || "Đang phân công"}
+                      {record.veterinarian?.fullName || tr("Assigning")}
                     </div>
                   </div>
                 </div>
                 {record.appointmentNotes && (
                   <div>
-                    <div className={styles.kvLabel}>Lời nhắn &amp; Hướng dẫn đón tiếp từ CLB</div>
-                    <p className={styles.noteQuote}>{record.appointmentNotes}</p>
+                    <div className={styles.kvLabel}>{tr("Club Notes & Reception Guidance")}</div>
+                    <p className={styles.noteQuote}>{localizeServerText(record.appointmentNotes)}</p>
                   </div>
                 )}
               </>
             ) : (
               <p className={styles.mutedText}>
                 {record.status === "PENDING_VERIFICATION"
-                  ? "CLB đã nhận tờ khai và giấy tờ đính kèm của bạn. Quản lý CLB sẽ xem ghi chú mong muốn và gửi lịch hẹn kèm hướng dẫn đón tiếp trong thời gian sớm nhất."
-                  : "Không có lịch hẹn đang hiệu lực cho hồ sơ này."}
+                  ? tr("The club has received your declaration and attached documents. The Club Manager will review your notes and send an appointment schedule soon.")
+                  : tr("No active appointment for this dossier.")}
               </p>
             )}
           </div>
@@ -360,27 +358,27 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
           <div className={styles.panel}>
             <h4 className={styles.panelTitle}>
               <Icon name="file" size={16} />
-              Tờ khai &amp; Mong muốn bạn đã nộp
+              {tr("Your Submitted Declaration & Preferences")}
             </h4>
             <div>
-              <div className={styles.kvLabel}>Ghi chú / Mong muốn của chủ ngựa</div>
+              <div className={styles.kvLabel}>{tr("Owner notes / preferences")}</div>
               {record.ownerNotes ? (
                 <p className={styles.noteQuote}>{record.ownerNotes}</p>
               ) : (
                 <p className={styles.mutedText}>
-                  Không có ghi chú thêm.{" "}
-                  {canEditSubmission && "Bạn có thể bấm “Bổ sung giấy tờ / Ghi chú” nếu muốn nhắn thêm lịch rảnh hoặc lưu ý cho CLB."}
+                  {tr("No additional notes.")}{" "}
+                  {canEditSubmission && tr("Click \"Add documents / Notes\" if you want to share preferred arrival times or care notes with the club.")}
                 </p>
               )}
             </div>
             <div>
               <div className={styles.kvLabel} style={{ marginBottom: 6 }}>
-                Ảnh giấy tờ pháp lý đã đính kèm ({photos.length})
+                {tr("Attached legal document photos ({{count}})", { count: photos.length })}
               </div>
               <LegalDocumentsGallery
                 photos={photos}
                 compact
-                emptyText="Chưa đính kèm ảnh giấy tờ pháp lý (bạn vẫn cần mang bản gốc khi đến thẩm định)."
+                emptyText={tr("No legal document photos attached (you still need to bring originals for inspection).")}
               />
             </div>
           </div>
@@ -395,17 +393,17 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
               onClick={() => setShowHistory((v) => !v)}
             >
               <Icon name="history" size={14} />
-              {showHistory ? "Ẩn nhật ký xử lý hồ sơ" : `Xem nhật ký xử lý hồ sơ (${record.history.length} mốc)`}
+              {showHistory ? tr("Hide dossier audit trail") : tr("View dossier audit trail ({{count}} events)", { count: record.history.length })}
             </button>
             {showHistory && (
               <ol className={styles.historyList}>
                 {record.history.map((log) => (
                   <li key={log.id} className={styles.historyItem}>
                     <div>
-                      <strong>{STATUS_META[log.toStatus]?.label ?? log.toStatus}</strong>
+                      <strong>{tr(STATUS_META[log.toStatus]?.label ?? log.toStatus)}</strong>
                       {log.actorName && <span> · {log.actorName}</span>}
                       {log.note && (
-                        <div style={{ color: "var(--ink-muted)", marginTop: 2 }}>{log.note}</div>
+                        <div style={{ color: "var(--ink-muted)", marginTop: 2 }}>{localizeServerText(log.note)}</div>
                       )}
                     </div>
                     <time className={styles.historyTime}>{formatDateTime(log.createdAt)}</time>
@@ -420,26 +418,26 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
       {/* Edit / Supplement Modal (PENDING_VERIFICATION only) */}
       {editOpen && (
         <Modal
-          title={`Bổ sung hồ sơ — ${record.admissionCode}`}
-          subtitle="Cập nhật ghi chú mong muốn và ảnh giấy tờ pháp lý trước khi CLB chốt lịch hẹn"
+          title={tr("Supplement Dossier — {{code}}", { code: record.admissionCode })}
+          subtitle={tr("Update preferred notes and legal document photos before the club schedules the appointment")}
           width={680}
           onClose={() => !savingEdit && setEditOpen(false)}
         >
           <div className={styles.modalStack}>
             <Field
-              label="Ghi chú / Mong muốn gửi CLB"
-              hint="Ví dụ: khung giờ thuận tiện mang ngựa đến, tính cách ngựa, lưu ý dinh dưỡng hoặc mục tiêu nuôi/tập."
+              label={tr("Notes / Preferences for the Club")}
+              hint={tr("e.g., preferred arrival window, horse temperament, nutrition or training goals.")}
             >
               <Textarea
                 rows={4}
                 maxLength={1000}
                 value={draftNotes}
                 onChange={(e) => setDraftNotes(e.target.value)}
-                placeholder="Nhập ghi chú mong muốn gửi Quản lý CLB..."
+                placeholder={tr("Enter notes or preferences for the Club Manager...")}
                 disabled={savingEdit}
               />
             </Field>
-            <Field label="Ảnh giấy tờ pháp lý đính kèm (tối đa 3 ảnh)">
+            <Field label={tr("Attached legal document photos (up to 3 photos)")}>
               <LegalDocumentsUploader
                 value={draftPhotos}
                 onChange={setDraftPhotos}
@@ -453,14 +451,14 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
             {editError && <Alert tone="danger">{editError}</Alert>}
             <div className={styles.modalActions}>
               <Button tone="secondary" disabled={savingEdit} onClick={() => setEditOpen(false)}>
-                Hủy
+                {tr("Cancel")}
               </Button>
               <Button
                 tone="primary"
                 disabled={savingEdit || uploadBusy}
                 onClick={() => void saveSubmissionEdits()}
               >
-                {savingEdit ? "Đang lưu..." : "Lưu cập nhật hồ sơ"}
+                {savingEdit ? tr("Saving...") : tr("Save dossier updates")}
               </Button>
             </div>
           </div>
@@ -470,7 +468,7 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
       {/* Cancel Admission Modal */}
       {cancelOpen && (
         <Modal
-          title="Rút / Hủy hồ sơ đăng ký tiếp nhận"
+          title={tr("Withdraw / Cancel Admission Dossier")}
           subtitle={`${record.horse?.name || ""} · ${record.admissionCode}`}
           tone="danger"
           width={480}
@@ -478,23 +476,23 @@ export function OwnerAdmissionDossierCard({ record, horseLink = false, onUpdated
         >
           <div className={styles.modalStack}>
             <p style={{ margin: 0, fontSize: "0.9rem", color: "var(--ink-muted)" }}>
-              Bạn có chắc chắn muốn rút hồ sơ này? Nếu đã có lịch hẹn, lịch làm việc của Quản lý và Bác sĩ sẽ tự động được giải phóng. Bạn vẫn có thể nộp lại hồ sơ sau này.
+              {tr("Are you sure you want to withdraw this dossier? If an appointment was scheduled, the Manager and Veterinarian schedules will be freed automatically. You can resubmit later.")}
             </p>
-            <Field label="Lý do rút hồ sơ (tùy chọn)">
+            <Field label={tr("Withdrawal reason (optional)")}>
               <Input
                 value={cancelReason}
                 onChange={(e) => setCancelReason(e.target.value)}
-                placeholder="Ví dụ: Thay đổi kế hoạch vận chuyển ngựa..."
+                placeholder={tr("e.g., Transport schedule changed...")}
                 disabled={cancelling}
               />
             </Field>
             {cancelError && <Alert tone="danger">{cancelError}</Alert>}
             <div className={styles.modalActions}>
               <Button tone="secondary" disabled={cancelling} onClick={() => setCancelOpen(false)}>
-                Đóng
+                {tr("Close")}
               </Button>
               <Button tone="danger" disabled={cancelling} onClick={() => void confirmCancel()}>
-                {cancelling ? "Đang xử lý..." : "Xác nhận rút hồ sơ"}
+                {cancelling ? tr("Processing...") : tr("Confirm withdrawal")}
               </Button>
             </div>
           </div>

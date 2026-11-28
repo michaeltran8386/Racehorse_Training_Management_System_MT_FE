@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
@@ -17,9 +18,10 @@ import { ApiError } from "@/shared/lib/api";
 import { todayClub, trainingApi } from "../api";
 import { TRACK_LABEL } from "../types";
 import type { ExerciseSession, TrainingPlan } from "../types";
+import { SimulationOverlay } from "@/features/simulation/components/SimulationOverlay";
 import { WorkoutDialog } from "../components/WorkoutDialogs";
 import { useAllowEarlyStart } from "../components/useAllowEarlyStart";
-import { sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
+import { isSimulatedAwaitingResult, sessionButtons, sessionStatusLabel, sessionStatusTone } from "../components/sessionRules";
 
 import { tr } from "@/shared/i18n/tr";
 import styles from "./TrialRunsPage.module.css";
@@ -48,6 +50,7 @@ export default function TrialRunsPage() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [launchingId, setLaunchingId] = useState<string | null>(null);
+  const [embeddedSim, setEmbeddedSim] = useState<{ workoutId: string; sessionId: string } | null>(null);
 
   const canManage = user.role === "HEAD_TRAINER" || user.role === "CLUB_MANAGER";
 
@@ -70,14 +73,8 @@ export default function TrialRunsPage() {
     [from, to, toast],
   );
 
-  // Quay lại từ tab Simulator: tải lại lặng lẽ (không hiện khung chờ) để trạng thái mô phỏng cập nhật ngay.
-  useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState !== "visible") return;
-      trainingApi.getTrialRuns({ from, to }).then(setTrials).catch(() => undefined);
-    };
-    document.addEventListener("visibilitychange", refresh);
-    return () => document.removeEventListener("visibilitychange", refresh);
+  const refreshTrials = useCallback(() => {
+    trainingApi.getTrialRuns({ from, to }).then(setTrials).catch(() => undefined);
   }, [from, to]);
 
   useEffect(() => {
@@ -98,18 +95,12 @@ export default function TrialRunsPage() {
   };
 
   const launchSimulation = async (workoutId: string) => {
-    const popup = window.open("about:blank", "_blank");
-    if (!popup) {
-      toast.show(tr("Please allow pop-ups to open the simulation."), "danger");
-      return;
-    }
-    popup.opener = null;
+    if (embeddedSim || launchingId) return;
     setLaunchingId(workoutId);
     try {
-      const { launchUrl } = await trainingApi.startSimulation(workoutId);
-      popup.location.replace(launchUrl);
+      const { sessionId } = await trainingApi.startSimulation(workoutId);
+      setEmbeddedSim({ workoutId, sessionId });
     } catch (err) {
-      popup.close();
       const notStarted = err instanceof ApiError && err.code === "WORKOUT_NOT_STARTED";
       toast.show(notStarted ? tr("The workout has not reached its scheduled start time.") : messageFor(err), "danger");
     } finally {
@@ -173,14 +164,14 @@ export default function TrialRunsPage() {
           <Card key={key} pad={20}>
             <h2 className={styles.groupTitle}>{key}</h2>
             <div style={{ overflowX: "auto" }}>
-              <table className={styles.table} style={{ tableLayout: "fixed", minWidth: 760 }}>
+              <table className={styles.table} style={{ tableLayout: "fixed", minWidth: 820 }}>
                 {/* Cố định độ rộng cột để các nhóm ngày thẳng hàng với nhau */}
                 <colgroup>
-                  <col style={{ width: "14%" }} />
-                  <col style={{ width: "24%" }} />
-                  <col style={{ width: "24%" }} />
-                  <col style={{ width: "18%" }} />
-                  <col style={{ width: "20%" }} />
+                  <col style={{ width: "11%" }} />
+                  <col style={{ width: "21%" }} />
+                  <col style={{ width: "23%" }} />
+                  <col style={{ width: "17%" }} />
+                  <col style={{ width: "28%" }} />
                 </colgroup>
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--surface-sunken)" }}>
@@ -193,7 +184,7 @@ export default function TrialRunsPage() {
                 </thead>
                 <tbody>
                   {rows.map((row) => {
-                    const upcoming = row.status === "SCHEDULED" && Date.parse(row.scheduledAt) > Date.now();
+                    const upcoming = row.status === "SCHEDULED" && Date.parse(row.scheduledAt) > effectiveClubNow().getTime();
                     const actions = sessionButtons(row, user.role, allowEarly);
                     return (
                       <tr key={row.id} style={{ borderBottom: "1px solid var(--border)" }}>
@@ -210,44 +201,66 @@ export default function TrialRunsPage() {
                           </Badge>
                         </td>
                         <td style={{ padding: "0.5rem 0.75rem", textAlign: "right" }}>
-                          <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: "0.5rem" }}>
-                            {user.role === "HEAD_TRAINER" &&
+                          {(() => {
+                            const canRunSim =
+                              user.role === "HEAD_TRAINER" &&
                               row.status === "SCHEDULED" &&
                               // Đã mô phỏng xong / dừng vì chấn thương thì không chạy lại được (BE trả SIMULATOR_SESSION_FINISHED).
                               row.simulationStatus !== "COMPLETED" &&
                               row.simulationStatus !== "ABORTED_INJURY" &&
-                              plans.some((p) => p.id === row.planId) && (
-                                <div>
+                              plans.some((p) => p.id === row.planId);
+                            const recordTone =
+                              row.status === "COMPLETED"
+                                ? "secondary"
+                                : isSimulatedAwaitingResult(row) || !canRunSim
+                                  ? "primary"
+                                  : "secondary";
+                            return (
+                              <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: "0.5rem" }}>
+                                {canRunSim && (
+                                  <div>
+                                    <Button
+                                      size="sm"
+                                      tone="primary"
+                                      // Chưa tới giờ thì khóa, trừ khi BE bật cờ dev SIMULATOR_ALLOW_EARLY.
+                                      disabled={launchingId === row.id || Boolean(embeddedSim) || row.isHorseLocked || (upcoming && !allowEarly)}
+                                      title={
+                                        row.isHorseLocked
+                                          ? tr("The horse is still under a Training Lock.")
+                                          : upcoming && !allowEarly
+                                            ? tr("The workout has not reached its scheduled start time.")
+                                            : undefined
+                                      }
+                                      onClick={() => void launchSimulation(row.id)}
+                                    >
+                                      {launchingId === row.id
+                                        ? tr("Opening…")
+                                        : isVietnamese
+                                          ? "Chạy mô phỏng"
+                                          : tr("Run simulation")}
+                                    </Button>
+                                  </div>
+                                )}
+                                {(actions.record || actions.viewResult) && (
+                                  <LinkButton to={`/training/sessions/${row.id}/result`} size="sm" tone={recordTone}>
+                                    {row.status === "COMPLETED"
+                                      ? (isVietnamese ? "Xem kết quả" : tr("View result"))
+                                      : (isVietnamese ? "Ghi kết quả" : tr("Record result"))}
+                                  </LinkButton>
+                                )}
+                                {!actions.record && actions.recordDisabledReason && (
                                   <Button
                                     size="sm"
-                                    tone="primary"
-                                    // Chưa tới giờ thì khóa, trừ khi BE bật cờ dev SIMULATOR_ALLOW_EARLY.
-                                    disabled={launchingId === row.id || row.isHorseLocked || (upcoming && !allowEarly)}
-                                    title={
-                                      row.isHorseLocked
-                                        ? tr("The horse is still under a Training Lock.")
-                                        : upcoming && !allowEarly
-                                          ? tr("The workout has not reached its scheduled start time.")
-                                          : undefined
-                                    }
-                                    onClick={() => void launchSimulation(row.id)}
+                                    tone="secondary"
+                                    disabled
+                                    title={isVietnamese ? `Chưa đến giờ bắt đầu (${row.startTime} ngày ${row.sessionDate})` : tr("Workout has not started yet")}
                                   >
-                                    {launchingId === row.id
-                                      ? tr("Opening…")
-                                      : isVietnamese
-                                        ? "Chạy mô phỏng"
-                                        : tr("Run simulation")}
+                                    {isVietnamese ? "Ghi kết quả" : tr("Record result")}
                                   </Button>
-                                </div>
-                              )}
-                            {(actions.record || actions.viewResult) && (
-                              <LinkButton to={`/training/sessions/${row.id}/result`} size="sm" tone={row.status === "COMPLETED" ? "secondary" : "primary"}>
-                                {row.status === "COMPLETED"
-                                  ? (isVietnamese ? "Xem kết quả" : tr("View result"))
-                                  : (isVietnamese ? "Ghi kết quả" : tr("Record result"))}
-                              </LinkButton>
-                            )}
-                          </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </td>
                       </tr>
                     );
@@ -257,6 +270,20 @@ export default function TrialRunsPage() {
             </div>
           </Card>
         ))
+      )}
+
+      {embeddedSim && user.role === "HEAD_TRAINER" && (
+        <SimulationOverlay
+          sessionId={embeddedSim.sessionId}
+          mode="WORKOUT"
+          onClose={() => {
+            setEmbeddedSim(null);
+            refreshTrials();
+          }}
+          onComplete={() => {
+            refreshTrials();
+          }}
+        />
       )}
 
       {isScheduleOpen && (

@@ -101,7 +101,7 @@ export function OtpVerifyForm({ email, purpose, initialCode, sentTitle, sentBody
     try {
       setTimes(await resendOtp(email, purpose));
       setCode("");
-      toast.show("A new code was sent.", "ok");
+      toast.show(tr("A new code was sent."), "ok");
     } catch (err) {
       if (doneCode(err)) {
         setDone(doneCode(err));

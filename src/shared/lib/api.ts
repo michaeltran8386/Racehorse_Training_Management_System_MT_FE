@@ -85,16 +85,6 @@ async function request<T>(
   if (body !== undefined) headers["Content-Type"] = "application/json";
   const accessToken = getTokens()?.accessToken;
   if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-  if (import.meta.env.DEV && !path.startsWith("/demo-data")) {
-    try {
-      const demoDate = localStorage.getItem("equiflow_demo_date");
-      if (demoDate && /^\d{4}-\d{2}-\d{2}$/.test(demoDate)) {
-        headers["X-Demo-Date"] = demoDate;
-      }
-    } catch {
-      // ignore storage errors
-    }
-  }
 
   let res: Response;
   try {

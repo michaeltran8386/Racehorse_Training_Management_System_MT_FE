@@ -76,10 +76,10 @@ export function CreateAccountModal({ onClose, onCreated }: CreateAccountModalPro
     if (!mail) found.email = tr("Email is required.");
     else if (!EMAIL_RE.test(mail)) found.email = tr("Email must be a @gmail.com address.");
     if (role === "HEAD_TRAINER" && !assignedBarnId) {
-      found.barn = "Vui lòng chọn 1 vị trí ghế trống cho Huấn luyện viên trưởng.";
+      found.barn = tr("Please select 1 open slot for the Head Trainer.");
     }
     if (role === "GROOM" && !assignedBarnId) {
-      found.barn = "Vui lòng chọn 1 vị trí ghế trống cho nhân viên Groom.";
+      found.barn = tr("Please select 1 open slot for the Groom.");
     }
     if (found.name || found.email || found.barn) return setErrors(found);
 

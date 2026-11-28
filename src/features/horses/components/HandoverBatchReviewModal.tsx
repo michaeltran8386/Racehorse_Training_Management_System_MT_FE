@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Modal } from "@/shared/components/ui/Modal";
 import { Button } from "@/shared/components/ui/Button";
 import { Badge } from "@/shared/components/ui/Badge";
 import { Alert } from "@/shared/components/ui/Alert";
 import { Icon } from "@/shared/components/ui/Icon";
+import { useToast } from "@/shared/components/ui/Toast";
+import { tr } from "@/shared/i18n/tr";
 import { HorseAvatar } from "@/features/horses/components/HorseAvatar";
 import { respondHandover } from "@/features/horses/api";
 import { formatDate } from "@/shared/lib/format";
@@ -52,6 +55,8 @@ export function HandoverBatchReviewModal({
   handovers,
   onSuccess,
 }: HandoverBatchReviewModalProps) {
+  useTranslation();
+  const toast = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
@@ -71,13 +76,14 @@ export function HandoverBatchReviewModal({
         )
       );
 
-      alert(
-        `✓ Đã tiếp nhận bàn giao thành công ${handovers.length} chiến mã! Bạn đã kế thừa toàn bộ giáo án và lịch tập từ 00:00 ngày mai.`
+      toast.show(
+        tr("Accepted handover for {{count}} horse(s) successfully! All training plans and schedules transfer at 00:00 tomorrow.", { count: handovers.length }),
+        "ok",
       );
       onSuccess();
       onClose();
     } catch (err: any) {
-      setError(err?.message || "Không thể hoàn tất xác nhận bàn giao.");
+      setError(err?.message || tr("Unable to complete handover confirmation."));
     } finally {
       setSubmitting(false);
     }
@@ -85,17 +91,17 @@ export function HandoverBatchReviewModal({
 
   return (
     <Modal
-      title={`Xác Nhận Tiếp Nhận Bàn Giao Chiến Mã (${handovers.length})`}
-      subtitle="Đọc và xác nhận tiếp nhận giáo án huấn luyện từ Huấn luyện viên tiền nhiệm"
+      title={tr("Confirm Horse Handover ({{count}})", { count: handovers.length })}
+      subtitle={tr("Review and confirm takeover of training plans from the previous Head Trainer")}
       width={740}
       onClose={onClose}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
         {error && <Alert tone="danger">{error}</Alert>}
 
-        <Alert tone="warn" title="Nguyên Tắc Bàn Giao & An Toàn Vận Hành">
-          Các buổi tập trong ngày hôm nay vẫn do Huấn luyện viên cũ phụ trách hoàn thành. 
-          Quyền điều hành giáo án và các buổi tập của bạn sẽ chính thức có hiệu lực từ <strong>00:00 ngày mai</strong>.
+        <Alert tone="warn" title={tr("Handover & Operational Safety Principle")}>
+          {tr("Today's workouts remain the responsibility of the previous Head Trainer. Your control of the training plans and schedules officially takes effect at")}{" "}
+          <strong>{tr("00:00 tomorrow")}</strong>.
         </Alert>
 
         <div style={{ display: "flex", flexDirection: "column", gap: "14px", maxHeight: "460px", overflowY: "auto", paddingRight: "4px" }}>
@@ -129,16 +135,16 @@ export function HandoverBatchReviewModal({
                         <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>({h.horseCode})</span>
                       </div>
                       <div style={{ fontSize: "12.5px", color: "var(--brand, #2563eb)", marginTop: "2px" }}>
-                        Ô chuồng: <strong>{stall?.code || "Chưa xếp"}</strong> {stall?.zone ? `· ${stall.zone}` : ""}
+                        {tr("Stall:")} <strong>{stall?.code || tr("Unassigned")}</strong> {stall?.zone ? `· ${stall.zone}` : ""}
                         {req.fromManager && (
                           <span style={{ color: "var(--text-muted)", marginLeft: "8px" }}>
-                            · Quản lý phân công: {req.fromManager.fullName}
+                            · {tr("Assigned by Manager:")} {req.fromManager.fullName}
                           </span>
                         )}
                       </div>
                     </div>
                   </div>
-                  <Badge tone="ok">Chờ tiếp nhận</Badge>
+                  <Badge tone="ok">{tr("Pending acceptance")}</Badge>
                 </div>
 
                 {/* Khối Đọc Tóm Tắt Giáo Án (Plan Preview Box) */}
@@ -157,18 +163,18 @@ export function HandoverBatchReviewModal({
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <Icon name="file-text" size={16} />
                       <strong style={{ fontSize: "13.5px", color: "var(--ink)" }}>
-                        {plan ? `${plan.planCode}: ${plan.objective || plan.phaseName}` : "Chưa có giáo án đang áp dụng"}
+                        {plan ? `${plan.planCode}: ${plan.objective || plan.phaseName}` : tr("No active training plan yet")}
                       </strong>
                     </div>
                     {plan?.phaseName && (
-                      <Badge tone="info">Giai đoạn: {plan.phaseName}</Badge>
+                      <Badge tone="info">{tr("Phase:")} {plan.phaseName}</Badge>
                     )}
                   </div>
 
                   {plan && (
                     <div style={{ display: "flex", gap: "16px", fontSize: "12.5px", color: "var(--text-muted)", flexWrap: "wrap" }}>
-                      <span>Cự ly mục tiêu: <strong>{plan.targetDistance ? `${plan.targetDistance.toLocaleString()} m/tuần` : "Theo bài tập"}</strong></span>
-                      <span>Tần suất dự kiến: <strong>{workouts.length > 0 ? `${workouts.length} buổi sắp tới` : "3 buổi/tuần"}</strong></span>
+                      <span>{tr("Target distance:")} <strong>{plan.targetDistance ? tr("{{dist}} m/week", { dist: plan.targetDistance.toLocaleString() }) : tr("By workout")}</strong></span>
+                      <span>{tr("Expected frequency:")} <strong>{workouts.length > 0 ? tr("{{count}} upcoming session(s)", { count: workouts.length }) : tr("3 sessions/week")}</strong></span>
                     </div>
                   )}
 
@@ -176,7 +182,7 @@ export function HandoverBatchReviewModal({
                   {workouts.length > 0 ? (
                     <div style={{ marginTop: "4px" }}>
                       <div style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-2)", marginBottom: "4px" }}>
-                        Các buổi tập sắp tới từ ngày mai:
+                        {tr("Upcoming sessions starting tomorrow:")}
                       </div>
                       <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
                         {workouts.map((w) => (
@@ -191,21 +197,21 @@ export function HandoverBatchReviewModal({
                               border: "1px solid rgba(37, 99, 235, 0.2)",
                             }}
                           >
-                            📅 {formatDate(w.scheduledDate)}: {w.workoutType || "Bài tập"} {w.distanceMeters ? `(${w.distanceMeters}m)` : ""}
+                            📅 {formatDate(w.scheduledDate)}: {w.workoutType ? tr(w.workoutType) : tr("Workout")} {w.distanceMeters ? `(${w.distanceMeters}m)` : ""}
                           </span>
                         ))}
                       </div>
                     </div>
                   ) : (
                     <div style={{ fontSize: "12px", color: "var(--text-muted)", fontStyle: "italic" }}>
-                      Chưa có lịch tập trong những ngày tới. Bạn sẽ lập lịch tập mới sau khi tiếp nhận.
+                      {tr("No upcoming workouts scheduled yet. You can schedule new sessions after accepting.")}
                     </div>
                   )}
                 </div>
 
                 {req.notes && (
                   <div style={{ fontSize: "12px", color: "var(--text-muted)", fontStyle: "italic" }}>
-                    💬 Ghi chú bàn giao: "{req.notes}"
+                    💬 {tr("Handover notes:")} "{req.notes}"
                   </div>
                 )}
               </div>
@@ -224,11 +230,11 @@ export function HandoverBatchReviewModal({
           >
             <Icon name="check-circle" size={18} />
             {submitting
-              ? "Đang hoàn tất tiếp nhận..."
-              : `✓ Tôi đã đọc giáo án & Xác nhận tiếp nhận ${handovers.length} chiến mã`}
+              ? tr("Completing takeover...")
+              : tr("✓ I have reviewed the plan(s) & Confirm handover of {{count}} horse(s)", { count: handovers.length })}
           </Button>
           <div style={{ textAlign: "center", fontSize: "12px", color: "var(--text-muted)" }}>
-            Thao tác này là nghĩa vụ bàn giao hành chính bắt buộc của Huấn luyện viên trưởng trong Barn.
+            {tr("This administrative handover acknowledgment is mandatory for Head Trainers in the Barn.")}
           </div>
         </div>
       </div>

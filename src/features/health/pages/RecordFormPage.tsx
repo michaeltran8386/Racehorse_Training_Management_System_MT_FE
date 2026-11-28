@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { SimulationOverlay } from "@/features/simulation/components/SimulationOverlay";
 import { useTranslation as useScreenTranslation } from "react-i18next";
@@ -72,7 +73,7 @@ const LEGACY_PROPOSED_STATUS_LABELS: Record<string, string> = {
 };
 
 function getInitialExamDate(): string {
-  const now = new Date();
+  const now = effectiveClubNow();
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
 }
@@ -319,7 +320,7 @@ export default function RecordFormPage() {
       ...labTests,
       {
         testType: "Blood Test",
-        testDate: new Date().toISOString().split("T")[0],
+        testDate: effectiveClubNow().toISOString().split("T")[0],
         result: "",
       },
     ]);
@@ -361,7 +362,7 @@ export default function RecordFormPage() {
       errs.examinationDate = tr("Please enter an examination date.");
     } else {
       const examTime = new Date(examinationDate).getTime();
-      const nowTime = Date.now();
+      const nowTime = effectiveClubNow().getTime();
       // Allow 5 minutes leeway for clock skew
       if (examTime > nowTime + 5 * 60 * 1000) {
         errs.examinationDate = tr("Examination date cannot be in the future.");
@@ -602,7 +603,7 @@ export default function RecordFormPage() {
           setRestingHeartRate(draft.restingHeartRate ?? undefined);
           setRespiratoryRate(draft.respiratoryRate ?? undefined);
           if (typeof draft.weightKg === "number" && Number.isFinite(draft.weightKg)) setWeightKg(draft.weightKg);
-          setExamSource(`${draft.modelVersion || "TMEC 2D"} · ${new Date(draft.capturedAt || Date.now()).toLocaleString()}`);
+          setExamSource(`${draft.modelVersion || "TMEC 2D"} · ${new Date(draft.capturedAt || effectiveClubNow().getTime()).toLocaleString()}`);
           setDirty(true);
           if (!silent) {
             toast.show(tr("Simulator measurements loaded. Review them before saving."), "ok");
