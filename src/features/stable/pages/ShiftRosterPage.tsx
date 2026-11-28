@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { api } from "@/shared/lib/api";
 import { ShiftSwapRequestModal } from "../components/ShiftSwapRequestModal";
 import { useTranslation as useScreenTranslation } from "react-i18next";
@@ -75,7 +76,7 @@ function nameInitials(name: string, fallback: string): string {
 }
 
 function clubTodayDate() {
-  return new Date(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date()) + 'T12:00:00');
+  return new Date(new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(effectiveClubNow()) + 'T12:00:00');
 }
 
 function formatYMD(d: Date): string {
@@ -559,7 +560,7 @@ function WeeklyShiftRosterPage() {
         {responsibleVets.length ? responsibleVets.map(vet => <p key={vet.id}><strong>{vet.fullName}</strong> · {vet.horses.map(h => h.name).join(', ')}</p>) : <p>{tr('No veterinarian is assigned to an open record for your horses.')}</p>}
       </section>}
       {isGroom && <Alert tone="info" title={tr('Your weekly roster')}>
-        {myShifts.filter(row => row.date.slice(0, 10) === new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(new Date())).map(row => <p key={row.id}>{row.shift.name} · {row.zone.name}</p>)}
+        {myShifts.filter(row => row.date.slice(0, 10) === new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }).format(effectiveClubNow())).map(row => <p key={row.id}>{row.shift.name} · {row.zone.name}</p>)}
         <Link to="/stable/my-shift">{tr('Open today’s checklist')}</Link>
       </Alert>}
       <PageHeader

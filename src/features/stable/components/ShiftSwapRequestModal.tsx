@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '@/shared/lib/api';
@@ -16,7 +17,7 @@ export const rosterStartsAt=(row:ShiftRosterItem)=>new Date(`${row.date.slice(0,
 const describe=(row:ShiftRosterItem)=>`${row.date.slice(0,10)} · ${row.shift.name} · ${row.zone.name} · ${row.groom.fullName}`;
 export function ShiftSwapRequestModal({selected,rosters,onClose}:{selected:ShiftRosterItem;rosters:ShiftRosterItem[];onClose:()=>void}) {
   const user=useCurrentUser();
-  const [now,setNow]=useState(Date.now);
+  const [now,setNow]=useState(() => effectiveClubNow().getTime());
   const own=selected.groomUserId===user.id;
   const choices=rosters.filter(row=>row.groomUserId===user.id && rosterStartsAt(row)>now);
   const [sourceId,setSourceId]=useState(own?selected.id:choices.length===1?choices[0].id:'');
@@ -25,7 +26,7 @@ export function ShiftSwapRequestModal({selected,rosters,onClose}:{selected:Shift
   const [people,setPeople]=useState<Array<{id:string;fullName:string}>>([]);
   const [reason,setReason]=useState('');const [error,setError]=useState('');const [notice,setNotice]=useState('');
   const [loading,setLoading]=useState(false);const [busy,setBusy]=useState(false);
-  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),15000);return()=>clearInterval(timer);},[]);
+  useEffect(()=>{const timer=setInterval(()=>setNow(effectiveClubNow().getTime()),15000);return()=>clearInterval(timer);},[]);
   useEffect(()=>{
     if(targetMode!=='cover'||!sourceId){setLoading(false);return;}
     let active=true;setLoading(true);setError('');setPeople([]);setTargetId('');
@@ -36,7 +37,7 @@ export function ShiftSwapRequestModal({selected,rosters,onClose}:{selected:Shift
   const available=rosterStartsAt(selected)>now && !!source && rosterStartsAt(source)>now;
   const targets=rosters.filter(row=>row.groomUserId!==user.id && rosterStartsAt(row)>now);
   async function submit(e:React.FormEvent){
-    e.preventDefault();if(busy||!source||!targetId||!reason.trim()||rosterStartsAt(source)<=Date.now()||rosterStartsAt(selected)<=Date.now())return;
+    e.preventDefault();if(busy||!source||!targetId||!reason.trim()||rosterStartsAt(source)<=effectiveClubNow().getTime()||rosterStartsAt(selected)<=effectiveClubNow().getTime())return;
     setBusy(true);setError('');
     try{const result=await api<{requested:boolean}>('POST',`/shift-rosters/${source.id}/swap-request`,{reason:reason.trim(),...(targetMode==='cover'?{targetGroomUserId:targetId}:{targetRosterId:targetId})});
       if(!result.requested)throw new Error('Request was not recorded.');

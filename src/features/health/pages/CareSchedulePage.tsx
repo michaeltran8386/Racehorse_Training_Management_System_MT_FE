@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
@@ -113,7 +114,7 @@ export default function CareSchedulePage() {
 
   // Record Completion Modal (DL-3.12)
   const [selectedCare, setSelectedCare] = useState<PreventiveCareItem | null>(null);
-  const [adminDate, setAdminDate] = useState<string>(() => new Date().toISOString().split("T")[0]);
+  const [adminDate, setAdminDate] = useState<string>(() => effectiveClubNow().toISOString().split("T")[0]);
   const [adminBy, setAdminBy] = useState<string>(user?.fullName || "");
   const [performedByMode, setPerformedByMode] = useState<"SELF" | "EXTERNAL">("SELF");
   const [nextDue, setNextDue] = useState<string>("");
@@ -185,7 +186,7 @@ export default function CareSchedulePage() {
       toast.show(tr("Please select a due date."), "danger");
       return;
     }
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = effectiveClubNow().toISOString().split("T")[0];
     if (createDueDate < todayStr) {
       toast.show(tr("Due date must be today or in the future."), "danger");
       return;
@@ -211,9 +212,9 @@ export default function CareSchedulePage() {
   };
 
   const handleOpenCompleteModal = (care: PreventiveCareItem) => {
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = effectiveClubNow().toISOString().split("T")[0];
     const interval = DEFAULT_INTERVAL_DAYS[care.category] || 180;
-    const nextDateObj = new Date(Date.now() + interval * 24 * 60 * 60 * 1000);
+    const nextDateObj = new Date(effectiveClubNow().getTime() + interval * 24 * 60 * 60 * 1000);
     const defaultNextDue = nextDateObj.toISOString().split("T")[0];
 
     setSelectedCare(care);
@@ -570,7 +571,7 @@ export default function CareSchedulePage() {
               <Field label={tr("Due Date *")}>
                 <Input
                   type="date"
-                  min={new Date().toISOString().split("T")[0]}
+                  min={effectiveClubNow().toISOString().split("T")[0]}
                   value={createDueDate}
                   onChange={(e) => setCreateDueDate(e.target.value)}
                 />

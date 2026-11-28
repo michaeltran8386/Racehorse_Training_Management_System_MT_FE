@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Field } from "@/shared/components/form/Field";
@@ -16,7 +17,7 @@ interface AddFollowUpModalProps {
 
 export function AddFollowUpModal({ onClose, onSubmit }: AddFollowUpModalProps) {
   const [followUpDate, setFollowUpDate] = useState(() => {
-    const now = new Date();
+    const now = effectiveClubNow();
     return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
   });
   const [temperature, setTemperature] = useState("");

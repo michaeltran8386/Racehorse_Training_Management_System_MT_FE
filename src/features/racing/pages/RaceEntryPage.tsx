@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { SimulationOverlay } from "@/features/simulation/components/SimulationOverlay";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
@@ -148,7 +149,7 @@ export default function RaceEntryPage() {
     const syncFromSimulator = () => {
       const pending = launchedSimRef.current;
       if (!pending || document.visibilityState === "hidden") return;
-      const now = Date.now();
+      const now = effectiveClubNow().getTime();
       if (now - lastSimSyncRef.current < 800) return;
       lastSimSyncRef.current = now;
 

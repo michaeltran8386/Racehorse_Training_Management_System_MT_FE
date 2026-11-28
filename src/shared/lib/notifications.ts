@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import type { Role } from "@/shared/types/enums";
 import { api } from "@/shared/lib/api";
 import { isVietnamese, localizeServerText, tr } from "@/shared/i18n/tr";
@@ -198,7 +199,7 @@ export function subscribeNotifications(onChange: () => void): () => void {
 
 export function formatTimeAgo(isoString: string): string {
   try {
-    const diffMs = Date.now() - new Date(isoString).getTime();
+    const diffMs = effectiveClubNow().getTime() - new Date(isoString).getTime();
     const diffSec = Math.floor(diffMs / 1000);
     const vi = isVietnamese();
     if (diffSec < 60) return vi ? "Vừa xong" : "Just now";
@@ -218,7 +219,7 @@ export function formatTimeAgo(isoString: string): string {
 export function isToday(isoString: string): boolean {
   try {
     const date = new Date(isoString);
-    const today = new Date();
+    const today = effectiveClubNow();
     return (
       date.getDate() === today.getDate() &&
       date.getMonth() === today.getMonth() &&

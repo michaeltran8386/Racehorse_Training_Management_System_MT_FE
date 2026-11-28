@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -21,10 +22,10 @@ import styles from './WorkOverviewPage.module.css';
 const roleLabel: Record<string, string> = { CLUB_MANAGER: 'Manager', VETERINARIAN: 'Veterinarian', GROOM: 'Care Staff' };
 const kindLabel: Record<string, string> = { ADMISSION: 'Joint Inspection', SHIFT: 'Groom Shift', CARE: 'Care Task', PREVENTIVE: 'Preventive Care', MEDICAL: 'Clinical / Record', OTHER: 'Other Work' };
 const stateLabel: Record<string, string> = { PENDING: 'Pending update', IN_PROGRESS: 'In progress', COMPLETED: 'Completed' };
-const clubDay = (value = new Date()) => new Date(value.getTime() + 7 * 3600000).toISOString().slice(0, 10);
+const clubDay = (value = effectiveClubNow()) => new Date(value.getTime() + 7 * 3600000).toISOString().slice(0, 10);
 const shiftDay = (day: string, offset: number) => new Date(new Date(`${day}T00:00:00Z`).getTime() + offset * 86400000).toISOString().slice(0, 10);
 const clock = (date: string, locale: string) => new Date(date).toLocaleTimeString(locale, { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' });
-const isOverdue = (e: WorkEvent) => e.kind !== 'SHIFT' && e.status !== 'COMPLETED' && Date.parse(e.endsAt) < Date.now();
+const isOverdue = (e: WorkEvent) => e.kind !== 'SHIFT' && e.status !== 'COMPLETED' && Date.parse(e.endsAt) < effectiveClubNow().getTime();
 const isUnassigned = (e: WorkEvent) => !e.userIds.length || (e.kind === 'ADMISSION' && e.userIds.length < 2);
 
 export default function WorkOverviewPage() {

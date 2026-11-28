@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -317,7 +318,7 @@ export default function InjuryMapPage() {
         severity: formSeverity,
         stage: formStage || (formSeverity === "MILD" ? "SUBACUTE" : "ACUTE"),
         description: formNotes.trim() || undefined,
-        discoveryDate: new Date().toISOString(),
+        discoveryDate: effectiveClubNow().toISOString(),
       };
       const res: any = await createInjury(payload);
       const item = res.injury || res;
@@ -823,7 +824,7 @@ export default function InjuryMapPage() {
                             )}
                           </div>
                           <span style={{ fontSize: "var(--fs-caption)", color: "var(--muted)" }}>
-                            {formatDate(h.evaluationDate || h.createdAt || new Date())}
+                            {formatDate(h.evaluationDate || h.createdAt || effectiveClubNow())}
                             {h.updatedByName ? ` · ${h.updatedByName}` : ""}
                           </span>
                           {h.notes && (

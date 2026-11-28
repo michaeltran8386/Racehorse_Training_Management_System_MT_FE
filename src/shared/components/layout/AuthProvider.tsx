@@ -1,4 +1,13 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { syncDemoClock } from "@/shared/lib/demo-clock-api";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerApiHandlers } from "@/shared/lib/api";
@@ -16,7 +25,11 @@ interface AuthContextValue {
   status: AuthStatus;
   user: AuthUser | null;
   expired: boolean;
-  signIn: (email: string, password: string, remember: boolean) => Promise<AuthUser>;
+  signIn: (
+    email: string,
+    password: string,
+    remember: boolean,
+  ) => Promise<AuthUser>;
   signInWithGoogle: (credential: string) => Promise<AuthUser>;
   signOut: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -63,7 +76,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // 401 → Session Expired, 403 → trang Forbidden403.
   useEffect(() => {
-    registerApiHandlers({ onUnauthorized: markExpired, onForbidden: () => navigate("/forbidden") });
+    registerApiHandlers({
+      onUnauthorized: markExpired,
+      onForbidden: () => navigate("/forbidden"),
+    });
   }, [markExpired, navigate]);
 
   // Lúc mở trang: hỏi "tôi là ai" để khôi phục phiên.
@@ -71,14 +87,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     const version = sessionVersion.current;
     fetchMe(true)
-      .then((u) => {
+      .then(async (u) => {
+        if (import.meta.env.DEV) await syncDemoClock().catch(() => undefined);
         if (cancelled || version !== sessionVersion.current) return;
         tokenSessionRef.current = getTokens() !== null;
         setUserState(u);
         setStatus("authenticated");
       })
       .catch(() => {
-        if (!cancelled && version === sessionVersion.current) setStatus("anonymous");
+        if (!cancelled && version === sessionVersion.current)
+          setStatus("anonymous");
       });
     return () => {
       cancelled = true;
@@ -93,41 +111,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timer);
       timer = window.setTimeout(markExpired, IDLE_MS);
     };
-    ACTIVITY_EVENTS.forEach((e) => window.addEventListener(e, reset, { passive: true }));
+    ACTIVITY_EVENTS.forEach((e) =>
+      window.addEventListener(e, reset, { passive: true }),
+    );
     return () => {
       window.clearTimeout(timer);
       ACTIVITY_EVENTS.forEach((e) => window.removeEventListener(e, reset));
     };
   }, [status, expired, markExpired]);
 
-  const signIn = useCallback(async (email: string, password: string, remember: boolean) => {
-    const version = ++sessionVersion.current;
-    try {
-      const u = await login(email, password, remember);
-      if (version !== sessionVersion.current) throw new Error("Session changed");
-      tokenSessionRef.current = getTokens() !== null;
-      setUserState(u);
-      setStatus("authenticated");
-      setExpired(false);
-      return u;
-    } catch (error) {
-      if (version === sessionVersion.current && statusRef.current === "loading") setStatus("anonymous");
-      throw error;
-    }
-  }, []);
+  const signIn = useCallback(
+    async (email: string, password: string, remember: boolean) => {
+      const version = ++sessionVersion.current;
+      try {
+        const u = await login(email, password, remember);
+        if (version !== sessionVersion.current)
+          throw new Error("Session changed");
+        tokenSessionRef.current = getTokens() !== null;
+        setUserState(u);
+        setStatus("authenticated");
+        setExpired(false);
+        return u;
+      } catch (error) {
+        if (
+          version === sessionVersion.current &&
+          statusRef.current === "loading"
+        )
+          setStatus("anonymous");
+        throw error;
+      }
+    },
+    [],
+  );
 
   const signInWithGoogle = useCallback(async (credential: string) => {
     const version = ++sessionVersion.current;
     try {
       const u = await loginWithGoogle(credential);
-      if (version !== sessionVersion.current) throw new Error("Session changed");
+      if (version !== sessionVersion.current)
+        throw new Error("Session changed");
       tokenSessionRef.current = false;
       setUserState(u);
       setStatus("authenticated");
       setExpired(false);
       return u;
     } catch (error) {
-      if (version === sessionVersion.current && statusRef.current === "loading") setStatus("anonymous");
+      if (version === sessionVersion.current && statusRef.current === "loading")
+        setStatus("anonymous");
       throw error;
     }
   }, []);
@@ -152,15 +182,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const version = sessionVersion.current;
     try {
       const u = await fetchMe(false);
-      if (version === sessionVersion.current) setUserState((prev) => (JSON.stringify(prev) === JSON.stringify(u) ? prev : u));
+      if (version === sessionVersion.current)
+        setUserState((prev) =>
+          JSON.stringify(prev) === JSON.stringify(u) ? prev : u,
+        );
     } catch {
       // 401 đã được xử lý chung (mở Session Expired).
     }
   }, []);
 
   const value = useMemo<AuthContextValue>(
-    () => ({ status, user, expired, signIn, signInWithGoogle, signOut, refresh, setUser: setUserState, markExpired }),
-    [status, user, expired, signIn, signInWithGoogle, signOut, refresh, markExpired],
+    () => ({
+      status,
+      user,
+      expired,
+      signIn,
+      signInWithGoogle,
+      signOut,
+      refresh,
+      setUser: setUserState,
+      markExpired,
+    }),
+    [
+      status,
+      user,
+      expired,
+      signIn,
+      signInWithGoogle,
+      signOut,
+      refresh,
+      markExpired,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

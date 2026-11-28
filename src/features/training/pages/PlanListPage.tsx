@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useState, useEffect, useCallback } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -310,7 +311,7 @@ export default function PlanListPage() {
                       let isOverdue = false;
                       if (h.planDeadlineAt) {
                         const deadlineTime = new Date(h.planDeadlineAt).getTime();
-                        const msLeft = deadlineTime - Date.now();
+                        const msLeft = deadlineTime - effectiveClubNow().getTime();
                         const diffDays = Math.ceil(msLeft / (1000 * 3600 * 24));
                         isOverdue = diffDays < 0;
                         deadlineText = isOverdue

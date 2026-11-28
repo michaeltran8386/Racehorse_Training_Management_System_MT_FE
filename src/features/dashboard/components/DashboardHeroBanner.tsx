@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useEffect, useState } from "react";
 import { useAppLanguage } from "@/shared/lib/language";
 import type { AuthUser } from "@/shared/types/auth";
@@ -5,9 +6,9 @@ import styles from "./DashboardHeroBanner.module.css";
 
 export function DashboardHeroBanner({ user }: { user: AuthUser }) {
   const { isVietnamese } = useAppLanguage();
-  const [now, setNow] = useState(() => new Date());
+  const [now, setNow] = useState(() => effectiveClubNow());
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    const timer = window.setInterval(() => setNow(effectiveClubNow()), 1000);
     return () => window.clearInterval(timer);
   }, []);
 

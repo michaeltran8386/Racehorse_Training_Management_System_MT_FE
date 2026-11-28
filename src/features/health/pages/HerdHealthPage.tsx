@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -72,7 +73,7 @@ export default function HerdHealthPage() {
   const load = useCallback(async () => {
     try {
       setBoard(await getHealthBoard());
-      setUpdatedAt(new Date());
+      setUpdatedAt(effectiveClubNow());
       setError("");
     } catch (err) {
       setError(messageFor(err));

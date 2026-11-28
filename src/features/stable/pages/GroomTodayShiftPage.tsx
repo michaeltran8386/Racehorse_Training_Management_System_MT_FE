@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useCurrentUser } from "@/shared/components/layout/AuthProvider";
 import { Navigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -29,9 +30,9 @@ function GroomTodayShiftContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [retry, setRetry] = useState(0);
-  const [now, setNow] = useState(Date.now);
+  const [now, setNow] = useState(() => effectiveClubNow().getTime());
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 30000);
+    const timer = window.setInterval(() => setNow(effectiveClubNow().getTime()), 30000);
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {

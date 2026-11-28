@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import {useEffect,useState} from 'react';
 import {api} from '@/shared/lib/api';
 import {messageFor} from '@/shared/lib/messages';
@@ -19,7 +20,7 @@ export function CareBillingSettingsPanel(){
     {error&&<Alert tone="danger">{error}<Button tone="ghost" onClick={()=>setVersion(v=>v+1)}>{tr('Try again')}</Button></Alert>}{notice&&<Alert tone="ok">{notice}</Alert>}
     {loading?<p role="status">{tr('Loading...')}</p>:<form onSubmit={save} style={{display:'grid',gap:12,maxWidth:640,paddingTop:12}}>
       <p>{tr('Before the cutover month, new invoices use the existing medical package. From the cutover month, new invoices use actual usage snapshots. The cutover can be set once; historical invoices and prices are preserved.')}</p>
-      <Field label={tr('First month of actual usage billing')}><Input type="month" min={new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit'}).format(new Date())} value={period} disabled={Boolean(policy?.cutoverPeriod)||busy} onChange={e=>{setPeriod(e.target.value);setConfirmed(false);}} /></Field>
+      <Field label={tr('First month of actual usage billing')}><Input type="month" min={new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Ho_Chi_Minh',year:'numeric',month:'2-digit'}).format(effectiveClubNow())} value={period} disabled={Boolean(policy?.cutoverPeriod)||busy} onChange={e=>{setPeriod(e.target.value);setConfirmed(false);}} /></Field>
       {period&&!policy?.cutoverPeriod&&<label><input type="checkbox" checked={confirmed} onChange={e=>setConfirmed(e.target.checked)} /> {tr('I confirm this cutover month for new invoices.')}</label>}
       <Field label={tr('Examination tariff (VND)')} hint={tr('Optional. No exam fee is added automatically; record each charge from its clinical record.')}><Input type="number" min={1} max={1000000000} step={1} value={price} onChange={e=>setPrice(e.target.value)} /></Field>
       <Button type="submit" disabled={busy||(!price&&!period)||Boolean(period&&!policy?.cutoverPeriod&&!confirmed)}>{tr('Save billing policy')}</Button>

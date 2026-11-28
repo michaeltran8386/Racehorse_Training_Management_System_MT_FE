@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useEffect, useMemo, useState } from "react";
@@ -436,9 +437,9 @@ export default function PlanWizardPage() {
           if (preselected && res.items.some((h) => h.id === preselected)) {
             setHorseId(preselected);
           } else {
-            // Tự động ưu tiên chọn chiến mã SẴN SÀNG đầu tiên thay vì con ngựa bị khóa
+            // Tự động ưu tiên chọn chiến mã SẴN SÀNG đầu tiên; không chọn nhầm ngựa đang khóa/chưa tiếp nhận
             const firstReady = res.items.find((h) => h.canAssign);
-            setHorseId((cur) => cur || firstReady?.id || res.items[0]?.id || "");
+            setHorseId((cur) => cur || firstReady?.id || "");
           }
         }
       })
@@ -545,7 +546,7 @@ export default function PlanWizardPage() {
     if (!dob) return null;
     const birth = new Date(dob);
     if (isNaN(birth.getTime())) return null;
-    const now = new Date();
+    const now = effectiveClubNow();
     let years = now.getFullYear() - birth.getFullYear();
     if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) {
       years--;
@@ -593,7 +594,7 @@ export default function PlanWizardPage() {
 
   const modalCounts = useMemo(() => {
     const list = assignableHorses.length > 0 ? assignableHorses : (horses as unknown as AssignableHorse[]);
-    const ready = list.filter((h) => h.planState === "READY" || (h.canAssign && !h.isMedicalLocked)).length;
+    const ready = list.filter((h) => h.canAssign && !h.isMedicalLocked).length;
     return {
       ready,
       total: list.length,
@@ -630,7 +631,7 @@ export default function PlanWizardPage() {
     }
 
     if (horsePickerFilter === "READY") {
-      baseList = baseList.filter((h) => h.planState === "READY" || (h.canAssign && !h.isMedicalLocked));
+      baseList = baseList.filter((h) => h.canAssign && !h.isMedicalLocked);
     }
 
     const q = horsePickerSearch.trim().toLowerCase();
@@ -1629,11 +1630,17 @@ export default function PlanWizardPage() {
           {/* Horse assignment alerts if any */}
           {selectedAssignableHorse && (
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {selectedAssignableHorse.planState === "READY" && (
+              {selectedAssignableHorse.planState === "READY" && selectedAssignableHorse.canAssign && (
                 <Alert tone="ok" title={isVietnamese ? "Chiến mã sẵn sàng" : "Ready for Training Plan"}>
                   {isVietnamese
                     ? `Chiến mã ${selectedAssignableHorse.name} hiện chưa có giáo án nào, sẵn sàng lập giáo án mới.`
                     : `Horse is ready with no active plans.`}
+                </Alert>
+              )}
+              {(selectedAssignableHorse.planState === "PENDING_ACCEPTANCE" ||
+                selectedAssignableHorse.planState === "UNASSIGNED_TRAINER") && (
+                <Alert tone="warn" title={selectedAssignableHorse.badge}>
+                  <div>{selectedAssignableHorse.explanation}</div>
                 </Alert>
               )}
               {selectedAssignableHorse.planState === "ACTIVE_OTHER" && (
@@ -2316,7 +2323,7 @@ export default function PlanWizardPage() {
               ) : (
                 availableHorsesForModal.map((h) => {
                   const isSelected = h.id === horseId;
-                  const isReady = h.planState === "READY" || (h.canAssign && !h.isMedicalLocked);
+                  const isReady = h.canAssign && !h.isMedicalLocked;
                   const age = getHorseAge(h.dob);
                   const health = formatHealthStatus(h.status, h.isMedicalLocked);
 

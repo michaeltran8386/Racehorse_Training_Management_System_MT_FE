@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { api } from '@/shared/lib/api';
@@ -23,12 +24,12 @@ function TrainingTracksEditor(){
   const [id,setId]=useState('');const [code,setCode]=useState('');const [name,setName]=useState('');const [surface,setSurface]=useState('TURF');const [capacity,setCapacity]=useState(6);const [active,setActive]=useState(true);
   const [legacy,setLegacy]=useState<Array<{id:string;scheduledDate:string;horseId:string;horse?:{name:string};trackId?:string|null;trackSurface?:string;status:string}>>([]);
   const [selected,setSelected]=useState<string[]>([]);
-  const [from,setFrom]=useState(()=>new Date(Date.now()+7*3600000).toISOString().slice(0,10));
-  const [to,setTo]=useState(()=>new Date(Date.now()+31*86400000+7*3600000).toISOString().slice(0,10));
+  const [from,setFrom]=useState(()=>new Date(effectiveClubNow().getTime()+7*3600000).toISOString().slice(0,10));
+  const [to,setTo]=useState(()=>new Date(effectiveClubNow().getTime()+31*86400000+7*3600000).toISOString().slice(0,10));
   useEffect(()=>{
     let current=true;setLoading(true);setError('');setSelected([]);
     if(!from || !to || from>to || +new Date(to)-+new Date(from)>366*86400000){setError(tr('Choose a valid workout range of at most one year.'));setLoading(false);return()=>{current=false;};}
-    Promise.all([api<TrainingTrackChoice[]>('GET','/training/tracks?includeInactive=true'),api<typeof legacy>('GET',`/training/workouts?from=${from}&to=${to}`)]).then(([rows,workouts])=>{if(current){setTracks(rows);setLegacy(workouts.filter(row=>!row.trackId && ['SCHEDULED','BLOCKED'].includes(row.status) && +new Date(row.scheduledDate)>Date.now()));}}).catch(e=>{if(current)setError(messageFor(e));}).finally(()=>{if(current)setLoading(false);});
+    Promise.all([api<TrainingTrackChoice[]>('GET','/training/tracks?includeInactive=true'),api<typeof legacy>('GET',`/training/workouts?from=${from}&to=${to}`)]).then(([rows,workouts])=>{if(current){setTracks(rows);setLegacy(workouts.filter(row=>!row.trackId && ['SCHEDULED','BLOCKED'].includes(row.status) && +new Date(row.scheduledDate)>effectiveClubNow().getTime()));}}).catch(e=>{if(current)setError(messageFor(e));}).finally(()=>{if(current)setLoading(false);});
     return()=>{current=false;};
   },[version,from,to]);
   function edit(row?:TrainingTrackChoice){setId(row?.id??'');setCode(row?.code??'');setName(row?.name??'');setSurface(row?.surface??'TURF');setCapacity(row?.capacity??6);setActive(row?.isActive??true);setSelected([]);setError('');setNotice('');}

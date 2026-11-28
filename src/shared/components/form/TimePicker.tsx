@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useState, useRef, useEffect, useLayoutEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Icon } from "@/shared/components/ui/Icon";
@@ -150,7 +151,7 @@ export function TimePicker({
   };
 
   const handleSelectNow = () => {
-    const d = new Date();
+    const d = effectiveClubNow();
     const h = padZero(d.getHours());
     const m = padZero(Math.floor(d.getMinutes() / minuteInterval) * minuteInterval);
     const nowTime = `${h}:${m}`;

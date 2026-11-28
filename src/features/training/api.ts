@@ -1,3 +1,4 @@
+export { setDemoDate, syncDemoClock } from '@/shared/lib/demo-clock-api';
 import { api } from "@/shared/lib/api";
 import type {
   AssignableHorse,
@@ -35,7 +36,7 @@ import type {
 // ------------------------------------------------------------ Giờ câu lạc bộ (UTC+7)
 
 import { clubParts, clubIso, todayClub } from '@/shared/lib/demo-clock';
-export { clubParts, clubIso, todayClub, tomorrowClub, getDemoDate, getDemoTime, setDemoDate, effectiveClubNow } from '@/shared/lib/demo-clock';
+export { clubParts, clubIso, todayClub, tomorrowClub, getDemoDate, getDemoTime, effectiveClubNow } from '@/shared/lib/demo-clock';
 
 // ------------------------------------------------------------ Dạng dữ liệu BE
 

@@ -583,6 +583,7 @@ export function WorkoutDialog({ plans, plan: fixedPlan, session, defaultDate, de
         INVALID_TRAINER: isVietnamese ? 'HLV phụ trách chưa đủ điều kiện hoạt động.' : 'The assigned trainer is unavailable.',
         INVALID_WORKOUT_INPUT: isVietnamese ? 'Kiểm tra cự ly, số hiệp và tốc độ mục tiêu.' : 'Check distance, repetitions and target speed.',
         PHASE_REQUIRED: isVietnamese ? 'Vui lòng chọn giai đoạn huấn luyện.' : 'Select a training phase.',
+        PHASE_WEEK_QUOTA_FULL: isVietnamese ? 'Giai đoạn này đã đủ định mức số buổi/tuần hoặc cự ly tuần trong 14 ngày tới.' : 'Weekly session or distance limit for this phase is already full in the next 14 days.',
       };
       setSuggestions({key,loading:false,slots,error:slots.length===0
         ? result.reasons.map(reason=>reasons[reason]).filter(Boolean).join(' ') || (isVietnamese ? 'Không có khung giờ phù hợp trong phạm vi đã chọn. Hãy đổi ngày, giai đoạn hoặc loại bài tập.' : 'No suitable slots in this range. Try another date, phase or workout type.')
@@ -1203,7 +1204,12 @@ export function GeneratePhaseScheduleDialog({
             const startH = dt.getUTCHours() + 7;
             const startM = dt.getUTCMinutes();
             const startTotal = (startH % 24) * 60 + startM;
-            const dur = 60;
+            const dur =
+              w.workoutType === "WALK" || w.workoutType === "SWIM"
+                ? 45
+                : w.workoutType === "TRIAL"
+                  ? 90
+                  : 60;
             const buffer = 15;
             const endTotal = startTotal + dur + buffer;
             const sHStr = String(Math.floor(startTotal / 60)).padStart(2, "0");

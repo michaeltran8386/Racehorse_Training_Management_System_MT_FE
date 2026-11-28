@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { HorseAvatar } from "@/features/horses/components/HorseAvatar";
 import { useState, useEffect, type ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -333,7 +334,7 @@ export function ManagerDashboard({ user }: { user: AuthUser }) {
         stHorse.isMedicalLocked ||
         ["RETIRED", "INJURED", "ISOLATED"].includes(stHorse.status);
       if (blocked || row?.plan) return [];
-      const daysInStall = Math.floor((Date.now() - new Date(activeAlloc.startDate).getTime()) / 86_400_000);
+      const daysInStall = Math.floor((effectiveClubNow().getTime() - new Date(activeAlloc.startDate).getTime()) / 86_400_000);
       if (daysInStall <= 3) return [];
       return [{ horseName: stHorse.name, stallCode: st.code, zoneName: st.zoneRef?.name || st.zone, days: daysInStall }];
     });
@@ -1190,7 +1191,7 @@ export function TrainerDashboard() {
                                 );
                               }
                               const diffDays = Math.ceil(
-                                (new Date(r.horse.planDeadlineAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+                                (new Date(r.horse.planDeadlineAt).getTime() - effectiveClubNow().getTime()) / (1000 * 60 * 60 * 24)
                               );
                               if (diffDays < 0) {
                                 return (
@@ -1664,7 +1665,7 @@ function UpcomingFollowUpsWidget() {
     ])
       .then(([recordsRes, locksRes]) => {
         if (cancelled) return;
-        const now = new Date();
+        const now = effectiveClubNow();
         const nowDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
         const list: FollowUpDashboardItem[] = [];
 

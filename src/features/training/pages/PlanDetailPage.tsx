@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
@@ -71,7 +72,7 @@ function distanceOf(s: ExerciseSession): number {
 
 /** Trễ ghi kết quả: đã Bỏ lỡ, hoặc Đã lên lịch mà đã qua giờ (khớp con số "Trễ ghi kết quả" của BE). */
 function isOverdue(s: ExerciseSession): boolean {
-  return s.status === "MISSED" || (s.status === "SCHEDULED" && Date.parse(s.scheduledAt) <= Date.now());
+  return s.status === "MISSED" || (s.status === "SCHEDULED" && Date.parse(s.scheduledAt) <= effectiveClubNow().getTime());
 }
 
 /** Hạn ghi bù buổi Bỏ lỡ: hết ngày tập + 7 ngày (LATE_RESULT_DAYS ở BE), dạng dd/mm. */

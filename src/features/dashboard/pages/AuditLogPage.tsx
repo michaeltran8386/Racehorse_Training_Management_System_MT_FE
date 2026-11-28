@@ -1,3 +1,4 @@
+import { effectiveClubNow } from "@/shared/lib/demo-clock";
 import { useTranslation as useScreenTranslation } from "react-i18next";
 import { Icon } from "@/shared/components/ui/Icon";
 import { useEffect, useState } from "react";
@@ -392,7 +393,7 @@ export default function AuditLogPage() {
     setExportError("");
     try {
       const query = auditQuery(filters);
-      const startedAt = new Date().toISOString();
+      const startedAt = effectiveClubNow().toISOString();
       const requestedEnd = query.get("to");
       const requestedStart = query.get("from");
       if ((!requestedStart || requestedStart <= startedAt) && (!requestedEnd || requestedEnd > startedAt)) {
